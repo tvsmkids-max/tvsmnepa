@@ -11,28 +11,26 @@ import {
   Alert,
   CircularProgress,
   Divider,
-  Chip,
+  Stack,
 } from "@mui/material";
 import EmailIcon from "@mui/icons-material/Email";
 import LockIcon from "@mui/icons-material/Lock";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import LoginIcon from "@mui/icons-material/Login";
-import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import useAuth from "../../hooks/useAuth";
 
-const SCHOOL_NAME =
-  import.meta.env.VITE_SCHOOL_NAME || "School Attendance System";
+const SCHOOL_NAME = import.meta.env.VITE_SCHOOL_NAME || "TVSM School";
 const SCHOOL_LOGO = import.meta.env.VITE_SCHOOL_LOGO || "/logo.png";
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
 
 const schema = yup.object({
   email: yup
     .string()
-    .email("Enter a valid email")
+    .email("Please enter a valid email address")
     .required("Email is required"),
   password: yup.string().required("Password is required"),
 });
@@ -52,12 +50,12 @@ const LoginPage = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  useEffect(() => () => clearError(), [clearError]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => clearError(), []);
 
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
@@ -77,67 +75,102 @@ const LoginPage = () => {
     setSubmitting(false);
   };
 
-  const fillCredentials = (email, password) => {
-    setValue("email", email);
-    setValue("password", password);
-  };
-
   if (isLoading) return null;
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", overflow: "hidden" }}>
-      {/* LEFT PANEL */}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        overflow: "hidden",
+        "@keyframes fadeIn": {
+          from: { opacity: 0 },
+          to: { opacity: 1 },
+        },
+        animation: "fadeIn 0.5s ease forwards",
+      }}
+    >
+      {/* ═══════════ LEFT PANEL — Branding ═══════════ */}
       <Box
         sx={{
           display: { xs: "none", md: "flex" },
-          width: "52%",
+          width: "50%",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
           position: "relative",
           background:
-            "linear-gradient(145deg, #0D1B3E 0%, #162A5C 35%, #1A3A7A 65%, #1E4D98 100%)",
+            "linear-gradient(145deg, #0A1628 0%, #0D1B3E 30%, #1A3A7A 70%, #1E4D98 100%)",
           color: "white",
           p: 6,
           overflow: "hidden",
         }}
       >
+        {/* Background Pattern */}
         <Box
           sx={{
             position: "absolute",
-            top: -120,
-            right: -120,
-            width: 350,
-            height: 350,
-            borderRadius: "50%",
-            border: "1px solid rgba(255,255,255,0.08)",
-          }}
-        />
-        <Box
-          sx={{
-            position: "absolute",
-            bottom: -80,
-            left: -80,
-            width: 280,
-            height: 280,
-            borderRadius: "50%",
-            background:
-              "radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)",
+            inset: 0,
+            opacity: 0.03,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
           }}
         />
 
+        {/* Decorative elements */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: -100,
+            right: -100,
+            width: 300,
+            height: 300,
+            borderRadius: "50%",
+            border: "1px solid rgba(255,255,255,0.06)",
+          }}
+        />
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: -60,
+            left: -60,
+            width: 200,
+            height: 200,
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)",
+          }}
+        />
+        <Box
+          sx={{
+            position: "absolute",
+            top: "40%",
+            right: -30,
+            width: 150,
+            height: 150,
+            borderRadius: "50%",
+            border: "1px solid rgba(255,255,255,0.04)",
+          }}
+        />
+
+        {/* Content */}
         <Box
           sx={{
             position: "relative",
             zIndex: 1,
             textAlign: "center",
-            maxWidth: 460,
+            maxWidth: 480,
+            "@keyframes slideUp": {
+              from: { opacity: 0, transform: "translateY(20px)" },
+              to: { opacity: 1, transform: "translateY(0)" },
+            },
+            animation: "slideUp 0.7s ease forwards",
           }}
         >
+          {/* School Logo */}
           <Box
             sx={{
-              width: 140,
-              height: 140,
+              width: 150,
+              height: 150,
               borderRadius: "50%",
               bgcolor: "white",
               display: "flex",
@@ -145,56 +178,72 @@ const LoginPage = () => {
               justifyContent: "center",
               mx: "auto",
               mb: 4,
-              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+              boxShadow:
+                "0 20px 60px rgba(0,0,0,0.35), 0 0 0 6px rgba(255,255,255,0.08), 0 0 0 12px rgba(255,255,255,0.04)",
               overflow: "hidden",
             }}
           >
             <Box
               component="img"
               src={SCHOOL_LOGO}
-              alt="Logo"
-              sx={{ width: 112, height: 112, objectFit: "contain" }}
+              alt="School Logo"
+              sx={{ width: 120, height: 120, objectFit: "contain" }}
               onError={(e) => {
                 e.currentTarget.style.display = "none";
               }}
             />
           </Box>
+
+          {/* School Name */}
           <Typography
             variant="h4"
-            fontWeight={800}
-            sx={{ color: "white", mb: 1.5, lineHeight: 1.3 }}
+            fontWeight={900}
+            sx={{
+              color: "white",
+              letterSpacing: "0.03em",
+              mb: 1,
+              lineHeight: 1.25,
+              textShadow: "0 2px 12px rgba(0,0,0,0.25)",
+              fontSize: { md: "1.6rem", lg: "1.9rem" },
+            }}
           >
             {SCHOOL_NAME}
           </Typography>
+
+          {/* Gold accent */}
           <Box
             sx={{
               width: 60,
-              height: 3,
-              bgcolor: "#F5A623",
+              height: 3.5,
+              background: "linear-gradient(90deg, #D4A017, #F5A623, #D4A017)",
               borderRadius: 2,
               mx: "auto",
-              mb: 3,
+              mb: 2.5,
             }}
           />
+
+          {/* Subtitle */}
           <Typography
             variant="body2"
             sx={{
-              color: "rgba(255,255,255,0.8)",
-              letterSpacing: "0.14em",
+              color: "rgba(255,255,255,0.75)",
+              letterSpacing: "0.18em",
               textTransform: "uppercase",
-              fontSize: "0.82rem",
+              fontSize: "0.78rem",
+              fontWeight: 600,
               mb: 5,
-              fontWeight: 500,
             }}
           >
             Attendance Management System
           </Typography>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+
+          {/* Features */}
+          <Stack spacing={1.5}>
             {[
               { icon: "📋", label: "Digital Attendance Tracking" },
               { icon: "📊", label: "Real-time Reports & Analytics" },
               { icon: "👨‍🏫", label: "Multi-role Access Control" },
-              { icon: "📱", label: "Responsive & Mobile Friendly" },
+              { icon: "📱", label: "Mobile Optimized Interface" },
             ].map((f) => (
               <Box
                 key={f.label}
@@ -203,37 +252,60 @@ const LoginPage = () => {
                   alignItems: "center",
                   gap: 2,
                   px: 3,
-                  py: 1.4,
+                  py: 1.3,
                   borderRadius: 2,
-                  bgcolor: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  bgcolor: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  transition: "all 0.25s ease",
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.09)",
+                    transform: "translateX(6px)",
+                    borderColor: "rgba(255,255,255,0.12)",
+                  },
                 }}
               >
-                <Typography fontSize="1.2rem">{f.icon}</Typography>
+                <Typography fontSize="1.15rem">{f.icon}</Typography>
                 <Typography
                   variant="body2"
-                  sx={{ color: "rgba(255,255,255,0.88)" }}
+                  sx={{ color: "rgba(255,255,255,0.85)", fontWeight: 500 }}
                 >
                   {f.label}
                 </Typography>
               </Box>
             ))}
-          </Box>
+          </Stack>
         </Box>
-        <Typography
-          variant="caption"
-          sx={{
-            position: "absolute",
-            bottom: 20,
-            color: "rgba(255,255,255,0.3)",
-            fontSize: "0.68rem",
-          }}
+
+        {/* Footer */}
+        <Stack
+          spacing={0.5}
+          alignItems="center"
+          sx={{ position: "absolute", bottom: 20 }}
         >
-          © {new Date().getFullYear()} {SCHOOL_NAME}. All rights reserved.
-        </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "rgba(255,255,255,0.3)",
+              fontSize: "0.68rem",
+              letterSpacing: "0.04em",
+            }}
+          >
+            © {new Date().getFullYear()} {SCHOOL_NAME}
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "rgba(255,255,255,0.2)",
+              fontSize: "0.6rem",
+              letterSpacing: "0.06em",
+            }}
+          >
+            Designed & Developed by Abhishek
+          </Typography>
+        </Stack>
       </Box>
 
-      {/* RIGHT PANEL */}
+      {/* ═══════════ RIGHT PANEL — Login Form ═══════════ */}
       <Box
         sx={{
           flex: 1,
@@ -243,38 +315,40 @@ const LoginPage = () => {
           bgcolor: "#F8F9FC",
           p: { xs: 2, sm: 4 },
           position: "relative",
+          overflowY: "auto",
         }}
       >
+        {/* Mobile Logo (shown only on small screens) */}
         <Box
           sx={{
             display: { xs: "flex", md: "none" },
             flexDirection: "column",
             alignItems: "center",
             position: "absolute",
-            top: 20,
+            top: 24,
             left: "50%",
             transform: "translateX(-50%)",
           }}
         >
           <Box
             sx={{
-              width: 64,
-              height: 64,
+              width: 72,
+              height: 72,
               borderRadius: "50%",
               bgcolor: "white",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
               overflow: "hidden",
-              mb: 0.75,
+              mb: 1,
             }}
           >
             <Box
               component="img"
               src={SCHOOL_LOGO}
               alt="Logo"
-              sx={{ width: 50, height: 50, objectFit: "contain" }}
+              sx={{ width: 56, height: 56, objectFit: "contain" }}
               onError={(e) => {
                 e.currentTarget.style.display = "none";
               }}
@@ -282,13 +356,14 @@ const LoginPage = () => {
           </Box>
           <Typography
             variant="caption"
-            fontWeight={700}
-            sx={{ color: "#0D1B3E", fontSize: "0.75rem" }}
+            fontWeight={800}
+            sx={{ color: "#0D1B3E", fontSize: "0.78rem", textAlign: "center" }}
           >
-            {SCHOOL_NAME}
+            TVSM School
           </Typography>
         </Box>
 
+        {/* Login Card */}
         <Paper
           elevation={0}
           sx={{
@@ -297,24 +372,36 @@ const LoginPage = () => {
             p: { xs: 3, sm: 4.5 },
             borderRadius: 4,
             bgcolor: "white",
-            boxShadow: "0 12px 40px rgba(0,0,0,0.07)",
-            border: "1px solid rgba(0,0,0,0.05)",
+            boxShadow:
+              "0 4px 6px rgba(0,0,0,0.02), 0 12px 40px rgba(0,0,0,0.06)",
+            border: "1px solid rgba(0,0,0,0.04)",
             mt: { xs: 14, md: 0 },
+            "@keyframes slideRight": {
+              from: { opacity: 0, transform: "translateY(15px)" },
+              to: { opacity: 1, transform: "translateY(0)" },
+            },
+            animation: "slideRight 0.5s ease forwards",
           }}
         >
+          {/* Form Header */}
           <Box sx={{ mb: 3.5 }}>
             <Typography
               variant="h5"
-              fontWeight={800}
-              sx={{ color: "#0D1B3E", mb: 0.5 }}
+              fontWeight={900}
+              sx={{
+                color: "#0D1B3E",
+                mb: 0.5,
+                fontSize: { xs: "1.4rem", sm: "1.6rem" },
+              }}
             >
               Welcome Back
             </Typography>
             <Typography variant="body2" sx={{ color: "#6B7B99" }}>
-              Sign in to access your dashboard
+              Enter your credentials to continue
             </Typography>
           </Box>
 
+          {/* Error */}
           {error && (
             <Alert
               severity="error"
@@ -325,6 +412,7 @@ const LoginPage = () => {
             </Alert>
           )}
 
+          {/* Form */}
           <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
             <Typography
               variant="caption"
@@ -334,6 +422,7 @@ const LoginPage = () => {
                 mb: 0.6,
                 display: "block",
                 textTransform: "uppercase",
+                letterSpacing: "0.07em",
                 fontSize: "0.68rem",
               }}
             >
@@ -353,6 +442,16 @@ const LoginPage = () => {
                 "& .MuiOutlinedInput-root": {
                   bgcolor: "#F8F9FC",
                   borderRadius: 2.5,
+                  "&:hover": { bgcolor: "#F1F3F9" },
+                  "&.Mui-focused": {
+                    bgcolor: "white",
+                    boxShadow: "0 0 0 3px rgba(13,27,62,0.08)",
+                  },
+                  "& fieldset": { borderColor: "#E5E7EB" },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#0D1B3E",
+                    borderWidth: "1.5px",
+                  },
                 },
               }}
               InputProps={{
@@ -372,6 +471,7 @@ const LoginPage = () => {
                 mb: 0.6,
                 display: "block",
                 textTransform: "uppercase",
+                letterSpacing: "0.07em",
                 fontSize: "0.68rem",
               }}
             >
@@ -390,6 +490,16 @@ const LoginPage = () => {
                 "& .MuiOutlinedInput-root": {
                   bgcolor: "#F8F9FC",
                   borderRadius: 2.5,
+                  "&:hover": { bgcolor: "#F1F3F9" },
+                  "&.Mui-focused": {
+                    bgcolor: "white",
+                    boxShadow: "0 0 0 3px rgba(13,27,62,0.08)",
+                  },
+                  "& fieldset": { borderColor: "#E5E7EB" },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#0D1B3E",
+                    borderWidth: "1.5px",
+                  },
                 },
               }}
               InputProps={{
@@ -405,6 +515,7 @@ const LoginPage = () => {
                       edge="end"
                       size="small"
                       tabIndex={-1}
+                      sx={{ color: "#9CA3AF" }}
                     >
                       {showPassword ? (
                         <VisibilityOffIcon fontSize="small" />
@@ -425,109 +536,89 @@ const LoginPage = () => {
               disabled={submitting}
               startIcon={!submitting && <LoginIcon fontSize="small" />}
               sx={{
-                py: 1.6,
+                py: 1.7,
                 fontSize: "0.95rem",
-                fontWeight: 700,
+                fontWeight: 800,
                 borderRadius: 2.5,
                 background:
                   "linear-gradient(135deg, #0D1B3E 0%, #1A3A7A 50%, #1E4D98 100%)",
-                boxShadow: "0 4px 14px rgba(13,27,62,0.35)",
+                boxShadow: "0 6px 18px rgba(13,27,62,0.35)",
+                letterSpacing: "0.03em",
+                textTransform: "none",
+                transition: "all 0.25s ease",
+                "&:hover": {
+                  background:
+                    "linear-gradient(135deg, #0A1530 0%, #152F65 50%, #1A4085 100%)",
+                  boxShadow: "0 8px 24px rgba(13,27,62,0.45)",
+                  transform: "translateY(-1px)",
+                },
+                "&:active": { transform: "translateY(0)" },
+                "&.Mui-disabled": { background: "#94A3B8", color: "white" },
               }}
             >
               {submitting ? (
                 <CircularProgress size={22} sx={{ color: "white" }} />
               ) : (
-                "Sign In to Dashboard"
+                "Sign In"
               )}
             </Button>
           </Box>
 
-          <Divider sx={{ my: 3 }}>
-            <Chip
-              label="Admin Access"
-              size="small"
-              sx={{ fontSize: "0.68rem", fontWeight: 600, bgcolor: "#F1F3F9" }}
-            />
-          </Divider>
-
-          <Box
-            role="button"
-            tabIndex={0}
-            onClick={() => fillCredentials("admin@school.com", "Admin@123456")}
+          {/* Help Text */}
+          <Typography
+            variant="caption"
             sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 2,
-              p: 2,
-              borderRadius: 2.5,
-              bgcolor: "#FFFBF0",
-              border: "1.5px solid #FFE4B5",
-              cursor: "pointer",
-              "&:hover": { bgcolor: "#FFF3D4", borderColor: "#FFCC66" },
+              display: "block",
+              textAlign: "center",
+              color: "#9CA3AF",
+              mt: 3,
+              fontSize: "0.72rem",
             }}
           >
-            <Box
-              sx={{
-                width: 42,
-                height: 42,
-                borderRadius: 2,
-                background: "linear-gradient(135deg, #F5A623, #E8920F)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <AdminPanelSettingsIcon sx={{ color: "white", fontSize: 22 }} />
-            </Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography
-                variant="body2"
-                fontWeight={700}
-                sx={{ color: "#92400E", mb: 0.15 }}
-              >
-                Admin Login
-              </Typography>
+            Contact your administrator for login credentials
+          </Typography>
+
+          {/* Footer */}
+          <Divider sx={{ my: 3 }} />
+
+          <Stack spacing={0.5} alignItems="center">
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Box
+                component="img"
+                src={SCHOOL_LOGO}
+                alt=""
+                sx={{
+                  width: 18,
+                  height: 18,
+                  objectFit: "contain",
+                  opacity: 0.4,
+                }}
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#B45309",
-                  fontFamily: "monospace",
-                  fontSize: "0.7rem",
+                  color: "#B0B8C8",
+                  fontSize: "0.68rem",
+                  letterSpacing: "0.03em",
                 }}
               >
-                admin@school.com • Admin@123456
+                TVSM Attendance v{APP_VERSION}
               </Typography>
-            </Box>
-            <Box sx={{ px: 1, py: 0.3, borderRadius: 1, bgcolor: "#F5A623" }}>
-              <Typography
-                sx={{ color: "white", fontWeight: 800, fontSize: "0.6rem" }}
-              >
-                USE
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box
-            sx={{
-              mt: 3,
-              pt: 2.5,
-              borderTop: "1px solid #F0F2F8",
-              textAlign: "center",
-            }}
-          >
+            </Stack>
             <Typography
               variant="caption"
-              sx={{ color: "#9CA3AF", fontSize: "0.68rem" }}
+              sx={{
+                color: "#C8CDD8",
+                fontSize: "0.62rem",
+                letterSpacing: "0.04em",
+              }}
             >
-              Attendance System v{APP_VERSION}
+              Designed & Developed by Abhishek
             </Typography>
-            <Typography
-              variant="caption"
-              sx={{ color: "#C5CCD8", fontSize: "0.63rem", display: "block" }}
-            >
-              Teachers — contact admin for login credentials
-            </Typography>
-          </Box>
+          </Stack>
         </Paper>
       </Box>
     </Box>

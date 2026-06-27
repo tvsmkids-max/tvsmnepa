@@ -102,14 +102,25 @@ const addFooter = (doc, generatedBy = "Admin") => {
     // Footer line
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.3);
-    doc.line(14, pageHeight - 12, pageWidth - 14, pageHeight - 12);
+    doc.line(14, pageHeight - 14, pageWidth - 14, pageHeight - 14);
 
-    // Footer text
+    // Left: Generated info
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...COLORS.gray);
-    doc.text(`Generated: ${now} | By: ${generatedBy}`, 14, pageHeight - 8);
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth - 14, pageHeight - 8, {
+    doc.text(`Generated: ${now} | By: ${generatedBy}`, 14, pageHeight - 10);
+
+    // Center: Credit
+    doc.setFontSize(6);
+    doc.setTextColor(180, 180, 180);
+    doc.text("Developed by Abhishek", pageWidth / 2, pageHeight - 10, {
+      align: "center",
+    });
+
+    // Right: Page number
+    doc.setFontSize(7);
+    doc.setTextColor(...COLORS.gray);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth - 14, pageHeight - 10, {
       align: "right",
     });
   }
