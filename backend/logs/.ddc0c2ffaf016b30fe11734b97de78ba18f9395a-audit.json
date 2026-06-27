@@ -1,0 +1,25 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\.ddc0c2ffaf016b30fe11734b97de78ba18f9395a-audit.json",
+    "files": [
+        {
+            "date": 1782406396781,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\combined-2026-06-25.log",
+            "hash": "50800bba5145a88527d7a3e08a0c0141c43534eed0fb69418161a857139b776a"
+        },
+        {
+            "date": 1782412207276,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\combined-2026-06-26.log",
+            "hash": "baafbcfbc0903e8f40f85cf0fde8a36558957041eb179bb70c46d1ddc1ebed3e"
+        },
+        {
+            "date": 1782563751571,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\combined-2026-06-27.log",
+            "hash": "0821d585133d8d28b24457b3def55e9e051aaffb9ebf1b47fb8480b7387e7aa5"
+        }
+    ],
+    "hashType": "sha256"
+}

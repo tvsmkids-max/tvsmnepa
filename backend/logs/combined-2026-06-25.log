@@ -1,0 +1,61 @@
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-25 22:25:08"}
+{"level":"info","message":"Database: test","timestamp":"2026-06-25 22:25:08"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-25 22:25:08"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-25 22:25:08"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-25 22:25:08"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-25 22:25:08"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-25 22:25:08"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-25 22:25:08"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-25 22:25:08"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-25 22:25:08"}
+{"level":"http","message":"::1 - - [25/Jun/2026:17:35:01 +0000] \"POST /api/v1/auth/login HTTP/1.1\" 200 899 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:05:01"}
+{"level":"http","message":"::1 - - [25/Jun/2026:17:35:01 +0000] \"GET /api/v1/settings HTTP/1.1\" 404 122 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:05:01"}
+{"level":"http","message":"::1 - - [25/Jun/2026:17:35:36 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 382 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:05:36"}
+{"level":"http","message":"::1 - - [25/Jun/2026:17:35:36 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 382 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:05:36"}
+{"level":"http","message":"::1 - - [25/Jun/2026:17:35:37 +0000] \"GET /api/v1/settings HTTP/1.1\" 404 122 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:05:37"}
+{"level":"http","message":"::1 - - [25/Jun/2026:17:36:27 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 382 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:06:27"}
+{"level":"http","message":"::1 - - [25/Jun/2026:17:36:28 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 382 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:06:28"}
+{"level":"http","message":"::1 - - [25/Jun/2026:17:36:28 +0000] \"GET /api/v1/settings HTTP/1.1\" 404 122 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:06:28"}
+{"level":"http","message":"::1 - - [25/Jun/2026:17:45:08 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 382 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:15:08"}
+{"level":"http","message":"::1 - - [25/Jun/2026:17:45:08 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 382 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:15:08"}
+{"level":"http","message":"::1 - - [25/Jun/2026:17:45:08 +0000] \"GET /api/v1/settings HTTP/1.1\" 404 122 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:15:08"}
+{"level":"warn","message":"MongoDB disconnected. Attempting reconnect...","timestamp":"2026-06-25 23:18:34"}
+{"level":"info","message":"MongoDB reconnected successfully","timestamp":"2026-06-25 23:18:46"}
+{"level":"http","message":"::1 - - [25/Jun/2026:17:49:55 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 382 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:19:55"}
+{"level":"http","message":"::1 - - [25/Jun/2026:17:49:55 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 382 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:19:55"}
+{"level":"http","message":"::1 - - [25/Jun/2026:17:49:55 +0000] \"GET /api/v1/settings HTTP/1.1\" 404 122 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:19:55"}
+{"level":"http","message":"::1 - - [25/Jun/2026:18:00:18 +0000] \"POST /api/v1/auth/logout HTTP/1.1\" 200 108 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:30:18"}
+{"level":"http","message":"::1 - - [25/Jun/2026:18:12:51 +0000] \"POST /api/v1/auth/login HTTP/1.1\" 200 921 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:42:51"}
+{"level":"http","message":"::1 - - [25/Jun/2026:18:12:51 +0000] \"GET /api/v1/settings HTTP/1.1\" 404 122 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:42:51"}
+{"level":"info","message":"\nSIGINT received. Starting graceful shutdown...","timestamp":"2026-06-25 23:43:08"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-25 23:43:15"}
+{"level":"info","message":"Database: test","timestamp":"2026-06-25 23:43:15"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-25 23:43:15"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-25 23:43:15"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-25 23:43:15"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-25 23:43:15"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-25 23:43:15"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-25 23:43:15"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-25 23:43:15"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-25 23:43:15"}
+{"level":"http","message":"::1 - - [25/Jun/2026:18:13:22 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 382 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:43:22"}
+{"level":"http","message":"::1 - - [25/Jun/2026:18:13:23 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 382 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:43:23"}
+{"level":"http","message":"::1 - - [25/Jun/2026:18:13:23 +0000] \"GET /api/v1/settings HTTP/1.1\" 404 122 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:43:23"}
+{"level":"info","message":"\nSIGINT received. Starting graceful shutdown...","timestamp":"2026-06-25 23:46:05"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-25 23:46:10"}
+{"level":"info","message":"Database: test","timestamp":"2026-06-25 23:46:10"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-25 23:46:10"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-25 23:46:10"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-25 23:46:10"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-25 23:46:10"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-25 23:46:10"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-25 23:46:10"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-25 23:46:10"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-25 23:46:10"}
+{"level":"http","message":"::1 - - [25/Jun/2026:18:16:16 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 382 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:46:16"}
+{"level":"http","message":"::1 - - [25/Jun/2026:18:16:16 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 382 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:46:16"}
+{"level":"http","message":"::1 - - [25/Jun/2026:18:16:16 +0000] \"GET /api/v1/settings HTTP/1.1\" 404 122 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:46:16"}
+{"level":"http","message":"::1 - - [25/Jun/2026:18:16:22 +0000] \"POST /api/v1/auth/logout HTTP/1.1\" 200 108 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:46:22"}
+{"level":"http","message":"::1 - - [25/Jun/2026:18:16:25 +0000] \"POST /api/v1/auth/login HTTP/1.1\" 200 921 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:46:25"}
+{"level":"http","message":"::1 - - [25/Jun/2026:18:16:26 +0000] \"GET /api/v1/settings HTTP/1.1\" 404 122 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-25 23:46:26"}
+{"level":"info","message":"\nSIGINT received. Starting graceful shutdown...","timestamp":"2026-06-25 23:47:14"}

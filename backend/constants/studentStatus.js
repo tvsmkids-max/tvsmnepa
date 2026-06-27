@@ -1,0 +1,21 @@
+"use strict";
+
+const STUDENT_STATUS = Object.freeze({
+  ACTIVE: "Active",
+  INACTIVE: "Inactive",
+  TC: "TC",
+  TRANSFERRED: "Transferred",
+});
+
+const STUDENT_STATUS_LIST = Object.values(STUDENT_STATUS);
+
+const STATUSES_BLOCKING_ATTENDANCE = [
+  STUDENT_STATUS.TC,
+  STUDENT_STATUS.TRANSFERRED,
+];
+
+module.exports = {
+  STUDENT_STATUS,
+  STUDENT_STATUS_LIST,
+  STATUSES_BLOCKING_ATTENDANCE,
+};
