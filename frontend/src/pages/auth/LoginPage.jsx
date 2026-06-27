@@ -236,44 +236,6 @@ const LoginPage = () => {
           >
             Attendance Management System
           </Typography>
-
-          {/* Features */}
-          <Stack spacing={1.5}>
-            {[
-              { icon: "📋", label: "Digital Attendance Tracking" },
-              { icon: "📊", label: "Real-time Reports & Analytics" },
-              { icon: "👨‍🏫", label: "Multi-role Access Control" },
-              { icon: "📱", label: "Mobile Optimized Interface" },
-            ].map((f) => (
-              <Box
-                key={f.label}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                  px: 3,
-                  py: 1.3,
-                  borderRadius: 2,
-                  bgcolor: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  transition: "all 0.25s ease",
-                  "&:hover": {
-                    bgcolor: "rgba(255,255,255,0.09)",
-                    transform: "translateX(6px)",
-                    borderColor: "rgba(255,255,255,0.12)",
-                  },
-                }}
-              >
-                <Typography fontSize="1.15rem">{f.icon}</Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: "rgba(255,255,255,0.85)", fontWeight: 500 }}
-                >
-                  {f.label}
-                </Typography>
-              </Box>
-            ))}
-          </Stack>
         </Box>
 
         {/* Footer */}
