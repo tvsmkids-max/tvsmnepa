@@ -29,6 +29,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 import useAuth from "../../hooks/useAuth";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
+import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 
 const adminNav = [
   { label: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
@@ -49,11 +50,13 @@ const adminNav = [
   { divider: true, label: "Admin" },
   { label: "Holidays", icon: <BeachAccessIcon />, path: "/holidays" },
   { label: "Sessions", icon: <SchoolIcon />, path: "/sessions" },
+  { label: "Promotions", icon: <SchoolIcon />, path: "/promotion" }, // ← Must be here
   {
     label: "Notifications",
     icon: <NotificationsIcon />,
     path: "/notifications",
   },
+  { label: "Activity Logs", icon: <HistoryIcon />, path: "/activity-logs" },
   { label: "Settings", icon: <SettingsIcon />, path: "/settings" },
 ];
 

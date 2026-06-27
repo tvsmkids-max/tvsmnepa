@@ -38,6 +38,9 @@ const ReportsPage = lazy(() => import("../pages/reports/ReportsPage"));
 const AnalyticsDashboard = lazy(
   () => import("../pages/analytics/AnalyticsDashboard"),
 );
+const ActivityLogPage = lazy(() => import("../pages/activity/ActivityLogPage"));
+
+const PromotionPage = lazy(() => import("../pages/promotion/PromotionPage"));
 
 const Loader = () => (
   <Box
@@ -143,6 +146,25 @@ const AppRouter = () => (
             element={
               <RoleRoute roles={["admin"]}>
                 <NotificationsPage />
+              </RoleRoute>
+            }
+          />
+
+          {/* Activity Logs — Admin only — INSIDE DashboardLayout */}
+          <Route
+            path="activity-logs"
+            element={
+              <RoleRoute roles={["admin"]}>
+                <ActivityLogPage />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="promotion"
+            element={
+              <RoleRoute roles={["admin"]}>
+                <PromotionPage />
               </RoleRoute>
             }
           />

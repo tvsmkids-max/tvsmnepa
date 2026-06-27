@@ -30,6 +30,7 @@ const queryClassSchema = Joi.object({
   session: objectId,
   isArchived: Joi.boolean(),
   classTeacher: objectId,
+  all: Joi.boolean(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(2000).default(50),
   sort: Joi.string().default("displayOrder name section"),

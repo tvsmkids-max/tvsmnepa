@@ -110,10 +110,7 @@ activityLogSchema.index({ user: 1, createdAt: -1 });
 activityLogSchema.index({ module: 1, action: 1 });
 activityLogSchema.index({ createdAt: -1 });
 
-activityLogSchema.index(
-  { createdAt: 1 },
-  { expireAfterSeconds: 60 * 60 * 24 * 365 },
-);
+activityLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 604800 });
 
 const ActivityLog = mongoose.model("ActivityLog", activityLogSchema);
 

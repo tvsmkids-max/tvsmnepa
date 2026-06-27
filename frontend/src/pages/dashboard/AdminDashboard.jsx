@@ -316,7 +316,7 @@ const AdminDashboard = () => {
 
       {/* Stats Grid */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <StatCard
             title="Total Students"
             value={stats.loading ? "—" : stats.students}
@@ -328,7 +328,7 @@ const AdminDashboard = () => {
             onClick={() => navigate("/students")}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <StatCard
             title="Active Classes"
             value={stats.loading ? "—" : stats.classes}
@@ -338,7 +338,7 @@ const AdminDashboard = () => {
             onClick={() => navigate("/classes")}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <StatCard
             title="Teachers"
             value={stats.loading ? "—" : stats.teachers}
@@ -348,7 +348,7 @@ const AdminDashboard = () => {
             onClick={() => navigate("/teachers")}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <StatCard
             title="Sessions"
             value={stats.loading ? "—" : stats.sessions}

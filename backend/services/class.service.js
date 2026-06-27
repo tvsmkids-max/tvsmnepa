@@ -1,7 +1,6 @@
 "use strict";
 
 const classRepository = require("../repositories/class.repository");
-const teacherRepository = require("../repositories/teacher.repository");
 const studentRepository = require("../repositories/student.repository");
 const Settings = require("../models/Settings.model");
 const { createAuditLog } = require("../middlewares/audit.middleware");
@@ -17,15 +16,10 @@ class ClassService {
     const filter = { ...filterParams };
     if (filter.isArchived === undefined) filter.isArchived = false;
 
+    // ─── For TEACHERS: Get their assigned classes ───
     if (user && user.role === "teacher") {
       const Teacher = require("../models/Teacher.model");
       const teacher = await Teacher.findOne({ user: user._id }).lean();
-
-      console.log(`[ClassList] Teacher: ${user.email}`);
-      console.log(`[ClassList] Teacher found: ${!!teacher}`);
-      console.log(
-        `[ClassList] Assigned classes: ${teacher?.assignedClasses?.length || 0}`,
-      );
 
       if (
         !teacher ||
@@ -40,12 +34,16 @@ class ClassService {
 
       filter._id = { $in: teacher.assignedClasses };
     } else {
-      if (!filter.session) {
+      // ─── For ADMIN ───
+      // If 'all' flag is true, skip session filter (used in promotions)
+      if (!filter.session && !filter.all) {
         const settings = await Settings.getSettings();
         if (settings?.activeSession) {
           filter.session = settings.activeSession;
         }
       }
+      // Remove 'all' from filter — it's not a DB field
+      delete filter.all;
     }
 
     const result = await classRepository.findAll(filter, {
@@ -59,8 +57,7 @@ class ClassService {
       ],
     });
 
-    console.log(`[ClassList] Returning ${result.data.length} classes`);
-
+    // Add student count efficiently with aggregation
     if (result.data.length > 0) {
       const Student = require("../models/Student.model");
       const classIds = result.data.map((c) => c._id);
@@ -89,6 +86,7 @@ class ClassService {
 
     return result;
   }
+
   async getById(id) {
     const cls = await classRepository.findById(id, [
       { path: "classTeacher", select: "name employeeId email mobile" },
@@ -108,7 +106,6 @@ class ClassService {
   }
 
   async create(data, user, req) {
-    // Check duplicate
     const exists = await classRepository.exists({
       name: data.name,
       section: data.section,
@@ -127,7 +124,6 @@ class ClassService {
       createdBy: user._id,
     });
 
-    // If assigned teachers, add this class to their assignedClasses
     if (data.assignedTeachers?.length > 0) {
       const Teacher = require("../models/Teacher.model");
       await Teacher.updateMany(
@@ -154,7 +150,6 @@ class ClassService {
     const existing = await classRepository.findById(id);
     if (!existing) throwError("Class not found", 404);
 
-    // Check duplicate if changing name/section
     if (
       (data.name && data.name !== existing.name) ||
       (data.section && data.section !== existing.section)
@@ -200,7 +195,6 @@ class ClassService {
 
     await classRepository.deleteById(id);
 
-    // Remove this class from all teachers' assignedClasses
     const Teacher = require("../models/Teacher.model");
     await Teacher.updateMany(
       { assignedClasses: id },
