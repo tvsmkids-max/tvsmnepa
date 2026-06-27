@@ -2,37 +2,36 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Grid,
-  Card,
-  CardContent,
   Typography,
-  Chip,
   Paper,
   Stack,
-  Avatar,
-  LinearProgress,
+  Chip,
   CircularProgress,
   Button,
   Divider,
+  LinearProgress,
+  Avatar,
   Table,
   TableHead,
   TableBody,
   TableRow,
   TableCell,
   TableContainer,
-  Alert,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import PeopleIcon from "@mui/icons-material/People";
-import ClassIcon from "@mui/icons-material/Class";
-import PersonIcon from "@mui/icons-material/Person";
-import SchoolIcon from "@mui/icons-material/School";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import EventNoteIcon from "@mui/icons-material/EventNote";
-import BeachAccessIcon from "@mui/icons-material/BeachAccess";
-import HistoryIcon from "@mui/icons-material/History";
-import AssessmentIcon from "@mui/icons-material/Assessment";
-import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
-import RefreshIcon from "@mui/icons-material/Refresh";
+import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
+import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
+import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
+import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
+import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
+import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import HourglassEmptyOutlinedIcon from "@mui/icons-material/HourglassEmptyOutlined";
 import useAuth from "../../hooks/useAuth";
 import useSettings from "../../hooks/useSettings";
 import sessionApi from "../../api/sessionApi";
@@ -40,137 +39,6 @@ import classApi from "../../api/classApi";
 import teacherApi from "../../api/teacherApi";
 import studentApi from "../../api/studentApi";
 import attendanceApi from "../../api/attendanceApi";
-
-const StatCard = ({ title, value, subtitle, icon, color, onClick }) => (
-  <Card
-    sx={{
-      height: "100%",
-      cursor: onClick ? "pointer" : "default",
-      transition: "all 0.2s ease",
-      "&:hover": onClick
-        ? {
-            transform: "translateY(-2px)",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-          }
-        : {},
-    }}
-    onClick={onClick}
-  >
-    <CardContent sx={{ p: 3 }}>
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-        }}
-      >
-        <Box>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            fontWeight={500}
-            gutterBottom
-          >
-            {title}
-          </Typography>
-          <Typography variant="h4" fontWeight={800} color={`${color}.main`}>
-            {value ?? "—"}
-          </Typography>
-          {subtitle && (
-            <Typography variant="caption" color="text.secondary">
-              {subtitle}
-            </Typography>
-          )}
-        </Box>
-        <Box
-          sx={{
-            width: 52,
-            height: 52,
-            borderRadius: 2,
-            bgcolor: `${color}.light`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {React.cloneElement(icon, {
-            sx: { color: `${color}.dark`, fontSize: 28 },
-          })}
-        </Box>
-      </Box>
-    </CardContent>
-  </Card>
-);
-
-const QuickAction = ({ icon, label, color, onClick }) => (
-  <Box
-    onClick={onClick}
-    sx={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      gap: 1,
-      p: 2,
-      borderRadius: 2,
-      cursor: "pointer",
-      transition: "all 0.2s ease",
-      bgcolor: "background.default",
-      border: "1px solid",
-      borderColor: "divider",
-      "&:hover": {
-        bgcolor: `${color}.50`,
-        borderColor: `${color}.main`,
-        transform: "translateY(-2px)",
-        boxShadow: `0 6px 16px ${
-          color === "primary" ? "rgba(30,77,152,0.15)" : "rgba(0,0,0,0.08)"
-        }`,
-      },
-    }}
-  >
-    <Box
-      sx={{
-        width: 44,
-        height: 44,
-        borderRadius: 2,
-        bgcolor: `${color}.light`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      {React.cloneElement(icon, {
-        sx: { color: `${color}.dark`, fontSize: 22 },
-      })}
-    </Box>
-    <Typography variant="caption" fontWeight={700} textAlign="center">
-      {label}
-    </Typography>
-  </Box>
-);
-
-const AttendanceStatBox = ({ label, value, color }) => (
-  <Box
-    sx={{
-      flex: 1,
-      textAlign: "center",
-      p: 1.5,
-      borderRadius: 2,
-      bgcolor: `${color}.50`,
-      border: "1px solid",
-      borderColor: `${color}.200`,
-    }}
-  >
-    <Typography
-      variant="caption"
-      sx={{ color: `${color}.dark`, fontWeight: 700, fontSize: "0.7rem" }}
-    >
-      {label}
-    </Typography>
-    <Typography variant="h5" fontWeight={800} color={`${color}.dark`}>
-      {value}
-    </Typography>
-  </Box>
-);
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -185,12 +53,10 @@ const AdminDashboard = () => {
     students: 0,
     loading: true,
   });
-
   const [todayStats, setTodayStats] = useState(null);
   const [todayLoading, setTodayLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // ─── Load general stats ─────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -207,7 +73,6 @@ const AdminDashboard = () => {
             .list({ limit: 1 })
             .catch(() => ({ data: { pagination: { total: 0 } } })),
         ]);
-
         if (!cancelled) {
           const list = s.data?.data || [];
           setStats({
@@ -229,179 +94,216 @@ const AdminDashboard = () => {
     };
   }, []);
 
-  // ─── Load today's attendance ────────────────────────────
   useEffect(() => {
     let cancelled = false;
-
     const load = async () => {
       setTodayLoading(true);
       try {
         const res = await attendanceApi.getTodayStats();
-        const data = res?.data?.data || null;
-
-        // DEBUG: log what we received
-        console.log("[Dashboard] Today stats received:", data);
-
         if (!cancelled) {
-          setTodayStats(data);
+          setTodayStats(res.data?.data || null);
           setTodayLoading(false);
         }
-      } catch (err) {
-        console.error("[Dashboard] Failed to load today stats:", err);
+      } catch {
         if (!cancelled) {
           setTodayStats(null);
           setTodayLoading(false);
         }
       }
     };
-
     load();
     return () => {
       cancelled = true;
     };
   }, [refreshKey]);
 
-  const handleRefresh = useCallback(() => {
-    setRefreshKey((k) => k + 1);
-  }, []);
+  const handleRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
-    year: "numeric",
-    month: "long",
     day: "numeric",
-  });
-
-  const currentTime = new Date().toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
+    month: "long",
+    year: "numeric",
   });
 
   const greeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
+    const h = new Date().getHours();
+    return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
   };
 
   const sessionName = stats.activeSession?.name || null;
-
-  // ─── Determine what to show in today's attendance ────────
-  const hasClasses = todayStats?.totalClasses > 0;
-  const hasStudents = todayStats?.totalStudents > 0;
-  const showData = todayStats && (hasClasses || hasStudents);
+  const showData =
+    todayStats && (todayStats.totalClasses > 0 || todayStats.totalStudents > 0);
 
   return (
-    <Box>
-      {/* Welcome Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={800} gutterBottom>
-          {greeting()}, {user?.name?.split(" ")[0]} 👋
+    <Box sx={{ pb: { xs: 10, md: 4 } }}>
+      {/* Header */}
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          variant="h5"
+          fontWeight={800}
+          sx={{ color: "#1A1D21", mb: 0.3 }}
+        >
+          {greeting()}, {user?.name?.split(" ")[0]}
         </Typography>
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-          <Typography variant="body2" color="text.secondary">
-            {today} • {currentTime}
+        <Stack
+          direction="row"
+          spacing={1.5}
+          alignItems="center"
+          flexWrap="wrap"
+        >
+          <Typography variant="body2" sx={{ color: "#8E99A4" }}>
+            {today}
           </Typography>
           {sessionName && (
             <Chip
-              label={`Active Session: ${sessionName}`}
+              label={sessionName}
               size="small"
-              color="primary"
-              variant="outlined"
-              icon={<SchoolIcon sx={{ fontSize: 14 }} />}
+              sx={{
+                height: 22,
+                fontSize: "0.7rem",
+                fontWeight: 700,
+                bgcolor: "#F0F1F3",
+                color: "#5F6B7A",
+                border: "1px solid #E5E7EB",
+              }}
             />
           )}
         </Stack>
       </Box>
 
-      {/* Stats Grid */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Students"
-            value={stats.loading ? "—" : stats.students}
-            subtitle={
-              stats.activeSession ? "Current session" : "No active session"
-            }
-            icon={<PeopleIcon />}
-            color="primary"
-            onClick={() => navigate("/students")}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Active Classes"
-            value={stats.loading ? "—" : stats.classes}
-            subtitle="Currently running"
-            icon={<ClassIcon />}
-            color="info"
-            onClick={() => navigate("/classes")}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Teachers"
-            value={stats.loading ? "—" : stats.teachers}
-            subtitle="Staff members"
-            icon={<PersonIcon />}
-            color="success"
-            onClick={() => navigate("/teachers")}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Sessions"
-            value={stats.loading ? "—" : stats.sessions}
-            subtitle="Academic years"
-            icon={<SchoolIcon />}
-            color="warning"
-            onClick={() => navigate("/sessions")}
-          />
-        </Grid>
+      {/* Stats Row */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        {[
+          {
+            label: "Students",
+            value: stats.students,
+            icon: <PeopleOutlinedIcon />,
+            path: "/students",
+          },
+          {
+            label: "Classes",
+            value: stats.classes,
+            icon: <SchoolOutlinedIcon />,
+            path: "/classes",
+          },
+          {
+            label: "Teachers",
+            value: stats.teachers,
+            icon: <PersonOutlinedIcon />,
+            path: "/teachers",
+          },
+          {
+            label: "Sessions",
+            value: stats.sessions,
+            icon: <CalendarTodayOutlinedIcon />,
+            path: "/sessions",
+          },
+        ].map((item) => (
+          <Grid item xs={6} sm={3} key={item.label}>
+            <Paper
+              onClick={() => navigate(item.path)}
+              sx={{
+                p: 2.5,
+                borderRadius: 3,
+                cursor: "pointer",
+                border: "1px solid",
+                borderColor: "rgba(0,0,0,0.06)",
+                boxShadow: "none",
+                transition: "all 0.15s",
+                "&:hover": {
+                  borderColor: "#0D1B3E",
+                  boxShadow: "0 4px 12px rgba(13,27,62,0.08)",
+                },
+              }}
+            >
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="flex-start"
+              >
+                <Box>
+                  <Typography
+                    variant="h4"
+                    fontWeight={800}
+                    sx={{ color: "#1A1D21", lineHeight: 1, mb: 0.5 }}
+                  >
+                    {stats.loading ? "–" : item.value}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "#8E99A4",
+                      fontWeight: 600,
+                      fontSize: "0.72rem",
+                    }}
+                  >
+                    {item.label}
+                  </Typography>
+                </Box>
+                {React.cloneElement(item.icon, {
+                  sx: { color: "#C5CAD0", fontSize: 22 },
+                })}
+              </Stack>
+            </Paper>
+          </Grid>
+        ))}
       </Grid>
 
-      {/* Today's Attendance Overview */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      {/* Today's Attendance */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3, borderRadius: 3, height: "100%" }}>
+          <Paper
+            sx={{
+              p: 2.5,
+              borderRadius: 3,
+              border: "1px solid rgba(0,0,0,0.06)",
+              boxShadow: "none",
+              height: "100%",
+            }}
+          >
             <Stack
               direction="row"
               justifyContent="space-between"
               alignItems="center"
-              sx={{ mb: 3 }}
+              sx={{ mb: 2.5 }}
             >
-              <Stack direction="row" alignItems="center" spacing={1.5}>
-                <Avatar
-                  sx={{ bgcolor: "primary.light", width: 40, height: 40 }}
+              <Box>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={800}
+                  sx={{ color: "#1A1D21" }}
                 >
-                  <EventNoteIcon sx={{ color: "primary.dark" }} />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" fontWeight={700}>
-                    Today's Attendance
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {today}
-                  </Typography>
-                </Box>
-              </Stack>
+                  Today's Attendance
+                </Typography>
+                <Typography variant="caption" sx={{ color: "#8E99A4" }}>
+                  {today}
+                </Typography>
+              </Box>
               <Stack direction="row" spacing={1}>
                 <Button
-                  variant="outlined"
                   size="small"
-                  startIcon={<RefreshIcon />}
+                  startIcon={<RefreshOutlinedIcon sx={{ fontSize: 16 }} />}
                   onClick={handleRefresh}
                   disabled={todayLoading}
+                  sx={{
+                    color: "#5F6B7A",
+                    textTransform: "none",
+                    fontWeight: 600,
+                  }}
                 >
                   Refresh
                 </Button>
                 <Button
-                  variant="contained"
                   size="small"
+                  variant="contained"
                   onClick={() => navigate("/attendance/mark")}
                   sx={{
-                    background:
-                      "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                    bgcolor: "#0D1B3E",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    boxShadow: "none",
+                    "&:hover": { bgcolor: "#1A3060", boxShadow: "none" },
                   }}
                 >
                   Mark Now
@@ -411,72 +313,88 @@ const AdminDashboard = () => {
 
             {todayLoading ? (
               <Box sx={{ py: 5, textAlign: "center" }}>
-                <CircularProgress size={36} />
+                <CircularProgress size={28} sx={{ color: "#C5CAD0" }} />
               </Box>
             ) : todayStats?.isHoliday ? (
-              <Alert
-                severity="warning"
-                icon={<BeachAccessIcon />}
-                sx={{ borderRadius: 2 }}
-              >
-                <Typography variant="body2" fontWeight={700}>
-                  {todayStats.holiday?.name}
+              <Box sx={{ py: 4, textAlign: "center" }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "#D4A017", fontWeight: 700 }}
+                >
+                  🏖️ {todayStats.holiday?.name} — Holiday
                 </Typography>
-                <Typography variant="caption">
-                  Today is a {todayStats.holiday?.type} holiday. Attendance is
-                  blocked.
-                </Typography>
-              </Alert>
+              </Box>
             ) : showData ? (
               <>
-                {/* Top stats row */}
-                <Stack
-                  direction={{ xs: "column", sm: "row" }}
-                  spacing={1.5}
-                  sx={{ mb: 3 }}
-                >
-                  <AttendanceStatBox
-                    label="Present"
-                    value={todayStats.present}
-                    color="success"
-                  />
-                  <AttendanceStatBox
-                    label="Absent"
-                    value={todayStats.absent}
-                    color="error"
-                  />
-                  <AttendanceStatBox
-                    label="Unmarked"
-                    value={todayStats.unmarked}
-                    color="warning"
-                  />
-                  <AttendanceStatBox
-                    label="Total"
-                    value={todayStats.totalStudents}
-                    color="info"
-                  />
-                </Stack>
+                {/* Stats row */}
+                <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
+                  {[
+                    {
+                      label: "Present",
+                      value: todayStats.present,
+                      color: "#16A34A",
+                    },
+                    {
+                      label: "Absent",
+                      value: todayStats.absent,
+                      color: "#DC2626",
+                    },
+                    {
+                      label: "Unmarked",
+                      value: todayStats.unmarked,
+                      color: "#D97706",
+                    },
+                    {
+                      label: "Total",
+                      value: todayStats.totalStudents,
+                      color: "#1A1D21",
+                    },
+                  ].map((s) => (
+                    <Grid item xs={3} key={s.label}>
+                      <Box sx={{ textAlign: "center" }}>
+                        <Typography
+                          variant="h5"
+                          fontWeight={800}
+                          sx={{ color: s.color, lineHeight: 1, mb: 0.3 }}
+                        >
+                          {s.value}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#8E99A4",
+                            fontWeight: 600,
+                            fontSize: "0.65rem",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {s.label}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  ))}
+                </Grid>
 
                 {/* Progress bar */}
-                <Box sx={{ mb: 3 }}>
+                <Box sx={{ mb: 2 }}>
                   <Stack
                     direction="row"
                     justifyContent="space-between"
                     sx={{ mb: 0.5 }}
                   >
-                    <Typography variant="caption" fontWeight={600}>
-                      Overall Attendance Rate
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "#8E99A4", fontWeight: 600 }}
+                    >
+                      Attendance Rate
                     </Typography>
                     <Typography
                       variant="caption"
-                      fontWeight={800}
-                      color={
-                        todayStats.percentage >= 75
-                          ? "success.dark"
-                          : todayStats.percentage >= 50
-                            ? "warning.dark"
-                            : "error.dark"
-                      }
+                      sx={{
+                        fontWeight: 800,
+                        color:
+                          todayStats.percentage >= 75 ? "#16A34A" : "#DC2626",
+                      }}
                     >
                       {todayStats.percentage}%
                     </Typography>
@@ -484,80 +402,121 @@ const AdminDashboard = () => {
                   <LinearProgress
                     variant="determinate"
                     value={todayStats.percentage}
-                    color={
-                      todayStats.percentage >= 75
-                        ? "success"
-                        : todayStats.percentage >= 50
-                          ? "warning"
-                          : "error"
-                    }
-                    sx={{ borderRadius: 4, height: 8 }}
+                    sx={{
+                      height: 6,
+                      borderRadius: 3,
+                      bgcolor: "#F0F1F3",
+                      "& .MuiLinearProgress-bar": {
+                        borderRadius: 3,
+                        bgcolor:
+                          todayStats.percentage >= 75
+                            ? "#16A34A"
+                            : todayStats.percentage >= 50
+                              ? "#D97706"
+                              : "#DC2626",
+                      },
+                    }}
                   />
                 </Box>
 
-                {/* Classes status summary */}
-                <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                {/* Class chips */}
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  flexWrap="wrap"
+                  useFlexGap
+                  sx={{ mb: 2 }}
+                >
                   <Chip
-                    icon={<CheckCircleIcon />}
-                    label={`${todayStats.markedClasses} Marked`}
+                    label={`${todayStats.markedClasses} marked`}
                     size="small"
-                    color="success"
-                    variant="outlined"
+                    sx={{
+                      height: 22,
+                      fontSize: "0.68rem",
+                      fontWeight: 700,
+                      bgcolor: "#ECFDF5",
+                      color: "#16A34A",
+                      border: "1px solid #BBF7D0",
+                    }}
                   />
                   <Chip
-                    icon={<HourglassBottomIcon />}
-                    label={`${todayStats.pendingClasses} Pending`}
+                    label={`${todayStats.pendingClasses} pending`}
                     size="small"
-                    color="warning"
-                    variant="outlined"
-                  />
-                  <Chip
-                    label={`${todayStats.totalClasses} Total Classes`}
-                    size="small"
-                    color="info"
-                    variant="outlined"
+                    sx={{
+                      height: 22,
+                      fontSize: "0.68rem",
+                      fontWeight: 700,
+                      bgcolor: "#FFFBEB",
+                      color: "#D97706",
+                      border: "1px solid #FDE68A",
+                    }}
                   />
                 </Stack>
 
                 {/* Class breakdown */}
                 {todayStats.classBreakdown?.length > 0 && (
                   <>
-                    <Divider sx={{ my: 2 }} />
+                    <Divider sx={{ mb: 1.5 }} />
                     <Typography
                       variant="caption"
-                      fontWeight={700}
                       sx={{
+                        color: "#8E99A4",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        fontSize: "0.65rem",
                         display: "block",
                         mb: 1,
-                        color: "text.secondary",
-                        textTransform: "uppercase",
                       }}
                     >
-                      Class-wise Breakdown
+                      Class Breakdown
                     </Typography>
-                    <TableContainer sx={{ maxHeight: 280 }}>
-                      <Table size="small" stickyHeader>
+                    <TableContainer>
+                      <Table size="small">
                         <TableHead>
                           <TableRow>
                             <TableCell
-                              sx={{ fontWeight: 700, bgcolor: "#F8F9FC" }}
+                              sx={{
+                                fontWeight: 700,
+                                color: "#8E99A4",
+                                fontSize: "0.7rem",
+                                py: 1,
+                                border: "none",
+                              }}
                             >
                               Class
                             </TableCell>
                             <TableCell
-                              sx={{ fontWeight: 700, bgcolor: "#F8F9FC" }}
+                              sx={{
+                                fontWeight: 700,
+                                color: "#8E99A4",
+                                fontSize: "0.7rem",
+                                py: 1,
+                                border: "none",
+                              }}
                             >
                               Status
                             </TableCell>
                             <TableCell
                               align="center"
-                              sx={{ fontWeight: 700, bgcolor: "#F8F9FC" }}
+                              sx={{
+                                fontWeight: 700,
+                                color: "#8E99A4",
+                                fontSize: "0.7rem",
+                                py: 1,
+                                border: "none",
+                              }}
                             >
                               P / A
                             </TableCell>
                             <TableCell
                               align="right"
-                              sx={{ fontWeight: 700, bgcolor: "#F8F9FC" }}
+                              sx={{
+                                fontWeight: 700,
+                                color: "#8E99A4",
+                                fontSize: "0.7rem",
+                                py: 1,
+                                border: "none",
+                              }}
                             >
                               %
                             </TableCell>
@@ -565,86 +524,89 @@ const AdminDashboard = () => {
                         </TableHead>
                         <TableBody>
                           {todayStats.classBreakdown.map((cls) => (
-                            <TableRow key={cls._id} hover>
-                              <TableCell>
-                                <Typography variant="body2" fontWeight={600}>
-                                  {cls.name} - {cls.section}
+                            <TableRow
+                              key={cls._id}
+                              sx={{ "&:last-child td": { border: "none" } }}
+                            >
+                              <TableCell sx={{ py: 1, border: "none" }}>
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={700}
+                                  sx={{ fontSize: "0.82rem" }}
+                                >
+                                  {cls.name}-{cls.section}
                                 </Typography>
                                 <Typography
                                   variant="caption"
-                                  color="text.secondary"
+                                  sx={{ color: "#8E99A4", fontSize: "0.68rem" }}
                                 >
                                   {cls.totalStudents} students
                                 </Typography>
                               </TableCell>
-                              <TableCell>
-                                {cls.isMarked ? (
-                                  <Chip
-                                    label="Marked"
-                                    size="small"
-                                    color="success"
-                                    sx={{ height: 22, fontSize: "0.7rem" }}
-                                  />
-                                ) : (
-                                  <Chip
-                                    label="Pending"
-                                    size="small"
-                                    color="warning"
-                                    sx={{ height: 22, fontSize: "0.7rem" }}
-                                  />
-                                )}
+                              <TableCell sx={{ py: 1, border: "none" }}>
+                                <Chip
+                                  label={cls.isMarked ? "Done" : "Pending"}
+                                  size="small"
+                                  sx={{
+                                    height: 20,
+                                    fontSize: "0.65rem",
+                                    fontWeight: 700,
+                                    bgcolor: cls.isMarked
+                                      ? "#ECFDF5"
+                                      : "#FFFBEB",
+                                    color: cls.isMarked ? "#16A34A" : "#D97706",
+                                    border: "1px solid",
+                                    borderColor: cls.isMarked
+                                      ? "#BBF7D0"
+                                      : "#FDE68A",
+                                  }}
+                                />
                               </TableCell>
-                              <TableCell align="center">
-                                <Stack
-                                  direction="row"
-                                  spacing={0.5}
-                                  justifyContent="center"
+                              <TableCell
+                                align="center"
+                                sx={{
+                                  py: 1,
+                                  border: "none",
+                                  fontFamily: "monospace",
+                                  fontSize: "0.82rem",
+                                }}
+                              >
+                                <Typography
+                                  component="span"
+                                  sx={{ color: "#16A34A", fontWeight: 700 }}
                                 >
-                                  <Typography
-                                    variant="body2"
-                                    color="success.dark"
-                                    fontWeight={700}
-                                  >
-                                    {cls.present}
-                                  </Typography>
-                                  <Typography
-                                    variant="body2"
-                                    color="text.disabled"
-                                  >
-                                    /
-                                  </Typography>
-                                  <Typography
-                                    variant="body2"
-                                    color="error.dark"
-                                    fontWeight={700}
-                                  >
-                                    {cls.absent}
-                                  </Typography>
-                                </Stack>
+                                  {cls.present}
+                                </Typography>
+                                <Typography
+                                  component="span"
+                                  sx={{ color: "#C5CAD0", mx: 0.5 }}
+                                >
+                                  /
+                                </Typography>
+                                <Typography
+                                  component="span"
+                                  sx={{ color: "#DC2626", fontWeight: 700 }}
+                                >
+                                  {cls.absent}
+                                </Typography>
                               </TableCell>
-                              <TableCell align="right">
-                                {cls.isMarked ? (
-                                  <Typography
-                                    variant="body2"
-                                    fontWeight={700}
-                                    color={
-                                      cls.percentage >= 75
-                                        ? "success.dark"
-                                        : cls.percentage >= 50
-                                          ? "warning.dark"
-                                          : "error.dark"
-                                    }
-                                  >
-                                    {cls.percentage}%
-                                  </Typography>
-                                ) : (
-                                  <Typography
-                                    variant="body2"
-                                    color="text.disabled"
-                                  >
-                                    —
-                                  </Typography>
-                                )}
+                              <TableCell
+                                align="right"
+                                sx={{ py: 1, border: "none" }}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={800}
+                                  sx={{
+                                    color: cls.isMarked
+                                      ? cls.percentage >= 75
+                                        ? "#16A34A"
+                                        : "#D97706"
+                                      : "#C5CAD0",
+                                  }}
+                                >
+                                  {cls.isMarked ? `${cls.percentage}%` : "—"}
+                                </Typography>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -655,152 +617,164 @@ const AdminDashboard = () => {
                 )}
               </>
             ) : (
-              <Box sx={{ py: 5, textAlign: "center", color: "text.secondary" }}>
-                <EventNoteIcon
-                  sx={{ fontSize: 56, color: "text.disabled", mb: 1 }}
-                />
-                <Typography variant="body2">No data to display yet</Typography>
-                <Typography
-                  variant="caption"
-                  sx={{ display: "block", mt: 0.5 }}
-                >
-                  Start by creating classes and adding students
+              <Box sx={{ py: 5, textAlign: "center" }}>
+                <Typography variant="body2" sx={{ color: "#8E99A4" }}>
+                  No attendance data yet
                 </Typography>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  justifyContent="center"
-                  sx={{ mt: 2 }}
-                >
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => navigate("/classes")}
-                  >
-                    Manage Classes
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => navigate("/students")}
-                  >
-                    Manage Students
-                  </Button>
-                </Stack>
               </Box>
             )}
           </Paper>
         </Grid>
 
+        {/* School Info */}
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, borderRadius: 3, height: "100%" }}>
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={1.5}
-              sx={{ mb: 2 }}
+          <Paper
+            sx={{
+              p: 2.5,
+              borderRadius: 3,
+              border: "1px solid rgba(0,0,0,0.06)",
+              boxShadow: "none",
+              height: "100%",
+            }}
+          >
+            <Typography
+              variant="subtitle1"
+              fontWeight={800}
+              sx={{ color: "#1A1D21", mb: 2 }}
             >
-              <Avatar sx={{ bgcolor: "success.light", width: 40, height: 40 }}>
-                <SchoolIcon sx={{ color: "success.dark" }} />
-              </Avatar>
-              <Typography variant="h6" fontWeight={700}>
-                School Info
-              </Typography>
-            </Stack>
-            <Divider sx={{ mb: 2 }} />
-            <Stack spacing={1.5}>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  School Name
-                </Typography>
-                <Typography variant="body2" fontWeight={700} noWrap>
-                  {settings?.schoolName || "Not configured"}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Active Session
-                </Typography>
-                <Typography variant="body2" fontWeight={700}>
-                  {sessionName || "None"}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Attendance Hours
-                </Typography>
-                <Typography variant="body2" fontWeight={700}>
-                  {settings?.attendanceOpenTime || "—"} to{" "}
-                  {settings?.attendanceLockTime || "—"}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Warning Threshold
-                </Typography>
-                <Typography variant="body2" fontWeight={700}>
-                  Below {settings?.warningPercentage || 75}%
-                </Typography>
-              </Box>
+              School Info
+            </Typography>
+            <Stack spacing={2}>
+              {[
+                { label: "Name", value: settings?.schoolName || "—" },
+                { label: "Session", value: sessionName || "—" },
+                {
+                  label: "Hours",
+                  value: `${settings?.attendanceOpenTime || "—"} to ${settings?.attendanceLockTime || "—"}`,
+                },
+                {
+                  label: "Threshold",
+                  value: `Below ${settings?.warningPercentage || 75}%`,
+                },
+              ].map((item) => (
+                <Box key={item.label}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "#8E99A4",
+                      fontWeight: 600,
+                      fontSize: "0.68rem",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {item.label}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    fontWeight={700}
+                    sx={{ color: "#1A1D21", fontSize: "0.85rem" }}
+                    noWrap
+                  >
+                    {item.value}
+                  </Typography>
+                </Box>
+              ))}
             </Stack>
           </Paper>
         </Grid>
       </Grid>
 
-      {/* Quick Actions */}
-      <Paper sx={{ p: 3, borderRadius: 3 }}>
-        <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+      {/* Quick Links */}
+      <Paper
+        sx={{
+          p: 2.5,
+          borderRadius: 3,
+          border: "1px solid rgba(0,0,0,0.06)",
+          boxShadow: "none",
+        }}
+      >
+        <Typography
+          variant="subtitle1"
+          fontWeight={800}
+          sx={{ color: "#1A1D21", mb: 2 }}
+        >
           Quick Actions
         </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={6} sm={4} md={2}>
-            <QuickAction
-              icon={<EventNoteIcon />}
-              label="Mark Attendance"
-              color="primary"
-              onClick={() => navigate("/attendance/mark")}
-            />
-          </Grid>
-          <Grid item xs={6} sm={4} md={2}>
-            <QuickAction
-              icon={<HistoryIcon />}
-              label="History"
-              color="info"
-              onClick={() => navigate("/attendance/history")}
-            />
-          </Grid>
-          <Grid item xs={6} sm={4} md={2}>
-            <QuickAction
-              icon={<PeopleIcon />}
-              label="Students"
-              color="success"
-              onClick={() => navigate("/students")}
-            />
-          </Grid>
-          <Grid item xs={6} sm={4} md={2}>
-            <QuickAction
-              icon={<ClassIcon />}
-              label="Classes"
-              color="warning"
-              onClick={() => navigate("/classes")}
-            />
-          </Grid>
-          <Grid item xs={6} sm={4} md={2}>
-            <QuickAction
-              icon={<BeachAccessIcon />}
-              label="Holidays"
-              color="error"
-              onClick={() => navigate("/holidays")}
-            />
-          </Grid>
-          <Grid item xs={6} sm={4} md={2}>
-            <QuickAction
-              icon={<AssessmentIcon />}
-              label="Reports"
-              color="secondary"
-              onClick={() => navigate("/reports")}
-            />
-          </Grid>
+        <Grid container spacing={1.5}>
+          {[
+            {
+              label: "Mark Attendance",
+              icon: <EventNoteOutlinedIcon />,
+              path: "/attendance/mark",
+            },
+            {
+              label: "History",
+              icon: <HistoryOutlinedIcon />,
+              path: "/attendance/history",
+            },
+            {
+              label: "Students",
+              icon: <PeopleOutlinedIcon />,
+              path: "/students",
+            },
+            {
+              label: "Classes",
+              icon: <SchoolOutlinedIcon />,
+              path: "/classes",
+            },
+            {
+              label: "Holidays",
+              icon: <BeachAccessOutlinedIcon />,
+              path: "/holidays",
+            },
+            {
+              label: "Reports",
+              icon: <AssessmentOutlinedIcon />,
+              path: "/reports",
+            },
+          ].map((item) => (
+            <Grid item xs={4} sm={2} key={item.label}>
+              <Box
+                onClick={() => navigate(item.path)}
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 0.8,
+                  py: 2,
+                  px: 1,
+                  borderRadius: 2,
+                  cursor: "pointer",
+                  border: "1px solid",
+                  borderColor: "transparent",
+                  transition: "all 0.15s",
+                  "&:hover": {
+                    borderColor: "#E5E7EB",
+                    bgcolor: "#FAFBFC",
+                  },
+                  "&:active": {
+                    bgcolor: "#F0F1F3",
+                  },
+                }}
+              >
+                {React.cloneElement(item.icon, {
+                  sx: { color: "#5F6B7A", fontSize: 22 },
+                })}
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "#5F6B7A",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                    textAlign: "center",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {item.label}
+                </Typography>
+              </Box>
+            </Grid>
+          ))}
         </Grid>
       </Paper>
     </Box>
