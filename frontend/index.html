@@ -5,48 +5,69 @@
     <link rel="icon" href="/logo.png" type="image/png" />
     <link rel="apple-touch-icon" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-    <meta name="description" content="School Attendance Management System" />
+    <meta name="description" content="TVSM School — Attendance Management System" />
     <meta name="theme-color" content="#0D1B3E" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Attendance" />
-    <meta name="application-name" content="Attendance" />
-    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-    <meta name="referrer" content="strict-origin-when-cross-origin" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <title>TVSM School | Attendance Management </title>
+    <meta name="apple-mobile-web-app-title" content="TVSM School" />
+    <meta name="application-name" content="TVSM School" />
+
+    <title>TVSM School — Attendance Management</title>
 
     <style>
-      body { margin: 0; padding: 0; background-color: #F8F9FC; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        background-color: #F5F6FA;
+      }
+
       #root-loader {
-        display: flex; align-items: center; justify-content: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         height: 100vh;
-        background: linear-gradient(135deg, #0D1B3E 0%, #1A3A7A 100%);
-        color: white; font-family: 'Inter', sans-serif;
-        flex-direction: column; gap: 16px;
+        background: #F5F6FA;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 9999;
+        transition: opacity 0.3s ease;
       }
-      #root-loader .spinner {
-        width: 40px; height: 40px;
-        border: 3px solid rgba(255,255,255,0.2);
-        border-top-color: #F5A623;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
+
+      #root-loader.hidden {
+        opacity: 0;
+        pointer-events: none;
       }
-      @keyframes spin { to { transform: rotate(360deg); } }
     </style>
   </head>
   <body>
-    <div id="root">
-      <div id="root-loader">
-        <img src="/logo.png" alt="" width="80" height="80"
-          style="border-radius: 50%; background: white; padding: 10px; object-fit: contain;"
-          onerror="this.style.display='none'" />
-        <div class="spinner"></div>
-        <div style="font-size: 14px; opacity: 0.7;">T V S M...</div>
-      </div>
+    <div id="root"></div>
+
+    <!-- Loader — ONLY SVG, nothing else -->
+    <div id="root-loader">
+      <img src="/loader.svg" alt="" width="120" height="120" style="object-fit: contain;" />
     </div>
+
     <script type="module" src="/src/main.jsx"></script>
+
+    <script>
+      var ci = setInterval(function() {
+        var r = document.getElementById('root');
+        var l = document.getElementById('root-loader');
+        if (r && r.children.length > 0 && l) {
+          l.classList.add('hidden');
+          setTimeout(function() { if (l.parentNode) l.parentNode.removeChild(l); }, 300);
+          clearInterval(ci);
+        }
+      }, 100);
+      setTimeout(function() {
+        var l = document.getElementById('root-loader');
+        if (l && l.parentNode) l.parentNode.removeChild(l);
+        clearInterval(ci);
+      }, 10000);
+    </script>
   </body>
 </html>
