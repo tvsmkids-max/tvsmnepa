@@ -1292,3 +1292,20 @@
 {"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-28 22:59:29"}
 {"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-28 22:59:29"}
 {"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-28 22:59:40"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-28 22:59:43"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-06-28 22:59:43"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-28 22:59:43"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-28 22:59:43"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-28 22:59:43"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-28 22:59:43"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-28 22:59:43"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-28 22:59:43"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-28 22:59:43"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-28 22:59:43"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-06-28 22:59:43"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-06-28 22:59:44"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-06-28 22:59:44"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-28 22:59:44"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-28 22:59:44"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-06-28 23:00:14"}
+{"level":"info","message":"[Cron] Backup is recent (0 days ago), skipping reminder","timestamp":"2026-06-28 23:00:15"}
