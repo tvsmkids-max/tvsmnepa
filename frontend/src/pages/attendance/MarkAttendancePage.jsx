@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Paper,
@@ -12,15 +12,11 @@ import {
   Typography,
   Stack,
   Chip,
-  Alert,
   CircularProgress,
   Avatar,
-  Tooltip,
   IconButton,
-  Card,
-  CardContent,
   Divider,
-  Fab,
+  useTheme,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import EventNoteIcon from "@mui/icons-material/EventNote";
@@ -39,6 +35,7 @@ import attendanceApi from "../../api/attendanceApi";
 import classApi from "../../api/classApi";
 import useAuth from "../../hooks/useAuth";
 import useSettings from "../../hooks/useSettings";
+import useThemeMode from "../../hooks/useThemeMode";
 
 const formatDate = (d) => {
   const date = new Date(d);
@@ -49,6 +46,8 @@ const MarkAttendancePage = () => {
   const { enqueueSnackbar } = useSnackbar();
   const { isAdmin } = useAuth();
   const { settings } = useSettings();
+  const { isDark } = useThemeMode();
+  const theme = useTheme();
 
   const [classes, setClasses] = useState([]);
   const [classesLoading, setClassesLoading] = useState(true);
@@ -74,7 +73,6 @@ const MarkAttendancePage = () => {
         if (!cancelled) {
           const list = res.data?.data || [];
           setClasses(list);
-          // Auto-select first class if only one (typical for teachers)
           if (list.length === 1 && !selectedClass) {
             setSelectedClass(list[0]._id);
           }
@@ -150,7 +148,6 @@ const MarkAttendancePage = () => {
   const toggleStudent = (id) => {
     setAttendance((p) => {
       const current = p[id];
-      // Toggle: nothing → Present → Absent → nothing
       const next =
         current === "Present"
           ? "Absent"
@@ -165,7 +162,7 @@ const MarkAttendancePage = () => {
     setAttendance((p) => ({ ...p, [id]: status }));
   };
 
-  const stats = React.useMemo(() => {
+  const stats = useMemo(() => {
     if (!sheet?.students)
       return { Present: 0, Absent: 0, total: 0, unmarked: 0 };
     const total = sheet.students.length;
@@ -224,7 +221,21 @@ const MarkAttendancePage = () => {
     }
   };
 
-  const selectedClassObj = classes.find((c) => c._id === selectedClass);
+  // ─── THEME-AWARE COLORS ───
+  const colors = {
+    presentBg: isDark ? "rgba(34,197,94,0.15)" : "#E6F4EA",
+    presentText: isDark ? "#86EFAC" : "#1B5E20",
+    presentBorder: isDark ? "rgba(34,197,94,0.3)" : "#A7F3D0",
+    absentBg: isDark ? "rgba(239,68,68,0.15)" : "#FEE2E2",
+    absentText: isDark ? "#FCA5A5" : "#991B1B",
+    absentBorder: isDark ? "rgba(239,68,68,0.3)" : "#FECACA",
+    warningBg: isDark ? "rgba(245,158,11,0.15)" : "#FFF4E5",
+    warningText: isDark ? "#FCD34D" : "#92400E",
+    classChipBg: isDark ? "rgba(59,130,246,0.2)" : "#E0EBFF",
+    classChipText: isDark ? "#93C5FD" : "#1E4D98",
+    rowHoverBg: isDark ? "rgba(59,130,246,0.08)" : "rgba(59,130,246,0.04)",
+    headerBg: isDark ? "rgba(255,255,255,0.03)" : "#F8F9FC",
+  };
 
   return (
     <Box sx={{ pb: stats.total > 0 ? 10 : 2 }}>
@@ -237,7 +248,15 @@ const MarkAttendancePage = () => {
       />
 
       {/* Class + Date Selector */}
-      <Paper sx={{ p: 2, mb: 2, borderRadius: 3 }}>
+      <Paper
+        sx={{
+          p: 2,
+          mb: 2,
+          borderRadius: 3,
+          border: "1px solid",
+          borderColor: "divider",
+        }}
+      >
         <Stack spacing={2}>
           <FormControl fullWidth size="small">
             <InputLabel>Select Class</InputLabel>
@@ -275,7 +294,13 @@ const MarkAttendancePage = () => {
           />
 
           {sheet && !sheet.isHoliday && (
-            <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Stack
+              direction="row"
+              spacing={1}
+              flexWrap="wrap"
+              alignItems="center"
+              useFlexGap
+            >
               {sheet.isLocked ? (
                 <Chip
                   icon={<LockIcon sx={{ fontSize: 14 }} />}
@@ -349,7 +374,16 @@ const MarkAttendancePage = () => {
       )}
 
       {sheet?.isHoliday && (
-        <Paper sx={{ p: 3, borderRadius: 3, textAlign: "center" }}>
+        <Paper
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            textAlign: "center",
+            border: "1px solid",
+            borderColor: "warning.light",
+            bgcolor: colors.warningBg,
+          }}
+        >
           <BeachAccessIcon
             sx={{ fontSize: 56, color: "warning.main", mb: 1 }}
           />
@@ -397,11 +431,17 @@ const MarkAttendancePage = () => {
                 sx={{
                   p: 1.2,
                   borderRadius: 2,
-                  bgcolor: "#E6F4EA",
+                  bgcolor: colors.presentBg,
                   textAlign: "center",
+                  border: "1px solid",
+                  borderColor: colors.presentBorder,
                 }}
               >
-                <Typography variant="h6" fontWeight={900} color="success.dark">
+                <Typography
+                  variant="h6"
+                  fontWeight={900}
+                  sx={{ color: colors.presentText }}
+                >
                   {stats.Present}
                 </Typography>
                 <Typography
@@ -409,7 +449,7 @@ const MarkAttendancePage = () => {
                   sx={{
                     fontSize: "0.65rem",
                     fontWeight: 700,
-                    color: "success.dark",
+                    color: colors.presentText,
                   }}
                 >
                   PRESENT
@@ -421,11 +461,17 @@ const MarkAttendancePage = () => {
                 sx={{
                   p: 1.2,
                   borderRadius: 2,
-                  bgcolor: "#FEE2E2",
+                  bgcolor: colors.absentBg,
                   textAlign: "center",
+                  border: "1px solid",
+                  borderColor: colors.absentBorder,
                 }}
               >
-                <Typography variant="h6" fontWeight={900} color="error.dark">
+                <Typography
+                  variant="h6"
+                  fontWeight={900}
+                  sx={{ color: colors.absentText }}
+                >
                   {stats.Absent}
                 </Typography>
                 <Typography
@@ -433,7 +479,7 @@ const MarkAttendancePage = () => {
                   sx={{
                     fontSize: "0.65rem",
                     fontWeight: 700,
-                    color: "error.dark",
+                    color: colors.absentText,
                   }}
                 >
                   ABSENT
@@ -445,11 +491,17 @@ const MarkAttendancePage = () => {
                 sx={{
                   p: 1.2,
                   borderRadius: 2,
-                  bgcolor: "#FFF4E5",
+                  bgcolor: colors.warningBg,
                   textAlign: "center",
+                  border: "1px solid",
+                  borderColor: "warning.light",
                 }}
               >
-                <Typography variant="h6" fontWeight={900} color="warning.dark">
+                <Typography
+                  variant="h6"
+                  fontWeight={900}
+                  sx={{ color: colors.warningText }}
+                >
                   {stats.unmarked}
                 </Typography>
                 <Typography
@@ -457,7 +509,7 @@ const MarkAttendancePage = () => {
                   sx={{
                     fontSize: "0.65rem",
                     fontWeight: 700,
-                    color: "warning.dark",
+                    color: colors.warningText,
                   }}
                 >
                   PENDING
@@ -477,7 +529,12 @@ const MarkAttendancePage = () => {
                 startIcon={<DoneAllIcon />}
                 disabled={sheet.isLocked && !isAdmin}
                 onClick={() => markAll("Present")}
-                sx={{ py: 1.4, fontWeight: 700, borderRadius: 2 }}
+                sx={{
+                  py: 1.4,
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  textTransform: "none",
+                }}
               >
                 All Present
               </Button>
@@ -489,7 +546,12 @@ const MarkAttendancePage = () => {
                 startIcon={<ClearAllIcon />}
                 disabled={sheet.isLocked && !isAdmin}
                 onClick={() => markAll("Absent")}
-                sx={{ py: 1.4, fontWeight: 700, borderRadius: 2 }}
+                sx={{
+                  py: 1.4,
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  textTransform: "none",
+                }}
               >
                 All Absent
               </Button>
@@ -509,12 +571,19 @@ const MarkAttendancePage = () => {
               </Typography>
             </Paper>
           ) : (
-            <Paper sx={{ borderRadius: 3, overflow: "hidden" }}>
+            <Paper
+              sx={{
+                borderRadius: 3,
+                overflow: "hidden",
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            >
               {/* Header */}
               <Box
                 sx={{
                   p: 1.5,
-                  bgcolor: "#F8F9FC",
+                  bgcolor: colors.headerBg,
                   borderBottom: "1px solid",
                   borderColor: "divider",
                 }}
@@ -522,7 +591,11 @@ const MarkAttendancePage = () => {
                 <Typography
                   variant="caption"
                   fontWeight={800}
-                  sx={{ textTransform: "uppercase", letterSpacing: "0.05em" }}
+                  sx={{
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    color: "text.secondary",
+                  }}
                 >
                   Students ({stats.total}) • Tap to mark
                 </Typography>
@@ -531,6 +604,13 @@ const MarkAttendancePage = () => {
               {sheet.students.map((item, idx) => {
                 const status = attendance[item.student._id];
                 const isLast = idx === sheet.students.length - 1;
+                const rowBg =
+                  status === "Present"
+                    ? colors.presentBg
+                    : status === "Absent"
+                      ? colors.absentBg
+                      : "transparent";
+
                 return (
                   <Box
                     key={item.student._id}
@@ -545,15 +625,18 @@ const MarkAttendancePage = () => {
                       py: 1.5,
                       borderBottom: isLast ? "none" : "1px solid",
                       borderColor: "divider",
-                      bgcolor:
-                        status === "Present"
-                          ? "#F0FDF4"
-                          : status === "Absent"
-                            ? "#FEF2F2"
-                            : "transparent",
+                      bgcolor: rowBg,
                       cursor:
                         sheet.isLocked && !isAdmin ? "not-allowed" : "pointer",
                       transition: "background-color 0.15s",
+                      "&:hover": {
+                        bgcolor:
+                          status === "Present"
+                            ? colors.presentBg
+                            : status === "Absent"
+                              ? colors.absentBg
+                              : colors.rowHoverBg,
+                      },
                       "&:active": { transform: "scale(0.995)" },
                     }}
                   >
@@ -562,8 +645,8 @@ const MarkAttendancePage = () => {
                       size="small"
                       sx={{
                         minWidth: 38,
-                        bgcolor: "#E0EBFF",
-                        color: "#1E4D98",
+                        bgcolor: colors.classChipBg,
+                        color: colors.classChipText,
                         fontWeight: 700,
                         flexShrink: 0,
                       }}
@@ -588,7 +671,7 @@ const MarkAttendancePage = () => {
                         variant="body2"
                         fontWeight={700}
                         noWrap
-                        sx={{ fontSize: "0.92rem" }}
+                        sx={{ fontSize: "0.92rem", color: "text.primary" }}
                       >
                         {item.student.name}
                       </Typography>
@@ -615,19 +698,29 @@ const MarkAttendancePage = () => {
                           bgcolor:
                             status === "Present"
                               ? "success.main"
-                              : "success.50",
+                              : isDark
+                                ? "rgba(34,197,94,0.15)"
+                                : "success.50",
                           color:
-                            status === "Present" ? "white" : "success.dark",
+                            status === "Present"
+                              ? "white"
+                              : isDark
+                                ? "#86EFAC"
+                                : "success.dark",
                           border: "2px solid",
                           borderColor:
                             status === "Present"
                               ? "success.main"
-                              : "success.light",
+                              : isDark
+                                ? "rgba(34,197,94,0.3)"
+                                : "success.light",
                           "&:hover": {
                             bgcolor:
                               status === "Present"
                                 ? "success.dark"
-                                : "success.100",
+                                : isDark
+                                  ? "rgba(34,197,94,0.25)"
+                                  : "success.100",
                           },
                           "&:active": { transform: "scale(0.95)" },
                         }}
@@ -644,14 +737,31 @@ const MarkAttendancePage = () => {
                           width: 44,
                           height: 44,
                           bgcolor:
-                            status === "Absent" ? "error.main" : "error.50",
-                          color: status === "Absent" ? "white" : "error.dark",
+                            status === "Absent"
+                              ? "error.main"
+                              : isDark
+                                ? "rgba(239,68,68,0.15)"
+                                : "error.50",
+                          color:
+                            status === "Absent"
+                              ? "white"
+                              : isDark
+                                ? "#FCA5A5"
+                                : "error.dark",
                           border: "2px solid",
                           borderColor:
-                            status === "Absent" ? "error.main" : "error.light",
+                            status === "Absent"
+                              ? "error.main"
+                              : isDark
+                                ? "rgba(239,68,68,0.3)"
+                                : "error.light",
                           "&:hover": {
                             bgcolor:
-                              status === "Absent" ? "error.dark" : "error.100",
+                              status === "Absent"
+                                ? "error.dark"
+                                : isDark
+                                  ? "rgba(239,68,68,0.25)"
+                                  : "error.100",
                           },
                           "&:active": { transform: "scale(0.95)" },
                         }}
@@ -670,7 +780,7 @@ const MarkAttendancePage = () => {
             <Paper
               sx={{
                 position: "fixed",
-                bottom: { xs: 64, md: 0 }, // Above bottom nav on mobile
+                bottom: { xs: 64, md: 0 },
                 left: 0,
                 right: 0,
                 p: 2,
@@ -678,7 +788,10 @@ const MarkAttendancePage = () => {
                 borderRadius: 0,
                 borderTop: "1px solid",
                 borderColor: "divider",
-                boxShadow: "0 -4px 12px rgba(0,0,0,0.08)",
+                bgcolor: "background.paper",
+                boxShadow: isDark
+                  ? "0 -4px 20px rgba(0,0,0,0.4)"
+                  : "0 -4px 12px rgba(0,0,0,0.08)",
               }}
             >
               <Button
@@ -699,10 +812,14 @@ const MarkAttendancePage = () => {
                   fontSize: "1rem",
                   fontWeight: 800,
                   borderRadius: 3,
+                  textTransform: "none",
                   background:
                     "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
                   boxShadow: "0 4px 14px rgba(13,27,62,0.35)",
                   "&:active": { transform: "scale(0.98)" },
+                  "&:hover": {
+                    boxShadow: "0 6px 20px rgba(13,27,62,0.45)",
+                  },
                 }}
               >
                 {saving

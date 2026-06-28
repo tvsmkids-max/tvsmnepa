@@ -122,6 +122,31 @@ const getTodayStats = asyncHandler(async (req, res) => {
   });
 });
 
+const getDashboardKPIs = asyncHandler(async (req, res) => {
+  const data = await attendanceService.getDashboardKPIs();
+  return sendResponse(res).success({
+    message: "Dashboard KPIs fetched",
+    data,
+  });
+});
+
+const getDashboardAlerts = asyncHandler(async (req, res) => {
+  const data = await attendanceService.getDashboardAlerts();
+  return sendResponse(res).success({
+    message: "Dashboard alerts fetched",
+    data,
+  });
+});
+
+const getRecentActivity = asyncHandler(async (req, res) => {
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const data = await attendanceService.getRecentActivity(limit);
+  return sendResponse(res).success({
+    message: "Recent activity fetched",
+    data,
+  });
+});
+
 module.exports = {
   getSheet,
   markAttendance,
@@ -131,4 +156,7 @@ module.exports = {
   getStudentHistory,
   getPending,
   getTodayStats,
+  getDashboardKPIs,
+  getDashboardAlerts,
+  getRecentActivity,
 };

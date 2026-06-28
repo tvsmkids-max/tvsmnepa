@@ -8,7 +8,7 @@ const { adminOnly, adminOrTeacher } = require("../middlewares/rbac.middleware");
 
 router.use(authenticate);
 
-// ─── GET Routes ────────────────────────────────────────────────
+// ─── GET Routes (Admin or Teacher) ─────────────────────────────
 router.get("/sheet", adminOrTeacher, attendanceController.getSheet);
 router.get("/pending", adminOrTeacher, attendanceController.getPending);
 router.get("/today-stats", adminOrTeacher, attendanceController.getTodayStats);
@@ -16,6 +16,19 @@ router.get(
   "/student/:studentId",
   adminOrTeacher,
   attendanceController.getStudentHistory,
+);
+
+// ─── NEW: Admin Dashboard Routes ───────────────────────────────
+router.get("/dashboard/kpis", adminOnly, attendanceController.getDashboardKPIs);
+router.get(
+  "/dashboard/alerts",
+  adminOnly,
+  attendanceController.getDashboardAlerts,
+);
+router.get(
+  "/dashboard/activity",
+  adminOnly,
+  attendanceController.getRecentActivity,
 );
 
 // ─── POST/PUT Routes ───────────────────────────────────────────

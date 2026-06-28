@@ -14,7 +14,6 @@ import {
   LinearProgress,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import EditIcon from "@mui/icons-material/Edit";
 import HistoryIcon from "@mui/icons-material/History";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
 import EventBusyIcon from "@mui/icons-material/EventBusy";
@@ -28,6 +27,7 @@ import PageHeader from "../../components/common/PageHeader";
 import StatusChip from "../../components/common/StatusChip";
 import studentApi from "../../api/studentApi";
 import attendanceApi from "../../api/attendanceApi";
+import useThemeMode from "../../hooks/useThemeMode";
 
 const InfoRow = ({ icon, label, value }) => (
   <Box sx={{ mb: 2 }}>
@@ -52,73 +52,134 @@ const InfoRow = ({ icon, label, value }) => (
     <Typography
       variant="body2"
       fontWeight={500}
-      sx={{ pl: icon ? 2.5 : 0, wordBreak: "break-word" }}
+      sx={{
+        pl: icon ? 2.5 : 0,
+        wordBreak: "break-word",
+        color: "text.primary",
+      }}
     >
       {value || "—"}
     </Typography>
   </Box>
 );
 
-const StatBox = ({ icon, label, value, color, sub }) => (
-  <Box
-    sx={{
-      p: 2,
-      borderRadius: 2,
-      bgcolor: color ? `${color}.50` : "background.default",
-      border: "1px solid",
-      borderColor: color ? `${color}.200` : "divider",
-      textAlign: "center",
-      height: "100%",
-    }}
-  >
+// Theme-aware StatBox
+const StatBox = ({ icon, label, value, color, sub, isDark }) => {
+  // Color mappings
+  const colorMap = {
+    success: {
+      bg: isDark ? "rgba(34,197,94,0.15)" : "#E6F4EA",
+      border: isDark ? "rgba(34,197,94,0.3)" : "#A7F3D0",
+      iconBg: isDark ? "rgba(34,197,94,0.25)" : "#C6F6D5",
+      text: isDark ? "#86EFAC" : "#1B5E20",
+      iconColor: isDark ? "#4ADE80" : "#1B5E20",
+    },
+    error: {
+      bg: isDark ? "rgba(239,68,68,0.15)" : "#FEE2E2",
+      border: isDark ? "rgba(239,68,68,0.3)" : "#FECACA",
+      iconBg: isDark ? "rgba(239,68,68,0.25)" : "#FECACA",
+      text: isDark ? "#FCA5A5" : "#991B1B",
+      iconColor: isDark ? "#F87171" : "#991B1B",
+    },
+    primary: {
+      bg: isDark ? "rgba(59,130,246,0.15)" : "#F0F4FF",
+      border: isDark ? "rgba(59,130,246,0.3)" : "#BFDBFE",
+      iconBg: isDark ? "rgba(59,130,246,0.25)" : "#DBEAFE",
+      text: isDark ? "#93C5FD" : "#1E4D98",
+      iconColor: isDark ? "#60A5FA" : "#1E4D98",
+    },
+    default: {
+      bg: isDark ? "rgba(255,255,255,0.05)" : "background.default",
+      border: "divider",
+      iconBg: isDark ? "rgba(255,255,255,0.08)" : "grey.100",
+      text: "text.primary",
+      iconColor: "text.secondary",
+    },
+  };
+
+  const styles = colorMap[color] || colorMap.default;
+
+  return (
     <Box
       sx={{
-        width: 40,
-        height: 40,
-        borderRadius: 1.5,
-        bgcolor: color ? `${color}.100` : "grey.100",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        mx: "auto",
-        mb: 1,
+        p: 2,
+        borderRadius: 2,
+        bgcolor: styles.bg,
+        border: "1px solid",
+        borderColor: styles.border,
+        textAlign: "center",
+        height: "100%",
       }}
     >
-      {React.cloneElement(icon, {
-        sx: { color: color ? `${color}.dark` : "text.secondary", fontSize: 20 },
-      })}
-    </Box>
-    <Typography
-      variant="caption"
-      sx={{
-        color: color ? `${color}.dark` : "text.secondary",
-        fontWeight: 600,
-        display: "block",
-      }}
-    >
-      {label}
-    </Typography>
-    <Typography
-      variant="h5"
-      fontWeight={800}
-      color={color ? `${color}.dark` : "text.primary"}
-    >
-      {value}
-    </Typography>
-    {sub && (
+      <Box
+        sx={{
+          width: 40,
+          height: 40,
+          borderRadius: 1.5,
+          bgcolor: styles.iconBg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          mx: "auto",
+          mb: 1,
+        }}
+      >
+        {React.cloneElement(icon, {
+          sx: { color: styles.iconColor, fontSize: 20 },
+        })}
+      </Box>
       <Typography
         variant="caption"
-        sx={{ color: "text.secondary", display: "block", fontSize: "0.65rem" }}
+        sx={{
+          color: styles.text,
+          fontWeight: 600,
+          display: "block",
+        }}
       >
-        {sub}
+        {label}
       </Typography>
-    )}
-  </Box>
+      <Typography variant="h5" fontWeight={800} sx={{ color: styles.text }}>
+        {value}
+      </Typography>
+      {sub && (
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: "block",
+            fontSize: "0.65rem",
+          }}
+        >
+          {sub}
+        </Typography>
+      )}
+    </Box>
+  );
+};
+
+// Section Header (used in right column cards)
+const SectionHeader = ({ children }) => (
+  <Typography
+    variant="caption"
+    fontWeight={800}
+    sx={{
+      textTransform: "uppercase",
+      letterSpacing: "0.06em",
+      display: "block",
+      mb: 2,
+      color: "primary.main",
+      fontSize: "0.72rem",
+    }}
+  >
+    {children}
+  </Typography>
 );
 
 const StudentDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isDark } = useThemeMode();
+
   const [student, setStudent] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -231,8 +292,12 @@ const StudentDetailPage = () => {
     return `${age} years`;
   };
 
+  // Theme-aware values
+  const classChipBg = isDark ? "rgba(59,130,246,0.2)" : "#E0EBFF";
+  const classChipText = isDark ? "#93C5FD" : "#1E4D98";
+
   return (
-    <Box>
+    <Box sx={{ pb: { xs: 10, md: 4 } }}>
       <PageHeader
         title={student.name}
         breadcrumbs={[
@@ -246,6 +311,7 @@ const StudentDetailPage = () => {
               variant="outlined"
               startIcon={<HistoryIcon />}
               onClick={() => navigate("/attendance/history")}
+              sx={{ fontWeight: 700 }}
             >
               View History
             </Button>
@@ -253,6 +319,7 @@ const StudentDetailPage = () => {
               variant="outlined"
               startIcon={<ArrowBackIcon />}
               onClick={() => navigate("/students")}
+              sx={{ fontWeight: 700 }}
             >
               Back
             </Button>
@@ -268,7 +335,12 @@ const StudentDetailPage = () => {
               p: 3,
               borderRadius: 3,
               textAlign: "center",
-              background: "linear-gradient(135deg, #F8F9FC 0%, #FFFFFF 100%)",
+              border: "1px solid",
+              borderColor: "divider",
+              // Theme-aware gradient
+              background: isDark
+                ? "linear-gradient(135deg, #1E293B 0%, #0F172A 100%)"
+                : "linear-gradient(135deg, #F8F9FC 0%, #FFFFFF 100%)",
             }}
           >
             <Avatar
@@ -280,13 +352,23 @@ const StudentDetailPage = () => {
                 bgcolor: student.gender === "Female" ? "#EC4899" : "#1E4D98",
                 fontSize: "2.8rem",
                 fontWeight: 700,
-                boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                boxShadow: isDark
+                  ? "0 8px 24px rgba(0,0,0,0.5)"
+                  : "0 8px 24px rgba(0,0,0,0.15)",
               }}
             >
               {student.name?.[0]?.toUpperCase()}
             </Avatar>
 
-            <Typography variant="h6" fontWeight={700} gutterBottom>
+            <Typography
+              variant="h6"
+              fontWeight={800}
+              gutterBottom
+              sx={{
+                color: "text.primary",
+                textTransform: "uppercase",
+              }}
+            >
               {student.name}
             </Typography>
 
@@ -296,13 +378,15 @@ const StudentDetailPage = () => {
               justifyContent="center"
               alignItems="center"
               sx={{ mb: 1.5 }}
+              flexWrap="wrap"
+              useFlexGap
             >
               <Chip
                 label={`${student.class?.name || ""}-${student.class?.section || ""}`}
                 size="small"
                 sx={{
-                  bgcolor: "#E0EBFF",
-                  color: "#1E4D98",
+                  bgcolor: classChipBg,
+                  color: classChipText,
                   fontWeight: 700,
                 }}
               />
@@ -310,7 +394,13 @@ const StudentDetailPage = () => {
                 label={`Roll ${student.rollNumber}`}
                 size="small"
                 variant="outlined"
-                sx={{ fontWeight: 700 }}
+                sx={{
+                  fontWeight: 700,
+                  borderColor: isDark
+                    ? "rgba(255,255,255,0.2)"
+                    : "rgba(0,0,0,0.15)",
+                  color: "text.primary",
+                }}
               />
             </Stack>
 
@@ -318,7 +408,7 @@ const StudentDetailPage = () => {
               <StatusChip status={student.status} />
             </Box>
 
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 2, borderColor: "divider" }} />
 
             <Box sx={{ textAlign: "left" }}>
               <InfoRow
@@ -338,7 +428,15 @@ const StudentDetailPage = () => {
           </Paper>
 
           {/* Attendance Stats */}
-          <Paper sx={{ p: 2.5, borderRadius: 3, mt: 2 }}>
+          <Paper
+            sx={{
+              p: 2.5,
+              borderRadius: 3,
+              mt: 2,
+              border: "1px solid",
+              borderColor: "divider",
+            }}
+          >
             <Stack
               direction="row"
               alignItems="center"
@@ -346,7 +444,11 @@ const StudentDetailPage = () => {
               sx={{ mb: 2 }}
             >
               <HistoryIcon color="primary" fontSize="small" />
-              <Typography variant="subtitle2" fontWeight={700}>
+              <Typography
+                variant="subtitle2"
+                fontWeight={800}
+                sx={{ color: "text.primary" }}
+              >
                 Last 30 Days Attendance
               </Typography>
             </Stack>
@@ -363,6 +465,7 @@ const StudentDetailPage = () => {
                       icon={<CalendarTodayIcon />}
                       label="Total"
                       value={stats.total}
+                      isDark={isDark}
                     />
                   </Grid>
                   <Grid item xs={4}>
@@ -371,6 +474,7 @@ const StudentDetailPage = () => {
                       label="Present"
                       value={stats.Present}
                       color="success"
+                      isDark={isDark}
                     />
                   </Grid>
                   <Grid item xs={4}>
@@ -379,6 +483,7 @@ const StudentDetailPage = () => {
                       label="Absent"
                       value={stats.Absent}
                       color="error"
+                      isDark={isDark}
                     />
                   </Grid>
                 </Grid>
@@ -389,19 +494,30 @@ const StudentDetailPage = () => {
                     justifyContent="space-between"
                     sx={{ mb: 0.5 }}
                   >
-                    <Typography variant="caption" fontWeight={600}>
+                    <Typography
+                      variant="caption"
+                      fontWeight={700}
+                      sx={{ color: "text.primary" }}
+                    >
                       Attendance Rate
                     </Typography>
                     <Typography
                       variant="caption"
                       fontWeight={800}
-                      color={
-                        stats.percentage >= 75
-                          ? "success.dark"
-                          : stats.percentage >= 50
-                            ? "warning.dark"
-                            : "error.dark"
-                      }
+                      sx={{
+                        color:
+                          stats.percentage >= 75
+                            ? isDark
+                              ? "#86EFAC"
+                              : "success.dark"
+                            : stats.percentage >= 50
+                              ? isDark
+                                ? "#FCD34D"
+                                : "warning.dark"
+                              : isDark
+                                ? "#FCA5A5"
+                                : "error.dark",
+                      }}
                     >
                       {stats.percentage}%
                     </Typography>
@@ -416,7 +532,13 @@ const StudentDetailPage = () => {
                           ? "warning"
                           : "error"
                     }
-                    sx={{ borderRadius: 4, height: 8 }}
+                    sx={{
+                      borderRadius: 4,
+                      height: 8,
+                      bgcolor: isDark
+                        ? "rgba(255,255,255,0.08)"
+                        : "rgba(0,0,0,0.06)",
+                    }}
                   />
                 </Box>
               </>
@@ -436,20 +558,16 @@ const StudentDetailPage = () => {
         {/* RIGHT COLUMN — Details */}
         <Grid item xs={12} md={8}>
           {/* Personal Information */}
-          <Paper sx={{ p: 3, borderRadius: 3, mb: 2 }}>
-            <Typography
-              variant="caption"
-              color="primary"
-              fontWeight={700}
-              sx={{
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                display: "block",
-                mb: 2,
-              }}
-            >
-              Personal Details
-            </Typography>
+          <Paper
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              mb: 2,
+              border: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <SectionHeader>Personal Details</SectionHeader>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <InfoRow label="Father's Name" value={student.fatherName} />
@@ -468,20 +586,16 @@ const StudentDetailPage = () => {
           </Paper>
 
           {/* Contact Information */}
-          <Paper sx={{ p: 3, borderRadius: 3, mb: 2 }}>
-            <Typography
-              variant="caption"
-              color="primary"
-              fontWeight={700}
-              sx={{
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                display: "block",
-                mb: 2,
-              }}
-            >
-              Contact Information
-            </Typography>
+          <Paper
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              mb: 2,
+              border: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <SectionHeader>Contact Information</SectionHeader>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <InfoRow
@@ -510,20 +624,15 @@ const StudentDetailPage = () => {
           </Paper>
 
           {/* Academic Information */}
-          <Paper sx={{ p: 3, borderRadius: 3 }}>
-            <Typography
-              variant="caption"
-              color="primary"
-              fontWeight={700}
-              sx={{
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                display: "block",
-                mb: 2,
-              }}
-            >
-              Academic Information
-            </Typography>
+          <Paper
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <SectionHeader>Academic Information</SectionHeader>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <InfoRow
