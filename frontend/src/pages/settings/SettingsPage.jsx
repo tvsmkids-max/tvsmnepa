@@ -17,11 +17,14 @@ import {
   Select,
   FormControl,
   InputLabel,
+  InputAdornment,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import SchoolIcon from "@mui/icons-material/School";
 import SaveIcon from "@mui/icons-material/Save";
 import SettingsIcon from "@mui/icons-material/Settings";
+import SecurityIcon from "@mui/icons-material/Security";
+import TimerOutlinedIcon from "@mui/icons-material/TimerOutlined";
 import PageHeader from "../../components/common/PageHeader";
 import axiosInstance from "../../api/axiosInstance";
 import useSettings from "../../hooks/useSettings";
@@ -63,6 +66,9 @@ const SettingsPage = () => {
       day,
       isWorking: day !== "Sunday",
     })),
+    sessionIdleEnabled: true,
+    sessionIdleTimeout: 15,
+    sessionIdleWarning: 60,
   });
 
   useEffect(() => {
@@ -101,6 +107,9 @@ const SettingsPage = () => {
         settings.workingDays?.length > 0
           ? settings.workingDays
           : WORKING_DAYS.map((day) => ({ day, isWorking: day !== "Sunday" })),
+      sessionIdleEnabled: settings.sessionIdleEnabled ?? true,
+      sessionIdleTimeout: settings.sessionIdleTimeout ?? 15,
+      sessionIdleWarning: settings.sessionIdleWarning ?? 60,
     });
   }, [settings]);
 
@@ -121,6 +130,32 @@ const SettingsPage = () => {
       enqueueSnackbar("School name is required", { variant: "warning" });
       return;
     }
+
+    // Validate idle settings
+    if (form.sessionIdleEnabled) {
+      if (form.sessionIdleTimeout < 1 || form.sessionIdleTimeout > 240) {
+        enqueueSnackbar("Idle timeout must be between 1 and 240 minutes", {
+          variant: "warning",
+        });
+        return;
+      }
+      if (form.sessionIdleWarning < 10 || form.sessionIdleWarning > 300) {
+        enqueueSnackbar("Warning duration must be between 10 and 300 seconds", {
+          variant: "warning",
+        });
+        return;
+      }
+      const idleMs = form.sessionIdleTimeout * 60 * 1000;
+      const warnMs = form.sessionIdleWarning * 1000;
+      if (warnMs >= idleMs) {
+        enqueueSnackbar(
+          "Warning duration must be less than total idle timeout",
+          { variant: "warning" },
+        );
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const payload = { ...form };
@@ -168,6 +203,7 @@ const SettingsPage = () => {
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
+          {/* SCHOOL INFO */}
           <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
             <Stack
               direction="row"
@@ -233,6 +269,7 @@ const SettingsPage = () => {
             </Grid>
           </Paper>
 
+          {/* ACADEMIC CONFIG */}
           <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
             <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
               Academic Configuration
@@ -278,6 +315,7 @@ const SettingsPage = () => {
             </Grid>
           </Paper>
 
+          {/* ATTENDANCE RULES */}
           <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
             <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
               Attendance Rules
@@ -329,6 +367,128 @@ const SettingsPage = () => {
             </Grid>
           </Paper>
 
+          {/* SECURITY & SESSION */}
+          <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1.5}
+              sx={{ mb: 2.5 }}
+            >
+              <Avatar sx={{ bgcolor: "error.light", width: 40, height: 40 }}>
+                <SecurityIcon sx={{ color: "error.dark" }} />
+              </Avatar>
+              <Box>
+                <Typography variant="h6" fontWeight={700}>
+                  Security & Session
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Auto-logout users after periods of inactivity
+                </Typography>
+              </Box>
+            </Stack>
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={form.sessionIdleEnabled}
+                  onChange={(e) =>
+                    handleChange("sessionIdleEnabled", e.target.checked)
+                  }
+                  color="primary"
+                />
+              }
+              label={
+                <Box>
+                  <Typography variant="body2" fontWeight={700}>
+                    Enable Auto-Logout on Inactivity
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Applies to all users (admin & teachers)
+                  </Typography>
+                </Box>
+              }
+              sx={{ mb: 2 }}
+            />
+
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Idle Timeout"
+                  type="number"
+                  fullWidth
+                  size="small"
+                  value={form.sessionIdleTimeout}
+                  onChange={(e) =>
+                    handleChange(
+                      "sessionIdleTimeout",
+                      parseInt(e.target.value, 10) || 0,
+                    )
+                  }
+                  inputProps={{ min: 1, max: 240 }}
+                  disabled={!form.sessionIdleEnabled}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <TimerOutlinedIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">minutes</InputAdornment>
+                    ),
+                  }}
+                  helperText="1–240 minutes (default: 15)"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Warning Before Logout"
+                  type="number"
+                  fullWidth
+                  size="small"
+                  value={form.sessionIdleWarning}
+                  onChange={(e) =>
+                    handleChange(
+                      "sessionIdleWarning",
+                      parseInt(e.target.value, 10) || 0,
+                    )
+                  }
+                  inputProps={{ min: 10, max: 300 }}
+                  disabled={!form.sessionIdleEnabled}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">seconds</InputAdornment>
+                    ),
+                  }}
+                  helperText="10–300 seconds (default: 60)"
+                />
+              </Grid>
+            </Grid>
+
+            {form.sessionIdleEnabled && (
+              <Alert
+                severity="info"
+                sx={{ mt: 2, borderRadius: 2 }}
+                icon={<TimerOutlinedIcon />}
+              >
+                <Typography variant="body2">
+                  Users will be automatically logged out after{" "}
+                  <strong>
+                    {form.sessionIdleTimeout} minute
+                    {form.sessionIdleTimeout !== 1 ? "s" : ""}
+                  </strong>{" "}
+                  of inactivity. A warning dialog will appear{" "}
+                  <strong>
+                    {form.sessionIdleWarning} second
+                    {form.sessionIdleWarning !== 1 ? "s" : ""}
+                  </strong>{" "}
+                  before logout.
+                </Typography>
+              </Alert>
+            )}
+          </Paper>
+
+          {/* WORKING DAYS */}
           <Paper sx={{ p: 3, borderRadius: 3 }}>
             <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
               Working Days
@@ -363,6 +523,7 @@ const SettingsPage = () => {
           </Paper>
         </Grid>
 
+        {/* SAVE PANEL */}
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 3, borderRadius: 3, position: "sticky", top: 80 }}>
             <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
@@ -400,6 +561,22 @@ const SettingsPage = () => {
                 </Typography>
                 <Typography variant="body2" fontWeight={700}>
                   {form.workingDays.filter((d) => d.isWorking).length} days
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Auto-Logout
+                </Typography>
+                <Typography
+                  variant="body2"
+                  fontWeight={700}
+                  color={
+                    form.sessionIdleEnabled ? "success.main" : "text.disabled"
+                  }
+                >
+                  {form.sessionIdleEnabled
+                    ? `After ${form.sessionIdleTimeout} min`
+                    : "Disabled"}
                 </Typography>
               </Box>
             </Stack>

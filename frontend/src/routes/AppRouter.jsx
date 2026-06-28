@@ -39,8 +39,12 @@ const AnalyticsDashboard = lazy(
   () => import("../pages/analytics/AnalyticsDashboard"),
 );
 const ActivityLogPage = lazy(() => import("../pages/activity/ActivityLogPage"));
-
 const PromotionPage = lazy(() => import("../pages/promotion/PromotionPage"));
+
+// ─── NEW: Teacher Profile Page ───
+const TeacherProfilePage = lazy(
+  () => import("../pages/profile/TeacherProfilePage"),
+);
 
 const Loader = () => (
   <Box
@@ -68,7 +72,7 @@ const AppRouter = () => (
         <Route path="/login" element={<LoginPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-        {/* Protected — ALL inside DashboardLayout */}
+        {/* Protected */}
         <Route
           path="/"
           element={
@@ -96,6 +100,9 @@ const AppRouter = () => (
               </RoleRoute>
             }
           />
+
+          {/* ─── PROFILE — Both admin & teacher ─── */}
+          <Route path="profile" element={<TeacherProfilePage />} />
 
           {/* Management */}
           <Route path="classes" element={<ClassListPage />} />
@@ -140,17 +147,10 @@ const AppRouter = () => (
           <Route path="reports" element={<ReportsPage />} />
           <Route path="analytics" element={<AnalyticsDashboard />} />
 
-          {/* Notifications — Admin only */}
-          <Route
-            path="notifications"
-            element={
-              <RoleRoute roles={["admin"]}>
-                <NotificationsPage />
-              </RoleRoute>
-            }
-          />
+          {/* Notifications — Both admin & teacher (per role-based filtering) */}
+          <Route path="notifications" element={<NotificationsPage />} />
 
-          {/* Activity Logs — Admin only — INSIDE DashboardLayout */}
+          {/* Activity Logs — Admin only */}
           <Route
             path="activity-logs"
             element={

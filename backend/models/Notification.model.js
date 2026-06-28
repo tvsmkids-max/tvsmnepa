@@ -54,6 +54,15 @@ const notificationSchema = new mongoose.Schema(
       default: true,
     },
 
+    // ─── AUTO-DELETE FIELD ───
+    // Set when last reader marks it read (for TTL cleanup)
+    // For broadcast notifications: when all targets have read it
+    // For single-user notifications: when that user reads it
+    readAt: {
+      type: Date,
+      default: null,
+    },
+
     expiresAt: {
       type: Date,
       default: null,
@@ -81,9 +90,19 @@ const notificationSchema = new mongoose.Schema(
   },
 );
 
+// ─── INDEXES ───
 notificationSchema.index({ targetRole: 1, isActive: 1, createdAt: -1 });
 notificationSchema.index({ targetUser: 1, isActive: 1 });
 notificationSchema.index({ createdAt: -1 });
+
+// TTL: auto-delete 7 days after readAt is set
+notificationSchema.index(
+  { readAt: 1 },
+  { expireAfterSeconds: 7 * 24 * 60 * 60 },
+);
+
+// TTL: auto-delete after expiresAt
+notificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 notificationSchema.methods.isReadByUser = function (userId) {
   return this.readBy.some(

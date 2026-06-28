@@ -3,6 +3,9 @@ import axiosInstance from "./axiosInstance";
 const teacherApi = {
   list: (params = {}) => axiosInstance.get("/teachers", { params }),
   getMyProfile: () => axiosInstance.get("/teachers/me"),
+  updateMyProfile: (data) => axiosInstance.put("/teachers/me", data),
+  changeMyPassword: (data) =>
+    axiosInstance.patch("/teachers/me/change-password", data),
   getById: (id) => axiosInstance.get(`/teachers/${id}`),
   create: (data) => axiosInstance.post("/teachers", data),
   update: (id, data) => axiosInstance.put(`/teachers/${id}`, data),

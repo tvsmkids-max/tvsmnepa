@@ -18,10 +18,11 @@ import {
   Tabs,
   Tab,
   Divider,
-  IconButton,
   Avatar,
   LinearProgress,
   Alert,
+  IconButton,
+  Tooltip,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
@@ -34,12 +35,15 @@ import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
+import EventNoteIcon from "@mui/icons-material/EventNote";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import PeopleIcon from "@mui/icons-material/People";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import PageHeader from "../../components/common/PageHeader";
 import EmptyState from "../../components/common/EmptyState";
 import reportApi from "../../api/reportApi";
 import classApi from "../../api/classApi";
 import { exportToExcel } from "../../utils/exportUtils";
-import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import {
   generateDailyAttendancePdf,
   generateMonthlyReportPdf,
@@ -48,16 +52,140 @@ import {
 } from "../../utils/pdfGenerator";
 import useSettings from "../../hooks/useSettings";
 import useAuth from "../../hooks/useAuth";
+import AttendanceRegisterTab from "./AttendanceRegisterTab";
 
 const formatDate = (d) => {
   const date = new Date(d);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 };
 
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+// ─── STAT CARD COMPONENT ───
+const StatCard = ({ label, value, color, icon }) => (
+  <Card
+    sx={{
+      borderRadius: 2.5,
+      bgcolor: color.bg,
+      border: "1px solid",
+      borderColor: color.border,
+      height: "100%",
+      boxShadow: "none",
+    }}
+  >
+    <CardContent
+      sx={{
+        p: { xs: 1.2, sm: 1.8 },
+        textAlign: "center",
+        "&:last-child": { pb: { xs: 1.2, sm: 1.8 } },
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          mb: 0.4,
+          gap: 0.4,
+        }}
+      >
+        {icon &&
+          React.cloneElement(icon, {
+            sx: { fontSize: 14, color: color.text },
+          })}
+        <Typography
+          variant="caption"
+          sx={{
+            color: color.text,
+            fontWeight: 700,
+            fontSize: { xs: "0.62rem", sm: "0.7rem" },
+            letterSpacing: "0.05em",
+          }}
+        >
+          {label}
+        </Typography>
+      </Box>
+      <Typography
+        variant="h5"
+        fontWeight={900}
+        sx={{
+          color: color.text,
+          fontSize: { xs: "1.4rem", sm: "1.6rem" },
+          lineHeight: 1.1,
+        }}
+      >
+        {value}
+      </Typography>
+    </CardContent>
+  </Card>
+);
+
+// ─── SECTION HEADER ───
+const SectionHeader = ({ icon, title, count }) => (
+  <Stack
+    direction="row"
+    alignItems="center"
+    spacing={1}
+    sx={{ mb: 1.5, mt: 1 }}
+  >
+    {icon &&
+      React.cloneElement(icon, {
+        sx: { fontSize: 18, color: "primary.main" },
+      })}
+    <Typography
+      variant="caption"
+      fontWeight={800}
+      sx={{
+        textTransform: "uppercase",
+        letterSpacing: "0.08em",
+        color: "text.secondary",
+        fontSize: "0.72rem",
+      }}
+    >
+      {title}
+    </Typography>
+    {count !== undefined && (
+      <Chip
+        label={count}
+        size="small"
+        sx={{
+          height: 18,
+          fontSize: "0.65rem",
+          fontWeight: 800,
+          bgcolor: "primary.main",
+          color: "white",
+        }}
+      />
+    )}
+    <Box
+      sx={{
+        flex: 1,
+        height: 1,
+        bgcolor: "divider",
+        ml: 1,
+      }}
+    />
+  </Stack>
+);
+
 const ReportsPage = () => {
   const { enqueueSnackbar } = useSnackbar();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isXs = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [tabValue, setTabValue] = useState(0);
   const [classes, setClasses] = useState([]);
@@ -76,27 +204,6 @@ const ReportsPage = () => {
   const { settings } = useSettings();
   const { user } = useAuth();
 
-  const handlePdfDaily = () => {
-    if (!dailyReport) return;
-    const doc = generateDailyAttendancePdf(dailyReport, settings, user?.name);
-    downloadPdf(doc, `daily-attendance-${date}`);
-    enqueueSnackbar("PDF downloaded", { variant: "success" });
-  };
-
-  const handlePdfMonthly = () => {
-    if (!monthlyReport) return;
-    const doc = generateMonthlyReportPdf(monthlyReport, settings, user?.name);
-    downloadPdf(doc, `monthly-${monthlyReport.monthName}-${year}`);
-    enqueueSnackbar("PDF downloaded", { variant: "success" });
-  };
-
-  const handlePdfDefaulters = () => {
-    if (!defaulterReport) return;
-    const doc = generateDefaulterPdf(defaulterReport, settings, user?.name);
-    downloadPdf(doc, `defaulters-below-${threshold}`);
-    enqueueSnackbar("PDF downloaded", { variant: "success" });
-  };
-
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -113,8 +220,8 @@ const ReportsPage = () => {
     };
   }, []);
 
-  // Load report based on tab
   useEffect(() => {
+    if (tabValue === 3) return;
     let cancelled = false;
     const load = async () => {
       setLoading(true);
@@ -163,6 +270,7 @@ const ReportsPage = () => {
 
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
+  // ─── EXPORT HANDLERS ───
   const handleExportDaily = () => {
     if (!dailyReport) return;
     const data = [];
@@ -218,588 +326,918 @@ const ReportsPage = () => {
     enqueueSnackbar("Excel exported", { variant: "success" });
   };
 
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
+  const handlePdfDaily = () => {
+    if (!dailyReport) return;
+    const doc = generateDailyAttendancePdf(dailyReport, settings, user?.name);
+    downloadPdf(doc, `daily-attendance-${date}`);
+    enqueueSnackbar("PDF downloaded", { variant: "success" });
+  };
+
+  const handlePdfMonthly = () => {
+    if (!monthlyReport) return;
+    const doc = generateMonthlyReportPdf(monthlyReport, settings, user?.name);
+    downloadPdf(doc, `monthly-${monthlyReport.monthName}-${year}`);
+    enqueueSnackbar("PDF downloaded", { variant: "success" });
+  };
+
+  const handlePdfDefaulters = () => {
+    if (!defaulterReport) return;
+    const doc = generateDefaulterPdf(defaulterReport, settings, user?.name);
+    downloadPdf(doc, `defaulters-below-${threshold}`);
+    enqueueSnackbar("PDF downloaded", { variant: "success" });
+  };
+
+  const handleExport = () => {
+    if (tabValue === 0) return handleExportDaily();
+    if (tabValue === 1) return handleExportMonthly();
+    if (tabValue === 2) return handleExportDefaulters();
+  };
+
+  const handlePdf = () => {
+    if (tabValue === 0) return handlePdfDaily();
+    if (tabValue === 1) return handlePdfMonthly();
+    if (tabValue === 2) return handlePdfDefaulters();
+  };
+
+  const showCommonFilters = tabValue !== 3;
 
   return (
-    <Box sx={{ pb: { xs: 8, md: 3 } }}>
+    <Box sx={{ pb: { xs: 10, md: 3 } }}>
       <PageHeader
         title="Reports"
-        subtitle="View and export attendance reports"
+        subtitle={
+          isXs ? "Attendance data" : "View and export attendance reports"
+        }
         breadcrumbs={[
           { label: "Dashboard", path: "/dashboard" },
           { label: "Reports" },
         ]}
       />
 
-      <Paper sx={{ borderRadius: 3, mb: 2 }}>
+      {/* ─── TABS ─── */}
+      <Paper
+        sx={{
+          borderRadius: 3,
+          mb: 2,
+          overflow: "hidden",
+          border: "1px solid",
+          borderColor: "divider",
+        }}
+      >
         <Tabs
           value={tabValue}
           onChange={(e, v) => setTabValue(v)}
-          variant={isMobile ? "fullWidth" : "standard"}
+          variant={isXs ? "fullWidth" : "standard"}
+          centered={!isXs}
           sx={{
-            borderBottom: "1px solid",
-            borderColor: "divider",
-            "& .MuiTab-root": { fontWeight: 700, py: 2 },
+            minHeight: { xs: 52, sm: 56 },
+            "& .MuiTab-root": {
+              fontWeight: 700,
+              minHeight: { xs: 52, sm: 56 },
+              py: { xs: 0.8, sm: 1.5 },
+              minWidth: { xs: 0, sm: 110 },
+              fontSize: { xs: "0.7rem", sm: "0.85rem" },
+              textTransform: "none",
+              flexDirection: { xs: "column", sm: "row" },
+              gap: { xs: 0.2, sm: 0.5 },
+            },
+            "& .MuiTab-iconWrapper": {
+              marginBottom: { xs: "2px !important", sm: "0 !important" },
+              marginRight: { sm: "6px" },
+            },
           }}
         >
-          <Tab icon={<TodayIcon />} iconPosition="start" label="Daily" />
+          <Tab icon={<TodayIcon sx={{ fontSize: 18 }} />} label="Daily" />
           <Tab
-            icon={<CalendarMonthIcon />}
-            iconPosition="start"
+            icon={<CalendarMonthIcon sx={{ fontSize: 18 }} />}
             label="Monthly"
           />
-          <Tab icon={<WarningIcon />} iconPosition="start" label="Defaulters" />
+          <Tab
+            icon={<WarningIcon sx={{ fontSize: 18 }} />}
+            label="Defaulters"
+          />
+          <Tab
+            icon={<EventNoteIcon sx={{ fontSize: 18 }} />}
+            label="Register"
+          />
         </Tabs>
       </Paper>
 
-      {/* Filters */}
-      <Paper sx={{ p: 2, mb: 2, borderRadius: 3 }}>
-        <Grid container spacing={1.5}>
-          <Grid item xs={12} sm={6} md={4}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Class</InputLabel>
-              <Select
-                value={selectedClass}
-                label="Class"
-                onChange={(e) => setSelectedClass(e.target.value)}
-              >
-                <MenuItem value="">All Classes</MenuItem>
-                {classes.map((c) => (
-                  <MenuItem key={c._id} value={c._id}>
-                    {c.name} - {c.section}
+      {/* ─── COMMON FILTERS ─── */}
+      {showCommonFilters && (
+        <Paper
+          sx={{
+            p: { xs: 1.5, sm: 2 },
+            mb: 2,
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <Stack spacing={1.2}>
+            {/* Filter Row */}
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={1.2}
+              alignItems="stretch"
+            >
+              <FormControl size="small" sx={{ flex: { sm: 1 } }}>
+                <InputLabel>Class</InputLabel>
+                <Select
+                  value={selectedClass}
+                  label="Class"
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                >
+                  <MenuItem value="">
+                    <em>All Classes</em>
                   </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
+                  {classes.map((c) => (
+                    <MenuItem key={c._id} value={c._id}>
+                      {c.name} - {c.section}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-          {tabValue === 0 && (
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                type="date"
-                label="Date"
-                size="small"
-                fullWidth
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-          )}
+              {tabValue === 0 && (
+                <TextField
+                  type="date"
+                  label="Date"
+                  size="small"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ flex: { sm: 1 } }}
+                />
+              )}
 
-          {tabValue === 1 && (
-            <>
-              <Grid item xs={6} sm={3} md={2}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Month</InputLabel>
-                  <Select
-                    value={month}
-                    label="Month"
-                    onChange={(e) => setMonth(e.target.value)}
-                  >
-                    {months.map((m, i) => (
-                      <MenuItem key={m} value={i + 1}>
-                        {m}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={6} sm={3} md={2}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Year</InputLabel>
-                  <Select
-                    value={year}
-                    label="Year"
-                    onChange={(e) => setYear(e.target.value)}
-                  >
-                    {[2024, 2025, 2026, 2027, 2028].map((y) => (
-                      <MenuItem key={y} value={y}>
-                        {y}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-            </>
-          )}
+              {tabValue === 1 && (
+                <Stack direction="row" spacing={1} sx={{ flex: { sm: 1 } }}>
+                  <FormControl size="small" sx={{ flex: 1 }}>
+                    <InputLabel>Month</InputLabel>
+                    <Select
+                      value={month}
+                      label="Month"
+                      onChange={(e) => setMonth(e.target.value)}
+                    >
+                      {MONTHS.map((m, i) => (
+                        <MenuItem key={m} value={i + 1}>
+                          {isXs ? m.slice(0, 3) : m}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <FormControl size="small" sx={{ flex: 1 }}>
+                    <InputLabel>Year</InputLabel>
+                    <Select
+                      value={year}
+                      label="Year"
+                      onChange={(e) => setYear(e.target.value)}
+                    >
+                      {[2024, 2025, 2026, 2027, 2028].map((y) => (
+                        <MenuItem key={y} value={y}>
+                          {y}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Stack>
+              )}
 
-          {tabValue === 2 && (
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                type="number"
-                label="Threshold %"
-                size="small"
-                fullWidth
-                value={threshold}
-                onChange={(e) => setThreshold(parseInt(e.target.value) || 75)}
-                inputProps={{ min: 1, max: 100 }}
-                helperText="Students below this % shown"
-              />
-            </Grid>
-          )}
-          <Grid item xs={12} md={4}>
+              {tabValue === 2 && (
+                <TextField
+                  type="number"
+                  label="Threshold %"
+                  size="small"
+                  value={threshold}
+                  onChange={(e) => setThreshold(parseInt(e.target.value) || 75)}
+                  inputProps={{ min: 1, max: 100 }}
+                  sx={{ flex: { sm: 1 } }}
+                />
+              )}
+            </Stack>
+
+            {/* Action Row */}
             <Stack direction="row" spacing={1}>
-              <Button
-                variant="outlined"
-                fullWidth
-                startIcon={<RefreshIcon />}
-                onClick={triggerRefresh}
-                size="small"
-                sx={{ py: 1 }}
-              >
-                Refresh
-              </Button>
+              <Tooltip title="Refresh">
+                <IconButton
+                  onClick={triggerRefresh}
+                  disabled={loading}
+                  size="small"
+                  sx={{
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 2,
+                    width: 40,
+                    height: 40,
+                    flexShrink: 0,
+                  }}
+                >
+                  <RefreshIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+
               <Button
                 variant="contained"
                 fullWidth
-                startIcon={<FileDownloadIcon />}
-                onClick={
-                  tabValue === 0
-                    ? handleExportDaily
-                    : tabValue === 1
-                      ? handleExportMonthly
-                      : handleExportDefaulters
-                }
+                startIcon={<FileDownloadIcon sx={{ fontSize: 18 }} />}
+                onClick={handleExport}
                 size="small"
                 disabled={loading}
                 sx={{
                   py: 1,
+                  fontWeight: 700,
+                  fontSize: { xs: "0.78rem", sm: "0.85rem" },
                   background:
                     "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                  textTransform: "none",
                 }}
               >
                 Excel
               </Button>
+
               <Button
                 variant="contained"
                 fullWidth
-                startIcon={<PictureAsPdfIcon />}
-                onClick={
-                  tabValue === 0
-                    ? handlePdfDaily
-                    : tabValue === 1
-                      ? handlePdfMonthly
-                      : handlePdfDefaulters
-                }
+                startIcon={<PictureAsPdfIcon sx={{ fontSize: 18 }} />}
+                onClick={handlePdf}
                 size="small"
                 disabled={loading}
                 color="error"
-                sx={{ py: 1 }}
+                sx={{
+                  py: 1,
+                  fontWeight: 700,
+                  fontSize: { xs: "0.78rem", sm: "0.85rem" },
+                  textTransform: "none",
+                }}
               >
                 PDF
               </Button>
             </Stack>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      {/* Report Display */}
-      {loading ? (
-        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3 }}>
-          <CircularProgress />
+          </Stack>
         </Paper>
-      ) : (
+      )}
+
+      {/* ─── TAB CONTENT ─── */}
+      {tabValue === 3 && <AttendanceRegisterTab />}
+
+      {tabValue !== 3 && (
         <>
-          {/* DAILY REPORT */}
-          {tabValue === 0 && dailyReport && (
+          {loading ? (
+            <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3 }}>
+              <CircularProgress />
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                Loading report...
+              </Typography>
+            </Paper>
+          ) : (
             <>
-              {dailyReport.holiday && (
-                <Alert severity="warning" sx={{ mb: 2, borderRadius: 3 }}>
-                  🏖️ {dailyReport.holiday.name} ({dailyReport.holiday.type})
-                </Alert>
-              )}
-
-              {/* Summary */}
-              <Grid container spacing={1.5} sx={{ mb: 2 }}>
-                <Grid item xs={6} sm={3}>
-                  <Card sx={{ borderRadius: 2.5 }}>
-                    <CardContent
-                      sx={{
-                        p: 2,
-                        textAlign: "center",
-                        "&:last-child": { pb: 2 },
-                      }}
+              {/* ═══ DAILY REPORT ═══ */}
+              {tabValue === 0 && dailyReport && (
+                <>
+                  {dailyReport.holiday && (
+                    <Alert
+                      severity="warning"
+                      sx={{ mb: 2, borderRadius: 3 }}
+                      icon={false}
                     >
+                      <Typography variant="body2" fontWeight={700}>
+                        🏖️ {dailyReport.holiday.name}
+                      </Typography>
                       <Typography
                         variant="caption"
-                        color="text.secondary"
-                        fontWeight={700}
+                        sx={{ display: "block", mt: 0.3 }}
                       >
-                        TOTAL
+                        {dailyReport.holiday.type} — Attendance is blocked
                       </Typography>
-                      <Typography variant="h5" fontWeight={900}>
-                        {dailyReport.summary.totalStudents}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Card sx={{ borderRadius: 2.5, bgcolor: "#E6F4EA" }}>
-                    <CardContent
-                      sx={{
-                        p: 2,
-                        textAlign: "center",
-                        "&:last-child": { pb: 2 },
-                      }}
-                    >
-                      <Typography
-                        variant="caption"
-                        color="success.dark"
-                        fontWeight={700}
-                      >
-                        PRESENT
-                      </Typography>
-                      <Typography
-                        variant="h5"
-                        fontWeight={900}
-                        color="success.dark"
-                      >
-                        {dailyReport.summary.totalPresent}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Card sx={{ borderRadius: 2.5, bgcolor: "#FEE2E2" }}>
-                    <CardContent
-                      sx={{
-                        p: 2,
-                        textAlign: "center",
-                        "&:last-child": { pb: 2 },
-                      }}
-                    >
-                      <Typography
-                        variant="caption"
-                        color="error.dark"
-                        fontWeight={700}
-                      >
-                        ABSENT
-                      </Typography>
-                      <Typography
-                        variant="h5"
-                        fontWeight={900}
-                        color="error.dark"
-                      >
-                        {dailyReport.summary.totalAbsent}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Card sx={{ borderRadius: 2.5, bgcolor: "#F0F4FF" }}>
-                    <CardContent
-                      sx={{
-                        p: 2,
-                        textAlign: "center",
-                        "&:last-child": { pb: 2 },
-                      }}
-                    >
-                      <Typography
-                        variant="caption"
-                        color="primary.dark"
-                        fontWeight={700}
-                      >
-                        RATE
-                      </Typography>
-                      <Typography
-                        variant="h5"
-                        fontWeight={900}
-                        color="primary.dark"
-                      >
-                        {dailyReport.summary.overallPercentage}%
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
+                    </Alert>
+                  )}
 
-              {/* Class-wise */}
-              {dailyReport.classes.length === 0 ? (
-                <EmptyState
-                  icon={<AssessmentIcon sx={{ fontSize: 64 }} />}
-                  title="No data"
-                  message="No classes to display."
-                />
-              ) : (
-                <Stack spacing={1.5}>
-                  {dailyReport.classes.map((cls) => (
-                    <Card key={cls._id} sx={{ borderRadius: 2.5 }}>
-                      <CardContent sx={{ p: 2 }}>
-                        <Stack
-                          direction="row"
-                          justifyContent="space-between"
-                          alignItems="center"
-                          sx={{ mb: 1.5 }}
-                        >
-                          <Box>
-                            <Typography
-                              variant="h6"
-                              fontWeight={800}
-                              sx={{ fontSize: "1rem" }}
-                            >
-                              Class {cls.name} - {cls.section}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {cls.total} students
-                            </Typography>
-                          </Box>
-                          <Chip
-                            label={
-                              cls.isMarked ? `${cls.percentage}%` : "Pending"
-                            }
-                            color={
-                              cls.isMarked
-                                ? cls.percentage >= 75
-                                  ? "success"
-                                  : "warning"
-                                : "default"
-                            }
-                            sx={{ fontWeight: 800 }}
-                          />
-                        </Stack>
-
-                        <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-                          <Chip
-                            icon={<CheckCircleIcon sx={{ fontSize: 14 }} />}
-                            label={`${cls.present} Present`}
-                            size="small"
-                            color="success"
-                            variant="outlined"
-                          />
-                          <Chip
-                            icon={<CancelIcon sx={{ fontSize: 14 }} />}
-                            label={`${cls.absent} Absent`}
-                            size="small"
-                            color="error"
-                            variant="outlined"
-                          />
-                          {cls.unmarked > 0 && (
-                            <Chip
-                              label={`${cls.unmarked} Unmarked`}
-                              size="small"
-                              color="warning"
-                              variant="outlined"
-                            />
-                          )}
-                        </Stack>
-
-                        {cls.isMarked && (
-                          <LinearProgress
-                            variant="determinate"
-                            value={cls.percentage}
-                            color={cls.percentage >= 75 ? "success" : "warning"}
-                            sx={{ borderRadius: 4, height: 6, mt: 1 }}
-                          />
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Stack>
-              )}
-            </>
-          )}
-
-          {/* MONTHLY REPORT */}
-          {tabValue === 1 && monthlyReport && (
-            <>
-              <Paper sx={{ p: 2, mb: 2, borderRadius: 3, bgcolor: "#F0F4FF" }}>
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  flexWrap="wrap"
-                  gap={1}
-                >
-                  <Box>
-                    <Typography variant="h6" fontWeight={800}>
-                      {monthlyReport.monthName} {monthlyReport.year}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Working Days:{" "}
-                      <strong>{monthlyReport.summary.workingDays}</strong>
-                      {" • "}
-                      Holidays:{" "}
-                      <strong>{monthlyReport.summary.holidays}</strong>
-                    </Typography>
-                  </Box>
-                  <Chip
-                    label={`${monthlyReport.summary.overallPercentage}% Overall`}
-                    color={
-                      monthlyReport.summary.overallPercentage >= 75
-                        ? "success"
-                        : "warning"
-                    }
-                    sx={{ fontWeight: 800 }}
+                  <SectionHeader
+                    icon={<AssessmentIcon />}
+                    title="Overall Summary"
                   />
-                </Stack>
-              </Paper>
-
-              <Stack spacing={1.5}>
-                {monthlyReport.classes.map((cls) => (
-                  <Card key={cls._id} sx={{ borderRadius: 2.5 }}>
-                    <CardContent sx={{ p: 2 }}>
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="center"
-                        sx={{ mb: 1.5 }}
-                      >
-                        <Box>
-                          <Typography
-                            variant="h6"
-                            fontWeight={800}
-                            sx={{ fontSize: "1rem" }}
-                          >
-                            Class {cls.name} - {cls.section}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {cls.totalStudents} students • {cls.workingDays}{" "}
-                            working days
-                          </Typography>
-                        </Box>
-                        <Box sx={{ textAlign: "right" }}>
-                          <Typography
-                            variant="h5"
-                            fontWeight={900}
-                            color={
-                              cls.percentage >= 75
-                                ? "success.dark"
-                                : "warning.dark"
-                            }
-                          >
-                            {cls.percentage}%
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {cls.present}/{cls.totalMarks}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                      <LinearProgress
-                        variant="determinate"
-                        value={cls.percentage}
-                        color={cls.percentage >= 75 ? "success" : "warning"}
-                        sx={{ borderRadius: 4, height: 6 }}
+                  <Grid container spacing={1.2} sx={{ mb: 1 }}>
+                    <Grid item xs={6} sm={3}>
+                      <StatCard
+                        label="TOTAL"
+                        value={dailyReport.summary.totalStudents}
+                        icon={<PeopleIcon />}
+                        color={{
+                          bg: "#F8F9FF",
+                          text: "#1A1D21",
+                          border: "rgba(0,0,0,0.06)",
+                        }}
                       />
-                    </CardContent>
-                  </Card>
-                ))}
-              </Stack>
-            </>
-          )}
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                      <StatCard
+                        label="PRESENT"
+                        value={dailyReport.summary.totalPresent}
+                        icon={<CheckCircleIcon />}
+                        color={{
+                          bg: "#E6F4EA",
+                          text: "#065F46",
+                          border: "#A7F3D0",
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                      <StatCard
+                        label="ABSENT"
+                        value={dailyReport.summary.totalAbsent}
+                        icon={<CancelIcon />}
+                        color={{
+                          bg: "#FEE2E2",
+                          text: "#991B1B",
+                          border: "#FECACA",
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                      <StatCard
+                        label="RATE"
+                        value={`${dailyReport.summary.overallPercentage}%`}
+                        icon={<TrendingUpIcon />}
+                        color={{
+                          bg: "#F0F4FF",
+                          text: "#1E4D98",
+                          border: "#BFDBFE",
+                        }}
+                      />
+                    </Grid>
+                  </Grid>
 
-          {/* DEFAULTERS REPORT */}
-          {tabValue === 2 && defaulterReport && (
-            <>
-              <Alert severity="warning" sx={{ mb: 2, borderRadius: 3 }}>
-                <Typography variant="body2" fontWeight={700}>
-                  {defaulterReport.total} students below {threshold}%
-                </Typography>
-              </Alert>
+                  {dailyReport.classes.length === 0 ? (
+                    <Paper sx={{ borderRadius: 3, mt: 2 }}>
+                      <EmptyState
+                        icon={<AssessmentIcon sx={{ fontSize: 64 }} />}
+                        title="No data"
+                        message="No classes to display."
+                      />
+                    </Paper>
+                  ) : (
+                    <>
+                      <SectionHeader
+                        icon={<CalendarMonthIcon />}
+                        title="Class-wise Breakdown"
+                        count={dailyReport.classes.length}
+                      />
+                      <Stack spacing={1.2}>
+                        {dailyReport.classes.map((cls) => (
+                          <Card
+                            key={cls._id}
+                            sx={{
+                              borderRadius: 2.5,
+                              border: "1px solid",
+                              borderColor: "divider",
+                              boxShadow: "none",
+                            }}
+                          >
+                            <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+                              <Stack
+                                direction="row"
+                                justifyContent="space-between"
+                                alignItems="center"
+                                sx={{ mb: 1 }}
+                              >
+                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                  <Typography
+                                    variant="h6"
+                                    fontWeight={800}
+                                    sx={{
+                                      fontSize: {
+                                        xs: "0.95rem",
+                                        sm: "1.05rem",
+                                      },
+                                      lineHeight: 1.2,
+                                    }}
+                                    noWrap
+                                  >
+                                    Class {cls.name} - {cls.section}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ fontSize: "0.72rem" }}
+                                  >
+                                    {cls.total} student
+                                    {cls.total !== 1 ? "s" : ""}
+                                  </Typography>
+                                </Box>
+                                <Chip
+                                  label={
+                                    cls.isMarked
+                                      ? `${cls.percentage}%`
+                                      : "Pending"
+                                  }
+                                  size="small"
+                                  color={
+                                    cls.isMarked
+                                      ? cls.percentage >= 75
+                                        ? "success"
+                                        : "warning"
+                                      : "default"
+                                  }
+                                  sx={{
+                                    fontWeight: 800,
+                                    height: 26,
+                                    fontSize: "0.78rem",
+                                  }}
+                                />
+                              </Stack>
 
-              {defaulterReport.defaulters.length === 0 ? (
-                <EmptyState
-                  icon={
-                    <CheckCircleIcon
-                      sx={{ fontSize: 64, color: "success.main" }}
-                    />
-                  }
-                  title="All clear!"
-                  message="No students below the threshold."
-                />
-              ) : (
-                <Stack spacing={1.5}>
-                  {defaulterReport.defaulters.map((s) => (
-                    <Card
-                      key={s._id}
-                      sx={{
-                        borderRadius: 2.5,
-                        borderLeft: "4px solid",
-                        borderLeftColor: "error.main",
-                      }}
+                              <Stack
+                                direction="row"
+                                spacing={0.6}
+                                sx={{ mb: 1.2 }}
+                                flexWrap="wrap"
+                                useFlexGap
+                              >
+                                <Chip
+                                  icon={
+                                    <CheckCircleIcon sx={{ fontSize: 12 }} />
+                                  }
+                                  label={`${cls.present} P`}
+                                  size="small"
+                                  color="success"
+                                  variant="outlined"
+                                  sx={{
+                                    fontSize: "0.7rem",
+                                    height: 22,
+                                    fontWeight: 700,
+                                    "& .MuiChip-icon": { ml: 0.5 },
+                                  }}
+                                />
+                                <Chip
+                                  icon={<CancelIcon sx={{ fontSize: 12 }} />}
+                                  label={`${cls.absent} A`}
+                                  size="small"
+                                  color="error"
+                                  variant="outlined"
+                                  sx={{
+                                    fontSize: "0.7rem",
+                                    height: 22,
+                                    fontWeight: 700,
+                                    "& .MuiChip-icon": { ml: 0.5 },
+                                  }}
+                                />
+                                {cls.unmarked > 0 && (
+                                  <Chip
+                                    label={`${cls.unmarked} Unmarked`}
+                                    size="small"
+                                    color="warning"
+                                    variant="outlined"
+                                    sx={{
+                                      fontSize: "0.7rem",
+                                      height: 22,
+                                      fontWeight: 700,
+                                    }}
+                                  />
+                                )}
+                              </Stack>
+
+                              {cls.isMarked && (
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={cls.percentage}
+                                  color={
+                                    cls.percentage >= 75
+                                      ? "success"
+                                      : cls.percentage >= 50
+                                        ? "warning"
+                                        : "error"
+                                  }
+                                  sx={{ borderRadius: 4, height: 6 }}
+                                />
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </Stack>
+                    </>
+                  )}
+                </>
+              )}
+
+              {/* ═══ MONTHLY REPORT ═══ */}
+              {tabValue === 1 && monthlyReport && (
+                <>
+                  <Paper
+                    sx={{
+                      p: { xs: 1.5, sm: 2 },
+                      mb: 2,
+                      borderRadius: 3,
+                      background:
+                        "linear-gradient(135deg, #F0F4FF 0%, #E8F0FF 100%)",
+                      border: "1px solid",
+                      borderColor: "#BFDBFE",
+                    }}
+                  >
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      justifyContent="space-between"
+                      alignItems={{ xs: "flex-start", sm: "center" }}
+                      spacing={1.2}
                     >
-                      <CardContent sx={{ p: 2 }}>
+                      <Box>
+                        <Typography
+                          variant="h6"
+                          fontWeight={900}
+                          sx={{
+                            fontSize: { xs: "1.05rem", sm: "1.2rem" },
+                            color: "primary.dark",
+                          }}
+                        >
+                          {monthlyReport.monthName} {monthlyReport.year}
+                        </Typography>
                         <Stack
                           direction="row"
-                          alignItems="center"
-                          spacing={2}
-                          sx={{ mb: 1 }}
+                          spacing={1.5}
+                          sx={{ mt: 0.5 }}
+                          flexWrap="wrap"
                         >
-                          <Avatar sx={{ bgcolor: "error.light" }}>
-                            {s.name?.[0]?.toUpperCase()}
-                          </Avatar>
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography variant="body1" fontWeight={800} noWrap>
-                              {s.name}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {s.fatherName} • {s.mobile}
-                            </Typography>
-                          </Box>
                           <Typography
-                            variant="h5"
-                            fontWeight={900}
-                            color="error.dark"
+                            variant="caption"
+                            sx={{ fontSize: "0.75rem" }}
                           >
-                            {s.percentage}%
+                            🗓️ Working:{" "}
+                            <strong>{monthlyReport.summary.workingDays}</strong>
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{ fontSize: "0.75rem" }}
+                          >
+                            🏖️ Holidays:{" "}
+                            <strong>{monthlyReport.summary.holidays}</strong>
                           </Typography>
                         </Stack>
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          flexWrap="wrap"
-                          useFlexGap
+                      </Box>
+                      <Box sx={{ textAlign: { xs: "left", sm: "right" } }}>
+                        <Typography
+                          variant="h4"
+                          fontWeight={900}
+                          sx={{
+                            fontSize: { xs: "1.8rem", sm: "2rem" },
+                            lineHeight: 1,
+                            color:
+                              monthlyReport.summary.overallPercentage >= 75
+                                ? "success.dark"
+                                : "warning.dark",
+                          }}
                         >
-                          <Chip label={`Roll ${s.rollNumber}`} size="small" />
-                          <Chip
-                            label={s.scholarNumber}
-                            size="small"
-                            sx={{ fontFamily: "monospace" }}
+                          {monthlyReport.summary.overallPercentage}%
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{
+                            fontSize: "0.7rem",
+                            fontWeight: 700,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                          }}
+                        >
+                          Overall Rate
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Paper>
+
+                  {monthlyReport.classes.length === 0 ? (
+                    <Paper sx={{ borderRadius: 3 }}>
+                      <EmptyState
+                        icon={<CalendarMonthIcon sx={{ fontSize: 64 }} />}
+                        title="No data"
+                        message="No classes to display for this month."
+                      />
+                    </Paper>
+                  ) : (
+                    <>
+                      <SectionHeader
+                        icon={<CalendarMonthIcon />}
+                        title="Class-wise Performance"
+                        count={monthlyReport.classes.length}
+                      />
+                      <Stack spacing={1.2}>
+                        {monthlyReport.classes.map((cls) => (
+                          <Card
+                            key={cls._id}
+                            sx={{
+                              borderRadius: 2.5,
+                              border: "1px solid",
+                              borderColor: "divider",
+                              boxShadow: "none",
+                            }}
+                          >
+                            <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+                              <Stack
+                                direction="row"
+                                justifyContent="space-between"
+                                alignItems="center"
+                                sx={{ mb: 1 }}
+                              >
+                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                  <Typography
+                                    variant="h6"
+                                    fontWeight={800}
+                                    sx={{
+                                      fontSize: {
+                                        xs: "0.95rem",
+                                        sm: "1.05rem",
+                                      },
+                                      lineHeight: 1.2,
+                                    }}
+                                    noWrap
+                                  >
+                                    Class {cls.name} - {cls.section}
+                                  </Typography>
+                                  <Stack
+                                    direction="row"
+                                    spacing={0.5}
+                                    alignItems="center"
+                                    flexWrap="wrap"
+                                  >
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                      sx={{ fontSize: "0.72rem" }}
+                                    >
+                                      👥 {cls.totalStudents}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                      sx={{ fontSize: "0.72rem" }}
+                                    >
+                                      • 🗓️ {cls.workingDays} days
+                                    </Typography>
+                                  </Stack>
+                                </Box>
+                                <Box sx={{ textAlign: "right", ml: 1 }}>
+                                  <Typography
+                                    variant="h5"
+                                    fontWeight={900}
+                                    sx={{
+                                      fontSize: {
+                                        xs: "1.4rem",
+                                        sm: "1.6rem",
+                                      },
+                                      lineHeight: 1,
+                                    }}
+                                    color={
+                                      cls.percentage >= 75
+                                        ? "success.dark"
+                                        : cls.percentage >= 50
+                                          ? "warning.dark"
+                                          : "error.dark"
+                                    }
+                                  >
+                                    {cls.percentage}%
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ fontSize: "0.68rem" }}
+                                  >
+                                    {cls.present}/{cls.totalMarks}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+                              <LinearProgress
+                                variant="determinate"
+                                value={cls.percentage}
+                                color={
+                                  cls.percentage >= 75
+                                    ? "success"
+                                    : cls.percentage >= 50
+                                      ? "warning"
+                                      : "error"
+                                }
+                                sx={{ borderRadius: 4, height: 6 }}
+                              />
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </Stack>
+                    </>
+                  )}
+                </>
+              )}
+
+              {/* ═══ DEFAULTERS REPORT ═══ */}
+              {tabValue === 2 && defaulterReport && (
+                <>
+                  <Alert
+                    severity={
+                      defaulterReport.total === 0 ? "success" : "warning"
+                    }
+                    sx={{ mb: 2, borderRadius: 3 }}
+                    icon={false}
+                  >
+                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                      <WarningIcon
+                        sx={{
+                          fontSize: 32,
+                          color:
+                            defaulterReport.total === 0
+                              ? "success.dark"
+                              : "warning.dark",
+                        }}
+                      />
+                      <Box>
+                        <Typography variant="body1" fontWeight={800}>
+                          {defaulterReport.total} student
+                          {defaulterReport.total !== 1 ? "s" : ""} below{" "}
+                          {threshold}%
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{ display: "block", fontSize: "0.75rem" }}
+                        >
+                          {defaulterReport.total === 0
+                            ? "All students are in good standing!"
+                            : "Consider follow-up actions"}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Alert>
+
+                  {defaulterReport.defaulters.length === 0 ? (
+                    <Paper sx={{ borderRadius: 3 }}>
+                      <EmptyState
+                        icon={
+                          <CheckCircleIcon
+                            sx={{ fontSize: 64, color: "success.main" }}
                           />
-                          {s.class && (
-                            <Chip
-                              label={`${s.class.name}-${s.class.section}`}
-                              size="small"
-                              color="primary"
-                              variant="outlined"
-                            />
-                          )}
-                          <Chip
-                            label={`P: ${s.present}`}
-                            size="small"
-                            color="success"
-                            variant="outlined"
-                          />
-                          <Chip
-                            label={`A: ${s.absent}`}
-                            size="small"
-                            color="error"
-                            variant="outlined"
-                          />
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Stack>
+                        }
+                        title="All clear!"
+                        message="No students below the threshold."
+                      />
+                    </Paper>
+                  ) : (
+                    <>
+                      <SectionHeader
+                        icon={<WarningIcon />}
+                        title="Defaulter List"
+                        count={defaulterReport.defaulters.length}
+                      />
+                      <Stack spacing={1.2}>
+                        {defaulterReport.defaulters.map((s) => (
+                          <Card
+                            key={s._id}
+                            sx={{
+                              borderRadius: 2.5,
+                              borderLeft: "4px solid",
+                              borderLeftColor: "error.main",
+                              border: "1px solid",
+                              borderColor: "divider",
+                              boxShadow: "none",
+                            }}
+                          >
+                            <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+                              <Stack
+                                direction="row"
+                                alignItems="center"
+                                spacing={1.5}
+                                sx={{ mb: 1.2 }}
+                              >
+                                <Avatar
+                                  sx={{
+                                    bgcolor: "error.light",
+                                    color: "error.dark",
+                                    width: { xs: 40, sm: 44 },
+                                    height: { xs: 40, sm: 44 },
+                                    fontSize: { xs: "1rem", sm: "1.1rem" },
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  {s.name?.[0]?.toUpperCase()}
+                                </Avatar>
+                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                  <Typography
+                                    variant="body1"
+                                    fontWeight={800}
+                                    noWrap
+                                    sx={{
+                                      fontSize: {
+                                        xs: "0.9rem",
+                                        sm: "1rem",
+                                      },
+                                      textTransform: "uppercase",
+                                    }}
+                                  >
+                                    {s.name}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ fontSize: "0.72rem" }}
+                                    noWrap
+                                    display="block"
+                                  >
+                                    F: {s.fatherName}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{
+                                      fontSize: "0.72rem",
+                                      fontFamily: "monospace",
+                                    }}
+                                  >
+                                    📞{" "}
+                                    {s.mobile === "0000000000" ? "—" : s.mobile}
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ textAlign: "right" }}>
+                                  <Typography
+                                    variant="h4"
+                                    fontWeight={900}
+                                    color="error.dark"
+                                    sx={{
+                                      fontSize: {
+                                        xs: "1.5rem",
+                                        sm: "1.8rem",
+                                      },
+                                      lineHeight: 1,
+                                    }}
+                                  >
+                                    {s.percentage}%
+                                  </Typography>
+                                </Box>
+                              </Stack>
+
+                              <Divider sx={{ mb: 1 }} />
+
+                              <Stack
+                                direction="row"
+                                spacing={0.6}
+                                flexWrap="wrap"
+                                useFlexGap
+                              >
+                                <Chip
+                                  label={`Roll ${s.rollNumber}`}
+                                  size="small"
+                                  sx={{
+                                    height: 22,
+                                    fontSize: "0.7rem",
+                                    fontWeight: 700,
+                                  }}
+                                />
+                                <Chip
+                                  label={s.scholarNumber}
+                                  size="small"
+                                  sx={{
+                                    fontFamily: "monospace",
+                                    height: 22,
+                                    fontSize: "0.7rem",
+                                    fontWeight: 700,
+                                  }}
+                                />
+                                {s.class && (
+                                  <Chip
+                                    label={`${s.class.name}-${s.class.section}`}
+                                    size="small"
+                                    color="primary"
+                                    variant="outlined"
+                                    sx={{
+                                      height: 22,
+                                      fontSize: "0.7rem",
+                                      fontWeight: 700,
+                                    }}
+                                  />
+                                )}
+                                <Chip
+                                  label={`✓ ${s.present}`}
+                                  size="small"
+                                  sx={{
+                                    height: 22,
+                                    fontSize: "0.7rem",
+                                    bgcolor: "#D1FAE5",
+                                    color: "#065F46",
+                                    fontWeight: 700,
+                                  }}
+                                />
+                                <Chip
+                                  label={`✗ ${s.absent}`}
+                                  size="small"
+                                  sx={{
+                                    height: 22,
+                                    fontSize: "0.7rem",
+                                    bgcolor: "#FEE2E2",
+                                    color: "#991B1B",
+                                    fontWeight: 700,
+                                  }}
+                                />
+                              </Stack>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </Stack>
+                    </>
+                  )}
+                </>
               )}
             </>
           )}

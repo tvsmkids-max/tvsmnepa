@@ -12,12 +12,13 @@ const {
   updateStudentSchema,
   updateStudentStatusSchema,
   queryStudentSchema,
+  bulkDeleteSchema,
 } = require("../validators/student.validator");
 
 const list = [
   validateQuery(queryStudentSchema),
   asyncHandler(async (req, res) => {
-    const result = await studentService.list(req.query, req.user); // ← pass req.user
+    const result = await studentService.list(req.query, req.user);
     return sendResponse(res).success({
       message: "Students fetched successfully",
       data: result.data,
@@ -25,6 +26,14 @@ const list = [
     });
   }),
 ];
+
+const getSections = asyncHandler(async (req, res) => {
+  const sections = await studentService.getSections(req.user);
+  return sendResponse(res).success({
+    message: "Sections fetched",
+    data: sections,
+  });
+});
 
 const getById = asyncHandler(async (req, res) => {
   const student = await studentService.getById(req.params.id);
@@ -93,12 +102,29 @@ const search = asyncHandler(async (req, res) => {
   });
 });
 
+const bulkDelete = [
+  validateBody(bulkDeleteSchema),
+  asyncHandler(async (req, res) => {
+    const { ids, mode } = req.body;
+    const result = await studentService.bulkDelete(ids, mode, req.user, req);
+    return sendResponse(res).success({
+      message:
+        mode === "hard"
+          ? `${result.deleted} students permanently deleted along with ${result.attendanceDeleted} attendance records`
+          : `${result.deleted} students marked as inactive`,
+      data: result,
+    });
+  }),
+];
+
 module.exports = {
   list,
+  getSections,
   getById,
   create,
   update,
   updateStatus,
   remove,
   search,
+  bulkDelete,
 };

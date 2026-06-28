@@ -102,6 +102,39 @@ class StudentRepository {
       },
     ]);
   }
+
+  // ─── BULK OPERATIONS ───
+
+  /**
+   * Find multiple students by IDs
+   */
+  async findByIds(ids) {
+    return Student.find({ _id: { $in: ids } }).lean();
+  }
+
+  /**
+   * Bulk soft delete — sets isActive: false, status: 'Inactive'
+   */
+  async bulkSoftDelete(ids, statusRemark = "Bulk soft-deleted") {
+    return Student.updateMany(
+      { _id: { $in: ids } },
+      {
+        $set: {
+          isActive: false,
+          status: "Inactive",
+          statusRemark,
+          statusDate: new Date(),
+        },
+      },
+    );
+  }
+
+  /**
+   * Bulk hard delete — permanently removes students
+   */
+  async bulkHardDelete(ids) {
+    return Student.deleteMany({ _id: { $in: ids } });
+  }
 }
 
 module.exports = new StudentRepository();

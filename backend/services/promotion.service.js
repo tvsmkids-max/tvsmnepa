@@ -4,6 +4,7 @@ const Student = require("../models/Student.model");
 const Class = require("../models/Class.model");
 const AcademicSession = require("../models/AcademicSession.model");
 const { createAuditLog } = require("../middlewares/audit.middleware");
+const notificationService = require("./notification.service");
 const logger = require("../utils/logger");
 
 const throwError = (message, statusCode = 400) => {
@@ -20,7 +21,6 @@ class PromotionService {
     targetClassId,
     targetSessionId,
   }) {
-    // Validate source
     const sourceClass = await Class.findById(sourceClassId).lean();
     if (!sourceClass) throwError("Source class not found", 404);
 
@@ -28,7 +28,6 @@ class PromotionService {
       await AcademicSession.findById(sourceSessionId).lean();
     if (!sourceSession) throwError("Source session not found", 404);
 
-    // Validate target
     const targetClass = await Class.findById(targetClassId).lean();
     if (!targetClass) throwError("Target class not found", 404);
 
@@ -36,12 +35,10 @@ class PromotionService {
       await AcademicSession.findById(targetSessionId).lean();
     if (!targetSession) throwError("Target session not found", 404);
 
-    // Sessions must be different
     if (sourceSessionId === targetSessionId) {
       throwError("Source and target session must be different", 400);
     }
 
-    // Get eligible students (Active only, not TC/Transferred)
     const students = await Student.find({
       class: sourceClassId,
       session: sourceSessionId,
@@ -55,7 +52,6 @@ class PromotionService {
       throwError("No eligible students found in source class", 400);
     }
 
-    // Check which students already exist in target session
     const scholarNumbers = students.map((s) => s.scholarNumber);
     const alreadyPromoted = await Student.find({
       scholarNumber: { $in: scholarNumbers },
@@ -66,7 +62,6 @@ class PromotionService {
 
     const promotedSet = new Set(alreadyPromoted.map((s) => s.scholarNumber));
 
-    // Get next roll number in target class
     const existingInTarget = await Student.find({
       class: targetClassId,
       session: targetSessionId,
@@ -79,7 +74,6 @@ class PromotionService {
       .filter((n) => !isNaN(n));
     const maxRoll = existingRolls.length > 0 ? Math.max(...existingRolls) : 0;
 
-    // Build preview
     let nextRoll = maxRoll;
     const eligible = [];
     const alreadyDone = [];
@@ -140,7 +134,6 @@ class PromotionService {
     user,
     req,
   }) {
-    // Re-validate
     const targetClass = await Class.findById(targetClassId).lean();
     if (!targetClass) throwError("Target class not found", 404);
 
@@ -152,7 +145,6 @@ class PromotionService {
       throwError("Source and target session must be different", 400);
     }
 
-    // Get source students
     const students = await Student.find({
       _id: { $in: studentIds },
       class: sourceClassId,
@@ -165,7 +157,6 @@ class PromotionService {
       throwError("No valid students selected", 400);
     }
 
-    // Filter out already promoted
     const scholarNumbers = students.map((s) => s.scholarNumber);
     const alreadyPromoted = await Student.find({
       scholarNumber: { $in: scholarNumbers },
@@ -182,7 +173,6 @@ class PromotionService {
       throwError("All selected students are already promoted", 400);
     }
 
-    // Get next roll number
     const existingInTarget = await Student.find({
       class: targetClassId,
       session: targetSessionId,
@@ -195,7 +185,6 @@ class PromotionService {
       .filter((n) => !isNaN(n));
     let nextRoll = existingRolls.length > 0 ? Math.max(...existingRolls) : 0;
 
-    // Create new student records
     const newStudents = toPromote.map((s) => {
       nextRoll++;
       return {
@@ -238,8 +227,8 @@ class PromotionService {
       logger.error(`[Promotion] Some inserts failed: ${err.message}`);
     }
 
-    // Audit log
     const sourceClass = await Class.findById(sourceClassId).lean();
+
     await createAuditLog({
       user,
       action: "PROMOTE",
@@ -247,6 +236,47 @@ class PromotionService {
       description: `Promoted ${promoted} students from ${sourceClass?.name}-${sourceClass?.section} to ${targetClass.name}-${targetClass.section}`,
       req,
     });
+
+    // ─── NOTIFICATION: Notify admins about promotion success ───
+    try {
+      const fromLabel = `${sourceClass?.name}-${sourceClass?.section}`;
+      const toLabel = `${targetClass.name}-${targetClass.section}`;
+
+      let title = `🎓 Students Promoted Successfully`;
+      let type = "success";
+
+      if (failed > 0) {
+        title = `⚠️ Promotion Completed with Errors`;
+        type = "warning";
+      }
+
+      let message = `${promoted} student${promoted !== 1 ? "s" : ""} promoted from ${fromLabel} to ${toLabel}.`;
+      if (failed > 0) {
+        message += ` ${failed} failed.`;
+      }
+      if (alreadyPromoted.length > 0) {
+        message += ` ${alreadyPromoted.length} already promoted (skipped).`;
+      }
+
+      await notificationService.notifyAdmins({
+        title,
+        message,
+        type,
+        link: "/students",
+        metadata: {
+          promoted,
+          failed,
+          skipped: alreadyPromoted.length,
+          total: students.length,
+          fromClass: fromLabel,
+          toClass: toLabel,
+          targetSession: targetSession.name,
+        },
+        createdBy: user._id,
+      });
+    } catch (err) {
+      logger.error(`[Promotion] Notification failed: ${err.message}`);
+    }
 
     return {
       promoted,

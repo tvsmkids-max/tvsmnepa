@@ -57,6 +57,20 @@ const getAnalytics = asyncHandler(async (req, res) => {
   return sendResponse(res).success({ message: "Analytics overview", data });
 });
 
+// ─── NEW: Attendance Register ───
+const getRegister = asyncHandler(async (req, res) => {
+  const data = await reportService.getAttendanceRegister({
+    classId: req.query.class,
+    dateFrom: req.query.dateFrom,
+    dateTo: req.query.dateTo,
+    user: req.user,
+  });
+  return sendResponse(res).success({
+    message: "Attendance register",
+    data,
+  });
+});
+
 module.exports = {
   getDaily,
   getMonthly,
@@ -64,4 +78,5 @@ module.exports = {
   getDefaulters,
   getClassTrend,
   getAnalytics,
+  getRegister,
 };

@@ -3,9 +3,20 @@
 const holidayRepository = require("../repositories/holiday.repository");
 const { createAuditLog } = require("../middlewares/audit.middleware");
 const Settings = require("../models/Settings.model");
+const notificationService = require("./notification.service");
+const logger = require("../utils/logger");
 
 const throwError = (message, statusCode = 400) => {
   throw Object.assign(new Error(message), { statusCode });
+};
+
+const formatDate = (date) => {
+  if (!date) return "";
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 class HolidayService {
@@ -55,6 +66,32 @@ class HolidayService {
       req,
     });
 
+    // ─── NOTIFICATION: Notify everyone about new holiday ───
+    try {
+      const dateRange = holiday.endDate
+        ? `${formatDate(holiday.date)} to ${formatDate(holiday.endDate)}`
+        : formatDate(holiday.date);
+
+      await notificationService.notifyAll({
+        title: `🏖️ New Holiday: ${holiday.name}`,
+        message: `${holiday.type} on ${dateRange}${
+          holiday.description ? ` — ${holiday.description}` : ""
+        }`,
+        type: "info",
+        link: "/holidays",
+        metadata: {
+          holidayId: holiday._id,
+          name: holiday.name,
+          date: holiday.date,
+          endDate: holiday.endDate,
+          type: holiday.type,
+        },
+        createdBy: user._id,
+      });
+    } catch (err) {
+      logger.error(`[Holiday] Notification failed: ${err.message}`);
+    }
+
     return holiday;
   }
 
@@ -76,6 +113,31 @@ class HolidayService {
       req,
     });
 
+    // ─── NOTIFICATION: Notify on date/name change ───
+    try {
+      const nameChanged = data.name && data.name !== existing.name;
+      const dateChanged =
+        data.date &&
+        new Date(data.date).getTime() !== new Date(existing.date).getTime();
+
+      if (nameChanged || dateChanged) {
+        await notificationService.notifyAll({
+          title: `📝 Holiday Updated: ${updated.name}`,
+          message: `Holiday "${existing.name}" has been updated. New date: ${formatDate(updated.date)}`,
+          type: "info",
+          link: "/holidays",
+          metadata: {
+            holidayId: updated._id,
+            name: updated.name,
+            date: updated.date,
+          },
+          createdBy: user._id,
+        });
+      }
+    } catch (err) {
+      logger.error(`[Holiday] Update notification failed: ${err.message}`);
+    }
+
     return updated;
   }
 
@@ -95,6 +157,24 @@ class HolidayService {
       before: holiday,
       req,
     });
+
+    // ─── NOTIFICATION: Warn everyone about removed holiday ───
+    try {
+      await notificationService.notifyAll({
+        title: `❌ Holiday Cancelled: ${holiday.name}`,
+        message: `${holiday.name} (${formatDate(holiday.date)}) has been removed from the calendar`,
+        type: "warning",
+        link: "/holidays",
+        metadata: {
+          name: holiday.name,
+          date: holiday.date,
+          type: holiday.type,
+        },
+        createdBy: user._id,
+      });
+    } catch (err) {
+      logger.error(`[Holiday] Delete notification failed: ${err.message}`);
+    }
 
     return true;
   }

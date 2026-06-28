@@ -108,6 +108,26 @@ const settingsSchema = new mongoose.Schema(
       max: 12,
     },
 
+    // ─── SESSION SECURITY (Idle Auto-Logout) ───
+    sessionIdleEnabled: {
+      type: Boolean,
+      default: true,
+    },
+
+    sessionIdleTimeout: {
+      type: Number,
+      default: 15,
+      min: [1, "Idle timeout must be at least 1 minute"],
+      max: [240, "Idle timeout cannot exceed 240 minutes (4 hours)"],
+    },
+
+    sessionIdleWarning: {
+      type: Number,
+      default: 60,
+      min: [10, "Warning duration must be at least 10 seconds"],
+      max: [300, "Warning duration cannot exceed 300 seconds (5 minutes)"],
+    },
+
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -123,7 +143,6 @@ const settingsSchema = new mongoose.Schema(
 settingsSchema.statics.getSettings = async function () {
   let settings = await this.findOne().populate("activeSession");
   if (!settings) {
-    // Create minimal default — admin will configure later
     settings = await this.create({
       schoolName: "Setup Required",
     });

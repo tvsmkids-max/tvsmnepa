@@ -672,15 +672,393 @@ export const generateStudentCertificatePdf = (
 };
 
 /**
+ * Generate Attendance Register PDF (landscape, Excel-style)
+ */
+export const generateRegisterPdf = (register, settings, userName) => {
+  if (!register || !register.students?.length) {
+    throw new Error("No data to generate PDF");
+  }
+
+  const { students, dates, monthGroups, class: classInfo, summary } = register;
+
+  const fromStr = new Date(summary.dateFrom).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  const toStr = new Date(summary.dateTo).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  const subtitle = `Class ${classInfo.name}-${classInfo.section} | ${fromStr} to ${toStr}`;
+
+  const { doc, startY, pageWidth, pageHeight } = createPdf({
+    orientation: "landscape",
+    title: "Attendance Register",
+    subtitle,
+    schoolName: settings?.schoolName,
+    schoolAddress: settings?.address,
+    schoolPhone: settings?.phone,
+    schoolEmail: settings?.email,
+  });
+
+  let currentY = startY;
+
+  // ─── Summary box ───
+  doc.setFillColor(...COLORS.lightGray);
+  doc.roundedRect(10, currentY, pageWidth - 20, 12, 2, 2, "F");
+
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...COLORS.primary);
+
+  const summaryItems = [
+    `Class Teacher: ${classInfo.classTeacher || "—"}`,
+    `Students: ${summary.totalStudents}`,
+    `Working Days: ${summary.workingDays}`,
+    `Holidays: ${summary.holidays}`,
+    `Sundays: ${summary.sundays}`,
+  ];
+
+  const spacing = (pageWidth - 20) / summaryItems.length;
+  summaryItems.forEach((item, i) => {
+    doc.text(item, 14 + i * spacing, currentY + 8);
+  });
+
+  currentY += 16;
+
+  // ─── Split dates into chunks per page (max 25 days per page) ───
+  const MAX_DATES_PER_PAGE = 25;
+  const dateChunks = [];
+  for (let i = 0; i < dates.length; i += MAX_DATES_PER_PAGE) {
+    dateChunks.push(dates.slice(i, i + MAX_DATES_PER_PAGE));
+  }
+
+  dateChunks.forEach((chunk, chunkIdx) => {
+    if (chunkIdx > 0) {
+      doc.addPage();
+      currentY = 38;
+
+      // Page-level title
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...COLORS.primary);
+      const fromDate = chunk[0]?.day;
+      const toDate = chunk[chunk.length - 1]?.day;
+      const monthLabel = chunk[0]?.monthShort + " " + chunk[0]?.year;
+      doc.text(
+        `Class ${classInfo.name}-${classInfo.section} | ${monthLabel} (Day ${fromDate}–${toDate}) | Page ${chunkIdx + 1} of ${dateChunks.length}`,
+        pageWidth / 2,
+        currentY,
+        { align: "center" },
+      );
+      currentY += 6;
+    }
+
+    // Build header: Scholar | Roll | Name | Father | dates... | P | A | %
+    const headerRow = ["Scholar", "Roll", "Name", "Father"];
+    chunk.forEach((d) => {
+      headerRow.push(`${d.dayShort}\n${d.day}`);
+    });
+    headerRow.push("P", "A", "%");
+
+    // Build body
+    const bodyRows = students.map((s) => {
+      const row = [
+        s.scholarNumber || "—",
+        s.rollNumber || "—",
+        s.name || "—",
+        s.fatherName || "—",
+      ];
+
+      chunk.forEach((d) => {
+        const status = s.attendance[d.dateKey];
+        if (status === "P") row.push("P");
+        else if (status === "A") row.push("A");
+        else if (status === "H") row.push("H");
+        else row.push("");
+      });
+
+      row.push(
+        String(s.totals.present),
+        String(s.totals.absent),
+        s.totals.marked > 0 ? `${s.totals.percentage}%` : "—",
+      );
+
+      return row;
+    });
+
+    // Calculate column widths
+    const fixedColsWidth = 18 + 10 + 35 + 30; // Scholar + Roll + Name + Father
+    const totalsColsWidth = 10 + 10 + 14; // P + A + %
+    const availableWidth = pageWidth - 20 - fixedColsWidth - totalsColsWidth;
+    const dateColWidth = Math.max(
+      6,
+      Math.floor((availableWidth / chunk.length) * 10) / 10,
+    );
+
+    const columnStyles = {
+      0: { cellWidth: 18, halign: "left", fontStyle: "bold", fontSize: 6.5 }, // Scholar
+      1: { cellWidth: 10, halign: "center", fontSize: 6.5 }, // Roll
+      2: { cellWidth: 35, halign: "left", fontStyle: "bold", fontSize: 6.5 }, // Name
+      3: { cellWidth: 30, halign: "left", fontSize: 6 }, // Father
+    };
+
+    // Set width for each date column
+    for (let i = 0; i < chunk.length; i++) {
+      columnStyles[4 + i] = {
+        cellWidth: dateColWidth,
+        halign: "center",
+        fontSize: 6,
+      };
+    }
+
+    // Totals columns
+    const totalsStart = 4 + chunk.length;
+    columnStyles[totalsStart] = {
+      cellWidth: 10,
+      halign: "center",
+      fontStyle: "bold",
+      fontSize: 7,
+    };
+    columnStyles[totalsStart + 1] = {
+      cellWidth: 10,
+      halign: "center",
+      fontStyle: "bold",
+      fontSize: 7,
+    };
+    columnStyles[totalsStart + 2] = {
+      cellWidth: 14,
+      halign: "center",
+      fontStyle: "bold",
+      fontSize: 7,
+    };
+
+    // ─── Generate table ───
+    doc.autoTable({
+      startY: currentY,
+      head: [headerRow],
+      body: bodyRows,
+      margin: { left: 10, right: 10, bottom: 18 },
+      theme: "grid",
+      styles: {
+        fontSize: 6,
+        cellPadding: 1,
+        lineWidth: 0.1,
+        lineColor: [200, 200, 200],
+        textColor: COLORS.black,
+        halign: "center",
+        valign: "middle",
+        overflow: "linebreak",
+      },
+      headStyles: {
+        fillColor: COLORS.primary,
+        textColor: COLORS.white,
+        fontStyle: "bold",
+        fontSize: 6.5,
+        halign: "center",
+        cellPadding: 1.2,
+        minCellHeight: 8,
+      },
+      columnStyles,
+      alternateRowStyles: {
+        fillColor: [248, 249, 252],
+      },
+      didParseCell: (data) => {
+        const numDateCols = chunk.length;
+        const colIdx = data.column.index;
+
+        // ─── BODY CELL STYLING ───
+        if (data.section === "body" && colIdx >= 4) {
+          // Date cells: 4 to 4+numDateCols-1
+          if (colIdx >= 4 && colIdx < 4 + numDateCols) {
+            const cellValue = String(data.cell.raw || "");
+            const dateIdx = colIdx - 4;
+            const d = chunk[dateIdx];
+
+            if (cellValue === "P") {
+              data.cell.styles.fillColor = [209, 250, 229];
+              data.cell.styles.textColor = COLORS.success;
+              data.cell.styles.fontStyle = "bold";
+            } else if (cellValue === "A") {
+              data.cell.styles.fillColor = [254, 226, 226];
+              data.cell.styles.textColor = COLORS.error;
+              data.cell.styles.fontStyle = "bold";
+            } else if (cellValue === "H") {
+              data.cell.styles.fillColor = [254, 243, 199];
+              data.cell.styles.textColor = COLORS.warning;
+              data.cell.styles.fontStyle = "bold";
+            } else if (d?.isSunday || d?.isHoliday) {
+              data.cell.styles.fillColor = [240, 241, 243];
+              data.cell.styles.textColor = COLORS.gray;
+            }
+          }
+
+          // Totals columns
+          if (colIdx === 4 + numDateCols) {
+            // P column
+            data.cell.styles.fillColor = [209, 250, 229];
+            data.cell.styles.textColor = COLORS.success;
+          } else if (colIdx === 4 + numDateCols + 1) {
+            // A column
+            data.cell.styles.fillColor = [254, 226, 226];
+            data.cell.styles.textColor = COLORS.error;
+          } else if (colIdx === 4 + numDateCols + 2) {
+            // % column
+            const pctStr = String(data.cell.raw).replace("%", "");
+            const pct = parseInt(pctStr, 10);
+            if (!isNaN(pct)) {
+              if (pct >= 75) {
+                data.cell.styles.fillColor = [230, 244, 234];
+                data.cell.styles.textColor = COLORS.success;
+              } else if (pct >= 50) {
+                data.cell.styles.fillColor = [255, 244, 229];
+                data.cell.styles.textColor = COLORS.warning;
+              } else {
+                data.cell.styles.fillColor = [254, 226, 226];
+                data.cell.styles.textColor = COLORS.error;
+              }
+            }
+          }
+        }
+
+        // ─── HEADER CELL STYLING ───
+        if (data.section === "head" && colIdx >= 4) {
+          const numDateCols = chunk.length;
+          if (colIdx >= 4 && colIdx < 4 + numDateCols) {
+            const dateIdx = colIdx - 4;
+            const d = chunk[dateIdx];
+            if (d?.isSunday) {
+              data.cell.styles.fillColor = [127, 29, 29]; // Dark red
+              data.cell.styles.textColor = COLORS.white;
+            } else if (d?.isHoliday) {
+              data.cell.styles.fillColor = [180, 83, 9]; // Dark amber
+              data.cell.styles.textColor = COLORS.white;
+            }
+          }
+        }
+      },
+    });
+
+    currentY = doc.lastAutoTable.finalY + 5;
+  });
+
+  // ─── LEGEND PAGE ───
+  doc.addPage();
+  currentY = 38;
+
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...COLORS.primary);
+  doc.text("Legend & Summary", pageWidth / 2, currentY, { align: "center" });
+  currentY += 10;
+
+  // Legend table
+  doc.autoTable({
+    startY: currentY,
+    head: [["Symbol", "Meaning", "Color"]],
+    body: [
+      ["P", "Present", "Green"],
+      ["A", "Absent", "Red"],
+      ["H", "Holiday", "Yellow"],
+      ["(blank)", "Sunday / Non-working day / Not marked", "Gray"],
+    ],
+    margin: { left: 30, right: 30 },
+    theme: "grid",
+    styles: {
+      fontSize: 10,
+      cellPadding: 3,
+      halign: "center",
+    },
+    headStyles: {
+      fillColor: COLORS.primary,
+      textColor: COLORS.white,
+      fontStyle: "bold",
+    },
+    columnStyles: {
+      0: { cellWidth: 30, fontStyle: "bold", fontSize: 14 },
+      1: { cellWidth: 100, halign: "left" },
+      2: { cellWidth: 40 },
+    },
+    didParseCell: (data) => {
+      if (data.section === "body" && data.column.index === 2) {
+        const symbol = data.row.cells[0].raw;
+        if (symbol === "P") {
+          data.cell.styles.fillColor = [209, 250, 229];
+          data.cell.styles.textColor = COLORS.success;
+          data.cell.styles.fontStyle = "bold";
+        } else if (symbol === "A") {
+          data.cell.styles.fillColor = [254, 226, 226];
+          data.cell.styles.textColor = COLORS.error;
+          data.cell.styles.fontStyle = "bold";
+        } else if (symbol === "H") {
+          data.cell.styles.fillColor = [254, 243, 199];
+          data.cell.styles.textColor = COLORS.warning;
+          data.cell.styles.fontStyle = "bold";
+        } else {
+          data.cell.styles.fillColor = [240, 241, 243];
+          data.cell.styles.textColor = COLORS.gray;
+        }
+      }
+    },
+  });
+
+  currentY = doc.lastAutoTable.finalY + 12;
+
+  // Summary table
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...COLORS.primary);
+  doc.text("Register Summary", pageWidth / 2, currentY, { align: "center" });
+  currentY += 6;
+
+  doc.autoTable({
+    startY: currentY,
+    head: [["Metric", "Value"]],
+    body: [
+      ["Class", `${classInfo.name}-${classInfo.section}`],
+      ["Class Teacher", classInfo.classTeacher || "—"],
+      ["Period From", fromStr],
+      ["Period To", toStr],
+      ["Total Days in Range", String(summary.totalDays)],
+      ["Working Days", String(summary.workingDays)],
+      ["Holidays", String(summary.holidays)],
+      ["Sundays", String(summary.sundays)],
+      ["Total Students", String(summary.totalStudents)],
+    ],
+    margin: { left: 50, right: 50 },
+    theme: "grid",
+    styles: {
+      fontSize: 10,
+      cellPadding: 3,
+    },
+    headStyles: {
+      fillColor: COLORS.primary,
+      textColor: COLORS.white,
+      fontStyle: "bold",
+      halign: "center",
+    },
+    columnStyles: {
+      0: { cellWidth: 80, fontStyle: "bold" },
+      1: { cellWidth: 100, halign: "center" },
+    },
+  });
+
+  // ─── Apply footer to ALL pages ───
+  addFooter(doc, userName);
+
+  return doc;
+};
+
+/**
  * Helper: Download the PDF
  */
 export const downloadPdf = (doc, filename) => {
   doc.save(`${filename}.pdf`);
 };
 
-/**
- * Helper: Open PDF in new tab for printing
- */
 export const printPdf = (doc) => {
   const blob = doc.output("blob");
   const url = URL.createObjectURL(blob);

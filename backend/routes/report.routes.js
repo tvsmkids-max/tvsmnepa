@@ -19,4 +19,7 @@ router.get(
 );
 router.get("/analytics", adminOnly, reportController.getAnalytics);
 
+// ─── NEW: Attendance Register ───
+router.get("/register", adminOrTeacher, reportController.getRegister);
+
 module.exports = router;

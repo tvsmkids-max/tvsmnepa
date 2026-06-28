@@ -11,6 +11,8 @@ const reportApi = {
   getClassTrend: (classId, params = {}) =>
     axiosInstance.get(`/reports/class-trend/${classId}`, { params }),
   getAnalytics: () => axiosInstance.get("/reports/analytics"),
+  getRegister: (params = {}) =>
+    axiosInstance.get("/reports/register", { params }),
 };
 
 export default reportApi;

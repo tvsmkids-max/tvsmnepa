@@ -78,7 +78,10 @@ const MobileBottomNav = () => {
 
   // Menu items for "More" drawer
   const adminMoreItems = [
+    { divider: true, label: "Personal" },
+    { label: "My Profile", icon: <PersonOutlinedIcon />, path: "/profile" },
     { divider: true, label: "Management" },
+
     { label: "Classes", icon: <ClassOutlinedIcon />, path: "/classes" },
     { label: "Teachers", icon: <PersonOutlinedIcon />, path: "/teachers" },
     { divider: true, label: "Reports" },
@@ -102,6 +105,13 @@ const MobileBottomNav = () => {
   ];
 
   const teacherMoreItems = [
+    { divider: true, label: "Personal" },
+    { label: "My Profile", icon: <PersonOutlinedIcon />, path: "/profile" },
+    {
+      label: "Notifications",
+      icon: <NotificationsOutlinedIcon />,
+      path: "/notifications",
+    },
     { divider: true, label: "Reports" },
     { label: "Reports", icon: <AssessmentOutlinedIcon />, path: "/reports" },
   ];

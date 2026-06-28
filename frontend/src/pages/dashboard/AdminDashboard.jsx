@@ -33,6 +33,7 @@ import HistoryIcon from "@mui/icons-material/History";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import WavingHandIcon from "@mui/icons-material/WavingHand";
 import useAuth from "../../hooks/useAuth";
 import useSettings from "../../hooks/useSettings";
 import sessionApi from "../../api/sessionApi";
@@ -239,9 +240,6 @@ const AdminDashboard = () => {
         const res = await attendanceApi.getTodayStats();
         const data = res?.data?.data || null;
 
-        // DEBUG: log what we received
-        console.log("[Dashboard] Today stats received:", data);
-
         if (!cancelled) {
           setTodayStats(data);
           setTodayLoading(false);
@@ -286,33 +284,121 @@ const AdminDashboard = () => {
 
   const sessionName = stats.activeSession?.name || null;
 
-  // ─── Determine what to show in today's attendance ────────
   const hasClasses = todayStats?.totalClasses > 0;
   const hasStudents = todayStats?.totalStudents > 0;
   const showData = todayStats && (hasClasses || hasStudents);
 
   return (
     <Box>
-      {/* Welcome Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={800} gutterBottom>
-          {greeting()}, {user?.name?.split(" ")[0]} 👋
-        </Typography>
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-          <Typography variant="body2" color="text.secondary">
-            {today} • {currentTime}
-          </Typography>
-          {sessionName && (
-            <Chip
-              label={`Active Session: ${sessionName}`}
-              size="small"
-              color="primary"
-              variant="outlined"
-              icon={<SchoolIcon sx={{ fontSize: 14 }} />}
-            />
-          )}
-        </Stack>
-      </Box>
+      {/* ─── HERO GREETING CARD ─── */}
+      <Paper
+        sx={{
+          mb: 3,
+          borderRadius: 3,
+          background:
+            "linear-gradient(135deg, #0D1B3E 0%, #1A3A7A 50%, #1E4D98 100%)",
+          color: "white",
+          p: { xs: 2.5, sm: 3 },
+          position: "relative",
+          overflow: "hidden",
+          boxShadow: "0 8px 24px rgba(13,27,62,0.15)",
+        }}
+      >
+        {/* Decorative blobs */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: -50,
+            right: -50,
+            width: 180,
+            height: 180,
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle, rgba(245,166,35,0.18) 0%, transparent 70%)",
+          }}
+        />
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: -40,
+            left: -40,
+            width: 140,
+            height: 140,
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)",
+          }}
+        />
+
+        <Box sx={{ position: "relative", zIndex: 1 }}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            justifyContent="space-between"
+            alignItems={{ xs: "flex-start", sm: "center" }}
+            spacing={{ xs: 2, sm: 1 }}
+          >
+            <Box>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "rgba(255,255,255,0.75)",
+                    letterSpacing: "0.1em",
+                    fontWeight: 700,
+                    fontSize: "0.7rem",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {greeting()}
+                </Typography>
+                <WavingHandIcon sx={{ fontSize: 16, color: "#FFD580" }} />
+              </Stack>
+              <Typography
+                variant="h4"
+                fontWeight={900}
+                sx={{
+                  color: "white",
+                  fontSize: { xs: "1.5rem", sm: "1.75rem", md: "2rem" },
+                  lineHeight: 1.2,
+                  mt: 0.5,
+                }}
+              >
+                {user?.name?.split(" ")[0] || "Admin"}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "rgba(255,255,255,0.75)",
+                  mt: 0.5,
+                  fontSize: { xs: "0.8rem", sm: "0.85rem" },
+                  fontWeight: 500,
+                }}
+              >
+                {today} • {currentTime}
+              </Typography>
+            </Box>
+
+            {sessionName && (
+              <Chip
+                icon={<SchoolIcon sx={{ fontSize: 16 }} />}
+                label={`Active Session: ${sessionName}`}
+                sx={{
+                  height: 36,
+                  px: 1,
+                  bgcolor: "rgba(245,166,35,0.2)",
+                  color: "#FFD580",
+                  fontWeight: 800,
+                  fontSize: "0.78rem",
+                  border: "1.5px solid rgba(245,166,35,0.4)",
+                  borderRadius: 2.5,
+                  "& .MuiChip-icon": { color: "#FFD580" },
+                  alignSelf: { xs: "flex-start", sm: "center" },
+                }}
+              />
+            )}
+          </Stack>
+        </Box>
+      </Paper>
 
       {/* Stats Grid */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -429,7 +515,6 @@ const AdminDashboard = () => {
               </Alert>
             ) : showData ? (
               <>
-                {/* Top stats row */}
                 <Stack
                   direction={{ xs: "column", sm: "row" }}
                   spacing={1.5}
@@ -457,7 +542,6 @@ const AdminDashboard = () => {
                   />
                 </Stack>
 
-                {/* Progress bar */}
                 <Box sx={{ mb: 3 }}>
                   <Stack
                     direction="row"
@@ -495,7 +579,6 @@ const AdminDashboard = () => {
                   />
                 </Box>
 
-                {/* Classes status summary */}
                 <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
                   <Chip
                     icon={<CheckCircleIcon />}
@@ -519,7 +602,6 @@ const AdminDashboard = () => {
                   />
                 </Stack>
 
-                {/* Class breakdown */}
                 {todayStats.classBreakdown?.length > 0 && (
                   <>
                     <Divider sx={{ my: 2 }} />

@@ -4,6 +4,8 @@ const classRepository = require("../repositories/class.repository");
 const studentRepository = require("../repositories/student.repository");
 const Settings = require("../models/Settings.model");
 const { createAuditLog } = require("../middlewares/audit.middleware");
+const notificationService = require("./notification.service");
+const logger = require("../utils/logger");
 
 const throwError = (message, statusCode = 400) => {
   throw Object.assign(new Error(message), { statusCode });
@@ -16,7 +18,6 @@ class ClassService {
     const filter = { ...filterParams };
     if (filter.isArchived === undefined) filter.isArchived = false;
 
-    // ─── For TEACHERS: Get their assigned classes ───
     if (user && user.role === "teacher") {
       const Teacher = require("../models/Teacher.model");
       const teacher = await Teacher.findOne({ user: user._id }).lean();
@@ -34,15 +35,12 @@ class ClassService {
 
       filter._id = { $in: teacher.assignedClasses };
     } else {
-      // ─── For ADMIN ───
-      // If 'all' flag is true, skip session filter (used in promotions)
       if (!filter.session && !filter.all) {
         const settings = await Settings.getSettings();
         if (settings?.activeSession) {
           filter.session = settings.activeSession;
         }
       }
-      // Remove 'all' from filter — it's not a DB field
       delete filter.all;
     }
 
@@ -57,7 +55,6 @@ class ClassService {
       ],
     });
 
-    // Add student count efficiently with aggregation
     if (result.data.length > 0) {
       const Student = require("../models/Student.model");
       const classIds = result.data.map((c) => c._id);
@@ -130,6 +127,18 @@ class ClassService {
         { _id: { $in: data.assignedTeachers } },
         { $addToSet: { assignedClasses: cls._id } },
       );
+
+      // ─── NOTIFY ASSIGNED TEACHERS ───
+      try {
+        await this._notifyTeacherAssignment(
+          data.assignedTeachers,
+          cls,
+          user,
+          "assigned",
+        );
+      } catch (err) {
+        logger.error(`[Class] Teacher notification failed: ${err.message}`);
+      }
     }
 
     await createAuditLog({
@@ -164,6 +173,17 @@ class ClassService {
         throwError("Another class with same name & section exists", 409);
     }
 
+    // ─── Detect teacher assignment changes ───
+    const oldTeachers = (existing.assignedTeachers || []).map((t) =>
+      t.toString(),
+    );
+    const newTeachers = data.assignedTeachers
+      ? data.assignedTeachers.map((t) => t.toString())
+      : oldTeachers;
+
+    const addedTeachers = newTeachers.filter((t) => !oldTeachers.includes(t));
+    const removedTeachers = oldTeachers.filter((t) => !newTeachers.includes(t));
+
     const updated = await classRepository.updateById(id, data);
 
     await createAuditLog({
@@ -177,6 +197,28 @@ class ClassService {
       after: updated,
       req,
     });
+
+    // ─── NOTIFY TEACHERS ABOUT CHANGES ───
+    try {
+      if (addedTeachers.length > 0) {
+        await this._notifyTeacherAssignment(
+          addedTeachers,
+          updated,
+          user,
+          "assigned",
+        );
+      }
+      if (removedTeachers.length > 0) {
+        await this._notifyTeacherAssignment(
+          removedTeachers,
+          updated,
+          user,
+          "removed",
+        );
+      }
+    } catch (err) {
+      logger.error(`[Class] Teacher notification failed: ${err.message}`);
+    }
 
     return updated;
   }
@@ -232,6 +274,42 @@ class ClassService {
     });
 
     return updated;
+  }
+
+  // ─── INTERNAL: Notify teachers about class assignment changes ───
+  async _notifyTeacherAssignment(teacherIds, cls, actorUser, action) {
+    if (!teacherIds || teacherIds.length === 0) return;
+
+    const Teacher = require("../models/Teacher.model");
+    const teachers = await Teacher.find({
+      _id: { $in: teacherIds },
+    })
+      .select("user name")
+      .lean();
+
+    const className = `${cls.name}-${cls.section}`;
+
+    for (const teacher of teachers) {
+      if (!teacher.user) continue;
+
+      const isAssigned = action === "assigned";
+
+      await notificationService.createForUser({
+        userId: teacher.user,
+        title: isAssigned ? `🎯 New Class Assigned` : `📤 Class Reassigned`,
+        message: isAssigned
+          ? `You've been assigned to Class ${className}. Check your dashboard to start marking attendance.`
+          : `You're no longer assigned to Class ${className}. Contact admin if this is unexpected.`,
+        type: isAssigned ? "success" : "warning",
+        link: isAssigned ? "/teacher/dashboard" : "/teacher/dashboard",
+        metadata: {
+          classId: cls._id,
+          className,
+          action,
+        },
+        createdBy: actorUser._id,
+      });
+    }
   }
 }
 

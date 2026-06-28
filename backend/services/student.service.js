@@ -10,9 +10,22 @@ const throwError = (message, statusCode = 400) => {
   throw Object.assign(new Error(message), { statusCode });
 };
 
+const MAX_BULK_DELETE = 100;
+
 class StudentService {
   async list(query, user) {
-    const { page, limit, sort, search, ...filterParams } = query;
+    const {
+      page,
+      limit,
+      sort,
+      search,
+      section,
+      gender,
+      category,
+      bloodGroup,
+      ...filterParams
+    } = query;
+
     const filter = { ...filterParams };
 
     // Default to active session
@@ -23,7 +36,7 @@ class StudentService {
       }
     }
 
-    // ─── KEY FIX: Teachers see ONLY students in their assigned classes ───
+    // Teacher RBAC
     if (user && user.role === "teacher") {
       const Teacher = require("../models/Teacher.model");
       const teacher = await Teacher.findOne({ user: user._id }).lean();
@@ -39,9 +52,7 @@ class StudentService {
         };
       }
 
-      // Restrict to teacher's assigned classes only
       if (filter.class) {
-        // If specific class requested, check it's in assigned list
         const requestedClass = filter.class.toString();
         const isAssigned = teacher.assignedClasses.some(
           (c) => c.toString() === requestedClass,
@@ -53,18 +64,27 @@ class StudentService {
           };
         }
       } else {
-        // No specific class → show all from teacher's assigned classes
         filter.class = { $in: teacher.assignedClasses };
       }
     }
 
-    if (search) {
+    // ─── ADVANCED FILTERS ───
+    if (section) filter.section = section;
+    if (gender) filter.gender = gender;
+    if (category) filter.category = category;
+    if (bloodGroup) filter.bloodGroup = bloodGroup;
+
+    // ─── SEARCH ───
+    if (search && search.trim()) {
+      const trimmed = search.trim();
       filter.$or = [
-        { name: new RegExp(search, "i") },
-        { fatherName: new RegExp(search, "i") },
-        { scholarNumber: new RegExp(search, "i") },
-        { rollNumber: new RegExp(search, "i") },
-        { mobile: new RegExp(search, "i") },
+        { name: new RegExp(trimmed, "i") },
+        { fatherName: new RegExp(trimmed, "i") },
+        { motherName: new RegExp(trimmed, "i") },
+        { scholarNumber: new RegExp(trimmed, "i") },
+        { rollNumber: new RegExp(trimmed, "i") },
+        { mobile: new RegExp(trimmed, "i") },
+        { alternateMobile: new RegExp(trimmed, "i") },
       ];
     }
 
@@ -79,6 +99,29 @@ class StudentService {
     });
   }
 
+  /**
+   * Get unique sections (for filter dropdown)
+   */
+  async getSections(user) {
+    const settings = await Settings.getSettings();
+    const sessionId = settings?.activeSession?._id || settings?.activeSession;
+
+    const filter = { isActive: true };
+    if (sessionId) filter.session = sessionId;
+
+    // Teacher restriction
+    if (user && user.role === "teacher") {
+      const Teacher = require("../models/Teacher.model");
+      const teacher = await Teacher.findOne({ user: user._id }).lean();
+      if (!teacher?.assignedClasses?.length) return [];
+      filter.class = { $in: teacher.assignedClasses };
+    }
+
+    const Student = require("../models/Student.model");
+    const sections = await Student.distinct("section", filter);
+    return sections.filter(Boolean).sort();
+  }
+
   async getById(id) {
     const student = await studentRepository.findById(id, [
       { path: "class", select: "name section" },
@@ -90,7 +133,6 @@ class StudentService {
   }
 
   async create(data, user, req) {
-    // Check duplicate scholar number
     const existing = await studentRepository.findByScholarNumber(
       data.scholarNumber,
     );
@@ -98,11 +140,9 @@ class StudentService {
       throwError(`Scholar number "${data.scholarNumber}" already exists`, 409);
     }
 
-    // Verify class exists
     const cls = await classRepository.findById(data.class);
     if (!cls) throwError("Class not found", 400);
 
-    // Set section from class if missing
     if (!data.section) data.section = cls.section;
 
     const student = await studentRepository.create({
@@ -128,7 +168,6 @@ class StudentService {
     const existing = await studentRepository.findById(id);
     if (!existing) throwError("Student not found", 404);
 
-    // If class changing, update section
     if (data.class && data.class.toString() !== existing.class.toString()) {
       const newClass = await classRepository.findById(data.class);
       if (!newClass) throwError("New class not found", 400);
@@ -207,6 +246,112 @@ class StudentService {
     if (sessionId) filter.session = sessionId;
 
     return studentRepository.search(query.trim(), filter);
+  }
+
+  async bulkDelete(ids, mode, user, req) {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throwError("No student IDs provided", 400);
+    }
+
+    if (ids.length > MAX_BULK_DELETE) {
+      throwError(
+        `Cannot delete more than ${MAX_BULK_DELETE} students at once`,
+        400,
+      );
+    }
+
+    if (!["soft", "hard"].includes(mode)) {
+      throwError("Invalid mode. Must be 'soft' or 'hard'", 400);
+    }
+
+    const students = await studentRepository.findByIds(ids);
+    if (students.length === 0) {
+      throwError("No matching students found", 404);
+    }
+
+    const foundIds = students.map((s) => s._id.toString());
+    const missingIds = ids.filter((id) => !foundIds.includes(id.toString()));
+
+    if (missingIds.length > 0) {
+      throwError(
+        `${missingIds.length} student(s) not found. Operation cancelled.`,
+        400,
+      );
+    }
+
+    let attendanceDeleted = 0;
+
+    if (mode === "hard") {
+      const Attendance = require("../models/Attendance.model");
+      const attResult = await Attendance.deleteMany({
+        student: { $in: foundIds },
+      });
+      attendanceDeleted = attResult.deletedCount || 0;
+
+      await studentRepository.bulkHardDelete(foundIds);
+    } else {
+      await studentRepository.bulkSoftDelete(
+        foundIds,
+        `Bulk soft-deleted by ${user.name || user.email}`,
+      );
+    }
+
+    const studentNames = students
+      .slice(0, 5)
+      .map((s) => `${s.name} (${s.scholarNumber})`)
+      .join(", ");
+    const moreText =
+      students.length > 5 ? ` and ${students.length - 5} more` : "";
+
+    await createAuditLog({
+      user,
+      action: mode === "hard" ? "DELETE" : "UPDATE",
+      module: "Student",
+      description:
+        mode === "hard"
+          ? `Bulk HARD DELETED ${students.length} students: ${studentNames}${moreText}. Attendance records removed: ${attendanceDeleted}`
+          : `Bulk SOFT DELETED ${students.length} students: ${studentNames}${moreText}`,
+      resourceType: "Student",
+      before: { count: students.length, mode },
+      after: { deleted: students.length, attendanceDeleted },
+      req,
+    });
+
+    // Notification for large bulk deletes
+    try {
+      if (students.length >= 5) {
+        const notificationService = require("./notification.service");
+        await notificationService.notifyAdmins({
+          title:
+            mode === "hard"
+              ? `🗑️ ${students.length} Students Permanently Deleted`
+              : `📤 ${students.length} Students Soft Deleted`,
+          message: `Bulk delete performed by ${user.name || user.email}. ${
+            mode === "hard"
+              ? `${attendanceDeleted} attendance records also removed.`
+              : "Students marked as Inactive."
+          }`,
+          type: mode === "hard" ? "warning" : "info",
+          link: "/students",
+          metadata: {
+            count: students.length,
+            mode,
+            attendanceDeleted,
+            actor: user.name || user.email,
+          },
+          createdBy: user._id,
+        });
+      }
+    } catch (err) {
+      // Silent fail
+    }
+
+    return {
+      mode,
+      requested: ids.length,
+      deleted: students.length,
+      attendanceDeleted,
+    };
   }
 }
 

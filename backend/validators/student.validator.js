@@ -74,13 +74,36 @@ const updateStudentStatusSchema = Joi.object({
 const queryStudentSchema = Joi.object({
   session: objectId,
   class: objectId,
-  section: Joi.string(),
+  section: Joi.string().trim(),
   status: Joi.string().valid(...STUDENT_STATUS_LIST),
   search: Joi.string().trim().allow(""),
   gender: Joi.string().valid("Male", "Female", "Other"),
+  category: Joi.string().valid("General", "OBC", "SC", "ST", "EWS"),
+  bloodGroup: Joi.string().valid(
+    "A+",
+    "A-",
+    "B+",
+    "B-",
+    "O+",
+    "O-",
+    "AB+",
+    "AB-",
+  ),
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(2000).default(20), // ← 2000 now
+  limit: Joi.number().integer().min(1).max(2000).default(24),
   sort: Joi.string().default("rollNumber"),
+});
+
+const bulkDeleteSchema = Joi.object({
+  ids: Joi.array().items(objectId).min(1).max(100).required().messages({
+    "array.min": "At least 1 student must be selected",
+    "array.max": "Cannot delete more than 100 students at once",
+    "any.required": "Student IDs are required",
+  }),
+  mode: Joi.string().valid("soft", "hard").required().messages({
+    "any.only": "Mode must be either 'soft' or 'hard'",
+    "any.required": "Delete mode is required",
+  }),
 });
 
 module.exports = {
@@ -88,4 +111,5 @@ module.exports = {
   updateStudentSchema,
   updateStudentStatusSchema,
   queryStudentSchema,
+  bulkDeleteSchema,
 };

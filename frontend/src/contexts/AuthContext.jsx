@@ -73,6 +73,26 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  // ─── MULTI-TAB LOGOUT SYNC ───
+  // If user logs out in another tab → this tab logs out too
+  useEffect(() => {
+    const handleStorageEvent = (event) => {
+      // Logout broadcast
+      if (event.key === storage.IDLE_LOGOUT_EVENT_KEY && event.newValue) {
+        dispatch({ type: "LOGOUT" });
+        return;
+      }
+
+      // Token removed in another tab → sync logout
+      if (event.key === "sams_access_token" && !event.newValue) {
+        dispatch({ type: "LOGOUT" });
+      }
+    };
+
+    window.addEventListener("storage", handleStorageEvent);
+    return () => window.removeEventListener("storage", handleStorageEvent);
+  }, []);
+
   const login = useCallback(async (credentials) => {
     dispatch({ type: "CLEAR_ERROR" });
     dispatch({ type: "SET_LOADING", payload: true });
@@ -82,6 +102,7 @@ export const AuthProvider = ({ children }) => {
       storage.setToken(accessToken);
       storage.setRefreshToken(refreshToken);
       storage.setUser(user);
+      storage.setLastActivity();
       dispatch({ type: "LOGIN_SUCCESS", payload: user });
       return { success: true, user };
     } catch (error) {
@@ -96,8 +117,10 @@ export const AuthProvider = ({ children }) => {
       const rt = storage.getRefreshToken();
       await authApi.logout(rt);
     } catch {
+      // ignore
     } finally {
       storage.clearAuth();
+      storage.broadcastLogout();
       dispatch({ type: "LOGOUT" });
     }
   }, []);

@@ -8,10 +8,19 @@ const { adminOnly, adminOrTeacher } = require("../middlewares/rbac.middleware");
 
 router.use(authenticate);
 
+// ─── Static routes FIRST ───
 router.get("/search", adminOrTeacher, studentController.search);
+router.get("/sections", adminOrTeacher, studentController.getSections);
 router.get("/", adminOrTeacher, studentController.list);
-router.get("/:id", adminOrTeacher, studentController.getById);
+
+// ─── Bulk operations (admin only) ───
+router.post("/bulk-delete", adminOnly, studentController.bulkDelete);
+
+// ─── Create ───
 router.post("/", adminOrTeacher, studentController.create);
+
+// ─── Dynamic routes ───
+router.get("/:id", adminOrTeacher, studentController.getById);
 router.put("/:id", adminOrTeacher, studentController.update);
 router.patch("/:id/status", adminOnly, studentController.updateStatus);
 router.delete("/:id", adminOnly, studentController.remove);
