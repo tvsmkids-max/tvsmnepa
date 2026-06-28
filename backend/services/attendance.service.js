@@ -319,11 +319,6 @@ class AttendanceService {
     );
   }
 
-  /**
-   * Get today's attendance summary across all classes for active session
-   * ✅ FIXED: No more negative unmarked numbers
-   * ✅ NEW: Yesterday comparison for trends
-   */
   async getTodayStats() {
     const Class = require("../models/Class.model");
     const Student = require("../models/Student.model");
@@ -410,14 +405,30 @@ class AttendanceService {
     }).lean();
 
     // ─── KEY FIX: Only count attendance for ACTIVE students ───
+    // ─── KEY FIX: Only count attendance for ACTIVE students + Dedupe ───
     const classStatsMap = {};
+    const countedStudentInClass = new Set(); // Prevent duplicates
+
     todayAttendance.forEach((rec) => {
       const studentId = rec.student.toString();
+      const cid = rec.class.toString();
+      const uniqueKey = `${cid}-${studentId}`;
 
       // Skip if student is no longer active
       if (!activeStudentIds.has(studentId)) return;
 
-      const cid = rec.class.toString();
+      // Skip if we've already counted this student in this class
+      // (handles duplicate records bug)
+      if (countedStudentInClass.has(uniqueKey)) return;
+      countedStudentInClass.add(uniqueKey);
+
+      // Verify student actually belongs to THIS class (not another class)
+      // This prevents counting students from one class in another
+      const actualClassId = todayStudents
+        .find((s) => s._id.toString() === studentId)
+        ?.class?.toString();
+      if (actualClassId && actualClassId !== cid) return;
+
       if (!classStatsMap[cid]) classStatsMap[cid] = { Present: 0, Absent: 0 };
       classStatsMap[cid][rec.status] =
         (classStatsMap[cid][rec.status] || 0) + 1;
@@ -428,10 +439,14 @@ class AttendanceService {
       const cid = cls._id.toString();
       const stats = classStatsMap[cid] || { Present: 0, Absent: 0 };
       const totalInClass = studentCountMap[cid] || 0;
-      const marked = stats.Present + stats.Absent;
-      const unmarkedInClass = Math.max(0, totalInClass - marked); // ✅ FIX
-      const percentage =
-        marked > 0 ? Math.round((stats.Present / marked) * 100) : 0;
+
+      // ✅ CRITICAL: Cap counts to total students (prevents inflation)
+      const present = Math.min(stats.Present, totalInClass);
+      const absent = Math.min(stats.Absent, totalInClass - present);
+
+      const marked = present + absent;
+      const unmarkedInClass = Math.max(0, totalInClass - marked);
+      const percentage = marked > 0 ? Math.round((present / marked) * 100) : 0;
 
       return {
         _id: cls._id,
@@ -440,8 +455,8 @@ class AttendanceService {
         classTeacher: cls.classTeacher?.name || null,
         classTeacherId: cls.classTeacher?._id || null,
         totalStudents: totalInClass,
-        present: stats.Present,
-        absent: stats.Absent,
+        present, // ← use capped value
+        absent, // ← use capped value
         marked,
         unmarked: unmarkedInClass,
         isMarked: marked > 0,

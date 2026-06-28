@@ -1309,3 +1309,82 @@
 {"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-28 22:59:44"}
 {"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-06-28 23:00:14"}
 {"level":"info","message":"[Cron] Backup is recent (0 days ago), skipping reminder","timestamp":"2026-06-28 23:00:15"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:41:10 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 379 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:11:10"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:41:10 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 379 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:11:10"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:41:10 +0000] \"GET /api/v1/settings HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:11:10"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:41:26 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 379 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:11:26"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:41:26 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 379 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:11:26"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:41:26 +0000] \"GET /api/v1/settings HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:11:26"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:42:46 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 379 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:12:46"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:42:46 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 379 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:12:46"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:42:46 +0000] \"GET /api/v1/settings HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:12:46"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:07 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 379 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:07"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:07 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 379 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:07"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:07 +0000] \"GET /api/v1/settings HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:07"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:08 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:08"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:08 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:08"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:08 +0000] \"GET /api/v1/attendance/today-stats HTTP/1.1\" 200 858 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:08"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:09 +0000] \"GET /api/v1/attendance/dashboard/kpis HTTP/1.1\" 200 392 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:09"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:09 +0000] \"GET /api/v1/backup/stats HTTP/1.1\" 200 349 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:09"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:09 +0000] \"GET /api/v1/attendance/dashboard/activity?limit=10 HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:09"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:09 +0000] \"GET /api/v1/attendance/dashboard/alerts HTTP/1.1\" 200 140 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:09"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:33 +0000] \"GET /api/v1/classes?limit=500&isArchived=false&session=6a3e61fbc3f791fc97b32113 HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:33"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:33 +0000] \"GET /api/v1/classes?limit=500&isArchived=false&session=6a3e61fbc3f791fc97b32113 HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:33"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:37 +0000] \"GET /api/v1/attendance/sheet?class=6a3e9cc039389305039b69ba&date=2026-06-28 HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:37"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:43 +0000] \"GET /api/v1/attendance/dashboard/activity?limit=10 HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:43"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:57 +0000] \"GET /api/v1/classes?limit=500&isArchived=false&session=6a3e61fbc3f791fc97b32113 HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:57"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:43:57 +0000] \"GET /api/v1/classes?limit=500&isArchived=false&session=6a3e61fbc3f791fc97b32113 HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:13:57"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:44:00 +0000] \"GET /api/v1/attendance/sheet?class=6a3e6235c3f791fc97b32158&date=2026-06-28 HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:14:00"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:44:08 +0000] \"POST /api/v1/attendance/mark HTTP/1.1\" 200 171 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:14:08"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:44:08 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:14:08"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:44:08 +0000] \"GET /api/v1/attendance/sheet?class=6a3e6235c3f791fc97b32158&date=2026-06-28 HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:14:08"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:44:12 +0000] \"GET /api/v1/attendance/today-stats HTTP/1.1\" 200 858 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:14:12"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:44:12 +0000] \"GET /api/v1/attendance/dashboard/kpis HTTP/1.1\" 200 392 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:14:12"}
+{"level":"http","message":"::1 - - [28/Jun/2026:17:44:12 +0000] \"GET /api/v1/attendance/dashboard/alerts HTTP/1.1\" 200 140 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-28 23:14:12"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-28 23:17:19"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-06-28 23:17:19"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-28 23:17:19"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-28 23:17:19"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-28 23:17:19"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-28 23:17:19"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-28 23:17:19"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-28 23:17:19"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-28 23:17:19"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-28 23:17:19"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-06-28 23:17:19"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-06-28 23:17:20"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-06-28 23:17:20"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-28 23:17:20"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-28 23:17:20"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-06-28 23:17:50"}
+{"level":"info","message":"[Cron] Backup is recent (0 days ago), skipping reminder","timestamp":"2026-06-28 23:17:50"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-28 23:17:58"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-06-28 23:17:58"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-28 23:17:58"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-28 23:17:58"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-28 23:17:58"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-28 23:17:58"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-28 23:17:58"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-28 23:17:58"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-28 23:17:58"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-28 23:17:58"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-06-28 23:17:58"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-06-28 23:17:58"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-06-28 23:17:58"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-28 23:17:58"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-28 23:17:58"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-28 23:18:21"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-06-28 23:18:21"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-28 23:18:21"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-28 23:18:21"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-28 23:18:21"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-28 23:18:21"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-28 23:18:21"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-28 23:18:21"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-28 23:18:21"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-28 23:18:21"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-06-28 23:18:21"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-06-28 23:18:21"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-06-28 23:18:21"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-28 23:18:21"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-28 23:18:21"}
