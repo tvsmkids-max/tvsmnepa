@@ -103,8 +103,8 @@ app.use("/api/v1/auth/refresh", refreshLimiter);
 app.use("/api/v1/attendance/mark", attendanceLimiter);
 
 // ─── Body Parsers ─────────────────────────────────────────────────────────────
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: "100mb" })); // For large backup uploads
+app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 app.use(cookieParser());
 
 // ─── Data Sanitization ────────────────────────────────────────────────────────

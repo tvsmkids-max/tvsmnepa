@@ -24,9 +24,12 @@ import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDownOutlined";
 import ExpandMoreOutlinedIcon from "@mui/icons-material/ExpandMoreOutlined";
+import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
+import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 import useSettings from "../../hooks/useSettings";
+import useThemeMode from "../../hooks/useThemeMode";
 import SchoolInfoSheet from "./SchoolInfoSheet";
 import NotificationBell from "./NotificationBell";
 
@@ -55,6 +58,7 @@ const Topbar = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const { user, logout, isAdmin } = useAuth();
   const { settings } = useSettings();
+  const { isDark, toggleTheme } = useThemeMode();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -102,6 +106,7 @@ const Topbar = ({ onMenuClick }) => {
         position="fixed"
         elevation={0}
         sx={{
+          // Topbar stays navy gradient in both themes (brand consistency)
           background:
             "linear-gradient(135deg, #0D1B3E 0%, #1A3A7A 50%, #1E4D98 100%)",
           color: "white",
@@ -255,7 +260,52 @@ const Topbar = ({ onMenuClick }) => {
               />
             )}
 
-            {/* ─── REAL NOTIFICATION BELL ─── */}
+            {/* ─── THEME TOGGLE ─── */}
+            <Tooltip
+              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              <IconButton
+                onClick={toggleTheme}
+                sx={{
+                  color: "white",
+                  bgcolor: "rgba(255,255,255,0.1)",
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.18)",
+                    transform: "rotate(15deg)",
+                  },
+                  borderRadius: 2,
+                  width: { xs: 38, sm: 40 },
+                  height: { xs: 38, sm: 40 },
+                  transition: "all 0.3s ease",
+                }}
+              >
+                {isDark ? (
+                  <LightModeOutlinedIcon
+                    sx={{
+                      fontSize: 22,
+                      animation: "spin-in 0.4s ease",
+                      "@keyframes spin-in": {
+                        from: { transform: "rotate(-90deg)", opacity: 0 },
+                        to: { transform: "rotate(0)", opacity: 1 },
+                      },
+                    }}
+                  />
+                ) : (
+                  <DarkModeOutlinedIcon
+                    sx={{
+                      fontSize: 22,
+                      animation: "spin-in 0.4s ease",
+                      "@keyframes spin-in": {
+                        from: { transform: "rotate(90deg)", opacity: 0 },
+                        to: { transform: "rotate(0)", opacity: 1 },
+                      },
+                    }}
+                  />
+                )}
+              </IconButton>
+            </Tooltip>
+
+            {/* Notification Bell */}
             <NotificationBell />
 
             {/* Avatar Button */}
@@ -342,7 +392,9 @@ const Topbar = ({ onMenuClick }) => {
               sx={{
                 px: 2.5,
                 py: 2.5,
-                background: "linear-gradient(135deg, #F8F9FF 0%, #E8EFFF 100%)",
+                background: isDark
+                  ? "linear-gradient(135deg, #1E293B 0%, #334155 100%)"
+                  : "linear-gradient(135deg, #F8F9FF 0%, #E8EFFF 100%)",
                 borderBottom: "1px solid",
                 borderColor: "divider",
               }}
@@ -409,6 +461,26 @@ const Topbar = ({ onMenuClick }) => {
                 </ListItemIcon>
                 <Typography variant="body2" fontWeight={600}>
                   My Profile
+                </Typography>
+              </MenuItem>
+
+              {/* ─── THEME TOGGLE IN MENU (alternative location) ─── */}
+              <MenuItem
+                onClick={() => {
+                  toggleTheme();
+                  // Don't close menu — let user see the change
+                }}
+                sx={{ borderRadius: 1.5, my: 0.25, py: 1.1 }}
+              >
+                <ListItemIcon>
+                  {isDark ? (
+                    <LightModeOutlinedIcon fontSize="small" />
+                  ) : (
+                    <DarkModeOutlinedIcon fontSize="small" />
+                  )}
+                </ListItemIcon>
+                <Typography variant="body2" fontWeight={600}>
+                  {isDark ? "Light Mode" : "Dark Mode"}
                 </Typography>
               </MenuItem>
 

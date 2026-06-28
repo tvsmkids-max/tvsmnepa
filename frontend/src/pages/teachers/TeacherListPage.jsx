@@ -1,393 +1,238 @@
-import React, { useState, useEffect, useCallback } from "react";
-import {
-  Box,
-  Paper,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  TableContainer,
-  IconButton,
-  Tooltip,
-  TextField,
-  InputAdornment,
-  Avatar,
-  CircularProgress,
-  Chip,
-  Stack,
-  Menu,
-  MenuItem,
-} from "@mui/material";
-import { useSnackbar } from "notistack";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import SearchIcon from "@mui/icons-material/Search";
+import React, { useState, useCallback, useMemo } from "react";
+import { Box, Paper, Grid, CircularProgress, Typography } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
-import EmailIcon from "@mui/icons-material/Email";
-import PhoneIcon from "@mui/icons-material/Phone";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import LockResetIcon from "@mui/icons-material/LockReset";
-import PageHeader from "../../components/common/PageHeader";
-import ConfirmDialog from "../../components/common/ConfirmDialog";
-import EmptyState from "../../components/common/EmptyState";
+
+import TeacherHeader from "./components/TeacherHeader";
+import TeacherFilterBar from "./components/TeacherFilterBar";
+import TeacherCard from "./components/TeacherCard";
+
 import TeacherFormDialog from "./TeacherFormDialog";
 import TeacherResetPasswordDialog from "./TeacherResetPasswordDialog";
-import teacherApi from "../../api/teacherApi";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import EmptyState from "../../components/common/EmptyState";
+
 import useDebounce from "../../hooks/useDebounce";
+import { useTeacherList, useDeleteTeacher } from "../../hooks/useTeachers";
+
+const DEFAULT_FILTERS = {
+  search: "",
+  status: "all",
+  gender: "",
+};
 
 const TeacherListPage = () => {
-  const { enqueueSnackbar } = useSnackbar();
-  const [teachers, setTeachers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 400);
+  // ─── FILTERS ───
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const debouncedSearch = useDebounce(filters.search, 400);
+
+  // Build query params
+  const queryParams = useMemo(
+    () => ({
+      search: debouncedSearch,
+      limit: 100,
+    }),
+    [debouncedSearch],
+  );
+
+  // ─── TANSTACK QUERY ───
+  const {
+    data: teachersData,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useTeacherList(queryParams);
+
+  const allTeachers = teachersData?.data || [];
+
+  // ─── CLIENT-SIDE FILTERING (status + gender) ───
+  const filteredTeachers = useMemo(() => {
+    return allTeachers.filter((t) => {
+      // Status filter
+      if (filters.status === "active" && !t.isActive) return false;
+      if (filters.status === "inactive" && t.isActive) return false;
+
+      // Gender filter
+      if (filters.gender && t.gender !== filters.gender) return false;
+
+      return true;
+    });
+  }, [allTeachers, filters.status, filters.gender]);
+
+  // ─── MUTATIONS ───
+  const deleteMutation = useDeleteTeacher();
+
+  // ─── DIALOG STATES ───
   const [formOpen, setFormOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [resetTeacher, setResetTeacher] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Action menu
-  const [menuAnchor, setMenuAnchor] = useState(null);
-  const [menuTeacher, setMenuTeacher] = useState(null);
+  // ─── HANDLERS ───
+  const handleFilterChange = useCallback((newFilters) => {
+    setFilters(newFilters);
+  }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await teacherApi.list({
-          search: debouncedSearch,
-          limit: 100,
-        });
-        if (!cancelled) {
-          setTeachers(res.data?.data || []);
-          setLoading(false);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setTeachers([]);
-          setLoading(false);
-          enqueueSnackbar(err.response?.data?.message || "Failed to load", {
-            variant: "error",
-          });
-        }
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [debouncedSearch, refreshKey, enqueueSnackbar]);
+  const handleResetFilters = useCallback(() => {
+    setFilters(DEFAULT_FILTERS);
+  }, []);
 
-  const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
-
-  const handleSaved = () => {
+  const handleSaved = useCallback(() => {
     setFormOpen(false);
     setEditingTeacher(null);
-    triggerRefresh();
-  };
+    refetch();
+  }, [refetch]);
 
-  const handleDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     if (!confirmDelete) return;
-    setActionLoading(true);
     try {
-      await teacherApi.delete(confirmDelete._id);
-      enqueueSnackbar("Teacher deleted", { variant: "success" });
+      await deleteMutation.mutateAsync(confirmDelete._id);
       setConfirmDelete(null);
-      triggerRefresh();
-    } catch (err) {
-      enqueueSnackbar(err.response?.data?.message || "Failed", {
-        variant: "error",
-      });
-    } finally {
-      setActionLoading(false);
+    } catch {
+      // Error already handled
     }
-  };
+  }, [confirmDelete, deleteMutation]);
 
-  const handleMenuOpen = (e, teacher) => {
-    setMenuAnchor(e.currentTarget);
-    setMenuTeacher(teacher);
-  };
+  const handleResetSuccess = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
-  const handleMenuClose = () => {
-    setMenuAnchor(null);
-    setMenuTeacher(null);
-  };
-
-  const handleEditFromMenu = () => {
-    setEditingTeacher(menuTeacher);
+  // Card actions
+  const handleEdit = useCallback((teacher) => {
+    setEditingTeacher(teacher);
     setFormOpen(true);
-    handleMenuClose();
-  };
+  }, []);
 
-  const handleResetFromMenu = () => {
-    setResetTeacher(menuTeacher);
+  const handleResetPassword = useCallback((teacher) => {
+    setResetTeacher(teacher);
     setResetOpen(true);
-    handleMenuClose();
-  };
+  }, []);
 
-  const handleDeleteFromMenu = () => {
-    setConfirmDelete(menuTeacher);
-    handleMenuClose();
-  };
+  const handleDelete = useCallback((teacher) => {
+    setConfirmDelete(teacher);
+  }, []);
 
   return (
-    <Box>
-      <PageHeader
-        title="Teachers"
-        subtitle="Manage teacher accounts and class assignments"
-        breadcrumbs={[
-          { label: "Dashboard", path: "/dashboard" },
-          { label: "Teachers" },
-        ]}
-        onAction={() => {
+    <Box sx={{ pb: { xs: 10, md: 4 } }}>
+      {/* HEADER */}
+      <TeacherHeader
+        total={filteredTeachers.length}
+        onAdd={() => {
           setEditingTeacher(null);
           setFormOpen(true);
         }}
-        actionLabel="Add Teacher"
       />
 
-      <Paper sx={{ p: 2, mb: 2, borderRadius: 3 }}>
-        <TextField
-          placeholder="Search by name, ID, email, mobile..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          fullWidth
-          size="small"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Paper>
+      {/* FILTERS */}
+      <TeacherFilterBar
+        filters={filters}
+        onChange={handleFilterChange}
+        onReset={handleResetFilters}
+      />
 
-      <Paper sx={{ borderRadius: 3, overflow: "hidden" }}>
-        {loading ? (
-          <Box sx={{ p: 6, textAlign: "center" }}>
-            <CircularProgress />
-          </Box>
-        ) : teachers.length === 0 ? (
+      {/* BODY */}
+      {isLoading ? (
+        <Paper sx={{ p: 8, textAlign: "center", borderRadius: 3 }}>
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            Loading teachers...
+          </Typography>
+        </Paper>
+      ) : filteredTeachers.length === 0 ? (
+        <Paper sx={{ borderRadius: 3 }}>
           <EmptyState
             icon={<PersonIcon sx={{ fontSize: 64 }} />}
             title="No teachers found"
-            message={search ? "No match" : "Add your first teacher"}
-            actionLabel={!search ? "Add Teacher" : null}
-            onAction={
-              !search
-                ? () => {
-                    setEditingTeacher(null);
-                    setFormOpen(true);
-                  }
-                : null
+            message={
+              filters.search || filters.status !== "all" || filters.gender
+                ? "Try adjusting your filters"
+                : "Add your first teacher to get started"
             }
+            actionLabel={
+              !filters.search && filters.status === "all" && !filters.gender
+                ? "Add Teacher"
+                : "Reset Filters"
+            }
+            onAction={() => {
+              if (
+                !filters.search &&
+                filters.status === "all" &&
+                !filters.gender
+              ) {
+                setEditingTeacher(null);
+                setFormOpen(true);
+              } else {
+                handleResetFilters();
+              }
+            }}
           />
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: "#F8F9FC" }}>
-                  <TableCell sx={{ fontWeight: 700 }}>Teacher</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Employee ID</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Contact</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Classes</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 700, textAlign: "right" }}>
-                    Actions
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {teachers.map((t) => (
-                  <TableRow key={t._id} hover>
-                    <TableCell>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
-                      >
-                        <Avatar
-                          sx={{
-                            bgcolor: "primary.main",
-                            width: 38,
-                            height: 38,
-                            fontSize: "0.9rem",
-                            fontWeight: 700,
-                          }}
-                        >
-                          {t.name?.[0]?.toUpperCase()}
-                        </Avatar>
-                        <Box>
-                          <Box sx={{ fontWeight: 600 }}>{t.name}</Box>
-                          <Box
-                            sx={{
-                              fontSize: "0.75rem",
-                              color: "text.secondary",
-                            }}
-                          >
-                            {t.designation}
-                          </Box>
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={t.employeeId}
-                        size="small"
-                        sx={{
-                          bgcolor: "#F1F3F9",
-                          fontWeight: 700,
-                          fontFamily: "monospace",
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Stack spacing={0.3}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                            fontSize: "0.8rem",
-                          }}
-                        >
-                          <EmailIcon
-                            fontSize="inherit"
-                            sx={{ color: "text.secondary" }}
-                          />
-                          {t.email}
-                        </Box>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                            fontSize: "0.8rem",
-                          }}
-                        >
-                          <PhoneIcon
-                            fontSize="inherit"
-                            sx={{ color: "text.secondary" }}
-                          />
-                          {t.mobile}
-                        </Box>
-                      </Stack>
-                    </TableCell>
-                    <TableCell>
-                      {t.assignedClasses?.length > 0 ? (
-                        <Box
-                          sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}
-                        >
-                          {t.assignedClasses.slice(0, 3).map((cls) => (
-                            <Chip
-                              key={cls._id}
-                              label={`${cls.name}-${cls.section}`}
-                              size="small"
-                              sx={{
-                                bgcolor: "#E0EBFF",
-                                color: "#1E4D98",
-                                fontSize: "0.7rem",
-                                height: 22,
-                              }}
-                            />
-                          ))}
-                          {t.assignedClasses.length > 3 && (
-                            <Chip
-                              label={`+${t.assignedClasses.length - 3}`}
-                              size="small"
-                              sx={{ fontSize: "0.7rem", height: 22 }}
-                            />
-                          )}
-                        </Box>
-                      ) : (
-                        <Box
-                          component="span"
-                          sx={{
-                            color: "text.disabled",
-                            fontSize: "0.8rem",
-                            fontStyle: "italic",
-                          }}
-                        >
-                          No classes
-                        </Box>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={t.isActive ? "Active" : "Inactive"}
-                        size="small"
-                        color={t.isActive ? "success" : "default"}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ textAlign: "right" }}>
-                      <Tooltip title="Edit Teacher">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => {
-                            setEditingTeacher(t);
-                            setFormOpen(true);
-                          }}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Reset Password">
-                        <IconButton
-                          size="small"
-                          color="warning"
-                          onClick={() => {
-                            setResetTeacher(t);
-                            setResetOpen(true);
-                          }}
-                        >
-                          <LockResetIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="More Options">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => handleMenuOpen(e, t)}
-                        >
-                          <MoreVertIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Paper>
+        </Paper>
+      ) : (
+        <>
+          {/* Background loading indicator */}
+          {isFetching && !isLoading && (
+            <Box
+              sx={{
+                position: "sticky",
+                top: 0,
+                zIndex: 5,
+                display: "flex",
+                justifyContent: "center",
+                mb: 1,
+              }}
+            >
+              <Box
+                sx={{
+                  bgcolor: "primary.main",
+                  color: "white",
+                  px: 2,
+                  py: 0.4,
+                  borderRadius: 2,
+                  fontSize: "0.7rem",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.8,
+                  boxShadow: "0 4px 12px rgba(13,27,62,0.2)",
+                }}
+              >
+                <CircularProgress size={10} sx={{ color: "white" }} />
+                Refreshing...
+              </Box>
+            </Box>
+          )}
 
-      {/* Actions Menu */}
-      <Menu
-        anchorEl={menuAnchor}
-        open={Boolean(menuAnchor)}
-        onClose={handleMenuClose}
-        PaperProps={{
-          sx: { minWidth: 180, borderRadius: 2, mt: 0.5 },
-        }}
-      >
-        <MenuItem onClick={handleEditFromMenu}>
-          <EditIcon fontSize="small" sx={{ mr: 1.5 }} />
-          Edit Profile
-        </MenuItem>
-        <MenuItem onClick={handleResetFromMenu} sx={{ color: "warning.dark" }}>
-          <LockResetIcon fontSize="small" sx={{ mr: 1.5 }} />
-          Reset Password
-        </MenuItem>
-        <MenuItem onClick={handleDeleteFromMenu} sx={{ color: "error.main" }}>
-          <DeleteIcon fontSize="small" sx={{ mr: 1.5 }} />
-          Delete Teacher
-        </MenuItem>
-      </Menu>
+          {/* TEACHER GRID */}
+          <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+            {filteredTeachers.map((teacher) => (
+              <Grid item xs={12} sm={6} lg={4} xl={3} key={teacher._id}>
+                <TeacherCard
+                  teacher={teacher}
+                  onEdit={handleEdit}
+                  onResetPassword={handleResetPassword}
+                  onDelete={handleDelete}
+                />
+              </Grid>
+            ))}
+          </Grid>
 
+          {/* Count footer */}
+          <Box sx={{ textAlign: "center", mt: 3 }}>
+            <Typography variant="caption" color="text.secondary">
+              Showing <strong>{filteredTeachers.length}</strong> teacher
+              {filteredTeachers.length !== 1 ? "s" : ""}
+              {debouncedSearch && (
+                <>
+                  {" "}
+                  matching "<strong>{debouncedSearch}</strong>"
+                </>
+              )}
+            </Typography>
+          </Box>
+        </>
+      )}
+
+      {/* DIALOGS */}
       <TeacherFormDialog
         open={formOpen}
         onClose={() => {
@@ -405,9 +250,7 @@ const TeacherListPage = () => {
           setResetTeacher(null);
         }}
         teacher={resetTeacher}
-        onSuccess={() => {
-          // Optional: refresh teacher list after password reset
-        }}
+        onSuccess={handleResetSuccess}
       />
 
       <ConfirmDialog
@@ -416,8 +259,8 @@ const TeacherListPage = () => {
         message={`Delete ${confirmDelete?.name}? User account will also be deleted permanently. This cannot be undone.`}
         confirmText="Delete"
         severity="error"
-        loading={actionLoading}
-        onConfirm={handleDelete}
+        loading={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
         onClose={() => setConfirmDelete(null)}
       />
     </Box>

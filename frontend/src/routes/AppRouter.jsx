@@ -40,11 +40,12 @@ const AnalyticsDashboard = lazy(
 );
 const ActivityLogPage = lazy(() => import("../pages/activity/ActivityLogPage"));
 const PromotionPage = lazy(() => import("../pages/promotion/PromotionPage"));
-
-// ─── NEW: Teacher Profile Page ───
 const TeacherProfilePage = lazy(
   () => import("../pages/profile/TeacherProfilePage"),
 );
+
+// ─── NEW: Backup Page ───
+const BackupPage = lazy(() => import("../pages/backup/BackupPage"));
 
 const Loader = () => (
   <Box
@@ -68,11 +69,9 @@ const AppRouter = () => (
   <BrowserRouter future={routerFutureFlags}>
     <Suspense fallback={<Loader />}>
       <Routes>
-        {/* Public */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-        {/* Protected */}
         <Route
           path="/"
           element={
@@ -83,7 +82,6 @@ const AppRouter = () => (
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
 
-          {/* Dashboards */}
           <Route
             path="dashboard"
             element={
@@ -101,10 +99,8 @@ const AppRouter = () => (
             }
           />
 
-          {/* ─── PROFILE — Both admin & teacher ─── */}
           <Route path="profile" element={<TeacherProfilePage />} />
 
-          {/* Management */}
           <Route path="classes" element={<ClassListPage />} />
           <Route
             path="teachers"
@@ -133,24 +129,19 @@ const AppRouter = () => (
             }
           />
 
-          {/* Attendance */}
           <Route path="attendance/mark" element={<MarkAttendancePage />} />
           <Route
             path="attendance/history"
             element={<AttendanceHistoryPage />}
           />
 
-          {/* Holidays */}
           <Route path="holidays" element={<HolidayManagePage />} />
 
-          {/* Reports & Analytics */}
           <Route path="reports" element={<ReportsPage />} />
           <Route path="analytics" element={<AnalyticsDashboard />} />
 
-          {/* Notifications — Both admin & teacher (per role-based filtering) */}
           <Route path="notifications" element={<NotificationsPage />} />
 
-          {/* Activity Logs — Admin only */}
           <Route
             path="activity-logs"
             element={
@@ -168,9 +159,18 @@ const AppRouter = () => (
               </RoleRoute>
             }
           />
+
+          {/* ─── NEW: Backup & Restore (Admin only) ─── */}
+          <Route
+            path="backup"
+            element={
+              <RoleRoute roles={["admin"]}>
+                <BackupPage />
+              </RoleRoute>
+            }
+          />
         </Route>
 
-        {/* 404 */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>

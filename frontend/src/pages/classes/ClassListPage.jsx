@@ -1,353 +1,286 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Paper,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  TableContainer,
-  IconButton,
-  Tooltip,
-  TextField,
-  InputAdornment,
-  Chip,
+  Grid,
   CircularProgress,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  Stack,
+  Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import ArchiveIcon from "@mui/icons-material/Archive";
-import UnarchiveIcon from "@mui/icons-material/Unarchive";
-import SearchIcon from "@mui/icons-material/Search";
 import ClassIcon from "@mui/icons-material/Class";
-import PeopleIcon from "@mui/icons-material/People";
-import PageHeader from "../../components/common/PageHeader";
+
+import ClassHeader from "./components/ClassHeader";
+import ClassFilterBar from "./components/ClassFilterBar";
+import ClassCard from "./components/ClassCard";
+
+import ClassFormDialog from "./ClassFormDialog";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import EmptyState from "../../components/common/EmptyState";
-import ClassFormDialog from "./ClassFormDialog";
-import classApi from "../../api/classApi";
-import useSessions from "../../hooks/useSessions";
+
 import useAuth from "../../hooks/useAuth";
+import useSessions from "../../hooks/useSessions";
+import useDebounce from "../../hooks/useDebounce";
+import {
+  useClassList,
+  useDeleteClass,
+  useArchiveClass,
+} from "../../hooks/useClasses";
+
+const DEFAULT_FILTERS = {
+  search: "",
+  session: "",
+  isArchived: "false",
+};
 
 const ClassListPage = () => {
   const { enqueueSnackbar } = useSnackbar();
   const { isAdmin } = useAuth();
   const { sessions, activeSession } = useSessions();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  const [classes, setClasses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filterSession, setFilterSession] = useState("");
-  const [filterArchived, setFilterArchived] = useState("false");
+  // ─── FILTERS ───
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const debouncedSearch = useDebounce(filters.search, 400);
+
+  // Set active session as default when sessions load
+  useEffect(() => {
+    if (activeSession?._id && !filters.session) {
+      const timer = setTimeout(
+        () => setFilters((prev) => ({ ...prev, session: activeSession._id })),
+        0,
+      );
+      return () => clearTimeout(timer);
+    }
+  }, [activeSession, filters.session]);
+
+  // Build query params for API
+  const queryParams = useMemo(
+    () => ({
+      session: filters.session,
+      isArchived: filters.isArchived === "true",
+      limit: 500,
+    }),
+    [filters.session, filters.isArchived],
+  );
+
+  // ─── TANSTACK QUERY ───
+  const {
+    data: classesData,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useClassList(queryParams, {
+    enabled: !!filters.session,
+  });
+
+  const allClasses = classesData?.data || [];
+
+  // ─── CLIENT-SIDE SEARCH FILTER ───
+  const filteredClasses = useMemo(() => {
+    if (!debouncedSearch) return allClasses;
+    const s = debouncedSearch.toLowerCase();
+    return allClasses.filter(
+      (cls) =>
+        cls.name?.toLowerCase().includes(s) ||
+        cls.section?.toLowerCase().includes(s) ||
+        cls.classTeacher?.name?.toLowerCase().includes(s),
+    );
+  }, [allClasses, debouncedSearch]);
+
+  // ─── MUTATIONS ───
+  const deleteMutation = useDeleteClass();
+  const archiveMutation = useArchiveClass();
+
+  // ─── DIALOG STATES ───
   const [formOpen, setFormOpen] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [confirmArchive, setConfirmArchive] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  useEffect(() => {
-    if (activeSession?._id && !filterSession) {
-      const timer = setTimeout(() => setFilterSession(activeSession._id), 0);
-      return () => clearTimeout(timer);
-    }
-  }, [activeSession, filterSession]);
+  // ─── HANDLERS ───
+  const handleFilterChange = useCallback((newFilters) => {
+    setFilters(newFilters);
+  }, []);
 
-  useEffect(() => {
-    if (!filterSession) return;
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await classApi.list({
-          session: filterSession,
-          isArchived: filterArchived === "true",
-          limit: 500,
-        });
-        if (!cancelled) {
-          setClasses(res.data?.data || []);
-          setLoading(false);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setClasses([]);
-          setLoading(false);
-          enqueueSnackbar(err.response?.data?.message || "Failed to load", {
-            variant: "error",
-          });
-        }
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [filterSession, filterArchived, refreshKey, enqueueSnackbar]);
+  const handleResetFilters = useCallback(() => {
+    setFilters({
+      ...DEFAULT_FILTERS,
+      session: activeSession?._id || "",
+    });
+  }, [activeSession]);
 
-  const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
-
-  const handleSaved = () => {
+  const handleSaved = useCallback(() => {
     setFormOpen(false);
     setEditingClass(null);
-    triggerRefresh();
-  };
+    refetch();
+  }, [refetch]);
 
-  const handleDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     if (!confirmDelete) return;
-    setActionLoading(true);
     try {
-      await classApi.delete(confirmDelete._id);
-      enqueueSnackbar("Class deleted", { variant: "success" });
+      await deleteMutation.mutateAsync(confirmDelete._id);
       setConfirmDelete(null);
-      triggerRefresh();
-    } catch (err) {
-      enqueueSnackbar(err.response?.data?.message || "Failed", {
-        variant: "error",
-      });
-    } finally {
-      setActionLoading(false);
+    } catch {
+      // Error already handled by mutation
     }
-  };
+  }, [confirmDelete, deleteMutation]);
 
-  const handleArchive = async () => {
+  const handleConfirmArchive = useCallback(async () => {
     if (!confirmArchive) return;
-    setActionLoading(true);
     try {
-      await classApi.archive(confirmArchive._id, !confirmArchive.isArchived);
-      enqueueSnackbar(
-        confirmArchive.isArchived ? "Class unarchived" : "Class archived",
-        { variant: "success" },
-      );
-      setConfirmArchive(null);
-      triggerRefresh();
-    } catch (err) {
-      enqueueSnackbar(err.response?.data?.message || "Failed", {
-        variant: "error",
+      await archiveMutation.mutateAsync({
+        id: confirmArchive._id,
+        isArchived: !confirmArchive.isArchived,
       });
-    } finally {
-      setActionLoading(false);
+      setConfirmArchive(null);
+    } catch {
+      // Error already handled
     }
-  };
+  }, [confirmArchive, archiveMutation]);
 
-  const filtered = classes.filter((cls) => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return (
-      cls.name?.toLowerCase().includes(s) ||
-      cls.section?.toLowerCase().includes(s) ||
-      cls.classTeacher?.name?.toLowerCase().includes(s)
-    );
-  });
+  // ─── CARD ACTION HANDLERS ───
+  const handleEdit = useCallback((cls) => {
+    setEditingClass(cls);
+    setFormOpen(true);
+  }, []);
+
+  const handleArchive = useCallback((cls) => {
+    setConfirmArchive(cls);
+  }, []);
+
+  const handleDelete = useCallback((cls) => {
+    setConfirmDelete(cls);
+  }, []);
 
   return (
-    <Box>
-      <PageHeader
-        title="Classes"
-        subtitle="Manage classes and sections"
-        breadcrumbs={[
-          { label: "Dashboard", path: "/dashboard" },
-          { label: "Classes" },
-        ]}
-        onAction={
-          isAdmin
-            ? () => {
-                setEditingClass(null);
-                setFormOpen(true);
-              }
-            : null
-        }
-        actionLabel="Add Class"
+    <Box sx={{ pb: { xs: 10, md: 4 } }}>
+      {/* HEADER */}
+      <ClassHeader
+        total={filteredClasses.length}
+        isAdmin={isAdmin}
+        onAdd={() => {
+          setEditingClass(null);
+          setFormOpen(true);
+        }}
       />
 
-      <Paper sx={{ p: 2, mb: 2, borderRadius: 3 }}>
-        <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-          <TextField
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            size="small"
-            sx={{ flex: 1, minWidth: 240 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
-          />
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel>Session</InputLabel>
-            <Select
-              value={filterSession}
-              label="Session"
-              onChange={(e) => setFilterSession(e.target.value)}
-            >
-              {sessions.map((s) => (
-                <MenuItem key={s._id} value={s._id}>
-                  {s.name} {s.isActive && "(Active)"}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={filterArchived}
-              label="Status"
-              onChange={(e) => setFilterArchived(e.target.value)}
-            >
-              <MenuItem value="false">Active</MenuItem>
-              <MenuItem value="true">Archived</MenuItem>
-            </Select>
-          </FormControl>
-        </Stack>
-      </Paper>
+      {/* FILTERS */}
+      <ClassFilterBar
+        filters={filters}
+        onChange={handleFilterChange}
+        onReset={handleResetFilters}
+        sessions={sessions || []}
+      />
 
-      <Paper sx={{ borderRadius: 3, overflow: "hidden" }}>
-        {loading ? (
-          <Box sx={{ p: 6, textAlign: "center" }}>
-            <CircularProgress />
-          </Box>
-        ) : filtered.length === 0 ? (
+      {/* BODY */}
+      {isLoading ? (
+        <Paper sx={{ p: 8, textAlign: "center", borderRadius: 3 }}>
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            Loading classes...
+          </Typography>
+        </Paper>
+      ) : filteredClasses.length === 0 ? (
+        <Paper sx={{ borderRadius: 3 }}>
           <EmptyState
             icon={<ClassIcon sx={{ fontSize: 64 }} />}
             title="No classes found"
             message={
-              search ? "Try different search" : "Create your first class"
+              filters.search
+                ? "Try adjusting your search"
+                : filters.isArchived === "true"
+                  ? "No archived classes"
+                  : "Create your first class to get started"
             }
-            actionLabel={isAdmin && !search ? "Add Class" : null}
+            actionLabel={
+              isAdmin && !filters.search && filters.isArchived !== "true"
+                ? "Add Class"
+                : filters.search
+                  ? "Clear Search"
+                  : null
+            }
             onAction={
-              isAdmin && !search
+              isAdmin && !filters.search && filters.isArchived !== "true"
                 ? () => {
                     setEditingClass(null);
                     setFormOpen(true);
                   }
-                : null
+                : filters.search
+                  ? () => handleFilterChange({ ...filters, search: "" })
+                  : null
             }
           />
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: "#F8F9FC" }}>
-                  <TableCell sx={{ fontWeight: 700 }}>#</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Class</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Section</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Class Teacher</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Students</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                  {isAdmin && (
-                    <TableCell sx={{ fontWeight: 700, textAlign: "right" }}>
-                      Actions
-                    </TableCell>
-                  )}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filtered.map((cls, idx) => (
-                  <TableRow key={cls._id} hover>
-                    <TableCell>{idx + 1}</TableCell>
-                    <TableCell>
-                      <Box sx={{ fontWeight: 600 }}>{cls.name}</Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={cls.section}
-                        size="small"
-                        sx={{
-                          bgcolor: "#E0EBFF",
-                          color: "#1E4D98",
-                          fontWeight: 700,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {cls.classTeacher?.name || (
-                        <Box
-                          component="span"
-                          sx={{ color: "text.disabled", fontStyle: "italic" }}
-                        >
-                          Not assigned
-                        </Box>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 0.5,
-                          color: "primary.main",
-                          fontWeight: 600,
-                        }}
-                      >
-                        <PeopleIcon fontSize="small" />
-                        {cls.studentCount || 0}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={cls.isArchived ? "Archived" : "Active"}
-                        size="small"
-                        color={cls.isArchived ? "default" : "success"}
-                        sx={{ fontWeight: 600 }}
-                      />
-                    </TableCell>
-                    {isAdmin && (
-                      <TableCell sx={{ textAlign: "right" }}>
-                        <Tooltip title="Edit">
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={() => {
-                              setEditingClass(cls);
-                              setFormOpen(true);
-                            }}
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip
-                          title={cls.isArchived ? "Unarchive" : "Archive"}
-                        >
-                          <IconButton
-                            size="small"
-                            color="warning"
-                            onClick={() => setConfirmArchive(cls)}
-                          >
-                            {cls.isArchived ? (
-                              <UnarchiveIcon fontSize="small" />
-                            ) : (
-                              <ArchiveIcon fontSize="small" />
-                            )}
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => setConfirmDelete(cls)}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Paper>
+        </Paper>
+      ) : (
+        <>
+          {/* Background loading indicator */}
+          {isFetching && !isLoading && (
+            <Box
+              sx={{
+                position: "sticky",
+                top: 0,
+                zIndex: 5,
+                display: "flex",
+                justifyContent: "center",
+                mb: 1,
+              }}
+            >
+              <Box
+                sx={{
+                  bgcolor: "primary.main",
+                  color: "white",
+                  px: 2,
+                  py: 0.4,
+                  borderRadius: 2,
+                  fontSize: "0.7rem",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.8,
+                  boxShadow: "0 4px 12px rgba(13,27,62,0.2)",
+                }}
+              >
+                <CircularProgress size={10} sx={{ color: "white" }} />
+                Refreshing...
+              </Box>
+            </Box>
+          )}
 
+          {/* CLASS GRID */}
+          <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+            {filteredClasses.map((cls) => (
+              <Grid item xs={12} sm={6} lg={4} xl={3} key={cls._id}>
+                <ClassCard
+                  cls={cls}
+                  isAdmin={isAdmin}
+                  onEdit={handleEdit}
+                  onArchive={handleArchive}
+                  onDelete={handleDelete}
+                />
+              </Grid>
+            ))}
+          </Grid>
+
+          {/* Count footer */}
+          <Box sx={{ textAlign: "center", mt: 3 }}>
+            <Typography variant="caption" color="text.secondary">
+              Showing <strong>{filteredClasses.length}</strong> class
+              {filteredClasses.length !== 1 ? "es" : ""}
+              {debouncedSearch && (
+                <>
+                  {" "}
+                  matching "<strong>{debouncedSearch}</strong>"
+                </>
+              )}
+            </Typography>
+          </Box>
+        </>
+      )}
+
+      {/* DIALOGS */}
       <ClassFormDialog
         open={formOpen}
         onClose={() => {
@@ -356,27 +289,33 @@ const ClassListPage = () => {
         }}
         onSaved={handleSaved}
         editingClass={editingClass}
-        sessions={sessions}
+        sessions={sessions || []}
         activeSession={activeSession}
       />
+
       <ConfirmDialog
         open={!!confirmDelete}
         title="Delete Class"
-        message={`Delete "${confirmDelete?.name} - ${confirmDelete?.section}"?`}
+        message={`Delete "${confirmDelete?.name} - ${confirmDelete?.section}"? This action cannot be undone.`}
         confirmText="Delete"
         severity="error"
-        loading={actionLoading}
-        onConfirm={handleDelete}
+        loading={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
         onClose={() => setConfirmDelete(null)}
       />
+
       <ConfirmDialog
         open={!!confirmArchive}
         title={confirmArchive?.isArchived ? "Unarchive Class" : "Archive Class"}
-        message={`${confirmArchive?.isArchived ? "Unarchive" : "Archive"} "${confirmArchive?.name} - ${confirmArchive?.section}"?`}
+        message={
+          confirmArchive?.isArchived
+            ? `Unarchive "${confirmArchive?.name} - ${confirmArchive?.section}"? It will become active again.`
+            : `Archive "${confirmArchive?.name} - ${confirmArchive?.section}"? It will be hidden from active classes.`
+        }
         confirmText={confirmArchive?.isArchived ? "Unarchive" : "Archive"}
         severity="warning"
-        loading={actionLoading}
-        onConfirm={handleArchive}
+        loading={archiveMutation.isPending}
+        onConfirm={handleConfirmArchive}
         onClose={() => setConfirmArchive(null)}
       />
     </Box>

@@ -23,7 +23,6 @@ const DashboardLayout = () => {
           display: "flex",
           minHeight: "100vh",
           bgcolor: "background.default",
-          // ─── PREVENT HORIZONTAL OVERFLOW ───
           overflowX: "hidden",
           maxWidth: "100vw",
         }}
@@ -45,7 +44,6 @@ const DashboardLayout = () => {
             display: "flex",
             flexDirection: "column",
             minHeight: "100vh",
-            // ─── KEY FIX: Constrain width ───
             width: {
               xs: "100vw",
               md: `calc(100vw - ${sidebarWidth}px)`,
@@ -55,6 +53,7 @@ const DashboardLayout = () => {
               md: `calc(100vw - ${sidebarWidth}px)`,
             },
             overflowX: "hidden",
+            bgcolor: "background.default",
             transition: theme.transitions.create(["width"]),
           }}
         >
@@ -69,7 +68,6 @@ const DashboardLayout = () => {
               flex: 1,
               p: { xs: 2, sm: 3 },
               pb: { xs: 10, md: 3 },
-              // ─── KEY FIX: Allow only y scroll, x hidden ───
               overflowX: "hidden",
               overflowY: "auto",
               width: "100%",

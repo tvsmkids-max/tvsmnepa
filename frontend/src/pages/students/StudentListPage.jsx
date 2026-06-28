@@ -1,67 +1,55 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Box,
   Paper,
-  IconButton,
-  Tooltip,
-  TextField,
-  InputAdornment,
-  CircularProgress,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  Stack,
-  Avatar,
-  Chip,
-  Card,
-  CardContent,
-  Button,
-  Divider,
+  Grid,
   Pagination,
+  CircularProgress,
+  Typography,
   useMediaQuery,
   useTheme,
-  Typography,
-  Grid,
-  Checkbox,
-  Slide,
-  Badge,
 } from "@mui/material";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useSnackbar } from "notistack";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import SearchIcon from "@mui/icons-material/Search";
 import PeopleIcon from "@mui/icons-material/People";
-import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
-import PhoneIcon from "@mui/icons-material/Phone";
-import BadgeIcon from "@mui/icons-material/Badge";
-import ClassIcon from "@mui/icons-material/Class";
-import FormatListNumberedIcon from "@mui/icons-material/FormatListNumbered";
-import FileUploadIcon from "@mui/icons-material/FileUpload";
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
-import AddIcon from "@mui/icons-material/Add";
-import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
-import CheckBoxIcon from "@mui/icons-material/CheckBox";
-import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
-import CloseIcon from "@mui/icons-material/Close";
-import { useNavigate } from "react-router-dom";
-import PageHeader from "../../components/common/PageHeader";
-import ConfirmDialog from "../../components/common/ConfirmDialog";
-import EmptyState from "../../components/common/EmptyState";
-import StatusChip from "../../components/common/StatusChip";
+
+import StudentHeader from "./components/StudentHeader";
+import StudentFilterBar from "./components/StudentFilterBar";
+import StudentCard from "./components/StudentCard";
+import BulkActionToolbar from "./components/BulkActionToolbar";
+
 import StudentFormDialog from "./StudentFormDialog";
 import StudentStatusDialog from "./StudentStatusDialog";
 import StudentImportDialog from "./StudentImportDialog";
 import StudentBulkDeleteDialog from "./StudentBulkDeleteDialog";
-import studentApi from "../../api/studentApi";
-import classApi from "../../api/classApi";
-import useDebounce from "../../hooks/useDebounce";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import EmptyState from "../../components/common/EmptyState";
+
 import useAuth from "../../hooks/useAuth";
+import useDebounce from "../../hooks/useDebounce";
+import {
+  useStudentList,
+  useClasses,
+  useSections,
+  useDeleteStudent,
+} from "../../hooks/useStudents";
+import studentApi from "../../api/studentApi";
 import { exportStudentsToExcel } from "../../utils/exportUtils";
 
+const ROWS_PER_PAGE = 24;
 const MAX_BULK_SELECT = 100;
 const EXPORT_LIMIT = 5000;
+
+const DEFAULT_FILTERS = {
+  search: "",
+  class: "",
+  section: "",
+  status: "Active",
+  gender: "",
+  category: "",
+  bloodGroup: "",
+  page: 0,
+};
 
 const StudentListPage = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -69,105 +57,110 @@ const StudentListPage = () => {
   const { isAdmin } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const isXs = useMediaQuery(theme.breakpoints.down("sm"));
+  const [searchParams] = useSearchParams();
 
-  const [students, setStudents] = useState([]);
-  const [classes, setClasses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 400);
+  // ─── FILTERS ───
+  const [filters, setFilters] = useState(() => {
+    // Initialize from URL params (e.g., /students?class=xxx)
+    const classFromUrl = searchParams.get("class");
+    return {
+      ...DEFAULT_FILTERS,
+      class: classFromUrl || "",
+    };
+  });
 
-  const [filterClass, setFilterClass] = useState("");
-  const [filterStatus, setFilterStatus] = useState("Active");
+  const debouncedSearch = useDebounce(filters.search, 400);
 
-  const [page, setPage] = useState(0);
-  const [rowsPerPage] = useState(24);
-  const [total, setTotal] = useState(0);
+  // Build query params for API
+  const queryParams = useMemo(
+    () => ({
+      page: filters.page + 1,
+      limit: ROWS_PER_PAGE,
+      search: debouncedSearch,
+      status: filters.status,
+      ...(filters.class && { class: filters.class }),
+      ...(filters.section && { section: filters.section }),
+      ...(filters.gender && { gender: filters.gender }),
+      ...(filters.category && { category: filters.category }),
+      ...(filters.bloodGroup && { bloodGroup: filters.bloodGroup }),
+    }),
+    [
+      filters.page,
+      debouncedSearch,
+      filters.status,
+      filters.class,
+      filters.section,
+      filters.gender,
+      filters.category,
+      filters.bloodGroup,
+    ],
+  );
 
+  // ─── TANSTACK QUERY HOOKS ───
+  const {
+    data: studentsData,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useStudentList(queryParams);
+
+  const { data: classes = [] } = useClasses();
+  const { data: sections = [] } = useSections();
+  const deleteMutation = useDeleteStudent();
+
+  const students = studentsData?.data || [];
+  const pagination = studentsData?.pagination || {
+    page: 1,
+    total: 0,
+    totalPages: 0,
+  };
+
+  // ─── DIALOG STATES ───
   const [formOpen, setFormOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [statusStudent, setStatusStudent] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
 
+  // ─── BULK SELECTION ───
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  // ─── EXPORT ───
   const [exporting, setExporting] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await classApi.list({ limit: 500 });
-        if (!cancelled) setClasses(res.data?.data || []);
-      } catch {
-        if (!cancelled) setClasses([]);
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
+  // ─── HANDLERS ───
+  const handleFilterChange = useCallback((newFilters) => {
+    setFilters(newFilters);
   }, []);
 
+  const handleResetFilters = useCallback(() => {
+    setFilters(DEFAULT_FILTERS);
+  }, []);
+
+  const handlePageChange = useCallback((event, newPage) => {
+    setFilters((prev) => ({ ...prev, page: newPage - 1 }));
+    // Scroll to top smoothly
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  // ─── Clear selection on filter change ───
   useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const params = {
-          page: page + 1,
-          limit: rowsPerPage,
-          search: debouncedSearch,
-          status: filterStatus,
-        };
-        if (filterClass) params.class = filterClass;
-        const res = await studentApi.list(params);
-        if (!cancelled) {
-          setStudents(res.data?.data || []);
-          setTotal(res.data?.pagination?.total || 0);
-          setLoading(false);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setStudents([]);
-          setTotal(0);
-          setLoading(false);
-          enqueueSnackbar(err.response?.data?.message || "Failed", {
-            variant: "error",
-          });
-        }
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
+    setSelectedIds(new Set());
   }, [
-    page,
-    rowsPerPage,
     debouncedSearch,
-    filterClass,
-    filterStatus,
-    refreshKey,
-    enqueueSnackbar,
+    filters.class,
+    filters.section,
+    filters.status,
+    filters.gender,
+    filters.category,
+    filters.bloodGroup,
+    filters.page,
   ]);
 
-  const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
-
-  const clearSelection = useCallback(() => {
-    setSelectedIds(new Set());
-    setSelectionMode(false);
-  }, []);
-
-  useEffect(() => {
-    setSelectedIds(new Set());
-  }, [page, debouncedSearch, filterClass, filterStatus, refreshKey]);
-
+  // ─── SELECTION HANDLERS ───
   const toggleSelect = useCallback(
     (id) => {
       if (!isAdmin) return;
@@ -224,36 +217,43 @@ const StudentListPage = () => {
     }
   }, [allPageSelected, allPageIds, enqueueSnackbar]);
 
-  const enterSelectionMode = useCallback(
-    (studentId) => {
-      if (!isAdmin) {
-        enqueueSnackbar("Only admin can perform bulk actions", {
-          variant: "warning",
-        });
-        return;
-      }
-      setSelectionMode(true);
-      setSelectedIds(new Set([studentId]));
-    },
-    [isAdmin, enqueueSnackbar],
-  );
+  const enterSelectionMode = useCallback(() => {
+    if (!isAdmin) return;
+    setSelectionMode(true);
+  }, [isAdmin]);
+
+  const exitSelectionMode = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  }, []);
 
   const selectedStudents = useMemo(
     () => students.filter((s) => selectedIds.has(s._id)),
     [students, selectedIds],
   );
 
-  const handleBulkDeleted = () => {
-    clearSelection();
-    triggerRefresh();
-  };
-
+  // ─── EXPORT (full list or selected) ───
   const handleExportExcel = async () => {
-    if (total === 0) {
+    // If in selection mode and have selections → export only selected
+    if (selectionMode && selectedStudents.length > 0) {
+      const dateLabel = new Date().toISOString().split("T")[0];
+      exportStudentsToExcel(
+        selectedStudents,
+        `students_selected_${selectedStudents.length}_${dateLabel}`,
+      );
+      enqueueSnackbar(`${selectedStudents.length} students exported`, {
+        variant: "success",
+      });
+      return;
+    }
+
+    // Otherwise → export full filtered list
+    if (pagination.total === 0) {
       enqueueSnackbar("No students to export", { variant: "info" });
       return;
     }
-    if (total > EXPORT_LIMIT) {
+
+    if (pagination.total > EXPORT_LIMIT) {
       enqueueSnackbar(
         `Cannot export more than ${EXPORT_LIMIT} students. Filter further.`,
         { variant: "warning" },
@@ -264,12 +264,10 @@ const StudentListPage = () => {
     setExporting(true);
     try {
       const params = {
+        ...queryParams,
         page: 1,
         limit: EXPORT_LIMIT,
-        search: debouncedSearch,
-        status: filterStatus,
       };
-      if (filterClass) params.class = filterClass;
 
       const res = await studentApi.list(params);
       const allStudents = res.data?.data || [];
@@ -279,13 +277,13 @@ const StudentListPage = () => {
         return;
       }
 
-      const className = filterClass
-        ? classes.find((c) => c._id === filterClass)
+      const className = filters.class
+        ? classes.find((c) => c._id === filters.class)
         : null;
       const classLabel = className
         ? `${className.name}_${className.section}_`
         : "all_";
-      const statusLabel = filterStatus ? `${filterStatus}_` : "";
+      const statusLabel = filters.status ? `${filters.status}_` : "";
       const dateLabel = new Date().toISOString().split("T")[0];
       const filename = `students_${classLabel}${statusLabel}${dateLabel}`;
 
@@ -303,375 +301,118 @@ const StudentListPage = () => {
     }
   };
 
+  // ─── SAVE/DELETE HANDLERS ───
   const handleSaved = () => {
     setFormOpen(false);
     setStatusOpen(false);
     setEditingStudent(null);
     setStatusStudent(null);
-    triggerRefresh();
+    refetch();
   };
 
-  const handleDelete = async () => {
+  const handleConfirmDelete = async () => {
     if (!confirmDelete) return;
-    setActionLoading(true);
-    try {
-      await studentApi.delete(confirmDelete._id);
-      enqueueSnackbar("Student deleted", { variant: "success" });
-      setConfirmDelete(null);
-      triggerRefresh();
-    } catch (err) {
-      enqueueSnackbar(err.response?.data?.message || "Failed", {
-        variant: "error",
-      });
-    } finally {
-      setActionLoading(false);
-    }
+    await deleteMutation.mutateAsync(confirmDelete._id);
+    setConfirmDelete(null);
   };
 
   const handleImported = () => {
     setImportOpen(false);
-    triggerRefresh();
+    refetch();
   };
 
-  const handleCardClick = (student) => {
-    if (selectionMode && isAdmin) {
-      toggleSelect(student._id);
-      return;
-    }
-    navigate(`/students/${student._id}`);
+  const handleBulkDeleted = () => {
+    exitSelectionMode();
+    refetch();
   };
 
-  const totalPages = Math.ceil(total / rowsPerPage);
+  // ─── CARD ACTION HANDLERS ───
+  const handleView = useCallback(
+    (student) => {
+      navigate(`/students/${student._id}`);
+    },
+    [navigate],
+  );
 
-  const getClassColor = (className) => {
-    const colors = [
-      { bg: "#E0EBFF", text: "#1E4D98" },
-      { bg: "#FCE7F3", text: "#9F1239" },
-      { bg: "#D1FAE5", text: "#065F46" },
-      { bg: "#FEF3C7", text: "#92400E" },
-      { bg: "#EDE9FE", text: "#5B21B6" },
-      { bg: "#FEE2E2", text: "#991B1B" },
-      { bg: "#CFFAFE", text: "#155E75" },
-    ];
-    if (!className) return colors[0];
-    const hash = className.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-    return colors[hash % colors.length];
-  };
+  const handleEdit = useCallback((student) => {
+    setEditingStudent(student);
+    setFormOpen(true);
+  }, []);
+
+  const handleStatus = useCallback((student) => {
+    setStatusStudent(student);
+    setStatusOpen(true);
+  }, []);
+
+  const handleDelete = useCallback((student) => {
+    setConfirmDelete(student);
+  }, []);
+
+  const handleAttendance = useCallback(
+    (student) => {
+      // Navigate to attendance history with student pre-filtered
+      navigate(`/attendance/history?student=${student._id}`);
+    },
+    [navigate],
+  );
+
+  const handleCardClick = useCallback(
+    (student) => {
+      if (selectionMode && isAdmin) {
+        toggleSelect(student._id);
+        return;
+      }
+      navigate(`/students/${student._id}`);
+    },
+    [selectionMode, isAdmin, toggleSelect, navigate],
+  );
 
   return (
     <Box sx={{ pb: { xs: 10, md: 4 } }}>
-      <PageHeader
-        title="Students"
-        subtitle={`${total} student${total !== 1 ? "s" : ""}`}
-        breadcrumbs={[
-          { label: "Dashboard", path: "/dashboard" },
-          { label: "Students" },
-        ]}
-        action={
-          // ─── MOBILE: Icon buttons in compact row ───
-          isXs ? (
-            <Stack direction="row" spacing={0.5}>
-              {isAdmin && !selectionMode && (
-                <Tooltip title="Select multiple">
-                  <IconButton
-                    size="small"
-                    onClick={() => setSelectionMode(true)}
-                    disabled={students.length === 0}
-                    sx={{
-                      bgcolor: "primary.50",
-                      color: "primary.main",
-                      "&:hover": { bgcolor: "primary.100" },
-                    }}
-                  >
-                    <CheckBoxIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              )}
-              <Tooltip title="Export Excel">
-                <IconButton
-                  size="small"
-                  onClick={handleExportExcel}
-                  disabled={exporting || total === 0 || total > EXPORT_LIMIT}
-                  sx={{
-                    bgcolor: "success.50",
-                    color: "success.dark",
-                    "&:hover": { bgcolor: "success.100" },
-                  }}
-                >
-                  {exporting ? (
-                    <CircularProgress size={18} />
-                  ) : (
-                    <FileDownloadIcon fontSize="small" />
-                  )}
-                </IconButton>
-              </Tooltip>
-              {isAdmin && (
-                <Tooltip title="Import Excel">
-                  <IconButton
-                    size="small"
-                    onClick={() => setImportOpen(true)}
-                    sx={{
-                      bgcolor: "info.50",
-                      color: "info.dark",
-                      "&:hover": { bgcolor: "info.100" },
-                    }}
-                  >
-                    <FileUploadIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              )}
-              <Tooltip title="Add Student">
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    setEditingStudent(null);
-                    setFormOpen(true);
-                  }}
-                  sx={{
-                    background:
-                      "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
-                    color: "white",
-                    "&:hover": { opacity: 0.9 },
-                  }}
-                >
-                  <AddIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          ) : (
-            // ─── DESKTOP: Full buttons ───
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              {isAdmin && !selectionMode && (
-                <Button
-                  variant="outlined"
-                  startIcon={<CheckBoxIcon />}
-                  onClick={() => setSelectionMode(true)}
-                  sx={{ fontWeight: 700 }}
-                  size={isMobile ? "small" : "medium"}
-                  disabled={students.length === 0}
-                >
-                  Select
-                </Button>
-              )}
-              <Button
-                variant="outlined"
-                startIcon={
-                  exporting ? (
-                    <CircularProgress size={16} />
-                  ) : (
-                    <FileDownloadIcon />
-                  )
-                }
-                onClick={handleExportExcel}
-                disabled={exporting || total === 0 || total > EXPORT_LIMIT}
-                sx={{
-                  fontWeight: 700,
-                  borderColor: "success.main",
-                  color: "success.dark",
-                  "&:hover": {
-                    borderColor: "success.dark",
-                    bgcolor: "success.50",
-                  },
-                }}
-                size={isMobile ? "small" : "medium"}
-              >
-                {exporting ? "Exporting..." : "Export"}
-              </Button>
-              {isAdmin && (
-                <Button
-                  variant="outlined"
-                  startIcon={<FileUploadIcon />}
-                  onClick={() => setImportOpen(true)}
-                  sx={{ fontWeight: 700 }}
-                  size={isMobile ? "small" : "medium"}
-                >
-                  Import
-                </Button>
-              )}
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => {
-                  setEditingStudent(null);
-                  setFormOpen(true);
-                }}
-                sx={{
-                  background:
-                    "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
-                  fontWeight: 700,
-                }}
-                size={isMobile ? "small" : "medium"}
-              >
-                Add Student
-              </Button>
-            </Stack>
-          )
-        }
+      {/* ─── PROFESSIONAL HEADER ─── */}
+      <StudentHeader
+        total={pagination.total}
+        isAdmin={isAdmin}
+        selectionMode={selectionMode}
+        exporting={exporting}
+        exportDisabled={pagination.total === 0}
+        onAdd={() => {
+          setEditingStudent(null);
+          setFormOpen(true);
+        }}
+        onImport={() => setImportOpen(true)}
+        onExport={handleExportExcel}
+        onSelectMode={enterSelectionMode}
       />
 
-      {/* BULK SELECTION TOOLBAR */}
-      <Slide direction="down" in={selectionMode} mountOnEnter unmountOnExit>
-        <Paper
-          sx={{
-            p: { xs: 1, sm: 1.5 },
-            mb: 2,
-            borderRadius: 3,
-            background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
-            color: "#fff",
-            position: "sticky",
-            top: 8,
-            zIndex: 10,
-            boxShadow: "0 8px 24px rgba(13,27,62,0.25)",
-          }}
-        >
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={{ xs: 0.5, sm: 1.5 }}
-            flexWrap="wrap"
-            useFlexGap
-          >
-            <IconButton
-              onClick={clearSelection}
-              size="small"
-              sx={{
-                color: "#fff",
-                bgcolor: "rgba(255,255,255,0.1)",
-                "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
-              }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
+      {/* ─── BULK ACTION TOOLBAR ─── */}
+      <BulkActionToolbar
+        show={selectionMode}
+        selectedCount={selectedIds.size}
+        maxSelect={MAX_BULK_SELECT}
+        allPageSelected={allPageSelected}
+        onClose={exitSelectionMode}
+        onSelectAllPage={toggleSelectPage}
+        onDelete={() => setBulkDeleteOpen(true)}
+        onExport={handleExportExcel}
+      />
 
-            <Badge
-              badgeContent={selectedIds.size}
-              color="warning"
-              max={999}
-              sx={{ "& .MuiBadge-badge": { fontWeight: 800 } }}
-            >
-              <Typography
-                variant="body2"
-                fontWeight={800}
-                sx={{ fontSize: { xs: "0.8rem", sm: "0.95rem" } }}
-              >
-                Selected
-              </Typography>
-            </Badge>
+      {/* ─── FILTER BAR ─── */}
+      <StudentFilterBar
+        filters={filters}
+        onChange={handleFilterChange}
+        onReset={handleResetFilters}
+        classes={classes}
+        sections={sections}
+      />
 
-            {!isXs && (
-              <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                {selectedIds.size}/{MAX_BULK_SELECT}
-              </Typography>
-            )}
-
-            <Box sx={{ flex: 1 }} />
-
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={toggleSelectPage}
-              sx={{
-                color: "#fff",
-                borderColor: "rgba(255,255,255,0.4)",
-                fontWeight: 700,
-                fontSize: { xs: "0.65rem", sm: "0.78rem" },
-                px: { xs: 1, sm: 1.5 },
-                minWidth: "auto",
-                "&:hover": {
-                  borderColor: "#fff",
-                  bgcolor: "rgba(255,255,255,0.1)",
-                },
-              }}
-            >
-              {allPageSelected ? "Unselect" : "Page"}
-            </Button>
-
-            <Button
-              size="small"
-              variant="contained"
-              color="error"
-              startIcon={!isXs && <DeleteSweepIcon />}
-              onClick={() => setBulkDeleteOpen(true)}
-              disabled={selectedIds.size === 0}
-              sx={{
-                fontWeight: 800,
-                fontSize: { xs: "0.7rem", sm: "0.82rem" },
-                px: { xs: 1, sm: 2 },
-              }}
-            >
-              {isXs
-                ? `Del ${selectedIds.size}`
-                : `Delete (${selectedIds.size})`}
-            </Button>
-          </Stack>
-        </Paper>
-      </Slide>
-
-      {/* FILTERS */}
-      <Paper sx={{ p: { xs: 1.2, sm: 1.5 }, mb: 2, borderRadius: 3 }}>
-        <Stack spacing={1.2}>
-          <TextField
-            placeholder={isXs ? "Search..." : "Search name, scholar #, roll..."}
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(0);
-            }}
-            size="small"
-            fullWidth
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <Stack direction="row" spacing={1}>
-            <FormControl size="small" sx={{ flex: 1 }}>
-              <InputLabel>Class</InputLabel>
-              <Select
-                value={filterClass}
-                label="Class"
-                onChange={(e) => {
-                  setFilterClass(e.target.value);
-                  setPage(0);
-                }}
-              >
-                <MenuItem value="">All Classes</MenuItem>
-                {classes.map((c) => (
-                  <MenuItem key={c._id} value={c._id}>
-                    {c.name} - {c.section}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl size="small" sx={{ flex: 1 }}>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={filterStatus}
-                label="Status"
-                onChange={(e) => {
-                  setFilterStatus(e.target.value);
-                  setPage(0);
-                }}
-              >
-                <MenuItem value="Active">Active</MenuItem>
-                <MenuItem value="Inactive">Inactive</MenuItem>
-                <MenuItem value="TC">TC</MenuItem>
-                <MenuItem value="Transferred">Transferred</MenuItem>
-              </Select>
-            </FormControl>
-          </Stack>
-        </Stack>
-      </Paper>
-
-      {/* BODY */}
-      {loading ? (
+      {/* ─── LOADING / EMPTY / GRID ─── */}
+      {isLoading ? (
         <Paper sx={{ p: 8, textAlign: "center", borderRadius: 3 }}>
           <CircularProgress />
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            Loading students...
+          </Typography>
         </Paper>
       ) : students.length === 0 ? (
         <Paper sx={{ borderRadius: 3 }}>
@@ -679,459 +420,131 @@ const StudentListPage = () => {
             icon={<PeopleIcon sx={{ fontSize: 64 }} />}
             title="No students found"
             message={
-              search || filterClass
-                ? "No match for your filters"
+              filters.search ||
+              filters.class ||
+              filters.section ||
+              filters.gender ||
+              filters.category ||
+              filters.bloodGroup
+                ? "Try adjusting your filters"
                 : "Add your first student"
             }
-            actionLabel={!search ? "Add Student" : null}
-            onAction={
-              !search
-                ? () => {
-                    setEditingStudent(null);
-                    setFormOpen(true);
-                  }
-                : null
+            actionLabel={
+              !filters.search && !filters.class
+                ? "Add Student"
+                : "Reset Filters"
             }
+            onAction={() => {
+              if (!filters.search && !filters.class) {
+                setEditingStudent(null);
+                setFormOpen(true);
+              } else {
+                handleResetFilters();
+              }
+            }}
           />
         </Paper>
       ) : (
         <>
+          {/* Background loading indicator */}
+          {isFetching && !isLoading && (
+            <Box
+              sx={{
+                position: "sticky",
+                top: 0,
+                zIndex: 5,
+                display: "flex",
+                justifyContent: "center",
+                mb: 1,
+              }}
+            >
+              <Box
+                sx={{
+                  bgcolor: "primary.main",
+                  color: "white",
+                  px: 2,
+                  py: 0.4,
+                  borderRadius: 2,
+                  fontSize: "0.7rem",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.8,
+                  boxShadow: "0 4px 12px rgba(13,27,62,0.2)",
+                }}
+              >
+                <CircularProgress size={10} sx={{ color: "white" }} />
+                Refreshing...
+              </Box>
+            </Box>
+          )}
+
+          {/* ─── STUDENT GRID ─── */}
           <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-            {students.map((s) => {
-              const classKey = `${s.class?.name || ""}-${s.class?.section || ""}`;
-              const classColor = getClassColor(classKey);
-              const isSelected = selectedIds.has(s._id);
-
-              return (
-                <Grid item xs={12} sm={6} lg={4} key={s._id}>
-                  <Card
-                    onClick={() => handleCardClick(s)}
-                    sx={{
-                      borderRadius: 3,
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                      border: "2px solid",
-                      borderColor: isSelected ? "primary.main" : "divider",
-                      bgcolor: isSelected ? "primary.50" : "background.paper",
-                      height: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                      position: "relative",
-                      "&:hover": {
-                        borderColor: "primary.main",
-                        transform: selectionMode
-                          ? "scale(0.98)"
-                          : "translateY(-3px)",
-                        boxShadow: "0 12px 24px rgba(13,27,62,0.12)",
-                      },
-                      "&:active": {
-                        transform: "translateY(-1px)",
-                      },
-                    }}
-                  >
-                    {isAdmin && selectionMode && (
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          top: 8,
-                          left: 8,
-                          zIndex: 2,
-                          bgcolor: "#fff",
-                          borderRadius: "50%",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleSelect(s._id);
-                        }}
-                      >
-                        <Checkbox
-                          checked={isSelected}
-                          size="small"
-                          sx={{
-                            color: "primary.main",
-                            "&.Mui-checked": { color: "primary.main" },
-                          }}
-                        />
-                      </Box>
-                    )}
-
-                    {/* Status badge - moved to bottom-right of header to avoid overlap */}
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        top: 10,
-                        right: 10,
-                        zIndex: 1,
-                      }}
-                    >
-                      <StatusChip status={s.status} size="small" />
-                    </Box>
-
-                    <CardContent
-                      sx={{
-                        p: { xs: 1.8, sm: 2.2 },
-                        pb: "0 !important",
-                        flex: 1,
-                        display: "flex",
-                        flexDirection: "column",
-                      }}
-                    >
-                      {/* HEADER */}
-                      <Stack
-                        direction="row"
-                        spacing={1.2}
-                        sx={{
-                          mb: 1.5,
-                          pr: 10, // Space for status badge
-                          pl: selectionMode ? 4 : 0,
-                          transition: "padding 0.2s",
-                        }}
-                      >
-                        <Avatar
-                          sx={{
-                            width: { xs: 44, sm: 48 },
-                            height: { xs: 44, sm: 48 },
-                            bgcolor:
-                              s.gender === "Female" ? "#EC4899" : "#1E4D98",
-                            fontSize: { xs: "1rem", sm: "1.1rem" },
-                            fontWeight: 800,
-                            flexShrink: 0,
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                          }}
-                        >
-                          {s.name?.[0]?.toUpperCase()}
-                        </Avatar>
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography
-                            variant="body1"
-                            fontWeight={800}
-                            sx={{
-                              fontSize: { xs: "0.88rem", sm: "0.95rem" },
-                              lineHeight: 1.2,
-                              mb: 0.3,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            {s.name}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{
-                              fontSize: "0.7rem",
-                              display: "block",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                              lineHeight: 1.3,
-                            }}
-                          >
-                            <strong>F:</strong> {s.fatherName}
-                          </Typography>
-                          {s.motherName && (
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{
-                                fontSize: "0.7rem",
-                                display: "block",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                                lineHeight: 1.3,
-                              }}
-                            >
-                              <strong>M:</strong> {s.motherName}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Stack>
-
-                      <Divider sx={{ mb: 1.2 }} />
-
-                      {/* DETAILS */}
-                      <Stack spacing={0.8} sx={{ flex: 1 }}>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <BadgeIcon
-                            sx={{
-                              fontSize: 14,
-                              color: "text.secondary",
-                              flexShrink: 0,
-                            }}
-                          />
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{
-                              minWidth: 55,
-                              fontSize: "0.66rem",
-                              fontWeight: 700,
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            Scholar
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontFamily: "monospace",
-                              fontWeight: 700,
-                              fontSize: "0.78rem",
-                              flex: 1,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {s.scholarNumber}
-                          </Typography>
-                        </Stack>
-
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <ClassIcon
-                            sx={{
-                              fontSize: 14,
-                              color: "text.secondary",
-                              flexShrink: 0,
-                            }}
-                          />
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{
-                              minWidth: 55,
-                              fontSize: "0.66rem",
-                              fontWeight: 700,
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            Class
-                          </Typography>
-                          <Chip
-                            label={`${s.class?.name || "—"}-${s.class?.section || "—"}`}
-                            size="small"
-                            sx={{
-                              bgcolor: classColor.bg,
-                              color: classColor.text,
-                              fontWeight: 800,
-                              height: 20,
-                              fontSize: "0.68rem",
-                            }}
-                          />
-                        </Stack>
-
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <FormatListNumberedIcon
-                            sx={{
-                              fontSize: 14,
-                              color: "text.secondary",
-                              flexShrink: 0,
-                            }}
-                          />
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{
-                              minWidth: 55,
-                              fontSize: "0.66rem",
-                              fontWeight: 700,
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            Roll
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontWeight: 800,
-                              fontSize: "0.82rem",
-                              color: "primary.main",
-                            }}
-                          >
-                            {s.rollNumber}
-                          </Typography>
-                        </Stack>
-
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <PhoneIcon
-                            sx={{
-                              fontSize: 14,
-                              color: "text.secondary",
-                              flexShrink: 0,
-                            }}
-                          />
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{
-                              minWidth: 55,
-                              fontSize: "0.66rem",
-                              fontWeight: 700,
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            Mobile
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontFamily: "monospace",
-                              fontWeight: 600,
-                              fontSize: "0.78rem",
-                              color:
-                                s.mobile === "0000000000"
-                                  ? "text.disabled"
-                                  : "text.primary",
-                            }}
-                          >
-                            {s.mobile === "0000000000" ? "—" : s.mobile}
-                          </Typography>
-                        </Stack>
-                      </Stack>
-                    </CardContent>
-
-                    {!selectionMode && (
-                      <Box
-                        sx={{
-                          borderTop: "1px solid",
-                          borderColor: "divider",
-                          bgcolor: "#FAFBFD",
-                          px: 0.5,
-                          py: 0.6,
-                          display: "flex",
-                          justifyContent: "space-around",
-                          alignItems: "center",
-                          minHeight: 44,
-                        }}
-                      >
-                        <Tooltip title="View">
-                          <IconButton
-                            size="small"
-                            color="info"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/students/${s._id}`);
-                            }}
-                            sx={{
-                              p: 0.8,
-                              "&:hover": { bgcolor: "info.50" },
-                            }}
-                          >
-                            <VisibilityIcon sx={{ fontSize: 18 }} />
-                          </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Edit">
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingStudent(s);
-                              setFormOpen(true);
-                            }}
-                            sx={{
-                              p: 0.8,
-                              "&:hover": { bgcolor: "primary.50" },
-                            }}
-                          >
-                            <EditIcon sx={{ fontSize: 18 }} />
-                          </IconButton>
-                        </Tooltip>
-
-                        {isAdmin && (
-                          <>
-                            <Tooltip title="Status">
-                              <IconButton
-                                size="small"
-                                color="warning"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setStatusStudent(s);
-                                  setStatusOpen(true);
-                                }}
-                                sx={{
-                                  p: 0.8,
-                                  "&:hover": { bgcolor: "warning.50" },
-                                }}
-                              >
-                                <SwapHorizIcon sx={{ fontSize: 18 }} />
-                              </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Select">
-                              <IconButton
-                                size="small"
-                                color="primary"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  enterSelectionMode(s._id);
-                                }}
-                                sx={{
-                                  p: 0.8,
-                                  "&:hover": { bgcolor: "primary.50" },
-                                }}
-                              >
-                                <CheckBoxOutlineBlankIcon
-                                  sx={{ fontSize: 18 }}
-                                />
-                              </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Delete">
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setConfirmDelete(s);
-                                }}
-                                sx={{
-                                  p: 0.8,
-                                  "&:hover": { bgcolor: "error.50" },
-                                }}
-                              >
-                                <DeleteIcon sx={{ fontSize: 18 }} />
-                              </IconButton>
-                            </Tooltip>
-                          </>
-                        )}
-                      </Box>
-                    )}
-                  </Card>
-                </Grid>
-              );
-            })}
+            {students.map((student) => (
+              <Grid item xs={12} sm={6} lg={4} xl={3} key={student._id}>
+                <StudentCard
+                  student={student}
+                  isSelected={selectedIds.has(student._id)}
+                  selectionMode={selectionMode}
+                  isAdmin={isAdmin}
+                  onView={handleView}
+                  onEdit={handleEdit}
+                  onStatus={handleStatus}
+                  onDelete={handleDelete}
+                  onAttendance={handleAttendance}
+                  onToggleSelect={toggleSelect}
+                  onCardClick={handleCardClick}
+                />
+              </Grid>
+            ))}
           </Grid>
 
-          {totalPages > 1 && (
+          {/* ─── PAGINATION ─── */}
+          {pagination.totalPages > 1 && (
             <Box
               sx={{
                 display: "flex",
                 justifyContent: "center",
-                mt: 3,
+                mt: 4,
                 mb: 2,
               }}
             >
-              <Pagination
-                count={totalPages}
-                page={page + 1}
-                onChange={(e, p) => setPage(p - 1)}
-                color="primary"
-                size={isMobile ? "small" : "medium"}
-                showFirstButton={!isXs}
-                showLastButton={!isXs}
-                siblingCount={isXs ? 0 : 1}
-              />
+              <Paper
+                sx={{
+                  p: 1,
+                  borderRadius: 3,
+                  border: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <Pagination
+                  count={pagination.totalPages}
+                  page={filters.page + 1}
+                  onChange={handlePageChange}
+                  color="primary"
+                  size={isMobile ? "small" : "medium"}
+                  showFirstButton={!isMobile}
+                  showLastButton={!isMobile}
+                  siblingCount={isMobile ? 0 : 1}
+                  boundaryCount={isMobile ? 1 : 2}
+                />
+              </Paper>
             </Box>
           )}
+
+          {/* Pagination Info */}
+          <Box sx={{ textAlign: "center", mt: 1 }}>
+            <Typography variant="caption" color="text.secondary">
+              Showing {filters.page * ROWS_PER_PAGE + 1} -{" "}
+              {Math.min((filters.page + 1) * ROWS_PER_PAGE, pagination.total)}{" "}
+              of <strong>{pagination.total}</strong> students
+            </Typography>
+          </Box>
         </>
       )}
 
+      {/* ─── DIALOGS ─── */}
       <StudentFormDialog
         open={formOpen}
         onClose={() => {
@@ -1165,8 +578,8 @@ const StudentListPage = () => {
         message={`Permanently delete ${confirmDelete?.name}? Attendance history will also be removed.`}
         confirmText="Delete"
         severity="error"
-        loading={actionLoading}
-        onConfirm={handleDelete}
+        loading={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
         onClose={() => setConfirmDelete(null)}
       />
 

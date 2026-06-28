@@ -1,12 +1,13 @@
 import React from "react";
-import { ThemeProvider, CssBaseline } from "@mui/material";
 import { SnackbarProvider } from "notistack";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import theme from "./themes/theme";
 import AppRouter from "./routes/AppRouter";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import PWAInstallPrompt from "./components/common/PWAInstallPrompt";
+import PWAUpdateNotification from "./components/common/PWAUpdateNotification";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,8 +23,7 @@ const queryClient = new QueryClient({
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
+      <ThemeProvider>
         <SnackbarProvider
           maxSnack={4}
           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
@@ -33,6 +33,9 @@ const App = () => (
           <AuthProvider>
             <SettingsProvider>
               <AppRouter />
+              {/* ─── PWA Components ─── */}
+              <PWAInstallPrompt />
+              <PWAUpdateNotification />
             </SettingsProvider>
           </AuthProvider>
         </SnackbarProvider>

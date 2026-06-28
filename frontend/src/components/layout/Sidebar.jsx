@@ -27,9 +27,10 @@ import HistoryIcon from "@mui/icons-material/History";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import MenuOpenIcon from "@mui/icons-material/MenuOpen";
-import useAuth from "../../hooks/useAuth";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
-import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
+import StorageIcon from "@mui/icons-material/Storage";
+import useAuth from "../../hooks/useAuth";
+import useThemeMode from "../../hooks/useThemeMode";
 
 const adminNav = [
   { label: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
@@ -50,13 +51,15 @@ const adminNav = [
   { divider: true, label: "Admin" },
   { label: "Holidays", icon: <BeachAccessIcon />, path: "/holidays" },
   { label: "Sessions", icon: <SchoolIcon />, path: "/sessions" },
-  { label: "Promotions", icon: <SchoolIcon />, path: "/promotion" }, // ← Must be here
+  { label: "Promotions", icon: <SchoolIcon />, path: "/promotion" },
   {
     label: "Notifications",
     icon: <NotificationsIcon />,
     path: "/notifications",
   },
   { label: "Activity Logs", icon: <HistoryIcon />, path: "/activity-logs" },
+  { divider: true, label: "System" },
+  { label: "Backup & Restore", icon: <StorageIcon />, path: "/backup" }, // ← NEW
   { label: "Settings", icon: <SettingsIcon />, path: "/settings" },
 ];
 
@@ -79,6 +82,7 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { isDark } = useThemeMode();
 
   const navItems = useMemo(
     () => (user?.role === "admin" ? adminNav : teacherNav),
@@ -92,19 +96,25 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
     return location.pathname.startsWith(path);
   };
 
+  const sidebarBg = isDark
+    ? "linear-gradient(180deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)"
+    : "linear-gradient(180deg, #0D47A1 0%, #1565C0 50%, #1976D2 100%)";
+
+  const borderColor = isDark
+    ? "rgba(255,255,255,0.08)"
+    : "rgba(255,255,255,0.12)";
+
   return (
     <Box
       sx={{
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        background:
-          "linear-gradient(180deg, #0D47A1 0%, #1565C0 50%, #1976D2 100%)",
+        background: sidebarBg,
         color: "white",
         overflow: "hidden",
       }}
     >
-      {/* Header */}
       <Box
         sx={{
           px: 1.5,
@@ -113,7 +123,8 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
           alignItems: "center",
           justifyContent: collapsed ? "center" : "space-between",
           minHeight: 52,
-          borderBottom: "1px solid rgba(255,255,255,0.12)",
+          borderBottom: "1px solid",
+          borderColor,
         }}
       >
         {!collapsed && (
@@ -153,7 +164,6 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
         </IconButton>
       </Box>
 
-      {/* Nav Items */}
       <Box sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", py: 1 }}>
         <List dense disablePadding>
           {navItems.map((item, idx) => {
@@ -179,7 +189,10 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
                     </Typography>
                   ) : (
                     <Divider
-                      sx={{ borderColor: "rgba(255,255,255,0.1)", my: 0.5 }}
+                      sx={{
+                        borderColor: "rgba(255,255,255,0.1)",
+                        my: 0.5,
+                      }}
                     />
                   )}
                 </Box>
@@ -206,9 +219,21 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
                     justifyContent: collapsed ? "center" : "flex-start",
                     minHeight: 40,
                     color: active ? "white" : "rgba(255,255,255,0.72)",
-                    bgcolor: active ? "rgba(255,255,255,0.16)" : "transparent",
+                    bgcolor: active
+                      ? isDark
+                        ? "rgba(59,130,246,0.25)"
+                        : "rgba(255,255,255,0.16)"
+                      : "transparent",
+                    borderLeft: active ? "3px solid" : "3px solid transparent",
+                    borderLeftColor: active
+                      ? isDark
+                        ? "#3B82F6"
+                        : "#F5A623"
+                      : "transparent",
                     "&:hover": {
-                      bgcolor: "rgba(255,255,255,0.1)",
+                      bgcolor: isDark
+                        ? "rgba(59,130,246,0.15)"
+                        : "rgba(255,255,255,0.1)",
                       color: "white",
                     },
                   }}
@@ -239,11 +264,11 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
         </List>
       </Box>
 
-      {/* User Footer */}
       <Box
         sx={{
           p: 1.5,
-          borderTop: "1px solid rgba(255,255,255,0.12)",
+          borderTop: "1px solid",
+          borderColor,
           display: "flex",
           alignItems: "center",
           gap: 1.5,
@@ -253,7 +278,7 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
           sx={{
             width: 32,
             height: 32,
-            bgcolor: "secondary.main",
+            bgcolor: isDark ? "#3B82F6" : "secondary.main",
             fontSize: "0.85rem",
             fontWeight: 700,
             flexShrink: 0,
@@ -287,7 +312,6 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
   );
 };
 
-// Sidebar — Desktop only (mobile uses bottom nav)
 const Sidebar = ({ drawerWidth, collapsed, onCollapseToggle }) => (
   <Drawer
     variant="permanent"
@@ -301,8 +325,8 @@ const Sidebar = ({ drawerWidth, collapsed, onCollapseToggle }) => (
         border: "none",
         transition: "width 0.25s ease",
         overflow: "hidden",
-        top: 70,
-        height: "calc(100vh - 70px)",
+        top: 64,
+        height: "calc(100vh - 64px)",
       },
     }}
   >

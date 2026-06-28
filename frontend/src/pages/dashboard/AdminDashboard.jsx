@@ -41,6 +41,7 @@ import classApi from "../../api/classApi";
 import teacherApi from "../../api/teacherApi";
 import studentApi from "../../api/studentApi";
 import attendanceApi from "../../api/attendanceApi";
+import WeeklyBackupBanner from "../../components/common/WeeklyBackupBanner";
 
 const StatCard = ({ title, value, subtitle, icon, color, onClick }) => (
   <Card
@@ -290,6 +291,7 @@ const AdminDashboard = () => {
 
   return (
     <Box>
+      <WeeklyBackupBanner />
       {/* ─── HERO GREETING CARD ─── */}
       <Paper
         sx={{

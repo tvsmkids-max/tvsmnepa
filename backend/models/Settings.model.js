@@ -133,6 +133,12 @@ const settingsSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+
+    // ─── BACKUP TRACKING ───
+    lastBackupAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

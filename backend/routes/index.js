@@ -17,6 +17,7 @@ const importRoutes = require("./import.routes");
 const analyticsRoutes = require("./analytics.routes");
 const activityLogRoutes = require("./activityLog.routes");
 const promotionRoutes = require("./promotion.routes");
+const backupRoutes = require("./backup.routes"); // ← NEW
 
 router.use("/auth", authRoutes);
 router.use("/sessions", sessionRoutes);
@@ -32,6 +33,7 @@ router.use("/import", importRoutes);
 router.use("/analytics", analyticsRoutes);
 router.use("/activity-logs", activityLogRoutes);
 router.use("/promotion", promotionRoutes);
+router.use("/backup", backupRoutes); // ← NEW
 
 router.get("/health", (req, res) => {
   const { getConnectionStatus } = require("../config/db");

@@ -32,6 +32,7 @@ import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
+import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import useAuth from "../../hooks/useAuth";
 
 const MobileBottomNav = () => {
@@ -76,12 +77,10 @@ const MobileBottomNav = () => {
     navigate("/login", { replace: true });
   };
 
-  // Menu items for "More" drawer
   const adminMoreItems = [
     { divider: true, label: "Personal" },
     { label: "My Profile", icon: <PersonOutlinedIcon />, path: "/profile" },
     { divider: true, label: "Management" },
-
     { label: "Classes", icon: <ClassOutlinedIcon />, path: "/classes" },
     { label: "Teachers", icon: <PersonOutlinedIcon />, path: "/teachers" },
     { divider: true, label: "Reports" },
@@ -90,7 +89,7 @@ const MobileBottomNav = () => {
     { divider: true, label: "Administration" },
     { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
     { label: "Sessions", icon: <SchoolOutlinedIcon />, path: "/sessions" },
-    { label: "Promotions", icon: <SchoolOutlinedIcon />, path: "/promotion" }, // ← ADD THIS
+    { label: "Promotions", icon: <SchoolOutlinedIcon />, path: "/promotion" },
     {
       label: "Notifications",
       icon: <NotificationsOutlinedIcon />,
@@ -101,6 +100,12 @@ const MobileBottomNav = () => {
       icon: <TimelineOutlinedIcon />,
       path: "/activity-logs",
     },
+    { divider: true, label: "System" },
+    {
+      label: "Backup & Restore",
+      icon: <StorageOutlinedIcon />,
+      path: "/backup",
+    }, // ← NEW
     { label: "Settings", icon: <SettingsOutlinedIcon />, path: "/settings" },
   ];
 
@@ -123,7 +128,6 @@ const MobileBottomNav = () => {
 
   return (
     <>
-      {/* Bottom Navigation */}
       <Paper
         sx={{
           position: "fixed",
@@ -133,8 +137,9 @@ const MobileBottomNav = () => {
           zIndex: 1100,
           display: { xs: "block", md: "none" },
           borderTop: "1px solid",
-          borderColor: "rgba(0,0,0,0.06)",
+          borderColor: "divider",
           borderRadius: 0,
+          bgcolor: "background.paper",
         }}
         elevation={0}
       >
@@ -144,13 +149,13 @@ const MobileBottomNav = () => {
           showLabels
           sx={{
             height: 60,
-            bgcolor: "white",
+            bgcolor: "background.paper",
             "& .MuiBottomNavigationAction-root": {
               minWidth: "auto",
               padding: "6px 4px",
-              color: "#8E99A4",
+              color: "text.secondary",
               "&.Mui-selected": {
-                color: "#0D1B3E",
+                color: "primary.main",
               },
             },
             "& .MuiBottomNavigationAction-label": {
@@ -192,7 +197,6 @@ const MobileBottomNav = () => {
         </BottomNavigation>
       </Paper>
 
-      {/* More Drawer — Slides up from bottom */}
       <Drawer
         anchor="bottom"
         open={drawerOpen}
@@ -201,23 +205,23 @@ const MobileBottomNav = () => {
           sx: {
             borderRadius: "16px 16px 0 0",
             maxHeight: "75vh",
+            bgcolor: "background.paper",
+            backgroundImage: "none",
           },
         }}
       >
-        {/* Drawer Handle */}
         <Box sx={{ textAlign: "center", pt: 1.5, pb: 1 }}>
           <Box
             sx={{
               width: 36,
               height: 4,
               borderRadius: 2,
-              bgcolor: "#E0E0E0",
+              bgcolor: "divider",
               mx: "auto",
             }}
           />
         </Box>
 
-        {/* Header */}
         <Box sx={{ px: 2.5, pb: 2 }}>
           <Stack
             direction="row"
@@ -229,7 +233,7 @@ const MobileBottomNav = () => {
                 sx={{
                   width: 40,
                   height: 40,
-                  bgcolor: "#0D1B3E",
+                  bgcolor: "primary.main",
                   fontSize: "0.95rem",
                   fontWeight: 800,
                 }}
@@ -240,14 +244,14 @@ const MobileBottomNav = () => {
                 <Typography
                   variant="body2"
                   fontWeight={700}
-                  sx={{ color: "#1A1D21" }}
+                  sx={{ color: "text.primary" }}
                 >
                   {user?.name}
                 </Typography>
                 <Typography
                   variant="caption"
                   sx={{
-                    color: "#8E99A4",
+                    color: "text.secondary",
                     fontSize: "0.7rem",
                     textTransform: "capitalize",
                   }}
@@ -257,14 +261,15 @@ const MobileBottomNav = () => {
               </Box>
             </Stack>
             <IconButton onClick={() => setDrawerOpen(false)} size="small">
-              <CloseOutlinedIcon sx={{ fontSize: 20, color: "#8E99A4" }} />
+              <CloseOutlinedIcon
+                sx={{ fontSize: 20, color: "text.secondary" }}
+              />
             </IconButton>
           </Stack>
         </Box>
 
         <Divider />
 
-        {/* Menu Items */}
         <List sx={{ px: 1, py: 1 }}>
           {moreItems.map((item, idx) => {
             if (item.divider) {
@@ -277,7 +282,7 @@ const MobileBottomNav = () => {
                     px: 2,
                     pt: idx === 0 ? 1 : 2,
                     pb: 0.5,
-                    color: "#8E99A4",
+                    color: "text.secondary",
                     fontWeight: 700,
                     fontSize: "0.65rem",
                     textTransform: "uppercase",
@@ -299,14 +304,15 @@ const MobileBottomNav = () => {
                   borderRadius: 2,
                   mb: 0.3,
                   py: 1.2,
-                  bgcolor: active ? "#F0F1F3" : "transparent",
-                  "&:active": { bgcolor: "#F0F1F3" },
+                  bgcolor: active ? "action.selected" : "transparent",
+                  "&:active": { bgcolor: "action.selected" },
+                  "&:hover": { bgcolor: "action.hover" },
                 }}
               >
                 <ListItemIcon
                   sx={{
                     minWidth: 36,
-                    color: active ? "#0D1B3E" : "#8E99A4",
+                    color: active ? "primary.main" : "text.secondary",
                   }}
                 >
                   {React.cloneElement(item.icon, { sx: { fontSize: 20 } })}
@@ -316,7 +322,7 @@ const MobileBottomNav = () => {
                   primaryTypographyProps={{
                     fontSize: "0.88rem",
                     fontWeight: active ? 700 : 500,
-                    color: active ? "#0D1B3E" : "#1A1D21",
+                    color: active ? "primary.main" : "text.primary",
                   }}
                 />
                 {active && (
@@ -325,7 +331,7 @@ const MobileBottomNav = () => {
                       width: 6,
                       height: 6,
                       borderRadius: "50%",
-                      bgcolor: "#0D1B3E",
+                      bgcolor: "primary.main",
                     }}
                   />
                 )}
@@ -336,35 +342,34 @@ const MobileBottomNav = () => {
 
         <Divider />
 
-        {/* Sign Out */}
         <Box sx={{ p: 1.5 }}>
           <ListItemButton
             onClick={handleLogout}
             sx={{
               borderRadius: 2,
               py: 1.2,
-              color: "#DC2626",
+              color: "error.main",
+              "&:hover": { bgcolor: "error.50" },
             }}
           >
             <ListItemIcon sx={{ minWidth: 36 }}>
-              <LogoutOutlinedIcon sx={{ fontSize: 20, color: "#DC2626" }} />
+              <LogoutOutlinedIcon sx={{ fontSize: 20, color: "error.main" }} />
             </ListItemIcon>
             <ListItemText
               primary="Sign Out"
               primaryTypographyProps={{
                 fontSize: "0.88rem",
                 fontWeight: 600,
-                color: "#DC2626",
+                color: "error.main",
               }}
             />
           </ListItemButton>
         </Box>
 
-        {/* Footer */}
         <Box sx={{ textAlign: "center", pb: 2 }}>
           <Typography
             variant="caption"
-            sx={{ color: "#C5CAD0", fontSize: "0.62rem" }}
+            sx={{ color: "text.disabled", fontSize: "0.62rem" }}
           >
             v{import.meta.env.VITE_APP_VERSION || "1.0.0"} • by Abhishek
           </Typography>

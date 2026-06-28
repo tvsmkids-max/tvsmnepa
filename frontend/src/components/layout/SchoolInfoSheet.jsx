@@ -30,7 +30,7 @@ const InfoRow = ({ icon, label, value }) => (
         width: 36,
         height: 36,
         borderRadius: 2,
-        bgcolor: "#F0F4FF",
+        bgcolor: "primary.50",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -38,7 +38,7 @@ const InfoRow = ({ icon, label, value }) => (
       }}
     >
       {React.cloneElement(icon, {
-        sx: { fontSize: 18, color: "#1E4D98" },
+        sx: { fontSize: 18, color: "primary.main" },
       })}
     </Box>
     <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -58,7 +58,11 @@ const InfoRow = ({ icon, label, value }) => (
       </Typography>
       <Typography
         variant="body2"
-        sx={{ fontWeight: 700, color: "text.primary", wordBreak: "break-word" }}
+        sx={{
+          fontWeight: 700,
+          color: "text.primary",
+          wordBreak: "break-word",
+        }}
       >
         {value || "—"}
       </Typography>
@@ -91,23 +95,24 @@ const SchoolInfoSheet = ({ open, onClose, settings }) => {
           borderRadius: "20px 20px 0 0",
           maxHeight: "85vh",
           overflow: "hidden",
+          bgcolor: "background.paper",
+          backgroundImage: "none",
         },
       }}
     >
-      {/* Drag Handle */}
       <Box sx={{ textAlign: "center", pt: 1.5, pb: 0.5 }}>
         <Box
           sx={{
             width: 40,
             height: 4,
             borderRadius: 2,
-            bgcolor: "#E0E0E0",
+            bgcolor: "divider",
             mx: "auto",
           }}
         />
       </Box>
 
-      {/* Header with gradient */}
+      {/* Navy gradient header (stays branded in both themes) */}
       <Box
         sx={{
           background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
@@ -193,7 +198,6 @@ const SchoolInfoSheet = ({ open, onClose, settings }) => {
         </Stack>
       </Box>
 
-      {/* Details */}
       <Box sx={{ px: 3, py: 2, overflow: "auto" }}>
         <Typography
           variant="caption"
@@ -243,7 +247,6 @@ const SchoolInfoSheet = ({ open, onClose, settings }) => {
           />
         </Stack>
 
-        {/* Settings button (admin only) */}
         {isAdmin && (
           <Button
             fullWidth
@@ -270,7 +273,6 @@ const SchoolInfoSheet = ({ open, onClose, settings }) => {
           </Button>
         )}
 
-        {/* Footer */}
         <Box sx={{ textAlign: "center", py: 1 }}>
           <Typography
             variant="caption"

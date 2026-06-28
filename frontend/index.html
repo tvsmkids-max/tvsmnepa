@@ -4,14 +4,23 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="/logo.png" type="image/png" />
     <link rel="apple-touch-icon" href="/logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     <meta name="description" content="TVSM School — Attendance Management System" />
+    <meta name="author" content="Abhishek" />
+
+    <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#0D1B3E" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="TVSM School" />
     <meta name="application-name" content="TVSM School" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="TVSM School" />
+    <meta property="og:description" content="Attendance Management System" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/logo.png" />
 
     <title>TVSM School — Attendance Management</title>
 
@@ -37,6 +46,14 @@
       #root-loader.hidden {
         opacity: 0;
         pointer-events: none;
+      }
+
+      /* iOS safe area support */
+      @supports (padding: max(0px)) {
+        body {
+          padding-left: env(safe-area-inset-left);
+          padding-right: env(safe-area-inset-right);
+        }
       }
     </style>
   </head>
