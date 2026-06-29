@@ -22,10 +22,10 @@ import {
   Typography,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import SchoolIcon from "@mui/icons-material/School";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import PageHeader from "../../components/common/PageHeader";
 import EmptyState from "../../components/common/EmptyState";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
@@ -171,7 +171,7 @@ const SessionManagePage = () => {
           </Box>
         ) : sessions.length === 0 ? (
           <EmptyState
-            icon={<SchoolIcon sx={{ fontSize: 64 }} />}
+            icon={<SchoolOutlinedIcon sx={{ fontSize: 64 }} />}
             title="No sessions yet"
             message="Create your first academic session."
             actionLabel="Create First Session"
@@ -181,19 +181,79 @@ const SessionManagePage = () => {
           <TableContainer>
             <Table>
               <TableHead>
-                <TableRow sx={{ bgcolor: "#F8F9FC" }}>
-                  <TableCell sx={{ fontWeight: 700 }}>Session</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Start Date</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>End Date</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 700, textAlign: "right" }}>
+                <TableRow>
+                  <TableCell
+                    sx={{
+                      fontWeight: 700,
+                      bgcolor: "background.default",
+                      color: "text.secondary",
+                      fontSize: "0.75rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    Session
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      fontWeight: 700,
+                      bgcolor: "background.default",
+                      color: "text.secondary",
+                      fontSize: "0.75rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    Start Date
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      fontWeight: 700,
+                      bgcolor: "background.default",
+                      color: "text.secondary",
+                      fontSize: "0.75rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    End Date
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      fontWeight: 700,
+                      bgcolor: "background.default",
+                      color: "text.secondary",
+                      fontSize: "0.75rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    Status
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      fontWeight: 700,
+                      bgcolor: "background.default",
+                      color: "text.secondary",
+                      fontSize: "0.75rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      textAlign: "right",
+                    }}
+                  >
                     Actions
                   </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {sessions.map((s) => (
-                  <TableRow key={s._id} hover>
+                  <TableRow
+                    key={s._id}
+                    hover
+                    sx={{
+                      "&:last-child td": { borderBottom: 0 },
+                    }}
+                  >
                     <TableCell sx={{ fontWeight: 700 }}>{s.name}</TableCell>
                     <TableCell>
                       {new Date(s.startDate).toLocaleDateString("en-IN")}
@@ -207,11 +267,16 @@ const SessionManagePage = () => {
                           label="Active"
                           size="small"
                           color="success"
-                          icon={<CheckCircleIcon />}
-                          sx={{ fontWeight: 600 }}
+                          icon={<CheckCircleOutlinedIcon />}
+                          sx={{ fontWeight: 700 }}
                         />
                       ) : (
-                        <Chip label="Inactive" size="small" />
+                        <Chip
+                          label="Inactive"
+                          size="small"
+                          variant="outlined"
+                          sx={{ fontWeight: 600 }}
+                        />
                       )}
                     </TableCell>
                     <TableCell sx={{ textAlign: "right" }}>
@@ -220,8 +285,9 @@ const SessionManagePage = () => {
                           <Button
                             size="small"
                             color="success"
+                            variant="outlined"
                             onClick={() => handleActivate(s._id)}
-                            sx={{ minWidth: "auto", mr: 0.5 }}
+                            sx={{ minWidth: "auto", mr: 0.5, fontWeight: 700 }}
                           >
                             Activate
                           </Button>
@@ -233,7 +299,7 @@ const SessionManagePage = () => {
                           color="primary"
                           onClick={() => openEdit(s)}
                         >
-                          <EditIcon fontSize="small" />
+                          <EditOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       {!s.isActive && (
@@ -243,7 +309,7 @@ const SessionManagePage = () => {
                             color="error"
                             onClick={() => setConfirmDelete(s)}
                           >
-                            <DeleteIcon fontSize="small" />
+                            <DeleteOutlinedIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       )}
@@ -256,6 +322,7 @@ const SessionManagePage = () => {
         )}
       </Paper>
 
+      {/* ── Form Dialog ── */}
       <Dialog
         open={formOpen}
         onClose={actionLoading ? undefined : () => setFormOpen(false)}

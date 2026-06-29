@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React from "react";
 import {
   Box,
   Grid,
@@ -6,9 +6,6 @@ import {
   Chip,
   Paper,
   Stack,
-  Button,
-  Divider,
-  Alert,
   Table,
   TableHead,
   TableBody,
@@ -17,173 +14,37 @@ import {
   TableContainer,
   LinearProgress,
   CircularProgress,
-  Avatar,
+  Alert,
+  Button,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
-import SchoolIcon from "@mui/icons-material/School";
-import WavingHandIcon from "@mui/icons-material/WavingHand";
-import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
-import EventBusyOutlinedIcon from "@mui/icons-material/EventBusyOutlined";
-import HourglassBottomOutlinedIcon from "@mui/icons-material/HourglassBottomOutlined";
-import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
-import PercentOutlinedIcon from "@mui/icons-material/PercentOutlined";
-import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
-import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
-import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import HourglassBottomOutlinedIcon from "@mui/icons-material/HourglassBottomOutlined";
+import PercentOutlinedIcon from "@mui/icons-material/PercentOutlined";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
-import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
-import TrendingDownOutlinedIcon from "@mui/icons-material/TrendingDownOutlined";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import WavingHandIcon from "@mui/icons-material/WavingHand";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
-import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 import useAuth from "../../hooks/useAuth";
-import useSettings from "../../hooks/useSettings";
 import useThemeMode from "../../hooks/useThemeMode";
-import {
-  useDashboardKPIs,
-  useDashboardAlerts,
-  useRecentActivity,
-  useTodayStats,
-  dashboardKeys,
-} from "../../hooks/useDashboard";
-import WeeklyBackupBanner from "../../components/common/WeeklyBackupBanner";
-import AlertsCard from "./components/AlertsCard";
-import ActivityTimeline from "./components/ActivityTimeline";
+import { usePrincipalDashboard } from "../../hooks/usePrincipal";
+import { useQueryClient } from "@tanstack/react-query";
 
-// ─── COMPACT KPI CARD ───
-const KpiCard = ({
-  label,
-  value,
-  suffix,
-  trend,
-  trendInverse,
-  icon,
-  color,
-  isDark,
-  onClick,
-}) => {
-  const trendColor =
-    trend === null || trend === undefined || trend === 0
-      ? "text.disabled"
-      : (trendInverse ? trend < 0 : trend > 0)
-        ? isDark
-          ? "#4ADE80"
-          : "success.dark"
-        : isDark
-          ? "#F87171"
-          : "error.dark";
-
-  return (
-    <Paper
-      onClick={onClick}
-      sx={{
-        p: { xs: 1.2, sm: 1.5 },
-        borderRadius: 2,
-        border: "1px solid",
-        borderColor: "divider",
-        cursor: onClick ? "pointer" : "default",
-        transition: "all 0.15s",
-        "&:hover": onClick
-          ? {
-              borderColor: "primary.main",
-              transform: "translateY(-1px)",
-            }
-          : {},
-        height: "100%",
-      }}
-    >
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="flex-start"
-      >
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "text.secondary",
-              fontWeight: 700,
-              fontSize: "0.62rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              display: "block",
-              mb: 0.3,
-            }}
-          >
-            {label}
-          </Typography>
-          <Typography
-            variant="h5"
-            fontWeight={900}
-            sx={{
-              fontSize: { xs: "1.3rem", sm: "1.5rem" },
-              lineHeight: 1,
-              color: "text.primary",
-            }}
-          >
-            {value}
-            {suffix && (
-              <Typography
-                component="span"
-                sx={{ fontSize: "0.85rem", color: "text.secondary", ml: 0.2 }}
-              >
-                {suffix}
-              </Typography>
-            )}
-          </Typography>
-          {trend !== null && trend !== undefined && (
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={0.2}
-              sx={{ mt: 0.3 }}
-            >
-              {trend > 0 ? (
-                <TrendingUpOutlinedIcon
-                  sx={{ fontSize: 12, color: trendColor }}
-                />
-              ) : trend < 0 ? (
-                <TrendingDownOutlinedIcon
-                  sx={{ fontSize: 12, color: trendColor }}
-                />
-              ) : null}
-              <Typography
-                variant="caption"
-                sx={{ color: trendColor, fontWeight: 700, fontSize: "0.62rem" }}
-              >
-                {trend > 0 ? "+" : ""}
-                {trend}
-                {suffix === "%" ? "%" : ""} vs yesterday
-              </Typography>
-            </Stack>
-          )}
-        </Box>
-        {icon &&
-          React.cloneElement(icon, {
-            sx: { color: "text.disabled", fontSize: 20 },
-          })}
-      </Stack>
-    </Paper>
-  );
+const formatDate = (d) => {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 };
 
-const AdminDashboard = () => {
+const PrincipalDashboard = () => {
   const { user } = useAuth();
-  const { settings } = useSettings();
   const { isDark } = useThemeMode();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  const { data: kpis, isLoading: kpisLoading } = useDashboardKPIs();
-  const { data: alertsData, isLoading: alertsLoading } = useDashboardAlerts();
-  const { data: activityData, isLoading: activityLoading } =
-    useRecentActivity(8);
-  const { data: todayStats, isLoading: todayLoading } = useTodayStats();
-
-  const handleRefresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
-  }, [queryClient]);
+  const { data, isLoading } = usePrincipalDashboard();
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -192,18 +53,25 @@ const AdminDashboard = () => {
     return "Good evening";
   };
 
-  const sessionName =
-    settings?.activeSession?.name ||
-    (typeof settings?.activeSession === "object"
-      ? settings.activeSession?.name
-      : null);
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["principal"] });
+  };
 
-  const classBreakdown = todayStats?.classBreakdown || [];
+  if (isLoading) {
+    return (
+      <Box sx={{ p: 4, textAlign: "center" }}>
+        <CircularProgress size={28} />
+      </Box>
+    );
+  }
+
+  const stats = data?.stats || {};
+  const classWise = data?.classWise || [];
+  const holidays = data?.holidays || [];
+  const sessionName = data?.session?.name || "";
 
   return (
     <Box sx={{ pb: { xs: 10, md: 3 } }}>
-      <WeeklyBackupBanner />
-
       {/* ═══ 1-LINE GREETING ═══ */}
       <Stack
         direction="row"
@@ -214,16 +82,23 @@ const AdminDashboard = () => {
         gap={1}
       >
         <Stack direction="row" alignItems="center" spacing={1}>
-          <Typography
-            variant="body1"
-            fontWeight={800}
-            sx={{ color: "text.primary" }}
-          >
+          <Typography variant="body1" fontWeight={800}>
             {greeting()}, {user?.name?.split(" ")[0]}{" "}
             <WavingHandIcon
               sx={{ fontSize: 16, color: "#F5A623", verticalAlign: "middle" }}
             />
           </Typography>
+          <Chip
+            label="🎓 Principal"
+            size="small"
+            sx={{
+              height: 22,
+              fontSize: "0.68rem",
+              fontWeight: 700,
+              bgcolor: isDark ? "rgba(34,197,94,0.15)" : "#E6F4EA",
+              color: isDark ? "#86EFAC" : "#15803D",
+            }}
+          />
           {sessionName && (
             <Chip
               label={sessionName}
@@ -234,15 +109,13 @@ const AdminDashboard = () => {
                 fontWeight: 700,
                 bgcolor: isDark ? "rgba(245,166,35,0.15)" : "#FFF4E5",
                 color: isDark ? "#FCD34D" : "#92400E",
-                border: "1px solid",
-                borderColor: isDark ? "rgba(245,166,35,0.3)" : "#FED7AA",
               }}
             />
           )}
         </Stack>
         <Button
           size="small"
-          startIcon={<RefreshOutlinedIcon sx={{ fontSize: 16 }} />}
+          startIcon={<RefreshOutlinedIcon sx={{ fontSize: 14 }} />}
           onClick={handleRefresh}
           sx={{
             fontWeight: 700,
@@ -255,48 +128,99 @@ const AdminDashboard = () => {
         </Button>
       </Stack>
 
+      {/* ═══ HOLIDAY ═══ */}
+      {data?.isHoliday && (
+        <Alert
+          severity="warning"
+          icon={<BeachAccessOutlinedIcon />}
+          sx={{ mb: 2, borderRadius: 2 }}
+        >
+          <Typography variant="body2" fontWeight={700}>
+            🏖️ {data.holiday?.name}
+          </Typography>
+        </Alert>
+      )}
+
       {/* ═══ KPI CARDS ═══ */}
-      <Grid container spacing={1.5} sx={{ mb: 2 }}>
-        <Grid item xs={6} sm={3}>
-          <KpiCard
-            label="Attendance"
-            value={kpis?.attendancePercentage ?? 0}
-            suffix="%"
-            trend={kpis?.attendanceTrend}
-            icon={<PercentOutlinedIcon />}
-            isDark={isDark}
-            onClick={() => navigate("/reports")}
-          />
-        </Grid>
-        <Grid item xs={6} sm={3}>
-          <KpiCard
-            label="Absent"
-            value={kpis?.totalAbsent ?? 0}
-            trend={kpis?.absentTrend}
-            trendInverse
-            icon={<EventBusyOutlinedIcon />}
-            isDark={isDark}
-            onClick={() => navigate("/reports")}
-          />
-        </Grid>
-        <Grid item xs={6} sm={3}>
-          <KpiCard
-            label="Pending"
-            value={kpis?.pendingClasses ?? 0}
-            icon={<HourglassBottomOutlinedIcon />}
-            isDark={isDark}
-            onClick={() => navigate("/attendance/mark")}
-          />
-        </Grid>
-        <Grid item xs={6} sm={3}>
-          <KpiCard
-            label="New Admits"
-            value={kpis?.newAdmissions24h ?? 0}
-            icon={<PersonAddOutlinedIcon />}
-            isDark={isDark}
-            onClick={() => navigate("/students")}
-          />
-        </Grid>
+      <Grid container spacing={1.2} sx={{ mb: 2 }}>
+        {[
+          {
+            label: "Attendance",
+            value: `${stats.overallPercentage || 0}%`,
+            icon: <PercentOutlinedIcon />,
+            color:
+              (stats.overallPercentage || 0) >= 75
+                ? isDark
+                  ? "#4ADE80"
+                  : "success.dark"
+                : isDark
+                  ? "#FBBF24"
+                  : "warning.dark",
+          },
+          {
+            label: "Present",
+            value: stats.totalPresent || 0,
+            icon: <CheckCircleOutlinedIcon />,
+            color: isDark ? "#86EFAC" : "success.dark",
+          },
+          {
+            label: "Absent",
+            value: stats.totalAbsent || 0,
+            icon: <CancelOutlinedIcon />,
+            color: isDark ? "#FCA5A5" : "error.dark",
+          },
+          {
+            label: "Pending",
+            value: stats.pendingClasses || 0,
+            icon: <HourglassBottomOutlinedIcon />,
+            color:
+              (stats.pendingClasses || 0) === 0
+                ? isDark
+                  ? "#4ADE80"
+                  : "success.dark"
+                : isDark
+                  ? "#FCD34D"
+                  : "warning.dark",
+          },
+        ].map((kpi) => (
+          <Grid item xs={3} key={kpi.label}>
+            <Paper
+              sx={{
+                p: { xs: 1, sm: 1.2 },
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: "divider",
+                textAlign: "center",
+              }}
+            >
+              {React.cloneElement(kpi.icon, {
+                sx: { fontSize: 18, color: kpi.color, mb: 0.2 },
+              })}
+              <Typography
+                variant="h6"
+                fontWeight={900}
+                sx={{
+                  fontSize: { xs: "1rem", sm: "1.2rem" },
+                  lineHeight: 1,
+                  color: kpi.color,
+                }}
+              >
+                {kpi.value}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: "0.58rem",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  color: "text.secondary",
+                }}
+              >
+                {kpi.label}
+              </Typography>
+            </Paper>
+          </Grid>
+        ))}
       </Grid>
 
       {/* ═══ CLASS-WISE TABLE ═══ */}
@@ -312,10 +236,7 @@ const AdminDashboard = () => {
         <Box
           sx={{
             px: 2,
-            py: 1.2,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            py: 1,
             borderBottom: "1px solid",
             borderColor: "divider",
             bgcolor: isDark ? "rgba(255,255,255,0.02)" : "#FAFBFC",
@@ -328,37 +249,16 @@ const AdminDashboard = () => {
           >
             Class-wise Attendance
           </Typography>
-          <Button
-            size="small"
-            endIcon={<ArrowForwardOutlinedIcon sx={{ fontSize: 14 }} />}
-            onClick={() => navigate("/attendance/mark")}
-            sx={{ fontWeight: 700, fontSize: "0.72rem", textTransform: "none" }}
-          >
-            Mark Now
-          </Button>
         </Box>
 
-        {todayLoading ? (
-          <Box sx={{ p: 3, textAlign: "center" }}>
-            <CircularProgress size={24} />
-          </Box>
-        ) : todayStats?.isHoliday ? (
-          <Box sx={{ p: 2, textAlign: "center" }}>
-            <BeachAccessOutlinedIcon
-              sx={{ fontSize: 40, color: "warning.main", mb: 0.5 }}
-            />
-            <Typography variant="body2" fontWeight={700}>
-              🏖️ {todayStats.holiday?.name}
-            </Typography>
-          </Box>
-        ) : classBreakdown.length === 0 ? (
+        {classWise.length === 0 ? (
           <Box sx={{ p: 3, textAlign: "center" }}>
             <Typography variant="body2" color="text.secondary">
               No classes found
             </Typography>
           </Box>
         ) : (
-          <TableContainer sx={{ maxHeight: 400 }}>
+          <TableContainer sx={{ maxHeight: 500 }}>
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
@@ -435,19 +335,15 @@ const AdminDashboard = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {classBreakdown.map((cls) => (
-                  <TableRow
-                    key={cls._id}
-                    hover
-                    sx={{ "&:hover": { bgcolor: "action.hover" } }}
-                  >
+                {classWise.map((cls) => (
+                  <TableRow key={cls._id} hover>
                     <TableCell>
                       <Typography
                         variant="body2"
                         fontWeight={700}
                         sx={{ fontSize: "0.82rem" }}
                       >
-                        {cls.name}-{cls.section}
+                        {cls.label}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -455,12 +351,13 @@ const AdminDashboard = () => {
                         variant="caption"
                         sx={{
                           fontSize: "0.72rem",
-                          color: cls.classTeacher
-                            ? "text.primary"
-                            : "text.disabled",
+                          color:
+                            cls.classTeacher === "Not assigned"
+                              ? "text.disabled"
+                              : "text.primary",
                         }}
                       >
-                        {cls.classTeacher || "—"}
+                        {cls.classTeacher}
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
@@ -530,14 +427,7 @@ const AdminDashboard = () => {
                                   ? "warning"
                                   : "error"
                             }
-                            sx={{
-                              width: 40,
-                              height: 3,
-                              borderRadius: 2,
-                              bgcolor: isDark
-                                ? "rgba(255,255,255,0.06)"
-                                : "rgba(0,0,0,0.04)",
-                            }}
+                            sx={{ width: 40, height: 3, borderRadius: 2 }}
                           />
                         </Stack>
                       ) : (
@@ -569,18 +459,14 @@ const AdminDashboard = () => {
                   }}
                 >
                   <TableCell>
-                    <Typography
-                      variant="body2"
-                      fontWeight={900}
-                      sx={{ fontSize: "0.82rem" }}
-                    >
+                    <Typography variant="body2" fontWeight={900}>
                       TOTAL
                     </Typography>
                   </TableCell>
                   <TableCell />
                   <TableCell align="center">
                     <Typography variant="body2" fontWeight={900}>
-                      {todayStats?.totalStudents || 0}
+                      {stats.totalStudents}
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
@@ -589,7 +475,7 @@ const AdminDashboard = () => {
                       fontWeight={900}
                       sx={{ color: isDark ? "#86EFAC" : "success.dark" }}
                     >
-                      {todayStats?.present || 0}
+                      {stats.totalPresent}
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
@@ -598,7 +484,7 @@ const AdminDashboard = () => {
                       fontWeight={900}
                       sx={{ color: isDark ? "#FCA5A5" : "error.dark" }}
                     >
-                      {todayStats?.absent || 0}
+                      {stats.totalAbsent}
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
@@ -607,12 +493,12 @@ const AdminDashboard = () => {
                       fontWeight={900}
                       sx={{ color: isDark ? "#4ADE80" : "success.dark" }}
                     >
-                      {todayStats?.percentage || 0}%
+                      {stats.overallPercentage || 0}%
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
                     <Chip
-                      label={`${todayStats?.markedClasses || 0}/${todayStats?.totalClasses || 0}`}
+                      label={`${stats.markedClasses}/${stats.totalClasses}`}
                       size="small"
                       color="primary"
                       sx={{ fontWeight: 800, height: 20, fontSize: "0.65rem" }}
@@ -625,94 +511,55 @@ const AdminDashboard = () => {
         )}
       </Paper>
 
-      {/* ═══ ALERTS + ACTIVITY (Side by Side) ═══ */}
-      <Grid container spacing={1.5} sx={{ mb: 2 }}>
-        <Grid item xs={12} md={5}>
-          <AlertsCard data={alertsData} isLoading={alertsLoading} />
-        </Grid>
-        <Grid item xs={12} md={7}>
-          <ActivityTimeline
-            data={activityData?.slice(0, 6)}
-            isLoading={activityLoading}
-          />
-        </Grid>
-      </Grid>
-
-      {/* ═══ QUICK ACTIONS (4 only) ═══ */}
-      <Paper
-        sx={{
-          p: 1.5,
-          borderRadius: 2,
-          border: "1px solid",
-          borderColor: "divider",
-        }}
-      >
-        <Grid container spacing={1}>
-          {[
-            {
-              icon: <EventNoteOutlinedIcon />,
-              label: "Mark Attendance",
-              path: "/attendance/mark",
-              color: isDark ? "#60A5FA" : "#1E4D98",
-            },
-            {
-              icon: <HistoryOutlinedIcon />,
-              label: "History",
-              path: "/attendance/history",
-              color: isDark ? "#38BDF8" : "#0369A1",
-            },
-            {
-              icon: <PeopleOutlinedIcon />,
-              label: "Students",
-              path: "/students",
-              color: isDark ? "#4ADE80" : "#15803D",
-            },
-            {
-              icon: <ClassOutlinedIcon />,
-              label: "Classes",
-              path: "/classes",
-              color: isDark ? "#FBBF24" : "#92400E",
-            },
-          ].map((action) => (
-            <Grid item xs={3} key={action.path}>
-              <Box
-                onClick={() => navigate(action.path)}
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 0.5,
-                  py: 1.2,
-                  borderRadius: 1.5,
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                  "&:hover": {
-                    bgcolor: "action.hover",
-                    transform: "translateY(-1px)",
-                  },
-                }}
+      {/* ═══ UPCOMING HOLIDAYS ═══ */}
+      {holidays.length > 0 && (
+        <Paper
+          sx={{
+            p: 1.5,
+            borderRadius: 2,
+            border: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <Typography
+            variant="body2"
+            fontWeight={800}
+            sx={{ fontSize: "0.85rem", mb: 1 }}
+          >
+            🏖️ Upcoming Holidays
+          </Typography>
+          <Stack spacing={0.8}>
+            {holidays.slice(0, 5).map((h) => (
+              <Stack
+                key={h._id}
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
               >
-                {React.cloneElement(action.icon, {
-                  sx: { fontSize: 22, color: action.color },
-                })}
-                <Typography
-                  variant="caption"
-                  fontWeight={700}
-                  sx={{
-                    fontSize: "0.68rem",
-                    textAlign: "center",
-                    color: "text.primary",
-                  }}
-                >
-                  {action.label}
+                <Typography variant="body2" sx={{ fontSize: "0.82rem" }}>
+                  {h.name}
                 </Typography>
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      </Paper>
+                <Stack direction="row" spacing={0.8} alignItems="center">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontSize: "0.72rem" }}
+                  >
+                    {formatDate(h.date)}
+                  </Typography>
+                  <Chip
+                    label={h.type}
+                    size="small"
+                    sx={{ height: 18, fontSize: "0.6rem", fontWeight: 700 }}
+                  />
+                </Stack>
+              </Stack>
+            ))}
+          </Stack>
+        </Paper>
+      )}
     </Box>
   );
 };
 
-export default AdminDashboard;
+export default PrincipalDashboard;

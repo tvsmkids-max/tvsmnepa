@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import {
   Box,
   Paper,
@@ -26,19 +26,20 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useSnackbar } from "notistack";
-import AssessmentIcon from "@mui/icons-material/Assessment";
-import TodayIcon from "@mui/icons-material/Today";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import WarningIcon from "@mui/icons-material/Warning";
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
-import EventNoteIcon from "@mui/icons-material/EventNote";
-import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
-import PeopleIcon from "@mui/icons-material/People";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
+import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
+import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
+import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
+import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
+import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import PageHeader from "../../components/common/PageHeader";
 import EmptyState from "../../components/common/EmptyState";
 import reportApi from "../../api/reportApi";
@@ -54,6 +55,7 @@ import useSettings from "../../hooks/useSettings";
 import useAuth from "../../hooks/useAuth";
 import AttendanceRegisterTab from "./AttendanceRegisterTab";
 
+// ── Helpers (outside component) ──
 const formatDate = (d) => {
   const date = new Date(d);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -74,77 +76,83 @@ const MONTHS = [
   "December",
 ];
 
-// ─── STAT CARD COMPONENT ───
-const StatCard = ({ label, value, color, icon }) => (
-  <Card
-    sx={{
-      borderRadius: 2.5,
-      bgcolor: color.bg,
-      border: "1px solid",
-      borderColor: color.border,
-      height: "100%",
-      boxShadow: "none",
-    }}
-  >
-    <CardContent
+// ── StatCard (memoized, outside component) ──
+const StatCard = memo(({ label, value, colorKey, icon: Icon }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  const color = theme.palette[colorKey];
+  const bgColor = alpha(
+    color?.main || theme.palette.primary.main,
+    isDark ? 0.15 : 0.08,
+  );
+  const textColor = color?.main || theme.palette.primary.main;
+
+  return (
+    <Card
       sx={{
-        p: { xs: 1.2, sm: 1.8 },
-        textAlign: "center",
-        "&:last-child": { pb: { xs: 1.2, sm: 1.8 } },
+        borderRadius: 2.5,
+        bgcolor: bgColor,
+        border: "1px solid",
+        borderColor: alpha(textColor, isDark ? 0.3 : 0.2),
+        height: "100%",
+        boxShadow: "none",
       }}
     >
-      <Box
+      <CardContent
         sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          mb: 0.4,
-          gap: 0.4,
+          p: { xs: 1.2, sm: 1.8 },
+          textAlign: "center",
+          "&:last-child": { pb: { xs: 1.2, sm: 1.8 } },
         }}
       >
-        {icon &&
-          React.cloneElement(icon, {
-            sx: { fontSize: 14, color: color.text },
-          })}
-        <Typography
-          variant="caption"
+        <Box
           sx={{
-            color: color.text,
-            fontWeight: 700,
-            fontSize: { xs: "0.62rem", sm: "0.7rem" },
-            letterSpacing: "0.05em",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            mb: 0.4,
+            gap: 0.4,
           }}
         >
-          {label}
+          {Icon && <Icon sx={{ fontSize: 14, color: textColor }} />}
+          <Typography
+            variant="caption"
+            sx={{
+              color: textColor,
+              fontWeight: 700,
+              fontSize: { xs: "0.62rem", sm: "0.7rem" },
+              letterSpacing: "0.05em",
+            }}
+          >
+            {label}
+          </Typography>
+        </Box>
+        <Typography
+          variant="h5"
+          fontWeight={900}
+          sx={{
+            color: textColor,
+            fontSize: { xs: "1.4rem", sm: "1.6rem" },
+            lineHeight: 1.1,
+          }}
+        >
+          {value}
         </Typography>
-      </Box>
-      <Typography
-        variant="h5"
-        fontWeight={900}
-        sx={{
-          color: color.text,
-          fontSize: { xs: "1.4rem", sm: "1.6rem" },
-          lineHeight: 1.1,
-        }}
-      >
-        {value}
-      </Typography>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+});
+StatCard.displayName = "StatCard";
 
-// ─── SECTION HEADER ───
-const SectionHeader = ({ icon, title, count }) => (
+// ── SectionHeader (memoized, outside component) ──
+const SectionHeader = memo(({ icon: Icon, title, count }) => (
   <Stack
     direction="row"
     alignItems="center"
     spacing={1}
     sx={{ mb: 1.5, mt: 1 }}
   >
-    {icon &&
-      React.cloneElement(icon, {
-        sx: { fontSize: 18, color: "primary.main" },
-      })}
+    {Icon && <Icon sx={{ fontSize: 18, color: "primary.main" }} />}
     <Typography
       variant="caption"
       fontWeight={800}
@@ -170,20 +178,16 @@ const SectionHeader = ({ icon, title, count }) => (
         }}
       />
     )}
-    <Box
-      sx={{
-        flex: 1,
-        height: 1,
-        bgcolor: "divider",
-        ml: 1,
-      }}
-    />
+    <Box sx={{ flex: 1, height: 1, bgcolor: "divider", ml: 1 }} />
   </Stack>
-);
+));
+SectionHeader.displayName = "SectionHeader";
 
+// ── Main Component ──
 const ReportsPage = () => {
   const { enqueueSnackbar } = useSnackbar();
   const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isXs = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -204,6 +208,7 @@ const ReportsPage = () => {
   const { settings } = useSettings();
   const { user } = useAuth();
 
+  // ── Load classes ──
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -220,6 +225,7 @@ const ReportsPage = () => {
     };
   }, []);
 
+  // ── Load report data ──
   useEffect(() => {
     if (tabValue === 3) return;
     let cancelled = false;
@@ -227,7 +233,10 @@ const ReportsPage = () => {
       setLoading(true);
       try {
         if (tabValue === 0) {
-          const res = await reportApi.getDaily({ date, class: selectedClass });
+          const res = await reportApi.getDaily({
+            date,
+            class: selectedClass,
+          });
           if (!cancelled) setDailyReport(res.data?.data);
         } else if (tabValue === 1) {
           const res = await reportApi.getMonthly({
@@ -270,7 +279,7 @@ const ReportsPage = () => {
 
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  // ─── EXPORT HANDLERS ───
+  // ── Export Handlers ──
   const handleExportDaily = () => {
     if (!dailyReport) return;
     const data = [];
@@ -359,6 +368,17 @@ const ReportsPage = () => {
     if (tabValue === 2) return handlePdfDefaulters();
   };
 
+  // ── Theme-aware colors ──
+  const monthlyHeaderBg = isDark
+    ? alpha(theme.palette.primary.main, 0.1)
+    : alpha(theme.palette.primary.main, 0.05);
+  const monthlyHeaderBorder = alpha(theme.palette.primary.main, 0.2);
+
+  const presentChipBg = alpha(theme.palette.success.main, isDark ? 0.2 : 0.1);
+  const presentChipColor = theme.palette.success.main;
+  const absentChipBg = alpha(theme.palette.error.main, isDark ? 0.2 : 0.1);
+  const absentChipColor = theme.palette.error.main;
+
   const showCommonFilters = tabValue !== 3;
 
   return (
@@ -407,17 +427,20 @@ const ReportsPage = () => {
             },
           }}
         >
-          <Tab icon={<TodayIcon sx={{ fontSize: 18 }} />} label="Daily" />
           <Tab
-            icon={<CalendarMonthIcon sx={{ fontSize: 18 }} />}
+            icon={<TodayOutlinedIcon sx={{ fontSize: 18 }} />}
+            label="Daily"
+          />
+          <Tab
+            icon={<CalendarMonthOutlinedIcon sx={{ fontSize: 18 }} />}
             label="Monthly"
           />
           <Tab
-            icon={<WarningIcon sx={{ fontSize: 18 }} />}
+            icon={<WarningAmberOutlinedIcon sx={{ fontSize: 18 }} />}
             label="Defaulters"
           />
           <Tab
-            icon={<EventNoteIcon sx={{ fontSize: 18 }} />}
+            icon={<EventNoteOutlinedIcon sx={{ fontSize: 18 }} />}
             label="Register"
           />
         </Tabs>
@@ -435,7 +458,6 @@ const ReportsPage = () => {
           }}
         >
           <Stack spacing={1.2}>
-            {/* Filter Row */}
             <Stack
               direction={{ xs: "column", sm: "row" }}
               spacing={1.2}
@@ -517,7 +539,6 @@ const ReportsPage = () => {
               )}
             </Stack>
 
-            {/* Action Row */}
             <Stack direction="row" spacing={1}>
               <Tooltip title="Refresh">
                 <IconButton
@@ -533,14 +554,14 @@ const ReportsPage = () => {
                     flexShrink: 0,
                   }}
                 >
-                  <RefreshIcon fontSize="small" />
+                  <RefreshOutlinedIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
 
               <Button
                 variant="contained"
                 fullWidth
-                startIcon={<FileDownloadIcon sx={{ fontSize: 18 }} />}
+                startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                 onClick={handleExport}
                 size="small"
                 disabled={loading}
@@ -548,8 +569,8 @@ const ReportsPage = () => {
                   py: 1,
                   fontWeight: 700,
                   fontSize: { xs: "0.78rem", sm: "0.85rem" },
-                  background:
-                    "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                  background: (t) =>
+                    `linear-gradient(135deg, ${t.palette.primary.dark} 0%, ${t.palette.primary.main} 100%)`,
                   textTransform: "none",
                 }}
               >
@@ -559,7 +580,7 @@ const ReportsPage = () => {
               <Button
                 variant="contained"
                 fullWidth
-                startIcon={<PictureAsPdfIcon sx={{ fontSize: 18 }} />}
+                startIcon={<PictureAsPdfOutlinedIcon sx={{ fontSize: 18 }} />}
                 onClick={handlePdf}
                 size="small"
                 disabled={loading}
@@ -578,9 +599,10 @@ const ReportsPage = () => {
         </Paper>
       )}
 
-      {/* ─── TAB CONTENT ─── */}
+      {/* ─── REGISTER TAB ─── */}
       {tabValue === 3 && <AttendanceRegisterTab />}
 
+      {/* ─── OTHER TAB CONTENT ─── */}
       {tabValue !== 3 && (
         <>
           {loading ? (
@@ -592,7 +614,7 @@ const ReportsPage = () => {
             </Paper>
           ) : (
             <>
-              {/* ═══ DAILY REPORT ═══ */}
+              {/* ══ DAILY REPORT ══ */}
               {tabValue === 0 && dailyReport && (
                 <>
                   {dailyReport.holiday && (
@@ -614,7 +636,7 @@ const ReportsPage = () => {
                   )}
 
                   <SectionHeader
-                    icon={<AssessmentIcon />}
+                    icon={AssessmentOutlinedIcon}
                     title="Overall Summary"
                   />
                   <Grid container spacing={1.2} sx={{ mb: 1 }}>
@@ -622,48 +644,32 @@ const ReportsPage = () => {
                       <StatCard
                         label="TOTAL"
                         value={dailyReport.summary.totalStudents}
-                        icon={<PeopleIcon />}
-                        color={{
-                          bg: "#F8F9FF",
-                          text: "#1A1D21",
-                          border: "rgba(0,0,0,0.06)",
-                        }}
+                        icon={PeopleOutlinedIcon}
+                        colorKey="primary"
                       />
                     </Grid>
                     <Grid item xs={6} sm={3}>
                       <StatCard
                         label="PRESENT"
                         value={dailyReport.summary.totalPresent}
-                        icon={<CheckCircleIcon />}
-                        color={{
-                          bg: "#E6F4EA",
-                          text: "#065F46",
-                          border: "#A7F3D0",
-                        }}
+                        icon={CheckCircleOutlinedIcon}
+                        colorKey="success"
                       />
                     </Grid>
                     <Grid item xs={6} sm={3}>
                       <StatCard
                         label="ABSENT"
                         value={dailyReport.summary.totalAbsent}
-                        icon={<CancelIcon />}
-                        color={{
-                          bg: "#FEE2E2",
-                          text: "#991B1B",
-                          border: "#FECACA",
-                        }}
+                        icon={CancelOutlinedIcon}
+                        colorKey="error"
                       />
                     </Grid>
                     <Grid item xs={6} sm={3}>
                       <StatCard
                         label="RATE"
                         value={`${dailyReport.summary.overallPercentage}%`}
-                        icon={<TrendingUpIcon />}
-                        color={{
-                          bg: "#F0F4FF",
-                          text: "#1E4D98",
-                          border: "#BFDBFE",
-                        }}
+                        icon={TrendingUpOutlinedIcon}
+                        colorKey="info"
                       />
                     </Grid>
                   </Grid>
@@ -671,7 +677,7 @@ const ReportsPage = () => {
                   {dailyReport.classes.length === 0 ? (
                     <Paper sx={{ borderRadius: 3, mt: 2 }}>
                       <EmptyState
-                        icon={<AssessmentIcon sx={{ fontSize: 64 }} />}
+                        icon={<AssessmentOutlinedIcon sx={{ fontSize: 64 }} />}
                         title="No data"
                         message="No classes to display."
                       />
@@ -679,7 +685,7 @@ const ReportsPage = () => {
                   ) : (
                     <>
                       <SectionHeader
-                        icon={<CalendarMonthIcon />}
+                        icon={CalendarMonthOutlinedIcon}
                         title="Class-wise Breakdown"
                         count={dailyReport.classes.length}
                       />
@@ -756,7 +762,9 @@ const ReportsPage = () => {
                               >
                                 <Chip
                                   icon={
-                                    <CheckCircleIcon sx={{ fontSize: 12 }} />
+                                    <CheckCircleOutlinedIcon
+                                      sx={{ fontSize: 12 }}
+                                    />
                                   }
                                   label={`${cls.present} P`}
                                   size="small"
@@ -770,7 +778,9 @@ const ReportsPage = () => {
                                   }}
                                 />
                                 <Chip
-                                  icon={<CancelIcon sx={{ fontSize: 12 }} />}
+                                  icon={
+                                    <CancelOutlinedIcon sx={{ fontSize: 12 }} />
+                                  }
                                   label={`${cls.absent} A`}
                                   size="small"
                                   color="error"
@@ -820,7 +830,7 @@ const ReportsPage = () => {
                 </>
               )}
 
-              {/* ═══ MONTHLY REPORT ═══ */}
+              {/* ══ MONTHLY REPORT ══ */}
               {tabValue === 1 && monthlyReport && (
                 <>
                   <Paper
@@ -828,10 +838,9 @@ const ReportsPage = () => {
                       p: { xs: 1.5, sm: 2 },
                       mb: 2,
                       borderRadius: 3,
-                      background:
-                        "linear-gradient(135deg, #F0F4FF 0%, #E8F0FF 100%)",
+                      bgcolor: monthlyHeaderBg,
                       border: "1px solid",
-                      borderColor: "#BFDBFE",
+                      borderColor: monthlyHeaderBorder,
                     }}
                   >
                     <Stack
@@ -846,7 +855,7 @@ const ReportsPage = () => {
                           fontWeight={900}
                           sx={{
                             fontSize: { xs: "1.05rem", sm: "1.2rem" },
-                            color: "primary.dark",
+                            color: "primary.main",
                           }}
                         >
                           {monthlyReport.monthName} {monthlyReport.year}
@@ -882,8 +891,8 @@ const ReportsPage = () => {
                             lineHeight: 1,
                             color:
                               monthlyReport.summary.overallPercentage >= 75
-                                ? "success.dark"
-                                : "warning.dark",
+                                ? "success.main"
+                                : "warning.main",
                           }}
                         >
                           {monthlyReport.summary.overallPercentage}%
@@ -907,7 +916,9 @@ const ReportsPage = () => {
                   {monthlyReport.classes.length === 0 ? (
                     <Paper sx={{ borderRadius: 3 }}>
                       <EmptyState
-                        icon={<CalendarMonthIcon sx={{ fontSize: 64 }} />}
+                        icon={
+                          <CalendarMonthOutlinedIcon sx={{ fontSize: 64 }} />
+                        }
                         title="No data"
                         message="No classes to display for this month."
                       />
@@ -915,7 +926,7 @@ const ReportsPage = () => {
                   ) : (
                     <>
                       <SectionHeader
-                        icon={<CalendarMonthIcon />}
+                        icon={CalendarMonthOutlinedIcon}
                         title="Class-wise Performance"
                         count={monthlyReport.classes.length}
                       />
@@ -984,14 +995,13 @@ const ReportsPage = () => {
                                         sm: "1.6rem",
                                       },
                                       lineHeight: 1,
+                                      color:
+                                        cls.percentage >= 75
+                                          ? "success.main"
+                                          : cls.percentage >= 50
+                                            ? "warning.main"
+                                            : "error.main",
                                     }}
-                                    color={
-                                      cls.percentage >= 75
-                                        ? "success.dark"
-                                        : cls.percentage >= 50
-                                          ? "warning.dark"
-                                          : "error.dark"
-                                    }
                                   >
                                     {cls.percentage}%
                                   </Typography>
@@ -1025,7 +1035,7 @@ const ReportsPage = () => {
                 </>
               )}
 
-              {/* ═══ DEFAULTERS REPORT ═══ */}
+              {/* ══ DEFAULTERS REPORT ══ */}
               {tabValue === 2 && defaulterReport && (
                 <>
                   <Alert
@@ -1036,13 +1046,13 @@ const ReportsPage = () => {
                     icon={false}
                   >
                     <Stack direction="row" alignItems="center" spacing={1.5}>
-                      <WarningIcon
+                      <WarningAmberOutlinedIcon
                         sx={{
                           fontSize: 32,
                           color:
                             defaulterReport.total === 0
-                              ? "success.dark"
-                              : "warning.dark",
+                              ? "success.main"
+                              : "warning.main",
                         }}
                       />
                       <Box>
@@ -1053,7 +1063,10 @@ const ReportsPage = () => {
                         </Typography>
                         <Typography
                           variant="caption"
-                          sx={{ display: "block", fontSize: "0.75rem" }}
+                          sx={{
+                            display: "block",
+                            fontSize: "0.75rem",
+                          }}
                         >
                           {defaulterReport.total === 0
                             ? "All students are in good standing!"
@@ -1067,7 +1080,7 @@ const ReportsPage = () => {
                     <Paper sx={{ borderRadius: 3 }}>
                       <EmptyState
                         icon={
-                          <CheckCircleIcon
+                          <CheckCircleOutlinedIcon
                             sx={{ fontSize: 64, color: "success.main" }}
                           />
                         }
@@ -1078,7 +1091,7 @@ const ReportsPage = () => {
                   ) : (
                     <>
                       <SectionHeader
-                        icon={<WarningIcon />}
+                        icon={WarningAmberOutlinedIcon}
                         title="Defaulter List"
                         count={defaulterReport.defaulters.length}
                       />
@@ -1104,8 +1117,11 @@ const ReportsPage = () => {
                               >
                                 <Avatar
                                   sx={{
-                                    bgcolor: "error.light",
-                                    color: "error.dark",
+                                    bgcolor: alpha(
+                                      theme.palette.error.main,
+                                      0.12,
+                                    ),
+                                    color: "error.main",
                                     width: { xs: 40, sm: 44 },
                                     height: { xs: 40, sm: 44 },
                                     fontSize: { xs: "1rem", sm: "1.1rem" },
@@ -1154,7 +1170,7 @@ const ReportsPage = () => {
                                   <Typography
                                     variant="h4"
                                     fontWeight={900}
-                                    color="error.dark"
+                                    color="error.main"
                                     sx={{
                                       fontSize: {
                                         xs: "1.5rem",
@@ -1214,8 +1230,8 @@ const ReportsPage = () => {
                                   sx={{
                                     height: 22,
                                     fontSize: "0.7rem",
-                                    bgcolor: "#D1FAE5",
-                                    color: "#065F46",
+                                    bgcolor: presentChipBg,
+                                    color: presentChipColor,
                                     fontWeight: 700,
                                   }}
                                 />
@@ -1225,8 +1241,8 @@ const ReportsPage = () => {
                                   sx={{
                                     height: 22,
                                     fontSize: "0.7rem",
-                                    bgcolor: "#FEE2E2",
-                                    color: "#991B1B",
+                                    bgcolor: absentChipBg,
+                                    color: absentChipColor,
                                     fontWeight: 700,
                                   }}
                                 />

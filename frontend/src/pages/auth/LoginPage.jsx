@@ -12,16 +12,19 @@ import {
   CircularProgress,
   Divider,
   Stack,
+  useTheme,
 } from "@mui/material";
-import EmailIcon from "@mui/icons-material/Email";
-import LockIcon from "@mui/icons-material/Lock";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import LoginIcon from "@mui/icons-material/Login";
+import { alpha } from "@mui/material/styles";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
+import LoginOutlinedIcon from "@mui/icons-material/LoginOutlined";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import useAuth from "../../hooks/useAuth";
+import useThemeMode from "../../hooks/useThemeMode";
 
 const SCHOOL_NAME = import.meta.env.VITE_SCHOOL_NAME || "TVSM School";
 const SCHOOL_LOGO = import.meta.env.VITE_SCHOOL_LOGO || "/logo.png";
@@ -39,18 +42,25 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { login, isAuthenticated, isLoading, error, clearError, user } =
     useAuth();
+  const theme = useTheme();
+  const { isDark } = useThemeMode();
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // ── Redirect if already authenticated ──
   useEffect(() => {
     if (isAuthenticated && user) {
-      navigate(user.role === "admin" ? "/dashboard" : "/teacher/dashboard", {
-        replace: true,
-      });
+      const route =
+        user.role === "admin"
+          ? "/dashboard"
+          : user.role === "principal"
+            ? "/principal/dashboard"
+            : "/teacher/dashboard";
+      navigate(route, { replace: true });
     }
   }, [isAuthenticated, user, navigate]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // ── Clear error on unmount ──
   useEffect(() => () => clearError(), []);
 
   const {
@@ -67,15 +77,113 @@ const LoginPage = () => {
     clearError();
     const result = await login(data);
     if (result.success) {
-      navigate(
-        result.user?.role === "admin" ? "/dashboard" : "/teacher/dashboard",
-        { replace: true },
-      );
+      const route =
+        result.user?.role === "admin"
+          ? "/dashboard"
+          : result.user?.role === "principal"
+            ? "/principal/dashboard"
+            : "/teacher/dashboard";
+      navigate(route, { replace: true });
     }
     setSubmitting(false);
   };
 
   if (isLoading) return null;
+
+  // ── Theme-aware values ──
+  const rightPanelBg = isDark
+    ? theme.palette.background.default // #111827
+    : "#F8F9FC";
+
+  const cardBg = isDark
+    ? theme.palette.background.paper // #1F2937
+    : "#FFFFFF";
+
+  const cardBorder = isDark
+    ? `1px solid ${theme.palette.divider}` // #374151
+    : "1px solid rgba(0,0,0,0.04)";
+
+  const cardShadow = isDark
+    ? "0 4px 24px rgba(0,0,0,0.4)"
+    : "0 4px 6px rgba(0,0,0,0.02), 0 12px 40px rgba(0,0,0,0.06)";
+
+  const labelColor = isDark
+    ? theme.palette.text.secondary // #9CA3AF
+    : "#374151";
+
+  const subtitleColor = isDark ? theme.palette.text.secondary : "#6B7B99";
+
+  const inputBg = isDark ? alpha(theme.palette.common.white, 0.04) : "#F8F9FC";
+
+  const inputHoverBg = isDark
+    ? alpha(theme.palette.common.white, 0.07)
+    : "#F1F3F9";
+
+  const inputFocusBg = isDark
+    ? alpha(theme.palette.common.white, 0.06)
+    : "#FFFFFF";
+
+  const inputBorderColor = isDark
+    ? theme.palette.divider // #374151
+    : "#E5E7EB";
+
+  const inputFocusBorderColor = isDark
+    ? theme.palette.primary.main // #3B82F6
+    : "#0D1B3E";
+
+  const inputFocusShadow = isDark
+    ? `0 0 0 3px ${alpha(theme.palette.primary.main, 0.15)}`
+    : "0 0 0 3px rgba(13,27,62,0.08)";
+
+  const iconColor = isDark
+    ? theme.palette.text.disabled // #6B7280
+    : "#9CA3AF";
+
+  const footerColor = isDark ? theme.palette.text.disabled : "#B0B8C8";
+
+  const footerSubColor = isDark
+    ? alpha(theme.palette.text.disabled, 0.7)
+    : "#C8CDD8";
+
+  const mobileLogoTextColor = isDark ? theme.palette.text.primary : "#0D1B3E";
+
+  const mobileBg = isDark ? alpha(theme.palette.common.white, 0.05) : "#FFFFFF";
+
+  const mobileShadow = isDark
+    ? "0 4px 20px rgba(0,0,0,0.4)"
+    : "0 4px 20px rgba(0,0,0,0.1)";
+
+  // ── Shared TextField sx ──
+  const textFieldSx = {
+    "& .MuiOutlinedInput-root": {
+      bgcolor: inputBg,
+      borderRadius: 2.5,
+      color: theme.palette.text.primary,
+      "&:hover": { bgcolor: inputHoverBg },
+      "&.Mui-focused": {
+        bgcolor: inputFocusBg,
+        boxShadow: inputFocusShadow,
+      },
+      "& fieldset": { borderColor: inputBorderColor },
+      "&:hover fieldset": {
+        borderColor: isDark ? theme.palette.text.disabled : "#C5C9D0",
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: inputFocusBorderColor,
+        borderWidth: "1.5px",
+      },
+    },
+    "& .MuiInputBase-input": {
+      color: theme.palette.text.primary,
+      "&::placeholder": {
+        color: theme.palette.text.disabled,
+        opacity: 1,
+      },
+    },
+    "& .MuiFormHelperText-root": {
+      color: theme.palette.error.main,
+    },
+  };
 
   return (
     <Box
@@ -90,7 +198,9 @@ const LoginPage = () => {
         animation: "fadeIn 0.5s ease forwards",
       }}
     >
-      {/* ═══════════ LEFT PANEL — Branding ═══════════ */}
+      {/* ══════════════════════════════════════════
+          LEFT PANEL — Branding (always dark navy)
+          ══════════════════════════════════════════ */}
       <Box
         sx={{
           display: { xs: "none", md: "flex" },
@@ -116,7 +226,7 @@ const LoginPage = () => {
           }}
         />
 
-        {/* Decorative elements */}
+        {/* Decorative circles */}
         <Box
           sx={{
             position: "absolute",
@@ -210,7 +320,7 @@ const LoginPage = () => {
             {SCHOOL_NAME}
           </Typography>
 
-          {/* Gold accent */}
+          {/* Gold accent line */}
           <Box
             sx={{
               width: 60,
@@ -238,7 +348,7 @@ const LoginPage = () => {
           </Typography>
         </Box>
 
-        {/* Footer */}
+        {/* Left Panel Footer */}
         <Stack
           spacing={0.5}
           alignItems="center"
@@ -267,20 +377,23 @@ const LoginPage = () => {
         </Stack>
       </Box>
 
-      {/* ═══════════ RIGHT PANEL — Login Form ═══════════ */}
+      {/* ══════════════════════════════════════════
+          RIGHT PANEL — Login Form (theme-aware)
+          ══════════════════════════════════════════ */}
       <Box
         sx={{
           flex: 1,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          bgcolor: "#F8F9FC",
+          bgcolor: rightPanelBg,
           p: { xs: 2, sm: 4 },
           position: "relative",
           overflowY: "auto",
+          transition: "background-color 0.3s ease",
         }}
       >
-        {/* Mobile Logo (shown only on small screens) */}
+        {/* Mobile Logo — small screens only */}
         <Box
           sx={{
             display: { xs: "flex", md: "none" },
@@ -290,6 +403,7 @@ const LoginPage = () => {
             top: 24,
             left: "50%",
             transform: "translateX(-50%)",
+            zIndex: 1,
           }}
         >
           <Box
@@ -297,11 +411,12 @@ const LoginPage = () => {
               width: 72,
               height: 72,
               borderRadius: "50%",
-              bgcolor: "white",
+              bgcolor: mobileBg,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+              boxShadow: mobileShadow,
+              border: isDark ? `1px solid ${theme.palette.divider}` : "none",
               overflow: "hidden",
               mb: 1,
             }}
@@ -319,13 +434,17 @@ const LoginPage = () => {
           <Typography
             variant="caption"
             fontWeight={800}
-            sx={{ color: "#0D1B3E", fontSize: "0.78rem", textAlign: "center" }}
+            sx={{
+              color: mobileLogoTextColor,
+              fontSize: "0.78rem",
+              textAlign: "center",
+            }}
           >
             TVSM School
           </Typography>
         </Box>
 
-        {/* Login Card */}
+        {/* ── Login Card ── */}
         <Paper
           elevation={0}
           sx={{
@@ -333,11 +452,11 @@ const LoginPage = () => {
             maxWidth: 420,
             p: { xs: 3, sm: 4.5 },
             borderRadius: 4,
-            bgcolor: "white",
-            boxShadow:
-              "0 4px 6px rgba(0,0,0,0.02), 0 12px 40px rgba(0,0,0,0.06)",
-            border: "1px solid rgba(0,0,0,0.04)",
+            bgcolor: cardBg,
+            boxShadow: cardShadow,
+            border: cardBorder,
             mt: { xs: 14, md: 0 },
+            transition: "background-color 0.3s ease, border-color 0.3s ease",
             "@keyframes slideRight": {
               from: { opacity: 0, transform: "translateY(15px)" },
               to: { opacity: 1, transform: "translateY(0)" },
@@ -345,25 +464,25 @@ const LoginPage = () => {
             animation: "slideRight 0.5s ease forwards",
           }}
         >
-          {/* Form Header */}
+          {/* Card Header */}
           <Box sx={{ mb: 3.5 }}>
             <Typography
               variant="h5"
               fontWeight={900}
               sx={{
-                color: "#0D1B3E",
+                color: "text.primary",
                 mb: 0.5,
                 fontSize: { xs: "1.4rem", sm: "1.6rem" },
               }}
             >
               Welcome Back
             </Typography>
-            <Typography variant="body2" sx={{ color: "#6B7B99" }}>
+            <Typography variant="body2" sx={{ color: subtitleColor }}>
               Enter your credentials to continue
             </Typography>
           </Box>
 
-          {/* Error */}
+          {/* Error Alert */}
           {error && (
             <Alert
               severity="error"
@@ -374,13 +493,14 @@ const LoginPage = () => {
             </Alert>
           )}
 
-          {/* Form */}
+          {/* ── Form ── */}
           <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+            {/* Email Label */}
             <Typography
               variant="caption"
               fontWeight={700}
               sx={{
-                color: "#374151",
+                color: labelColor,
                 mb: 0.6,
                 display: "block",
                 textTransform: "uppercase",
@@ -390,6 +510,8 @@ const LoginPage = () => {
             >
               Email Address
             </Typography>
+
+            {/* Email Field */}
             <TextField
               {...register("email")}
               placeholder="Enter your email"
@@ -399,37 +521,24 @@ const LoginPage = () => {
               autoComplete="email"
               error={!!errors.email}
               helperText={errors.email?.message}
-              sx={{
-                mb: 2.5,
-                "& .MuiOutlinedInput-root": {
-                  bgcolor: "#F8F9FC",
-                  borderRadius: 2.5,
-                  "&:hover": { bgcolor: "#F1F3F9" },
-                  "&.Mui-focused": {
-                    bgcolor: "white",
-                    boxShadow: "0 0 0 3px rgba(13,27,62,0.08)",
-                  },
-                  "& fieldset": { borderColor: "#E5E7EB" },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#0D1B3E",
-                    borderWidth: "1.5px",
-                  },
-                },
-              }}
+              sx={{ mb: 2.5, ...textFieldSx }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <EmailIcon sx={{ color: "#9CA3AF", fontSize: 19 }} />
+                    <EmailOutlinedIcon
+                      sx={{ color: iconColor, fontSize: 19 }}
+                    />
                   </InputAdornment>
                 ),
               }}
             />
 
+            {/* Password Label */}
             <Typography
               variant="caption"
               fontWeight={700}
               sx={{
-                color: "#374151",
+                color: labelColor,
                 mb: 0.6,
                 display: "block",
                 textTransform: "uppercase",
@@ -439,6 +548,8 @@ const LoginPage = () => {
             >
               Password
             </Typography>
+
+            {/* Password Field */}
             <TextField
               {...register("password")}
               placeholder="Enter your password"
@@ -447,27 +558,11 @@ const LoginPage = () => {
               autoComplete="current-password"
               error={!!errors.password}
               helperText={errors.password?.message}
-              sx={{
-                mb: 3.5,
-                "& .MuiOutlinedInput-root": {
-                  bgcolor: "#F8F9FC",
-                  borderRadius: 2.5,
-                  "&:hover": { bgcolor: "#F1F3F9" },
-                  "&.Mui-focused": {
-                    bgcolor: "white",
-                    boxShadow: "0 0 0 3px rgba(13,27,62,0.08)",
-                  },
-                  "& fieldset": { borderColor: "#E5E7EB" },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#0D1B3E",
-                    borderWidth: "1.5px",
-                  },
-                },
-              }}
+              sx={{ mb: 3.5, ...textFieldSx }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <LockIcon sx={{ color: "#9CA3AF", fontSize: 19 }} />
+                    <LockOutlinedIcon sx={{ color: iconColor, fontSize: 19 }} />
                   </InputAdornment>
                 ),
                 endAdornment: (
@@ -477,12 +572,12 @@ const LoginPage = () => {
                       edge="end"
                       size="small"
                       tabIndex={-1}
-                      sx={{ color: "#9CA3AF" }}
+                      sx={{ color: iconColor }}
                     >
                       {showPassword ? (
-                        <VisibilityOffIcon fontSize="small" />
+                        <VisibilityOffOutlinedIcon fontSize="small" />
                       ) : (
-                        <VisibilityIcon fontSize="small" />
+                        <VisibilityOutlinedIcon fontSize="small" />
                       )}
                     </IconButton>
                   </InputAdornment>
@@ -490,32 +585,42 @@ const LoginPage = () => {
               }}
             />
 
+            {/* Submit Button */}
             <Button
               type="submit"
               fullWidth
               variant="contained"
               size="large"
               disabled={submitting}
-              startIcon={!submitting && <LoginIcon fontSize="small" />}
+              startIcon={!submitting && <LoginOutlinedIcon fontSize="small" />}
               sx={{
                 py: 1.7,
                 fontSize: "0.95rem",
                 fontWeight: 800,
                 borderRadius: 2.5,
+                // Always navy gradient — matches left panel branding
                 background:
                   "linear-gradient(135deg, #0D1B3E 0%, #1A3A7A 50%, #1E4D98 100%)",
-                boxShadow: "0 6px 18px rgba(13,27,62,0.35)",
+                boxShadow: isDark
+                  ? "0 6px 18px rgba(0,0,0,0.5)"
+                  : "0 6px 18px rgba(13,27,62,0.35)",
                 letterSpacing: "0.03em",
                 textTransform: "none",
                 transition: "all 0.25s ease",
+                color: "white",
                 "&:hover": {
                   background:
                     "linear-gradient(135deg, #0A1530 0%, #152F65 50%, #1A4085 100%)",
-                  boxShadow: "0 8px 24px rgba(13,27,62,0.45)",
+                  boxShadow: isDark
+                    ? "0 8px 24px rgba(0,0,0,0.6)"
+                    : "0 8px 24px rgba(13,27,62,0.45)",
                   transform: "translateY(-1px)",
                 },
                 "&:active": { transform: "translateY(0)" },
-                "&.Mui-disabled": { background: "#94A3B8", color: "white" },
+                "&.Mui-disabled": {
+                  background: isDark ? "#374151" : "#94A3B8",
+                  color: isDark ? "#6B7280" : "white",
+                },
               }}
             >
               {submitting ? (
@@ -526,7 +631,7 @@ const LoginPage = () => {
             </Button>
           </Box>
 
-          {/* Footer */}
+          {/* ── Card Footer ── */}
           <Divider sx={{ my: 3 }} />
 
           <Stack spacing={0.5} alignItems="center">
@@ -539,7 +644,8 @@ const LoginPage = () => {
                   width: 18,
                   height: 18,
                   objectFit: "contain",
-                  opacity: 0.4,
+                  opacity: isDark ? 0.25 : 0.4,
+                  filter: isDark ? "invert(1)" : "none",
                 }}
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
@@ -548,7 +654,7 @@ const LoginPage = () => {
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#B0B8C8",
+                  color: footerColor,
                   fontSize: "0.68rem",
                   letterSpacing: "0.03em",
                 }}
@@ -559,12 +665,12 @@ const LoginPage = () => {
             <Typography
               variant="caption"
               sx={{
-                color: "#C8CDD8",
+                color: footerSubColor,
                 fontSize: "0.62rem",
                 letterSpacing: "0.04em",
               }}
             >
-              Designed & Developed by Abhishek
+              Designed &amp; Developed by Abhishek
             </Typography>
           </Stack>
         </Paper>

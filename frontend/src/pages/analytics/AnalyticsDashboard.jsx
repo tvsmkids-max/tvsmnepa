@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import {
   Box,
   Paper,
@@ -15,12 +15,11 @@ import {
   Button,
   useMediaQuery,
   useTheme,
-  IconButton,
-  Tooltip,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   BarChart,
   Bar,
   PieChart,
@@ -32,123 +31,50 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
   Legend,
-  Area,
-  AreaChart,
 } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import TrendingDownIcon from "@mui/icons-material/TrendingDown";
-import TrendingFlatIcon from "@mui/icons-material/TrendingFlat";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import DateRangeIcon from "@mui/icons-material/DateRange";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import EventNoteIcon from "@mui/icons-material/EventNote";
-import SchoolIcon from "@mui/icons-material/School";
-import WarningIcon from "@mui/icons-material/Warning";
-import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
-import BarChartIcon from "@mui/icons-material/BarChart";
-import PieChartIcon from "@mui/icons-material/PieChart";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
+import TrendingDownOutlinedIcon from "@mui/icons-material/TrendingDownOutlined";
+import TrendingFlatOutlinedIcon from "@mui/icons-material/TrendingFlatOutlined";
+import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
+import DateRangeOutlinedIcon from "@mui/icons-material/DateRangeOutlined";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
+import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
+import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
+import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
+import PieChartOutlinedIcon from "@mui/icons-material/PieChartOutlined";
+import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import PageHeader from "../../components/common/PageHeader";
-import EmptyState from "../../components/common/EmptyState";
 import analyticsApi from "../../api/analyticsApi";
 
+// ── Constants (outside component — never recreated) ──
 const CHART_COLORS = {
-  present: "#2E7D32",
-  absent: "#C62828",
+  present: "#16A34A",
+  absent: "#DC2626",
   primary: "#1565C0",
-  warning: "#F57F17",
+  warning: "#D97706",
   line: "#1E4D98",
-  area: "#E0EBFF",
 };
 
-const PIE_COLORS = ["#2E7D32", "#C62828"];
+const getTrendIndicator = (direction) => {
+  if (direction === "up")
+    return { icon: TrendingUpOutlinedIcon, color: "success.main" };
+  if (direction === "down")
+    return { icon: TrendingDownOutlinedIcon, color: "error.main" };
+  return { icon: TrendingFlatOutlinedIcon, color: "text.secondary" };
+};
 
-const AnalyticsDashboard = () => {
-  const { enqueueSnackbar } = useSnackbar();
-  const navigate = useNavigate();
+// ── QuickStatCard (memoized, outside component) ──
+const QuickStatCard = memo(({ icon: Icon, label, value, period, colorKey }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isDark = theme.palette.mode === "dark";
+  const color = theme.palette[colorKey];
+  const bgColor = alpha(color.main, isDark ? 0.15 : 0.08);
 
-  const [quickStats, setQuickStats] = useState(null);
-  const [trend, setTrend] = useState([]);
-  const [classComparison, setClassComparison] = useState([]);
-  const [distribution, setDistribution] = useState(null);
-  const [defaulters, setDefaulters] = useState([]);
-  const [insights, setInsights] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadAll = async () => {
-      setLoading(true);
-      try {
-        const [qs, tr, cc, dist, def, ins] = await Promise.all([
-          analyticsApi.getQuickStats().catch(() => ({ data: { data: null } })),
-          analyticsApi.getTrend(30).catch(() => ({ data: { data: [] } })),
-          analyticsApi
-            .getClassComparison()
-            .catch(() => ({ data: { data: [] } })),
-          analyticsApi
-            .getDistribution()
-            .catch(() => ({ data: { data: null } })),
-          analyticsApi
-            .getTopDefaulters(10)
-            .catch(() => ({ data: { data: [] } })),
-          analyticsApi.getInsights().catch(() => ({ data: { data: null } })),
-        ]);
-
-        if (!cancelled) {
-          setQuickStats(qs.data?.data);
-          setTrend(tr.data?.data || []);
-          setClassComparison(cc.data?.data || []);
-          setDistribution(dist.data?.data);
-          setDefaulters(def.data?.data || []);
-          setInsights(ins.data?.data);
-          setLoading(false);
-        }
-      } catch {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    loadAll();
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
-
-  const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
-
-  // Get trend icon + color
-  const getTrendIndicator = (direction) => {
-    if (direction === "up") {
-      return {
-        icon: <TrendingUpIcon sx={{ fontSize: 18 }} />,
-        color: "success.main",
-        label: "Up",
-      };
-    }
-    if (direction === "down") {
-      return {
-        icon: <TrendingDownIcon sx={{ fontSize: 18 }} />,
-        color: "error.main",
-        label: "Down",
-      };
-    }
-    return {
-      icon: <TrendingFlatIcon sx={{ fontSize: 18 }} />,
-      color: "text.secondary",
-      label: "Same",
-    };
-  };
-
-  // Stat card at top
-  const QuickStatCard = ({ icon, label, value, period, color }) => (
+  return (
     <Card sx={{ height: "100%", borderRadius: 2.5 }}>
       <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
         <Stack direction="row" alignItems="center" spacing={1.5}>
@@ -156,13 +82,11 @@ const AnalyticsDashboard = () => {
             sx={{
               width: 44,
               height: 44,
-              bgcolor: `${color}.light`,
+              bgcolor: bgColor,
               flexShrink: 0,
             }}
           >
-            {React.cloneElement(icon, {
-              sx: { color: `${color}.dark`, fontSize: 22 },
-            })}
+            <Icon sx={{ color: color.main, fontSize: 22 }} />
           </Avatar>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
@@ -180,8 +104,7 @@ const AnalyticsDashboard = () => {
             <Typography
               variant="h5"
               fontWeight={900}
-              color={`${color}.main`}
-              sx={{ lineHeight: 1, mt: 0.3 }}
+              sx={{ color: color.main, lineHeight: 1, mt: 0.3 }}
             >
               {value !== null ? `${value}%` : "—"}
             </Typography>
@@ -197,39 +120,113 @@ const AnalyticsDashboard = () => {
       </CardContent>
     </Card>
   );
+});
+QuickStatCard.displayName = "QuickStatCard";
 
-  // Custom tooltip for recharts
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <Paper
-        sx={{
-          p: 1.5,
-          borderRadius: 2,
-          boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-          border: "1px solid",
-          borderColor: "divider",
-        }}
+// ── CustomTooltip (memoized, outside component) ──
+const CustomTooltip = memo(({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <Paper
+      sx={{
+        p: 1.5,
+        borderRadius: 2,
+        border: "1px solid",
+        borderColor: "divider",
+        boxShadow: 3,
+      }}
+    >
+      <Typography
+        variant="caption"
+        fontWeight={700}
+        sx={{ display: "block", mb: 0.5 }}
       >
+        {label}
+      </Typography>
+      {payload.map((p, i) => (
         <Typography
+          key={i}
           variant="caption"
-          fontWeight={700}
-          sx={{ display: "block", mb: 0.5 }}
+          sx={{ display: "block", color: p.color }}
         >
-          {label}
+          {p.name}: <strong>{p.value}</strong>
         </Typography>
-        {payload.map((p, i) => (
-          <Typography
-            key={i}
-            variant="caption"
-            sx={{ display: "block", color: p.color }}
-          >
-            {p.name}: <strong>{p.value}</strong>
-          </Typography>
-        ))}
-      </Paper>
-    );
-  };
+      ))}
+    </Paper>
+  );
+});
+CustomTooltip.displayName = "CustomTooltip";
+
+// ── Main Component ──
+const AnalyticsDashboard = () => {
+  const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const [quickStats, setQuickStats] = useState(null);
+  const [trend, setTrend] = useState([]);
+  const [classComparison, setClassComparison] = useState([]);
+  const [distribution, setDistribution] = useState(null);
+  const [defaulters, setDefaulters] = useState([]);
+  const [insights, setInsights] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadAll = async () => {
+      setLoading(true);
+      try {
+        const [qs, tr, cc, dist, def, ins] = await Promise.all([
+          analyticsApi.getQuickStats().catch(() => ({ data: { data: null } })),
+          analyticsApi.getTrend(30).catch(() => ({ data: { data: [] } })),
+          analyticsApi
+            .getClassComparison()
+            .catch(() => ({ data: { data: [] } })),
+          analyticsApi
+            .getDistribution()
+            .catch(() => ({ data: { data: null } })),
+          analyticsApi
+            .getTopDefaulters(10)
+            .catch(() => ({ data: { data: [] } })),
+          analyticsApi.getInsights().catch(() => ({ data: { data: null } })),
+        ]);
+        if (!cancelled) {
+          setQuickStats(qs.data?.data);
+          setTrend(tr.data?.data || []);
+          setClassComparison(cc.data?.data || []);
+          setDistribution(dist.data?.data);
+          setDefaulters(def.data?.data || []);
+          setInsights(ins.data?.data);
+          setLoading(false);
+        }
+      } catch {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    loadAll();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey]);
+
+  const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+
+  // ── Theme-aware derived colors ──
+  const gridStroke = isDark ? "#374151" : "#E2E8F0";
+  const axisTickColor = isDark ? "#9CA3AF" : "#6B7B99";
+  const areaGradStart = alpha(CHART_COLORS.line, isDark ? 0.4 : 0.3);
+  const areaGradEnd = alpha(CHART_COLORS.line, 0);
+  const successBg = alpha(theme.palette.success.main, isDark ? 0.15 : 0.08);
+  const errorBg = alpha(theme.palette.error.main, isDark ? 0.15 : 0.08);
+  const defaulterHoverBg = alpha(theme.palette.error.main, 0.06);
+
+  const pieFill = [
+    isDark ? "#4ADE80" : "#16A34A",
+    isDark ? "#F87171" : "#DC2626",
+  ];
 
   if (loading) {
     return (
@@ -260,7 +257,7 @@ const AnalyticsDashboard = () => {
         action={
           <Button
             variant="outlined"
-            startIcon={<RefreshIcon />}
+            startIcon={<RefreshOutlinedIcon />}
             onClick={triggerRefresh}
             size="small"
           >
@@ -269,107 +266,100 @@ const AnalyticsDashboard = () => {
         }
       />
 
-      {/* ═══════ QUICK STATS BAR ═══════ */}
+      {/* ═══ QUICK STATS ═══ */}
       <Grid container spacing={1.5} sx={{ mb: 3 }}>
         <Grid item xs={6} sm={3}>
           <QuickStatCard
-            icon={<CalendarTodayIcon />}
+            icon={CalendarTodayOutlinedIcon}
             label="Today"
             value={quickStats?.today?.percentage ?? null}
             period={`${quickStats?.today?.present || 0}P / ${quickStats?.today?.absent || 0}A`}
-            color="primary"
+            colorKey="primary"
           />
         </Grid>
         <Grid item xs={6} sm={3}>
           <QuickStatCard
-            icon={<DateRangeIcon />}
+            icon={DateRangeOutlinedIcon}
             label="This Week"
             value={quickStats?.week?.percentage ?? null}
             period={`${quickStats?.week?.total || 0} marks`}
-            color="info"
+            colorKey="info"
           />
         </Grid>
         <Grid item xs={6} sm={3}>
           <QuickStatCard
-            icon={<CalendarMonthIcon />}
+            icon={CalendarMonthOutlinedIcon}
             label="This Month"
             value={quickStats?.month?.percentage ?? null}
             period={`${quickStats?.month?.total || 0} marks`}
-            color="success"
+            colorKey="success"
           />
         </Grid>
         <Grid item xs={6} sm={3}>
           <QuickStatCard
-            icon={<EventNoteIcon />}
+            icon={EventNoteOutlinedIcon}
             label="This Year"
             value={quickStats?.year?.percentage ?? null}
             period={`${quickStats?.year?.total || 0} marks`}
-            color="warning"
+            colorKey="warning"
           />
         </Grid>
       </Grid>
 
-      {/* ═══════ INSIGHTS ROW ═══════ */}
+      {/* ═══ INSIGHTS ROW ═══ */}
       {insights && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          {/* Month Trend Card */}
-          {insights.comparedToLastMonth && (
-            <Grid item xs={12} sm={4}>
-              <Card sx={{ borderRadius: 2.5, height: "100%" }}>
-                <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      fontSize: "0.65rem",
-                    }}
-                  >
-                    vs Last Month
-                  </Typography>
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    spacing={1}
-                    sx={{ mt: 1 }}
-                  >
-                    {React.cloneElement(
-                      getTrendIndicator(insights.comparedToLastMonth.direction)
-                        .icon,
-                      {
-                        sx: {
-                          color: getTrendIndicator(
-                            insights.comparedToLastMonth.direction,
-                          ).color,
-                          fontSize: 28,
-                        },
-                      },
-                    )}
-                    <Box>
+          {/* vs Last Month */}
+          {insights.comparedToLastMonth &&
+            (() => {
+              const trend = getTrendIndicator(
+                insights.comparedToLastMonth.direction,
+              );
+              const TrendIcon = trend.icon;
+              return (
+                <Grid item xs={12} sm={4}>
+                  <Card sx={{ borderRadius: 2.5, height: "100%" }}>
+                    <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
                       <Typography
-                        variant="h5"
-                        fontWeight={900}
+                        variant="caption"
+                        color="text.secondary"
                         sx={{
-                          color: getTrendIndicator(
-                            insights.comparedToLastMonth.direction,
-                          ).color,
-                          lineHeight: 1,
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                          fontSize: "0.65rem",
                         }}
                       >
-                        {insights.comparedToLastMonth.difference > 0 ? "+" : ""}
-                        {insights.comparedToLastMonth.difference}%
+                        vs Last Month
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {insights.comparedToLastMonth.currentMonth}% vs{" "}
-                        {insights.comparedToLastMonth.lastMonth}%
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </CardContent>
-              </Card>
-            </Grid>
-          )}
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={1}
+                        sx={{ mt: 1 }}
+                      >
+                        <TrendIcon sx={{ color: trend.color, fontSize: 28 }} />
+                        <Box>
+                          <Typography
+                            variant="h5"
+                            fontWeight={900}
+                            sx={{ color: trend.color, lineHeight: 1 }}
+                          >
+                            {insights.comparedToLastMonth.difference > 0
+                              ? "+"
+                              : ""}
+                            {insights.comparedToLastMonth.difference}%
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {insights.comparedToLastMonth.currentMonth}% vs{" "}
+                            {insights.comparedToLastMonth.lastMonth}%
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              );
+            })()}
 
           {/* Best Class */}
           {insights.bestClass && (
@@ -378,9 +368,9 @@ const AnalyticsDashboard = () => {
                 sx={{
                   borderRadius: 2.5,
                   height: "100%",
-                  bgcolor: "#E6F4EA",
+                  bgcolor: successBg,
                   border: "1px solid",
-                  borderColor: "success.light",
+                  borderColor: alpha(theme.palette.success.main, 0.3),
                 }}
               >
                 <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
@@ -390,8 +380,8 @@ const AnalyticsDashboard = () => {
                     spacing={1}
                     sx={{ mb: 1 }}
                   >
-                    <EmojiEventsIcon
-                      sx={{ color: "success.dark", fontSize: 20 }}
+                    <EmojiEventsOutlinedIcon
+                      sx={{ color: "success.main", fontSize: 20 }}
                     />
                     <Typography
                       variant="caption"
@@ -399,7 +389,7 @@ const AnalyticsDashboard = () => {
                         fontWeight: 700,
                         textTransform: "uppercase",
                         fontSize: "0.65rem",
-                        color: "success.dark",
+                        color: "success.main",
                       }}
                     >
                       Best Class
@@ -408,11 +398,11 @@ const AnalyticsDashboard = () => {
                   <Typography
                     variant="h6"
                     fontWeight={900}
-                    color="success.dark"
+                    color="success.main"
                   >
                     {insights.bestClass.name}
                   </Typography>
-                  <Typography variant="caption" color="success.dark">
+                  <Typography variant="caption" color="success.main">
                     {insights.bestClass.percentage}% attendance
                   </Typography>
                 </CardContent>
@@ -428,9 +418,9 @@ const AnalyticsDashboard = () => {
                   sx={{
                     borderRadius: 2.5,
                     height: "100%",
-                    bgcolor: "#FEE2E2",
+                    bgcolor: errorBg,
                     border: "1px solid",
-                    borderColor: "error.light",
+                    borderColor: alpha(theme.palette.error.main, 0.3),
                   }}
                 >
                   <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
@@ -440,14 +430,16 @@ const AnalyticsDashboard = () => {
                       spacing={1}
                       sx={{ mb: 1 }}
                     >
-                      <WarningIcon sx={{ color: "error.dark", fontSize: 20 }} />
+                      <WarningAmberOutlinedIcon
+                        sx={{ color: "error.main", fontSize: 20 }}
+                      />
                       <Typography
                         variant="caption"
                         sx={{
                           fontWeight: 700,
                           textTransform: "uppercase",
                           fontSize: "0.65rem",
-                          color: "error.dark",
+                          color: "error.main",
                         }}
                       >
                         Needs Attention
@@ -456,11 +448,11 @@ const AnalyticsDashboard = () => {
                     <Typography
                       variant="h6"
                       fontWeight={900}
-                      color="error.dark"
+                      color="error.main"
                     >
                       {insights.worstClass.name}
                     </Typography>
-                    <Typography variant="caption" color="error.dark">
+                    <Typography variant="caption" color="error.main">
                       {insights.worstClass.percentage}% attendance
                     </Typography>
                   </CardContent>
@@ -470,9 +462,9 @@ const AnalyticsDashboard = () => {
         </Grid>
       )}
 
-      {/* ═══════ TREND LINE CHART + PIE CHART ═══════ */}
+      {/* ═══ TREND + PIE ═══ */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        {/* Trend Line */}
+        {/* Trend Area Chart */}
         <Grid item xs={12} md={8}>
           <Paper sx={{ p: 2, borderRadius: 3, height: "100%" }}>
             <Stack
@@ -481,7 +473,7 @@ const AnalyticsDashboard = () => {
               spacing={1}
               sx={{ mb: 2 }}
             >
-              <TrendingUpIcon sx={{ color: "primary.main" }} />
+              <TrendingUpOutlinedIcon sx={{ color: "primary.main" }} />
               <Typography variant="subtitle1" fontWeight={800}>
                 Attendance Trend (Last 30 Days)
               </Typography>
@@ -504,7 +496,7 @@ const AnalyticsDashboard = () => {
                       <stop
                         offset="5%"
                         stopColor={CHART_COLORS.line}
-                        stopOpacity={0.3}
+                        stopOpacity={isDark ? 0.4 : 0.3}
                       />
                       <stop
                         offset="95%"
@@ -513,18 +505,26 @@ const AnalyticsDashboard = () => {
                       />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                   <XAxis
                     dataKey="displayDate"
-                    tick={{ fontSize: 10, fill: "#6B7B99" }}
+                    tick={{ fontSize: 10, fill: axisTickColor }}
                     interval={isMobile ? 4 : 2}
+                    stroke={gridStroke}
                   />
                   <YAxis
                     domain={[0, 100]}
-                    tick={{ fontSize: 10, fill: "#6B7B99" }}
+                    tick={{ fontSize: 10, fill: axisTickColor }}
                     tickFormatter={(v) => `${v}%`}
+                    stroke={gridStroke}
                   />
-                  <RechartsTooltip content={<CustomTooltip />} />
+                  <RechartsTooltip
+                    content={<CustomTooltip />}
+                    cursor={{
+                      stroke: alpha(CHART_COLORS.line, 0.3),
+                      strokeWidth: 1,
+                    }}
+                  />
                   <Area
                     type="monotone"
                     dataKey="percentage"
@@ -537,14 +537,14 @@ const AnalyticsDashboard = () => {
                       r: 6,
                       stroke: CHART_COLORS.line,
                       strokeWidth: 2,
-                      fill: "white",
+                      fill: isDark ? "#1F2937" : "white",
                     }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
               <Box sx={{ py: 8, textAlign: "center" }}>
-                <TrendingUpIcon
+                <TrendingUpOutlinedIcon
                   sx={{ fontSize: 48, color: "text.disabled", mb: 1 }}
                 />
                 <Typography variant="body2" color="text.secondary">
@@ -564,7 +564,7 @@ const AnalyticsDashboard = () => {
               spacing={1}
               sx={{ mb: 2 }}
             >
-              <PieChartIcon sx={{ color: "primary.main" }} />
+              <PieChartOutlinedIcon sx={{ color: "primary.main" }} />
               <Typography variant="subtitle1" fontWeight={800}>
                 This Month
               </Typography>
@@ -587,11 +587,11 @@ const AnalyticsDashboard = () => {
                       dataKey="value"
                       strokeWidth={0}
                     >
-                      {PIE_COLORS.map((color, idx) => (
+                      {pieFill.map((color, idx) => (
                         <Cell key={idx} fill={color} />
                       ))}
                     </Pie>
-                    <RechartsTooltip />
+                    <RechartsTooltip content={<CustomTooltip />} />
                   </PieChart>
                 </ResponsiveContainer>
 
@@ -607,7 +607,7 @@ const AnalyticsDashboard = () => {
                         width: 10,
                         height: 10,
                         borderRadius: "50%",
-                        bgcolor: CHART_COLORS.present,
+                        bgcolor: pieFill[0],
                       }}
                     />
                     <Typography variant="caption" fontWeight={700}>
@@ -620,7 +620,7 @@ const AnalyticsDashboard = () => {
                         width: 10,
                         height: 10,
                         borderRadius: "50%",
-                        bgcolor: CHART_COLORS.absent,
+                        bgcolor: pieFill[1],
                       }}
                     />
                     <Typography variant="caption" fontWeight={700}>
@@ -631,7 +631,7 @@ const AnalyticsDashboard = () => {
               </>
             ) : (
               <Box sx={{ py: 6, textAlign: "center" }}>
-                <PieChartIcon
+                <PieChartOutlinedIcon
                   sx={{ fontSize: 48, color: "text.disabled", mb: 1 }}
                 />
                 <Typography variant="body2" color="text.secondary">
@@ -643,51 +643,109 @@ const AnalyticsDashboard = () => {
         </Grid>
       </Grid>
 
-      {/* ═══════ CLASS COMPARISON BAR CHART ═══════ */}
+      {/* ═══ CLASS COMPARISON BAR CHART ═══ */}
       <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }}>
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-          <BarChartIcon sx={{ color: "primary.main" }} />
+          <BarChartOutlinedIcon sx={{ color: "primary.main" }} />
           <Typography variant="subtitle1" fontWeight={800}>
             Class-Wise Comparison (This Month)
           </Typography>
         </Stack>
 
         {hasClassData ? (
-          <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
-            <BarChart
-              data={classComparison}
-              margin={{ top: 5, right: 10, left: -15, bottom: 5 }}
-              barGap={4}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis
-                dataKey="name"
-                tick={{ fontSize: 10, fill: "#6B7B99" }}
-                interval={0}
-                angle={isMobile ? -45 : 0}
-                textAnchor={isMobile ? "end" : "middle"}
-                height={isMobile ? 60 : 30}
-              />
-              <YAxis tick={{ fontSize: 10, fill: "#6B7B99" }} />
-              <RechartsTooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ fontSize: "11px" }} />
-              <Bar
-                dataKey="present"
-                name="Present"
-                fill={CHART_COLORS.present}
-                radius={[4, 4, 0, 0]}
-              />
-              <Bar
-                dataKey="absent"
-                name="Absent"
-                fill={CHART_COLORS.absent}
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+          <>
+            <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
+              <BarChart
+                data={classComparison}
+                margin={{ top: 5, right: 10, left: -15, bottom: 5 }}
+                barGap={4}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 10, fill: axisTickColor }}
+                  interval={0}
+                  angle={isMobile ? -45 : 0}
+                  textAnchor={isMobile ? "end" : "middle"}
+                  height={isMobile ? 60 : 30}
+                  stroke={gridStroke}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: axisTickColor }}
+                  stroke={gridStroke}
+                />
+                <RechartsTooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ fontSize: "11px" }} />
+                <Bar
+                  dataKey="present"
+                  name="Present"
+                  fill={pieFill[0]}
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  dataKey="absent"
+                  name="Absent"
+                  fill={pieFill[1]}
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Grid container spacing={1}>
+              {classComparison.map((cls) => {
+                const perfColor =
+                  cls.percentage >= 75
+                    ? "success"
+                    : cls.percentage >= 50
+                      ? "warning"
+                      : "error";
+                return (
+                  <Grid item xs={6} sm={4} md={3} key={cls._id}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        borderLeft: "3px solid",
+                        borderLeftColor: `${perfColor}.main`,
+                      }}
+                    >
+                      <Typography variant="body2" fontWeight={800} noWrap>
+                        {cls.name}
+                      </Typography>
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Typography variant="caption" color="text.secondary">
+                          {cls.students} students
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          fontWeight={900}
+                          color={`${perfColor}.main`}
+                        >
+                          {cls.percentage}%
+                        </Typography>
+                      </Stack>
+                      <LinearProgress
+                        variant="determinate"
+                        value={cls.percentage}
+                        color={perfColor}
+                        sx={{ borderRadius: 4, height: 4, mt: 0.5 }}
+                      />
+                    </Paper>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          </>
         ) : (
           <Box sx={{ py: 8, textAlign: "center" }}>
-            <BarChartIcon
+            <BarChartOutlinedIcon
               sx={{ fontSize: 48, color: "text.disabled", mb: 1 }}
             />
             <Typography variant="body2" color="text.secondary">
@@ -695,74 +753,9 @@ const AnalyticsDashboard = () => {
             </Typography>
           </Box>
         )}
-
-        {/* Class performance cards below chart */}
-        {hasClassData && (
-          <>
-            <Divider sx={{ my: 2 }} />
-            <Grid container spacing={1}>
-              {classComparison.map((cls) => (
-                <Grid item xs={6} sm={4} md={3} key={cls._id}>
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 2,
-                      borderLeft: "3px solid",
-                      borderLeftColor:
-                        cls.percentage >= 75
-                          ? "success.main"
-                          : cls.percentage >= 50
-                            ? "warning.main"
-                            : "error.main",
-                    }}
-                  >
-                    <Typography variant="body2" fontWeight={800} noWrap>
-                      {cls.name}
-                    </Typography>
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                    >
-                      <Typography variant="caption" color="text.secondary">
-                        {cls.students} students
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        fontWeight={900}
-                        color={
-                          cls.percentage >= 75
-                            ? "success.dark"
-                            : cls.percentage >= 50
-                              ? "warning.dark"
-                              : "error.dark"
-                        }
-                      >
-                        {cls.percentage}%
-                      </Typography>
-                    </Stack>
-                    <LinearProgress
-                      variant="determinate"
-                      value={cls.percentage}
-                      color={
-                        cls.percentage >= 75
-                          ? "success"
-                          : cls.percentage >= 50
-                            ? "warning"
-                            : "error"
-                      }
-                      sx={{ borderRadius: 4, height: 4, mt: 0.5 }}
-                    />
-                  </Paper>
-                </Grid>
-              ))}
-            </Grid>
-          </>
-        )}
       </Paper>
 
-      {/* ═══════ TOP DEFAULTERS ═══════ */}
+      {/* ═══ TOP DEFAULTERS ═══ */}
       <Paper sx={{ p: 2, borderRadius: 3 }}>
         <Stack
           direction="row"
@@ -771,7 +764,7 @@ const AnalyticsDashboard = () => {
           sx={{ mb: 2 }}
         >
           <Stack direction="row" alignItems="center" spacing={1}>
-            <WarningIcon sx={{ color: "warning.main" }} />
+            <WarningAmberOutlinedIcon sx={{ color: "warning.main" }} />
             <Typography variant="subtitle1" fontWeight={800}>
               Top Defaulters (This Month)
             </Typography>
@@ -780,7 +773,7 @@ const AnalyticsDashboard = () => {
             <Button
               size="small"
               onClick={() => navigate("/reports")}
-              endIcon={<VisibilityIcon />}
+              endIcon={<VisibilityOutlinedIcon />}
             >
               Full Report
             </Button>
@@ -800,11 +793,11 @@ const AnalyticsDashboard = () => {
                   borderLeft: "3px solid",
                   borderLeftColor: "error.main",
                   cursor: "pointer",
+                  transition: "all 0.15s",
                   "&:hover": {
-                    bgcolor: "#FEF2F2",
+                    bgcolor: defaulterHoverBg,
                     transform: "translateX(2px)",
                   },
-                  transition: "all 0.15s",
                 }}
               >
                 <Stack direction="row" alignItems="center" spacing={1.5}>
@@ -812,7 +805,11 @@ const AnalyticsDashboard = () => {
                     sx={{
                       width: 36,
                       height: 36,
-                      bgcolor: idx < 3 ? "error.main" : "error.light",
+                      bgcolor:
+                        idx < 3
+                          ? alpha(theme.palette.error.main, 0.8)
+                          : alpha(theme.palette.error.main, 0.4),
+                      color: "white",
                       fontSize: "0.85rem",
                       fontWeight: 800,
                       flexShrink: 0,
@@ -841,11 +838,11 @@ const AnalyticsDashboard = () => {
                         <Chip
                           label={`${s.class.name}-${s.class.section}`}
                           size="small"
+                          variant="outlined"
                           sx={{
                             height: 18,
                             fontSize: "0.65rem",
                             fontWeight: 700,
-                            bgcolor: "#F1F3F9",
                           }}
                         />
                       )}
@@ -855,7 +852,7 @@ const AnalyticsDashboard = () => {
                     <Typography
                       variant="h6"
                       fontWeight={900}
-                      color="error.dark"
+                      color="error.main"
                       sx={{ lineHeight: 1 }}
                     >
                       {s.percentage}%
@@ -874,7 +871,7 @@ const AnalyticsDashboard = () => {
           </Stack>
         ) : (
           <Box sx={{ py: 5, textAlign: "center" }}>
-            <EmojiEventsIcon
+            <EmojiEventsOutlinedIcon
               sx={{ fontSize: 48, color: "success.main", mb: 1 }}
             />
             <Typography variant="body2" color="text.secondary">

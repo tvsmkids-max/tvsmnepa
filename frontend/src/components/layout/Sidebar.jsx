@@ -26,9 +26,10 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import HistoryIcon from "@mui/icons-material/History";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import StorageIcon from "@mui/icons-material/Storage";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
+import TimelineIcon from "@mui/icons-material/Timeline";
 import useAuth from "../../hooks/useAuth";
 import useThemeMode from "../../hooks/useThemeMode";
 
@@ -36,14 +37,11 @@ const adminNav = [
   { label: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
   { divider: true, label: "Management" },
   { label: "Students", icon: <PeopleIcon />, path: "/students" },
+  { label: "Section Shift", icon: <SwapHorizIcon />, path: "/students/shift" },
   { label: "Classes", icon: <ClassIcon />, path: "/classes" },
   { label: "Teachers", icon: <PersonIcon />, path: "/teachers" },
   { divider: true, label: "Attendance" },
-  {
-    label: "Mark Attendance",
-    icon: <EventNoteIcon />,
-    path: "/attendance/mark",
-  },
+  { label: "Mark", icon: <EventNoteIcon />, path: "/attendance/mark" },
   { label: "History", icon: <HistoryIcon />, path: "/attendance/history" },
   { divider: true, label: "Reports" },
   { label: "Reports", icon: <AssessmentIcon />, path: "/reports" },
@@ -57,25 +55,27 @@ const adminNav = [
     icon: <NotificationsIcon />,
     path: "/notifications",
   },
-  { label: "Activity Logs", icon: <HistoryIcon />, path: "/activity-logs" },
+  { label: "Activity Logs", icon: <TimelineIcon />, path: "/activity-logs" },
   { divider: true, label: "System" },
-  { label: "Backup & Restore", icon: <StorageIcon />, path: "/backup" }, // ← NEW
+  { label: "Backup", icon: <StorageIcon />, path: "/backup" },
   { label: "Settings", icon: <SettingsIcon />, path: "/settings" },
 ];
 
 const teacherNav = [
   { label: "Dashboard", icon: <DashboardIcon />, path: "/teacher/dashboard" },
   { divider: true, label: "Attendance" },
-  {
-    label: "Mark Attendance",
-    icon: <EventNoteIcon />,
-    path: "/attendance/mark",
-  },
+  { label: "Mark", icon: <EventNoteIcon />, path: "/attendance/mark" },
   { label: "History", icon: <HistoryIcon />, path: "/attendance/history" },
-  { divider: true, label: "My Students" },
+  { divider: true, label: "Students" },
   { label: "Students", icon: <PeopleIcon />, path: "/students" },
   { divider: true, label: "Reports" },
   { label: "Reports", icon: <AssessmentIcon />, path: "/reports" },
+];
+
+const principalNav = [
+  { label: "Dashboard", icon: <DashboardIcon />, path: "/principal/dashboard" },
+  { divider: true, label: "School" },
+  { label: "Holidays", icon: <BeachAccessIcon />, path: "/holidays" },
 ];
 
 const SidebarContent = ({ collapsed, onCollapseToggle }) => {
@@ -84,25 +84,36 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
   const { user } = useAuth();
   const { isDark } = useThemeMode();
 
-  const navItems = useMemo(
-    () => (user?.role === "admin" ? adminNav : teacherNav),
-    [user?.role],
-  );
+  const navItems = useMemo(() => {
+    if (user?.role === "admin") return adminNav;
+    if (user?.role === "principal") return principalNav;
+    return teacherNav;
+  }, [user?.role]);
 
   const isActive = (path) => {
-    if (path === "/dashboard" || path === "/teacher/dashboard") {
+    if (
+      path === "/dashboard" ||
+      path === "/teacher/dashboard" ||
+      path === "/principal/dashboard"
+    ) {
       return location.pathname === path;
     }
     return location.pathname.startsWith(path);
   };
 
-  const sidebarBg = isDark
-    ? "linear-gradient(180deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)"
-    : "linear-gradient(180deg, #0D47A1 0%, #1565C0 50%, #1976D2 100%)";
-
-  const borderColor = isDark
-    ? "rgba(255,255,255,0.08)"
-    : "rgba(255,255,255,0.12)";
+  // ─── THEME-AWARE COLORS ───
+  const sidebarBg = isDark ? "#111827" : "#FFFFFF";
+  const textColor = isDark ? "#F9FAFB" : "#111827";
+  const borderColor = isDark ? "#1F2937" : "#E5E7EB";
+  const labelColor = isDark ? "#6B7280" : "#9CA3AF";
+  const itemColor = isDark ? "#9CA3AF" : "#6B7280";
+  const itemActiveColor = isDark ? "#F9FAFB" : "#111827";
+  const hoverBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
+  const activeBg = isDark ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.08)";
+  const activeIndicator = isDark ? "#3B82F6" : "#3B82F6";
+  const scrollbarThumb = isDark ? "#374151" : "#D1D5DB";
+  const userRoleColor = isDark ? "#6B7280" : "#9CA3AF";
+  const avatarBg = isDark ? "#3B82F6" : "#3B82F6";
 
   return (
     <Box
@@ -110,61 +121,57 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        background: sidebarBg,
-        color: "white",
+        bgcolor: sidebarBg,
+        color: textColor,
         overflow: "hidden",
+        transition: "background-color 0.3s ease",
+        borderRight: `1px solid ${borderColor}`,
       }}
     >
+      {/* Collapse Toggle */}
       <Box
         sx={{
-          px: 1.5,
-          py: 1.5,
+          px: 1,
+          py: 1,
           display: "flex",
           alignItems: "center",
-          justifyContent: collapsed ? "center" : "space-between",
-          minHeight: 52,
-          borderBottom: "1px solid",
-          borderColor,
+          justifyContent: collapsed ? "center" : "flex-end",
+          minHeight: 40,
+          borderBottom: `1px solid ${borderColor}`,
         }}
       >
-        {!collapsed && (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <MenuOpenIcon
-              sx={{ color: "rgba(255,255,255,0.5)", fontSize: 18 }}
-            />
-            <Typography
-              variant="caption"
-              sx={{
-                color: "rgba(255,255,255,0.7)",
-                fontSize: "0.72rem",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-              }}
-            >
-              Navigation
-            </Typography>
-          </Box>
-        )}
-
         <IconButton
           onClick={onCollapseToggle}
           size="small"
           sx={{
-            color: "rgba(255,255,255,0.7)",
-            flexShrink: 0,
-            "&:hover": { bgcolor: "rgba(255,255,255,0.1)" },
+            color: itemColor,
+            "&:hover": { bgcolor: hoverBg },
+            width: 28,
+            height: 28,
           }}
         >
           {collapsed ? (
-            <ChevronRightIcon fontSize="small" />
+            <ChevronRightIcon sx={{ fontSize: 18 }} />
           ) : (
-            <ChevronLeftIcon fontSize="small" />
+            <ChevronLeftIcon sx={{ fontSize: 18 }} />
           )}
         </IconButton>
       </Box>
 
-      <Box sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", py: 1 }}>
+      {/* Nav Items */}
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
+          py: 0.5,
+          "&::-webkit-scrollbar": { width: 4 },
+          "&::-webkit-scrollbar-thumb": {
+            bgcolor: scrollbarThumb,
+            borderRadius: 2,
+          },
+        }}
+      >
         <List dense disablePadding>
           {navItems.map((item, idx) => {
             if (item.divider) {
@@ -174,14 +181,14 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
                     <Typography
                       variant="caption"
                       sx={{
-                        px: 2.5,
-                        pt: 2,
-                        pb: 0.5,
+                        px: 2,
+                        pt: idx === 0 ? 0.5 : 1.5,
+                        pb: 0.3,
                         display: "block",
-                        color: "rgba(255,255,255,0.45)",
+                        color: labelColor,
                         textTransform: "uppercase",
-                        letterSpacing: "0.08em",
-                        fontSize: "0.65rem",
+                        letterSpacing: "0.1em",
+                        fontSize: "0.58rem",
                         fontWeight: 700,
                       }}
                     >
@@ -190,8 +197,9 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
                   ) : (
                     <Divider
                       sx={{
-                        borderColor: "rgba(255,255,255,0.1)",
+                        borderColor,
                         my: 0.5,
+                        mx: 1,
                       }}
                     />
                   )}
@@ -211,38 +219,30 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
                 <ListItemButton
                   onClick={() => navigate(item.path)}
                   sx={{
-                    mx: 1,
-                    mb: 0.25,
-                    borderRadius: 2,
-                    py: 1,
-                    px: 1.5,
+                    mx: 0.8,
+                    mb: 0.2,
+                    borderRadius: 1.5,
+                    py: 0.7,
+                    px: collapsed ? 1.2 : 1.5,
                     justifyContent: collapsed ? "center" : "flex-start",
-                    minHeight: 40,
-                    color: active ? "white" : "rgba(255,255,255,0.72)",
-                    bgcolor: active
-                      ? isDark
-                        ? "rgba(59,130,246,0.25)"
-                        : "rgba(255,255,255,0.16)"
-                      : "transparent",
-                    borderLeft: active ? "3px solid" : "3px solid transparent",
-                    borderLeftColor: active
-                      ? isDark
-                        ? "#3B82F6"
-                        : "#F5A623"
-                      : "transparent",
+                    minHeight: 36,
+                    color: active ? itemActiveColor : itemColor,
+                    bgcolor: active ? activeBg : "transparent",
+                    borderLeft: active
+                      ? `3px solid ${activeIndicator}`
+                      : "3px solid transparent",
                     "&:hover": {
-                      bgcolor: isDark
-                        ? "rgba(59,130,246,0.15)"
-                        : "rgba(255,255,255,0.1)",
-                      color: "white",
+                      bgcolor: hoverBg,
+                      color: itemActiveColor,
                     },
+                    transition: "all 0.15s ease",
                   }}
                 >
                   <ListItemIcon
                     sx={{
-                      color: "inherit",
-                      minWidth: collapsed ? "unset" : 36,
-                      "& svg": { fontSize: "1.25rem" },
+                      color: active ? activeIndicator : "inherit",
+                      minWidth: collapsed ? "unset" : 32,
+                      "& svg": { fontSize: "1.15rem" },
                     }}
                   >
                     {item.icon}
@@ -251,7 +251,7 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
                     <ListItemText
                       primary={item.label}
                       primaryTypographyProps={{
-                        fontSize: "0.875rem",
+                        fontSize: "0.82rem",
                         fontWeight: active ? 700 : 500,
                         noWrap: true,
                       }}
@@ -264,22 +264,22 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
         </List>
       </Box>
 
+      {/* User Footer */}
       <Box
         sx={{
-          p: 1.5,
-          borderTop: "1px solid",
-          borderColor,
+          p: 1,
+          borderTop: `1px solid ${borderColor}`,
           display: "flex",
           alignItems: "center",
-          gap: 1.5,
+          gap: 1,
         }}
       >
         <Avatar
           sx={{
-            width: 32,
-            height: 32,
-            bgcolor: isDark ? "#3B82F6" : "secondary.main",
-            fontSize: "0.85rem",
+            width: 28,
+            height: 28,
+            bgcolor: avatarBg,
+            fontSize: "0.75rem",
             fontWeight: 700,
             flexShrink: 0,
           }}
@@ -289,18 +289,24 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
         {!collapsed && (
           <Box sx={{ overflow: "hidden" }}>
             <Typography
-              variant="body2"
+              variant="caption"
               fontWeight={600}
               noWrap
-              sx={{ color: "white", lineHeight: 1.2 }}
+              sx={{
+                color: textColor,
+                lineHeight: 1.2,
+                fontSize: "0.75rem",
+                display: "block",
+              }}
             >
               {user?.name}
             </Typography>
             <Typography
               variant="caption"
               sx={{
-                color: "rgba(255,255,255,0.6)",
+                color: userRoleColor,
                 textTransform: "capitalize",
+                fontSize: "0.62rem",
               }}
             >
               {user?.role}
@@ -323,10 +329,10 @@ const Sidebar = ({ drawerWidth, collapsed, onCollapseToggle }) => (
         width: drawerWidth,
         boxSizing: "border-box",
         border: "none",
-        transition: "width 0.25s ease",
+        transition: "width 0.2s ease",
         overflow: "hidden",
-        top: 64,
-        height: "calc(100vh - 64px)",
+        top: 55,
+        height: "calc(100vh - 55px)",
       },
     }}
   >

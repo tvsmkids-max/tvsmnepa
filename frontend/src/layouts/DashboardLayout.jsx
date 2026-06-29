@@ -6,8 +6,8 @@ import Topbar from "../components/layout/Topbar";
 import MobileBottomNav from "../components/layout/MobileBottomNav";
 import IdleTimeoutProvider from "../components/common/IdleTimeoutProvider";
 
-const DRAWER_WIDTH = 260;
-const COLLAPSED_WIDTH = 72;
+const DRAWER_WIDTH = 220;
+const COLLAPSED_WIDTH = 60;
 
 const DashboardLayout = () => {
   const theme = useTheme();
@@ -57,17 +57,18 @@ const DashboardLayout = () => {
             transition: theme.transitions.create(["width"]),
           }}
         >
+          {/* Spacer matching topbar height */}
           <Toolbar
             sx={{
-              minHeight: { xs: "56px !important", md: "64px !important" },
+              minHeight: { xs: "50px !important", md: "55px !important" },
             }}
           />
 
           <Box
             sx={{
               flex: 1,
-              p: { xs: 2, sm: 3 },
-              pb: { xs: 10, md: 3 },
+              p: { xs: 1.5, sm: 2, md: 2.5 },
+              pb: { xs: 10, md: 2.5 },
               overflowX: "hidden",
               overflowY: "auto",
               width: "100%",

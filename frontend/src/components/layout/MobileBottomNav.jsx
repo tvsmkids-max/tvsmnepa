@@ -33,6 +33,7 @@ import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
+import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
 import useAuth from "../../hooks/useAuth";
 
 const MobileBottomNav = () => {
@@ -41,9 +42,16 @@ const MobileBottomNav = () => {
   const { user, isAdmin, logout } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  const isPrincipal = user?.role === "principal";
+
   const getCurrentValue = () => {
     const path = location.pathname;
-    if (path === "/dashboard" || path === "/teacher/dashboard") return "home";
+    if (
+      path === "/dashboard" ||
+      path === "/teacher/dashboard" ||
+      path === "/principal/dashboard"
+    )
+      return "home";
     if (path.startsWith("/attendance/mark")) return "mark";
     if (path.startsWith("/attendance/history")) return "history";
     if (path.startsWith("/students")) return "students";
@@ -56,7 +64,12 @@ const MobileBottomNav = () => {
       return;
     }
 
-    const homeRoute = isAdmin ? "/dashboard" : "/teacher/dashboard";
+    const homeRoute = isAdmin
+      ? "/dashboard"
+      : isPrincipal
+        ? "/principal/dashboard"
+        : "/teacher/dashboard";
+
     const routes = {
       home: homeRoute,
       mark: "/attendance/mark",
@@ -77,12 +90,18 @@ const MobileBottomNav = () => {
     navigate("/login", { replace: true });
   };
 
+  // ─── ADMIN MORE ITEMS ───
   const adminMoreItems = [
     { divider: true, label: "Personal" },
     { label: "My Profile", icon: <PersonOutlinedIcon />, path: "/profile" },
     { divider: true, label: "Management" },
     { label: "Classes", icon: <ClassOutlinedIcon />, path: "/classes" },
     { label: "Teachers", icon: <PersonOutlinedIcon />, path: "/teachers" },
+    {
+      label: "Section Shift",
+      icon: <SwapHorizOutlinedIcon />,
+      path: "/students/shift",
+    },
     { divider: true, label: "Reports" },
     { label: "Reports", icon: <AssessmentOutlinedIcon />, path: "/reports" },
     { label: "Analytics", icon: <AnalyticsOutlinedIcon />, path: "/analytics" },
@@ -105,10 +124,11 @@ const MobileBottomNav = () => {
       label: "Backup & Restore",
       icon: <StorageOutlinedIcon />,
       path: "/backup",
-    }, // ← NEW
+    },
     { label: "Settings", icon: <SettingsOutlinedIcon />, path: "/settings" },
   ];
 
+  // ─── TEACHER MORE ITEMS ───
   const teacherMoreItems = [
     { divider: true, label: "Personal" },
     { label: "My Profile", icon: <PersonOutlinedIcon />, path: "/profile" },
@@ -121,10 +141,24 @@ const MobileBottomNav = () => {
     { label: "Reports", icon: <AssessmentOutlinedIcon />, path: "/reports" },
   ];
 
-  const moreItems = isAdmin ? adminMoreItems : teacherMoreItems;
+  // ─── PRINCIPAL MORE ITEMS ───
+  const principalMoreItems = [
+    { divider: true, label: "School" },
+    { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
+  ];
+
+  // Choose menu items based on role
+  const moreItems = isAdmin
+    ? adminMoreItems
+    : isPrincipal
+      ? principalMoreItems
+      : teacherMoreItems;
 
   const isActivePath = (path) =>
     location.pathname === path || location.pathname.startsWith(path);
+
+  // Principal bottom nav: only Home + More (no Mark/History/Students)
+  const showFullNav = !isPrincipal;
 
   return (
     <>
@@ -154,18 +188,13 @@ const MobileBottomNav = () => {
               minWidth: "auto",
               padding: "6px 4px",
               color: "text.secondary",
-              "&.Mui-selected": {
-                color: "primary.main",
-              },
+              "&.Mui-selected": { color: "primary.main" },
             },
             "& .MuiBottomNavigationAction-label": {
               fontSize: "0.65rem",
               fontWeight: 600,
               marginTop: "2px",
-              "&.Mui-selected": {
-                fontSize: "0.67rem",
-                fontWeight: 700,
-              },
+              "&.Mui-selected": { fontSize: "0.67rem", fontWeight: 700 },
             },
           }}
         >
@@ -174,21 +203,27 @@ const MobileBottomNav = () => {
             value="home"
             icon={<HomeOutlinedIcon sx={{ fontSize: 22 }} />}
           />
-          <BottomNavigationAction
-            label="Mark"
-            value="mark"
-            icon={<EventNoteOutlinedIcon sx={{ fontSize: 22 }} />}
-          />
-          <BottomNavigationAction
-            label="History"
-            value="history"
-            icon={<HistoryOutlinedIcon sx={{ fontSize: 22 }} />}
-          />
-          <BottomNavigationAction
-            label="Students"
-            value="students"
-            icon={<PeopleOutlinedIcon sx={{ fontSize: 22 }} />}
-          />
+          {showFullNav && (
+            <BottomNavigationAction
+              label="Mark"
+              value="mark"
+              icon={<EventNoteOutlinedIcon sx={{ fontSize: 22 }} />}
+            />
+          )}
+          {showFullNav && (
+            <BottomNavigationAction
+              label="History"
+              value="history"
+              icon={<HistoryOutlinedIcon sx={{ fontSize: 22 }} />}
+            />
+          )}
+          {showFullNav && (
+            <BottomNavigationAction
+              label="Students"
+              value="students"
+              icon={<PeopleOutlinedIcon sx={{ fontSize: 22 }} />}
+            />
+          )}
           <BottomNavigationAction
             label="More"
             value="more"
@@ -233,7 +268,7 @@ const MobileBottomNav = () => {
                 sx={{
                   width: 40,
                   height: 40,
-                  bgcolor: "primary.main",
+                  bgcolor: isPrincipal ? "success.main" : "primary.main",
                   fontSize: "0.95rem",
                   fontWeight: 800,
                 }}
@@ -305,7 +340,6 @@ const MobileBottomNav = () => {
                   mb: 0.3,
                   py: 1.2,
                   bgcolor: active ? "action.selected" : "transparent",
-                  "&:active": { bgcolor: "action.selected" },
                   "&:hover": { bgcolor: "action.hover" },
                 }}
               >

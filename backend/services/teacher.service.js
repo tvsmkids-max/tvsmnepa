@@ -69,11 +69,14 @@ class TeacherService {
     let userDoc = null;
     try {
       const hashedPassword = await hashPassword(data.password);
+      const allowedRoles = ["teacher", "principal"];
+      const role = allowedRoles.includes(data.role) ? data.role : "teacher";
+
       userDoc = await userRepository.create({
         name: data.name,
         email: data.email,
         password: hashedPassword,
-        role: "teacher",
+        role, // ← Dynamic role
         isActive: true,
       });
     } catch (err) {

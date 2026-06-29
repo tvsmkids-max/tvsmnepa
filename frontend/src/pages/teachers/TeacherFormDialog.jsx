@@ -42,6 +42,7 @@ const createSchema = yup.object({
   joinDate: yup.date().required("Join date required"),
   address: yup.string(),
   session: yup.string().required("Session required"),
+  role: yup.string().oneOf(["teacher", "principal"]).default("teacher"),
 });
 
 const updateSchema = yup.object({
@@ -90,6 +91,7 @@ const TeacherFormDialog = ({ open, onClose, onSaved, editingTeacher }) => {
       address: "",
       session: "",
       isActive: true,
+      role: "teacher",
     },
   });
 
@@ -129,6 +131,7 @@ const TeacherFormDialog = ({ open, onClose, onSaved, editingTeacher }) => {
           address: "",
           session: activeSession?._id || "",
           isActive: true,
+          role: "teacher",
         });
         setSelectedClasses([]);
       }
@@ -174,8 +177,17 @@ const TeacherFormDialog = ({ open, onClose, onSaved, editingTeacher }) => {
           await teacherApi.assignClasses(editingTeacher._id, selectedClasses);
         enqueueSnackbar("Teacher updated", { variant: "success" });
       } else {
-        await teacherApi.create({ ...data, assignedClasses: selectedClasses });
-        enqueueSnackbar("Teacher created", { variant: "success" });
+        await teacherApi.create({
+          ...data,
+          role: data.role || "teacher",
+          assignedClasses: selectedClasses,
+        });
+        enqueueSnackbar(
+          data.role === "principal"
+            ? "Principal account created"
+            : "Teacher created",
+          { variant: "success" },
+        );
       }
       onSaved();
     } catch (err) {
@@ -197,12 +209,80 @@ const TeacherFormDialog = ({ open, onClose, onSaved, editingTeacher }) => {
     >
       <DialogTitle component="div" sx={{ pt: 3, pb: 2 }}>
         <Typography variant="h6" fontWeight={700} component="div">
-          {isEdit ? "Edit Teacher" : "Add New Teacher"}
+          {isEdit ? "Edit Teacher" : "Add New Staff"}
         </Typography>
+        {!isEdit && (
+          <Typography variant="caption" color="text.secondary" component="div">
+            Create teacher or principal account
+          </Typography>
+        )}
       </DialogTitle>
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <DialogContent dividers>
+          {/* ─── ACCOUNT TYPE (Create only) ─── */}
+          {!isEdit && (
+            <>
+              <Typography
+                variant="caption"
+                color="primary"
+                fontWeight={700}
+                sx={{
+                  display: "block",
+                  mb: 1.5,
+                  textTransform: "uppercase",
+                }}
+              >
+                Account Type
+              </Typography>
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={12} sm={6}>
+                  <Controller
+                    name="role"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Account Type *</InputLabel>
+                        <Select {...field} label="Account Type *">
+                          <MenuItem value="teacher">
+                            <Box>
+                              <Typography variant="body2" fontWeight={700}>
+                                👨‍🏫 Teacher
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ fontSize: "0.7rem" }}
+                              >
+                                Can mark attendance, manage students
+                              </Typography>
+                            </Box>
+                          </MenuItem>
+                          <MenuItem value="principal">
+                            <Box>
+                              <Typography variant="body2" fontWeight={700}>
+                                🎓 Principal
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ fontSize: "0.7rem" }}
+                              >
+                                Read-only access, view all reports
+                              </Typography>
+                            </Box>
+                          </MenuItem>
+                        </Select>
+                      </FormControl>
+                    )}
+                  />
+                </Grid>
+              </Grid>
+              <Divider sx={{ my: 2 }} />
+            </>
+          )}
+
+          {/* ─── PERSONAL INFO ─── */}
           <Typography
             variant="caption"
             color="primary"
@@ -300,6 +380,7 @@ const TeacherFormDialog = ({ open, onClose, onSaved, editingTeacher }) => {
             </Grid>
           </Grid>
 
+          {/* ─── CONTACT & ACCOUNT ─── */}
           <Divider sx={{ my: 2 }} />
           <Typography
             variant="caption"
@@ -378,6 +459,7 @@ const TeacherFormDialog = ({ open, onClose, onSaved, editingTeacher }) => {
             </Grid>
           </Grid>
 
+          {/* ─── PROFESSIONAL ─── */}
           <Divider sx={{ my: 2 }} />
           <Typography
             variant="caption"
@@ -511,8 +593,17 @@ const TeacherFormDialog = ({ open, onClose, onSaved, editingTeacher }) => {
                 <CircularProgress size={16} sx={{ color: "white" }} />
               )
             }
+            sx={{
+              background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+              fontWeight: 700,
+              textTransform: "none",
+            }}
           >
-            {isEdit ? "Update Teacher" : "Create Teacher"}
+            {submitting
+              ? "Saving..."
+              : isEdit
+                ? "Update Teacher"
+                : "Create Account"}
           </Button>
         </DialogActions>
       </form>

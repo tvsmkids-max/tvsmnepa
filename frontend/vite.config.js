@@ -86,10 +86,8 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: false,
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
-
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
-          // Google Fonts CSS
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: "CacheFirst",
@@ -99,12 +97,9 @@ export default defineConfig({
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 365,
               },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
+              cacheableResponse: { statuses: [0, 200] },
             },
           },
-          // Google Fonts files
           {
             urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
             handler: "CacheFirst",
@@ -114,12 +109,9 @@ export default defineConfig({
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 365,
               },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
+              cacheableResponse: { statuses: [0, 200] },
             },
           },
-          // Render.com API (backend)
           {
             urlPattern: /^https:\/\/.*\.onrender\.com\/api\/.*/i,
             handler: "NetworkFirst",
@@ -128,14 +120,11 @@ export default defineConfig({
               networkTimeoutSeconds: 10,
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 5, // 5 min fallback
+                maxAgeSeconds: 60 * 5,
               },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
+              cacheableResponse: { statuses: [0, 200] },
             },
           },
-          // Local API (dev)
           {
             urlPattern: /\/api\/.*/i,
             handler: "NetworkFirst",
@@ -148,7 +137,6 @@ export default defineConfig({
               },
             },
           },
-          // Images
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
             handler: "CacheFirst",
@@ -156,14 +144,14 @@ export default defineConfig({
               cacheName: "image-cache",
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                maxAgeSeconds: 60 * 60 * 24 * 30,
               },
             },
           },
         ],
       },
       devOptions: {
-        enabled: false, // Don't enable in dev (better DX)
+        enabled: false,
         type: "module",
       },
     }),
@@ -188,31 +176,70 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: false,
-    minify: "esbuild",
-    chunkSizeWarningLimit: 1500,
+    // ✅ Vite 8 — do NOT set minify: 'esbuild' (handled internally)
+    target: "esnext",
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
+        // ✅ manualChunks MUST be a function in Vite 8
         manualChunks(id) {
-          // Vendor chunks
           if (id.includes("node_modules")) {
-            if (id.includes("react-dom") || id.includes("react/")) {
+            // ── React core ──
+            if (
+              id.includes("react-dom") ||
+              id.includes("react/") ||
+              id.includes("react-is") ||
+              id.includes("scheduler")
+            ) {
               return "vendor-react";
             }
+
+            // ── Router ──
             if (id.includes("react-router")) {
               return "vendor-router";
             }
-            if (id.includes("@mui")) {
-              return "vendor-mui";
+
+            // ── MUI Icons (separate — very large) ──
+            if (id.includes("@mui/icons-material")) {
+              return "vendor-mui-icons";
             }
-            if (id.includes("recharts")) {
+
+            // ── MUI Core + Emotion ──
+            if (
+              id.includes("@mui/material") ||
+              id.includes("@mui/system") ||
+              id.includes("@mui/base") ||
+              id.includes("@mui/utils") ||
+              id.includes("@emotion/react") ||
+              id.includes("@emotion/styled") ||
+              id.includes("@emotion/cache") ||
+              id.includes("@emotion/serialize") ||
+              id.includes("@emotion/utils")
+            ) {
+              return "vendor-mui-core";
+            }
+
+            // ── Charts (recharts is large) ──
+            if (
+              id.includes("recharts") ||
+              id.includes("d3-") ||
+              id.includes("victory-") ||
+              id.includes("react-smooth")
+            ) {
               return "vendor-charts";
             }
-            if (id.includes("xlsx")) {
+
+            // ── Excel ──
+            if (id.includes("xlsx") || id.includes("file-saver")) {
               return "vendor-excel";
             }
+
+            // ── PDF ──
             if (id.includes("jspdf")) {
               return "vendor-pdf";
             }
+
+            // ── Forms ──
             if (
               id.includes("react-hook-form") ||
               id.includes("yup") ||
@@ -220,19 +247,42 @@ export default defineConfig({
             ) {
               return "vendor-forms";
             }
+
+            // ── HTTP ──
             if (id.includes("axios")) {
               return "vendor-axios";
             }
+
+            // ── Notifications ──
             if (id.includes("notistack")) {
               return "vendor-notistack";
             }
+
+            // ── TanStack Query ──
             if (id.includes("@tanstack")) {
               return "vendor-tanstack";
             }
+
+            // ── PWA / Workbox ──
             if (id.includes("workbox") || id.includes("vite-plugin-pwa")) {
               return "vendor-pwa";
             }
-            // All other node_modules
+
+            // ── Date utilities ──
+            if (
+              id.includes("date-fns") ||
+              id.includes("dayjs") ||
+              id.includes("lodash")
+            ) {
+              return "vendor-utils";
+            }
+
+            // ── Dropzone ──
+            if (id.includes("react-dropzone")) {
+              return "vendor-dropzone";
+            }
+
+            // ── Everything else in node_modules ──
             return "vendor";
           }
         },
@@ -247,7 +297,10 @@ export default defineConfig({
       "react-router-dom",
       "@mui/material",
       "@mui/icons-material",
+      "@emotion/react",
+      "@emotion/styled",
       "axios",
+      "@tanstack/react-query",
     ],
   },
 });

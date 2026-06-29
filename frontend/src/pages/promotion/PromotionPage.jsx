@@ -11,12 +11,13 @@ import {
   Stack,
   Button,
   CircularProgress,
-  Divider,
   Checkbox,
   Avatar,
   Chip,
   Alert,
+  useTheme,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useSnackbar } from "notistack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
@@ -30,29 +31,24 @@ import classApi from "../../api/classApi";
 
 const PromotionPage = () => {
   const { enqueueSnackbar } = useSnackbar();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
 
   const [sessions, setSessions] = useState([]);
   const [allClasses, setAllClasses] = useState([]);
   const [previewing, setPreviewing] = useState(false);
   const [promoting, setPromoting] = useState(false);
 
-  // Source
   const [sourceSession, setSourceSession] = useState("");
   const [sourceClass, setSourceClass] = useState("");
-
-  // Target
   const [targetSession, setTargetSession] = useState("");
   const [targetClass, setTargetClass] = useState("");
 
-  // Preview
   const [preview, setPreview] = useState(null);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
-
-  // Result
   const [result, setResult] = useState(null);
 
-  // Load sessions and ALL classes
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -75,12 +71,9 @@ const PromotionPage = () => {
     };
   }, []);
 
-  // Source classes — filtered by selected source session
   const sourceClasses = allClasses.filter(
     (c) => !sourceSession || (c.session?._id || c.session) === sourceSession,
   );
-
-  // Target classes — show ALL classes (admin picks target)
   const targetClasses = allClasses;
 
   const handlePreview = async () => {
@@ -88,14 +81,12 @@ const PromotionPage = () => {
       enqueueSnackbar("Please select all fields", { variant: "warning" });
       return;
     }
-
     if (sourceSession === targetSession) {
       enqueueSnackbar("Source and target session must be different", {
         variant: "warning",
       });
       return;
     }
-
     setPreviewing(true);
     setPreview(null);
     setResult(null);
@@ -180,6 +171,13 @@ const PromotionPage = () => {
     return `${cls.name} - ${cls.section}${session ? ` (${session.name})` : ""}`;
   };
 
+  // ── Theme-aware colors ──
+  const successBg = alpha(theme.palette.success.main, isDark ? 0.15 : 0.08);
+  const warningBg = alpha(theme.palette.warning.main, isDark ? 0.15 : 0.08);
+  const errorBg = alpha(theme.palette.error.main, isDark ? 0.15 : 0.08);
+  const primaryBg = alpha(theme.palette.primary.main, isDark ? 0.15 : 0.08);
+  const selectedRowBg = alpha(theme.palette.primary.main, isDark ? 0.12 : 0.06);
+
   return (
     <Box sx={{ pb: { xs: 10, md: 4 } }}>
       <PageHeader
@@ -191,28 +189,28 @@ const PromotionPage = () => {
         ]}
       />
 
-      {/* Success Result */}
+      {/* ── Success Result ── */}
       {result && (
         <Paper
           sx={{
             p: 3,
             mb: 3,
             borderRadius: 3,
-            border: "1px solid rgba(0,0,0,0.06)",
             textAlign: "center",
-            boxShadow: "none",
           }}
         >
           <Avatar
             sx={{
               width: 64,
               height: 64,
-              bgcolor: "#ECFDF5",
+              bgcolor: successBg,
               mx: "auto",
               mb: 2,
             }}
           >
-            <CheckCircleOutlinedIcon sx={{ fontSize: 36, color: "#16A34A" }} />
+            <CheckCircleOutlinedIcon
+              sx={{ fontSize: 36, color: "success.main" }}
+            />
           </Avatar>
           <Typography variant="h5" fontWeight={800} gutterBottom>
             Promotion Complete
@@ -226,18 +224,20 @@ const PromotionPage = () => {
             <Chip
               label={`${result.promoted} Promoted`}
               sx={{
-                bgcolor: "#ECFDF5",
-                color: "#16A34A",
+                bgcolor: successBg,
+                color: "success.main",
                 fontWeight: 700,
+                border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`,
               }}
             />
             {result.skipped > 0 && (
               <Chip
                 label={`${result.skipped} Skipped`}
                 sx={{
-                  bgcolor: "#FFFBEB",
-                  color: "#D97706",
+                  bgcolor: warningBg,
+                  color: "warning.main",
                   fontWeight: 700,
+                  border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
                 }}
               />
             )}
@@ -245,9 +245,10 @@ const PromotionPage = () => {
               <Chip
                 label={`${result.failed} Failed`}
                 sx={{
-                  bgcolor: "#FEF2F2",
-                  color: "#DC2626",
+                  bgcolor: errorBg,
+                  color: "error.main",
                   fontWeight: 700,
+                  border: `1px solid ${alpha(theme.palette.error.main, 0.3)}`,
                 }}
               />
             )}
@@ -258,25 +259,17 @@ const PromotionPage = () => {
         </Paper>
       )}
 
-      {/* Selection Form */}
+      {/* ── Selection Form ── */}
       {!result && (
-        <Paper
-          sx={{
-            p: 2.5,
-            mb: 3,
-            borderRadius: 3,
-            border: "1px solid rgba(0,0,0,0.06)",
-            boxShadow: "none",
-          }}
-        >
+        <Paper sx={{ p: 2.5, mb: 3, borderRadius: 3 }}>
           <Grid container spacing={2}>
-            {/* Source */}
+            {/* Source Label */}
             <Grid item xs={12}>
               <Typography
                 variant="caption"
                 fontWeight={700}
+                color="text.secondary"
                 sx={{
-                  color: "#8E99A4",
                   textTransform: "uppercase",
                   fontSize: "0.68rem",
                   letterSpacing: "0.06em",
@@ -329,20 +322,20 @@ const PromotionPage = () => {
             <Grid item xs={12} sx={{ textAlign: "center", py: 0 }}>
               <ArrowForwardIcon
                 sx={{
-                  color: "#C5CAD0",
+                  color: "divider",
                   fontSize: 28,
                   transform: "rotate(90deg)",
                 }}
               />
             </Grid>
 
-            {/* Target */}
+            {/* Target Label */}
             <Grid item xs={12}>
               <Typography
                 variant="caption"
                 fontWeight={700}
+                color="text.secondary"
                 sx={{
-                  color: "#8E99A4",
                   textTransform: "uppercase",
                   fontSize: "0.68rem",
                   letterSpacing: "0.06em",
@@ -412,12 +405,7 @@ const PromotionPage = () => {
                     <SchoolOutlinedIcon />
                   )
                 }
-                sx={{
-                  py: 1.3,
-                  bgcolor: "#0D1B3E",
-                  boxShadow: "none",
-                  "&:hover": { bgcolor: "#1A3060", boxShadow: "none" },
-                }}
+                sx={{ py: 1.3 }}
               >
                 {previewing ? "Loading Preview..." : "Preview Promotion"}
               </Button>
@@ -426,19 +414,11 @@ const PromotionPage = () => {
         </Paper>
       )}
 
-      {/* Preview */}
+      {/* ── Preview ── */}
       {preview && !result && (
         <>
-          {/* Summary */}
-          <Paper
-            sx={{
-              p: 2,
-              mb: 2,
-              borderRadius: 3,
-              border: "1px solid rgba(0,0,0,0.06)",
-              boxShadow: "none",
-            }}
-          >
+          {/* Summary Bar */}
+          <Paper sx={{ p: 2, mb: 2, borderRadius: 3 }}>
             <Stack
               direction="row"
               justifyContent="space-between"
@@ -449,37 +429,44 @@ const PromotionPage = () => {
               <Stack direction="row" spacing={1} alignItems="center">
                 <Chip
                   label={`${getClassName(sourceClass)} (${getSessionName(sourceSession)})`}
-                  sx={{ fontWeight: 700, bgcolor: "#F0F1F3" }}
+                  sx={{
+                    fontWeight: 700,
+                    bgcolor: "action.hover",
+                    color: "text.primary",
+                  }}
                 />
-                <ArrowForwardIcon sx={{ color: "#8E99A4", fontSize: 18 }} />
+                <ArrowForwardIcon
+                  sx={{ color: "text.secondary", fontSize: 18 }}
+                />
                 <Chip
                   label={`${getClassName(targetClass)} (${getSessionName(targetSession)})`}
                   sx={{
                     fontWeight: 700,
-                    bgcolor: "#EFF6FF",
-                    color: "#2563EB",
+                    bgcolor: primaryBg,
+                    color: "primary.main",
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
                   }}
                 />
               </Stack>
               <Stack direction="row" spacing={1}>
                 <Chip
                   label={`${preview.summary.canPromote} eligible`}
+                  size="small"
                   sx={{
                     fontWeight: 700,
-                    bgcolor: "#ECFDF5",
-                    color: "#16A34A",
+                    bgcolor: successBg,
+                    color: "success.main",
                   }}
-                  size="small"
                 />
                 {preview.summary.alreadyDone > 0 && (
                   <Chip
                     label={`${preview.summary.alreadyDone} already done`}
+                    size="small"
                     sx={{
                       fontWeight: 700,
-                      bgcolor: "#FFFBEB",
-                      color: "#D97706",
+                      bgcolor: warningBg,
+                      color: "warning.main",
                     }}
-                    size="small"
                   />
                 )}
               </Stack>
@@ -498,13 +485,7 @@ const PromotionPage = () => {
 
           {/* Student List */}
           {preview.eligible.length === 0 ? (
-            <Paper
-              sx={{
-                borderRadius: 3,
-                border: "1px solid rgba(0,0,0,0.06)",
-                boxShadow: "none",
-              }}
-            >
+            <Paper sx={{ borderRadius: 3 }}>
               <EmptyState
                 icon={<SchoolOutlinedIcon sx={{ fontSize: 64 }} />}
                 title="No eligible students"
@@ -512,21 +493,15 @@ const PromotionPage = () => {
               />
             </Paper>
           ) : (
-            <Paper
-              sx={{
-                borderRadius: 3,
-                border: "1px solid rgba(0,0,0,0.06)",
-                boxShadow: "none",
-                overflow: "hidden",
-              }}
-            >
-              {/* Header */}
+            <Paper sx={{ borderRadius: 3, overflow: "hidden" }}>
+              {/* List Header */}
               <Box
                 sx={{
                   px: 2,
                   py: 1.5,
-                  borderBottom: "1px solid rgba(0,0,0,0.06)",
-                  bgcolor: "#FAFBFC",
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                  bgcolor: "background.default",
                 }}
               >
                 <Stack direction="row" alignItems="center" spacing={1.5}>
@@ -544,8 +519,8 @@ const PromotionPage = () => {
                   <Typography
                     variant="caption"
                     fontWeight={700}
+                    color="text.secondary"
                     sx={{
-                      color: "#8E99A4",
                       textTransform: "uppercase",
                       fontSize: "0.68rem",
                     }}
@@ -571,12 +546,13 @@ const PromotionPage = () => {
                       alignItems: "center",
                       gap: 1.5,
                       cursor: "pointer",
-                      borderBottom: isLast
-                        ? "none"
-                        : "1px solid rgba(0,0,0,0.04)",
-                      bgcolor: isSelected ? "#F8FAFF" : "transparent",
-                      "&:hover": { bgcolor: "#F5F6FA" },
-                      "&:active": { bgcolor: "#F0F1F3" },
+                      borderBottom: isLast ? "none" : "1px solid",
+                      borderColor: "divider",
+                      bgcolor: isSelected ? selectedRowBg : "transparent",
+                      "&:hover": {
+                        bgcolor: isSelected ? selectedRowBg : "action.hover",
+                      },
+                      transition: "background-color 0.15s",
                     }}
                   >
                     <Checkbox checked={isSelected} size="small" />
@@ -584,7 +560,12 @@ const PromotionPage = () => {
                       sx={{
                         width: 36,
                         height: 36,
-                        bgcolor: s.gender === "Female" ? "#EC4899" : "#1E4D98",
+                        bgcolor:
+                          s.gender === "Female"
+                            ? alpha("#EC4899", 0.15)
+                            : alpha(theme.palette.primary.main, 0.15),
+                        color:
+                          s.gender === "Female" ? "#EC4899" : "primary.main",
                         fontSize: "0.85rem",
                         fontWeight: 700,
                         flexShrink: 0,
@@ -599,8 +580,8 @@ const PromotionPage = () => {
                       <Stack direction="row" spacing={0.8} alignItems="center">
                         <Typography
                           variant="caption"
+                          color="text.secondary"
                           sx={{
-                            color: "#8E99A4",
                             fontFamily: "monospace",
                             fontSize: "0.7rem",
                           }}
@@ -610,10 +591,8 @@ const PromotionPage = () => {
                         {s.fatherName && (
                           <Typography
                             variant="caption"
-                            sx={{
-                              color: "#B0B8C1",
-                              fontSize: "0.68rem",
-                            }}
+                            color="text.disabled"
+                            sx={{ fontSize: "0.68rem" }}
                           >
                             • {s.fatherName}
                           </Typography>
@@ -623,15 +602,20 @@ const PromotionPage = () => {
                     <Stack alignItems="flex-end">
                       <Typography
                         variant="caption"
-                        sx={{
-                          color: "#8E99A4",
-                          fontSize: "0.68rem",
-                        }}
+                        color="text.secondary"
+                        sx={{ fontSize: "0.68rem" }}
                       >
                         Roll {s.currentRoll} →{" "}
-                        <strong style={{ color: "#2563EB" }}>
+                        <Typography
+                          component="strong"
+                          sx={{
+                            fontSize: "0.68rem",
+                            fontWeight: 800,
+                            color: "primary.main",
+                          }}
+                        >
                           {s.newRoll}
-                        </strong>
+                        </Typography>
                       </Typography>
                     </Stack>
                   </Box>
@@ -654,6 +638,7 @@ const PromotionPage = () => {
               <Button
                 variant="contained"
                 fullWidth
+                color="success"
                 onClick={() => setConfirmOpen(true)}
                 disabled={selectedStudents.length === 0 || promoting}
                 startIcon={
@@ -663,12 +648,7 @@ const PromotionPage = () => {
                     <CheckCircleOutlinedIcon />
                   )
                 }
-                sx={{
-                  py: 1.3,
-                  bgcolor: "#16A34A",
-                  boxShadow: "none",
-                  "&:hover": { bgcolor: "#15803D", boxShadow: "none" },
-                }}
+                sx={{ py: 1.3 }}
               >
                 {promoting
                   ? "Promoting..."
@@ -681,15 +661,9 @@ const PromotionPage = () => {
         </>
       )}
 
-      {/* Empty state when nothing selected */}
+      {/* Empty state */}
       {!sourceSession && !preview && !result && (
-        <Paper
-          sx={{
-            borderRadius: 3,
-            border: "1px solid rgba(0,0,0,0.06)",
-            boxShadow: "none",
-          }}
-        >
+        <Paper sx={{ borderRadius: 3 }}>
           <EmptyState
             icon={<SchoolOutlinedIcon sx={{ fontSize: 64 }} />}
             title="Select classes to begin"

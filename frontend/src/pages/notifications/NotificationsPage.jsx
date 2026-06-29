@@ -10,33 +10,74 @@ import {
   Button,
   CircularProgress,
   Tooltip,
-  Card,
-  CardContent,
+  useTheme,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useSnackbar } from "notistack";
-import NotificationsIcon from "@mui/icons-material/Notifications";
+import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
-import DeleteIcon from "@mui/icons-material/Delete";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import WarningIcon from "@mui/icons-material/Warning";
-import InfoIcon from "@mui/icons-material/Info";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import ErrorIcon from "@mui/icons-material/Error";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
+import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
+import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
+import PlayArrowOutlinedIcon from "@mui/icons-material/PlayArrowOutlined";
 import PageHeader from "../../components/common/PageHeader";
 import EmptyState from "../../components/common/EmptyState";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import notificationApi from "../../api/notificationApi";
 
-const TYPE_CONFIG = {
-  info: { icon: <InfoIcon />, color: "info", bg: "#E0EBFF" },
-  warning: { icon: <WarningIcon />, color: "warning", bg: "#FFF4E5" },
-  alert: { icon: <ErrorIcon />, color: "error", bg: "#FEE2E2" },
-  success: { icon: <CheckCircleIcon />, color: "success", bg: "#E6F4EA" },
+const getTypeConfig = (theme) => ({
+  info: {
+    icon: <InfoOutlinedIcon />,
+    color: "info",
+    bg: alpha(theme.palette.info.main, 0.12),
+    iconColor: theme.palette.info.main,
+  },
+  warning: {
+    icon: <WarningAmberOutlinedIcon />,
+    color: "warning",
+    bg: alpha(theme.palette.warning.main, 0.12),
+    iconColor: theme.palette.warning.main,
+  },
+  alert: {
+    icon: <ErrorOutlineOutlinedIcon />,
+    color: "error",
+    bg: alpha(theme.palette.error.main, 0.12),
+    iconColor: theme.palette.error.main,
+  },
+  success: {
+    icon: <CheckCircleOutlinedIcon />,
+    color: "success",
+    bg: alpha(theme.palette.success.main, 0.12),
+    iconColor: theme.palette.success.main,
+  },
+});
+
+const formatTime = (date) => {
+  const d = new Date(date);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMs / 3600000);
+  const diffDay = Math.floor(diffMs / 86400000);
+  if (diffMin < 1) return "Just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return d.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 const NotificationsPage = () => {
   const { enqueueSnackbar } = useSnackbar();
+  const theme = useTheme();
+  const TYPE_CONFIG = getTypeConfig(theme);
+
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -125,24 +166,9 @@ const NotificationsPage = () => {
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  const formatTime = (date) => {
-    const d = new Date(date);
-    const now = new Date();
-    const diffMs = now - d;
-    const diffMin = Math.floor(diffMs / 60000);
-    const diffHr = Math.floor(diffMs / 3600000);
-    const diffDay = Math.floor(diffMs / 86400000);
-
-    if (diffMin < 1) return "Just now";
-    if (diffMin < 60) return `${diffMin}m ago`;
-    if (diffHr < 24) return `${diffHr}h ago`;
-    if (diffDay < 7) return `${diffDay}d ago`;
-    return d.toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  };
+  // ── Theme-aware colors ──
+  const unreadBg = alpha(theme.palette.primary.main, 0.06);
+  const warningMetaBg = alpha(theme.palette.warning.main, 0.08);
 
   return (
     <Box>
@@ -154,11 +180,11 @@ const NotificationsPage = () => {
           { label: "Notifications" },
         ]}
         action={
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} flexWrap="wrap">
             <Button
               variant="outlined"
               size="small"
-              startIcon={<PlayArrowIcon />}
+              startIcon={<PlayArrowOutlinedIcon />}
               onClick={handleCheckNow}
               disabled={checking}
             >
@@ -167,7 +193,7 @@ const NotificationsPage = () => {
             <Button
               variant="outlined"
               size="small"
-              startIcon={<RefreshIcon />}
+              startIcon={<RefreshOutlinedIcon />}
               onClick={triggerRefresh}
             >
               Refresh
@@ -193,7 +219,7 @@ const NotificationsPage = () => {
           </Box>
         ) : notifications.length === 0 ? (
           <EmptyState
-            icon={<NotificationsIcon sx={{ fontSize: 64 }} />}
+            icon={<NotificationsOutlinedIcon sx={{ fontSize: 64 }} />}
             title="No notifications yet"
             message="System will automatically notify you when teachers haven't marked attendance by the lock time."
           />
@@ -212,13 +238,18 @@ const NotificationsPage = () => {
                     alignItems: "flex-start",
                     borderBottom: isLast ? "none" : "1px solid",
                     borderColor: "divider",
-                    bgcolor: n.isRead ? "transparent" : "#F8FAFF",
+                    bgcolor: n.isRead ? "transparent" : unreadBg,
                     cursor: "pointer",
                     transition: "background-color 0.15s",
-                    "&:hover": { bgcolor: "#F0F4FF" },
+                    "&:hover": {
+                      bgcolor: n.isRead
+                        ? "action.hover"
+                        : alpha(theme.palette.primary.main, 0.1),
+                    },
                   }}
                   onClick={() => !n.isRead && handleMarkRead(n._id)}
                 >
+                  {/* Icon Avatar */}
                   <Avatar
                     sx={{
                       width: 44,
@@ -228,10 +259,11 @@ const NotificationsPage = () => {
                     }}
                   >
                     {React.cloneElement(config.icon, {
-                      sx: { color: `${config.color}.dark` },
+                      sx: { color: config.iconColor, fontSize: 22 },
                     })}
                   </Avatar>
 
+                  {/* Content */}
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Stack
                       direction="row"
@@ -268,7 +300,7 @@ const NotificationsPage = () => {
                       {n.message}
                     </Typography>
 
-                    {/* Show pending class details if metadata exists */}
+                    {/* Pending class metadata */}
                     {n.metadata?.classes?.length > 0 && (
                       <Box
                         sx={{
@@ -276,15 +308,15 @@ const NotificationsPage = () => {
                           mt: 1,
                           mb: 1,
                           borderRadius: 2,
-                          bgcolor: "rgba(245,166,35,0.1)",
+                          bgcolor: warningMetaBg,
                           border: "1px solid",
-                          borderColor: "warning.light",
+                          borderColor: alpha(theme.palette.warning.main, 0.25),
                         }}
                       >
                         <Typography
                           variant="caption"
                           fontWeight={800}
-                          color="warning.dark"
+                          color="warning.main"
                           sx={{
                             textTransform: "uppercase",
                             letterSpacing: "0.05em",
@@ -309,9 +341,12 @@ const NotificationsPage = () => {
                                   height: 22,
                                   fontWeight: 700,
                                   fontSize: "0.7rem",
-                                  bgcolor: "white",
+                                  bgcolor: "background.paper",
                                   border: "1px solid",
-                                  borderColor: "warning.light",
+                                  borderColor: alpha(
+                                    theme.palette.warning.main,
+                                    0.3,
+                                  ),
                                 }}
                               />
                               <Typography
@@ -350,6 +385,7 @@ const NotificationsPage = () => {
                     </Stack>
                   </Box>
 
+                  {/* Delete Button */}
                   <Tooltip title="Delete">
                     <IconButton
                       size="small"
@@ -359,7 +395,7 @@ const NotificationsPage = () => {
                         setConfirmDelete(n);
                       }}
                     >
-                      <DeleteIcon fontSize="small" />
+                      <DeleteOutlinedIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                 </Box>

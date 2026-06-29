@@ -6,7 +6,6 @@ const logger = require("../utils/logger");
 
 /**
  * Authorize specific roles
- * @param {...string} roles - Allowed roles
  */
 const authorize = (...roles) => {
   return (req, res, next) => {
@@ -31,19 +30,14 @@ const authorize = (...roles) => {
   };
 };
 
-/**
- * Admin only
- */
+// ─── ROLE SHORTCUTS ───
 const adminOnly = authorize(ROLES.ADMIN);
-
-/**
- * Admin or Teacher
- */
 const adminOrTeacher = authorize(ROLES.ADMIN, ROLES.TEACHER);
+const adminOrPrincipal = authorize(ROLES.ADMIN, ROLES.PRINCIPAL);
+const anyRole = authorize(ROLES.ADMIN, ROLES.TEACHER, ROLES.PRINCIPAL);
 
 /**
- * Check if user can access resource (admin full, teacher restricted to assigned)
- * Used for class-level access checks
+ * Check if user can access class (admin full, teacher restricted)
  */
 const canAccessClass = (classIdParam = "classId") => {
   return async (req, res, next) => {
@@ -53,7 +47,8 @@ const canAccessClass = (classIdParam = "classId") => {
       });
     }
 
-    if (req.user.role === ROLES.ADMIN) {
+    // Admin and Principal can access all classes
+    if (req.user.role === ROLES.ADMIN || req.user.role === ROLES.PRINCIPAL) {
       return next();
     }
 
@@ -93,4 +88,11 @@ const canAccessClass = (classIdParam = "classId") => {
   };
 };
 
-module.exports = { authorize, adminOnly, adminOrTeacher, canAccessClass };
+module.exports = {
+  authorize,
+  adminOnly,
+  adminOrTeacher,
+  adminOrPrincipal,
+  anyRole,
+  canAccessClass,
+};

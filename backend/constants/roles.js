@@ -3,6 +3,7 @@
 const ROLES = Object.freeze({
   ADMIN: "admin",
   TEACHER: "teacher",
+  PRINCIPAL: "principal",
 });
 
 const ROLE_LIST = Object.values(ROLES);

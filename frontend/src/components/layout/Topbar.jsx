@@ -33,19 +33,13 @@ import useThemeMode from "../../hooks/useThemeMode";
 import SchoolInfoSheet from "./SchoolInfoSheet";
 import NotificationBell from "./NotificationBell";
 
+const SCHOOL_LOGO = import.meta.env.VITE_SCHOOL_LOGO || "/logo.png";
 const DEFAULT_SCHOOL_NAME =
   import.meta.env.VITE_SCHOOL_NAME || "Thakur Virendra Singh Memorial School";
-
-const SCHOOL_LOGO = import.meta.env.VITE_SCHOOL_LOGO || "/logo.png";
 
 const getShortName = (fullName) => {
   if (!fullName) return "SCHOOL";
   const words = fullName.split(/\s+/).filter(Boolean);
-  if (words.length === 1) {
-    return words[0].length > 14
-      ? words[0].slice(0, 14).toUpperCase() + "…"
-      : words[0].toUpperCase();
-  }
   if (words.length <= 3) return words.join(" ").toUpperCase();
   const initials = words
     .slice(0, words.length - 1)
@@ -86,19 +80,32 @@ const Topbar = ({ onMenuClick }) => {
 
   const displayName = isMobile ? getShortName(fullSchoolName) : fullSchoolName;
 
-  const roleColors = {
-    admin: {
-      bg: "linear-gradient(135deg, #F5A623 0%, #E8920F 100%)",
-      chip: "#FFF4E5",
-      text: "#B45309",
-    },
-    teacher: {
-      bg: "linear-gradient(135deg, #1E4D98 0%, #0D1B3E 100%)",
-      chip: "#E0EBFF",
-      text: "#1E4D98",
-    },
-  };
-  const roleStyle = roleColors[user?.role] || roleColors.teacher;
+  const roleStyle =
+    user?.role === "admin"
+      ? {
+          bg: "linear-gradient(135deg, #F5A623 0%, #E8920F 100%)",
+          chip: "#FFF4E5",
+          text: "#B45309",
+        }
+      : user?.role === "principal"
+        ? {
+            bg: "linear-gradient(135deg, #16A34A 0%, #15803D 100%)",
+            chip: "#E6F4EA",
+            text: "#15803D",
+          }
+        : {
+            bg: "linear-gradient(135deg, #1E4D98 0%, #0D1B3E 100%)",
+            chip: "#E0EBFF",
+            text: "#1E4D98",
+          };
+
+  // ─── THEME-AWARE COLORS ───
+  const topbarBg = isDark ? "#111827" : "#FFFFFF";
+  const topbarText = isDark ? "#F9FAFB" : "#111827";
+  const borderColor = isDark ? "#374151" : "#E5E7EB";
+  const hoverBg = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)";
+  const activeBg = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)";
+  const subtleText = isDark ? "#9CA3AF" : "#6B7280";
 
   return (
     <>
@@ -106,42 +113,40 @@ const Topbar = ({ onMenuClick }) => {
         position="fixed"
         elevation={0}
         sx={{
-          // Topbar stays navy gradient in both themes (brand consistency)
-          background:
-            "linear-gradient(135deg, #0D1B3E 0%, #1A3A7A 50%, #1E4D98 100%)",
-          color: "white",
+          bgcolor: topbarBg,
+          color: topbarText,
           zIndex: (theme) => theme.zIndex.drawer + 1,
           width: "100%",
-          boxShadow: "0 2px 12px rgba(13,27,62,0.25)",
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          borderBottom: `1px solid ${borderColor}`,
+          transition: "all 0.3s ease",
         }}
       >
         <Toolbar
           sx={{
-            gap: { xs: 1, sm: 2 },
-            minHeight: { xs: "56px !important", md: "64px !important" },
-            px: { xs: 1.5, sm: 2, md: 3 },
+            gap: { xs: 0.8, sm: 1.5 },
+            minHeight: { xs: "50px !important", md: "55px !important" },
+            px: { xs: 1.2, sm: 2, md: 2.5 },
           }}
         >
-          {/* Menu Icon — Desktop only */}
+          {/* Menu Toggle (Desktop) */}
           {!isMobile && (
-            <Tooltip title="Toggle sidebar">
-              <IconButton
-                edge="start"
-                onClick={onMenuClick}
-                sx={{
-                  color: "white",
-                  bgcolor: "rgba(255,255,255,0.1)",
-                  "&:hover": { bgcolor: "rgba(255,255,255,0.18)" },
-                  borderRadius: 2,
-                }}
-              >
-                <MenuOutlinedIcon />
-              </IconButton>
-            </Tooltip>
+            <IconButton
+              edge="start"
+              onClick={onMenuClick}
+              sx={{
+                color: topbarText,
+                bgcolor: hoverBg,
+                "&:hover": { bgcolor: activeBg },
+                borderRadius: 1.5,
+                width: 36,
+                height: 36,
+              }}
+            >
+              <MenuOutlinedIcon sx={{ fontSize: 20 }} />
+            </IconButton>
           )}
 
-          {/* School Logo + Name */}
+          {/* Logo + School Name */}
           <ButtonBase
             onClick={() => isMobile && setSchoolSheetOpen(true)}
             disabled={!isMobile}
@@ -150,157 +155,91 @@ const Topbar = ({ onMenuClick }) => {
               minWidth: 0,
               display: "flex",
               alignItems: "center",
-              gap: { xs: 1.2, sm: 1.5 },
-              borderRadius: 2,
-              p: 0.5,
+              gap: { xs: 0.8, sm: 1.2 },
+              borderRadius: 1.5,
+              p: 0.4,
               cursor: isMobile ? "pointer" : "default",
-              transition: "background 0.2s",
-              "&:hover": isMobile ? { bgcolor: "rgba(255,255,255,0.06)" } : {},
-              "&:active": isMobile ? { bgcolor: "rgba(255,255,255,0.12)" } : {},
+              "&:hover": isMobile ? { bgcolor: hoverBg } : {},
             }}
           >
             <Avatar
               src={SCHOOL_LOGO}
               sx={{
-                width: { xs: 38, sm: 44 },
-                height: { xs: 38, sm: 44 },
-                bgcolor: "white",
-                boxShadow: "0 3px 10px rgba(0,0,0,0.25)",
-                "& img": { objectFit: "contain", p: 0.4 },
+                width: { xs: 32, sm: 36 },
+                height: { xs: 32, sm: 36 },
+                bgcolor: isDark ? "#1F2937" : "#F3F4F6",
+                boxShadow: isDark
+                  ? "0 2px 8px rgba(0,0,0,0.3)"
+                  : "0 1px 4px rgba(0,0,0,0.08)",
+                "& img": { objectFit: "contain", p: 0.3 },
                 flexShrink: 0,
               }}
             >
-              <SchoolOutlinedIcon sx={{ color: "#0D1B3E" }} />
+              <SchoolOutlinedIcon
+                sx={{ color: isDark ? "#9CA3AF" : "#6B7280", fontSize: 18 }}
+              />
             </Avatar>
 
-            <Box
+            <Typography
               sx={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
+                color: topbarText,
+                fontWeight: 800,
+                fontSize: { xs: "0.78rem", sm: "0.92rem", md: "0.95rem" },
+                lineHeight: 1.2,
+                letterSpacing: "0.01em",
+                whiteSpace: "nowrap",
                 overflow: "hidden",
-                minWidth: 0,
-                textAlign: "left",
+                textOverflow: "ellipsis",
               }}
+              title={fullSchoolName}
             >
-              <Stack direction="row" alignItems="center" spacing={0.5}>
-                <Typography
-                  sx={{
-                    color: "white",
-                    fontWeight: 800,
-                    fontSize: {
-                      xs: "0.82rem",
-                      sm: "1rem",
-                      md: "1.05rem",
-                      lg: "1.15rem",
-                    },
-                    lineHeight: 1.2,
-                    letterSpacing: "0.02em",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    fontFamily: '"Inter", sans-serif',
-                  }}
-                  title={fullSchoolName}
-                >
-                  {displayName}
-                </Typography>
-                {isMobile && (
-                  <ExpandMoreOutlinedIcon
-                    sx={{
-                      fontSize: 16,
-                      color: "rgba(255,255,255,0.7)",
-                      flexShrink: 0,
-                    }}
-                  />
-                )}
-              </Stack>
+              {displayName}
+            </Typography>
 
-              {!isMobile && settings?.address && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: "rgba(255,255,255,0.65)",
-                    fontSize: "0.7rem",
-                    lineHeight: 1.2,
-                    letterSpacing: "0.04em",
-                    fontWeight: 500,
-                    mt: 0.2,
-                  }}
-                  noWrap
-                >
-                  {settings.address}
-                </Typography>
-              )}
-            </Box>
+            {isMobile && (
+              <ExpandMoreOutlinedIcon
+                sx={{ fontSize: 14, color: subtleText, flexShrink: 0 }}
+              />
+            )}
           </ButtonBase>
 
-          {/* Right Section */}
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={{ xs: 0.5, sm: 1 }}
-          >
+          {/* Right Controls */}
+          <Stack direction="row" alignItems="center" spacing={0.5}>
+            {/* Session Badge (Desktop) */}
             {!isMobile && sessionName && (
               <Chip
                 label={sessionName}
                 size="small"
-                icon={<SchoolOutlinedIcon sx={{ fontSize: 14 }} />}
                 sx={{
                   fontWeight: 700,
-                  background:
-                    "linear-gradient(135deg, #F5A623 0%, #E8920F 100%)",
-                  color: "white",
-                  border: "none",
-                  boxShadow: "0 2px 6px rgba(245,166,35,0.3)",
-                  "& .MuiChip-icon": { color: "white" },
-                  px: 0.5,
-                  height: 28,
+                  bgcolor: isDark ? "rgba(245,166,35,0.12)" : "#FFF7ED",
+                  color: isDark ? "#FCD34D" : "#B45309",
+                  border: `1px solid ${isDark ? "rgba(245,166,35,0.2)" : "#FED7AA"}`,
+                  height: 24,
+                  fontSize: "0.7rem",
+                  "& .MuiChip-label": { px: 1 },
                 }}
               />
             )}
 
-            {/* ─── THEME TOGGLE ─── */}
-            <Tooltip
-              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
+            {/* Dark Mode Toggle */}
+            <Tooltip title={isDark ? "Light Mode" : "Dark Mode"}>
               <IconButton
                 onClick={toggleTheme}
                 sx={{
-                  color: "white",
-                  bgcolor: "rgba(255,255,255,0.1)",
-                  "&:hover": {
-                    bgcolor: "rgba(255,255,255,0.18)",
-                    transform: "rotate(15deg)",
-                  },
-                  borderRadius: 2,
-                  width: { xs: 38, sm: 40 },
-                  height: { xs: 38, sm: 40 },
+                  color: topbarText,
+                  bgcolor: hoverBg,
+                  "&:hover": { bgcolor: activeBg },
+                  borderRadius: 1.5,
+                  width: { xs: 34, sm: 36 },
+                  height: { xs: 34, sm: 36 },
                   transition: "all 0.3s ease",
                 }}
               >
                 {isDark ? (
-                  <LightModeOutlinedIcon
-                    sx={{
-                      fontSize: 22,
-                      animation: "spin-in 0.4s ease",
-                      "@keyframes spin-in": {
-                        from: { transform: "rotate(-90deg)", opacity: 0 },
-                        to: { transform: "rotate(0)", opacity: 1 },
-                      },
-                    }}
-                  />
+                  <LightModeOutlinedIcon sx={{ fontSize: 18 }} />
                 ) : (
-                  <DarkModeOutlinedIcon
-                    sx={{
-                      fontSize: 22,
-                      animation: "spin-in 0.4s ease",
-                      "@keyframes spin-in": {
-                        from: { transform: "rotate(90deg)", opacity: 0 },
-                        to: { transform: "rotate(0)", opacity: 1 },
-                      },
-                    }}
-                  />
+                  <DarkModeOutlinedIcon sx={{ fontSize: 18 }} />
                 )}
               </IconButton>
             </Tooltip>
@@ -308,33 +247,28 @@ const Topbar = ({ onMenuClick }) => {
             {/* Notification Bell */}
             <NotificationBell />
 
-            {/* Avatar Button */}
+            {/* Avatar */}
             <Tooltip title="Account">
               <ButtonBase
                 onClick={handleMenuOpen}
                 sx={{
-                  borderRadius: 10,
-                  p: 0.4,
-                  pl: { xs: 0.4, md: 0.4 },
-                  pr: { xs: 0.4, md: 1.2 },
-                  bgcolor: "rgba(255,255,255,0.1)",
-                  border: "1.5px solid rgba(255,255,255,0.2)",
-                  "&:hover": {
-                    bgcolor: "rgba(255,255,255,0.18)",
-                    borderColor: "rgba(255,255,255,0.35)",
-                  },
-                  transition: "all 0.2s",
+                  borderRadius: 8,
+                  p: 0.3,
+                  pr: { xs: 0.3, md: 1 },
+                  bgcolor: hoverBg,
+                  border: `1px solid ${borderColor}`,
+                  "&:hover": { bgcolor: activeBg },
+                  transition: "all 0.2s ease",
                 }}
               >
                 <Avatar
                   sx={{
-                    width: { xs: 30, sm: 32 },
-                    height: { xs: 30, sm: 32 },
-                    fontSize: { xs: "0.78rem", sm: "0.85rem" },
+                    width: { xs: 28, sm: 30 },
+                    height: { xs: 28, sm: 30 },
+                    fontSize: "0.75rem",
                     fontWeight: 800,
                     background: roleStyle.bg,
                     color: "white",
-                    boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
                   }}
                 >
                   {user?.name?.[0]?.toUpperCase()}
@@ -343,15 +277,15 @@ const Topbar = ({ onMenuClick }) => {
                   <Stack
                     direction="row"
                     alignItems="center"
-                    spacing={0.3}
-                    sx={{ ml: 0.8 }}
+                    spacing={0.2}
+                    sx={{ ml: 0.6 }}
                   >
                     <Typography
                       sx={{
-                        color: "white",
+                        color: topbarText,
                         fontWeight: 700,
-                        fontSize: "0.85rem",
-                        maxWidth: 120,
+                        fontSize: "0.78rem",
+                        maxWidth: 100,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
@@ -360,7 +294,7 @@ const Topbar = ({ onMenuClick }) => {
                       {user?.name?.split(" ")[0]}
                     </Typography>
                     <KeyboardArrowDownOutlinedIcon
-                      sx={{ fontSize: 18, color: "rgba(255,255,255,0.7)" }}
+                      sx={{ fontSize: 16, color: subtleText }}
                     />
                   </Stack>
                 )}
@@ -368,7 +302,7 @@ const Topbar = ({ onMenuClick }) => {
             </Tooltip>
           </Stack>
 
-          {/* Account Dropdown Menu */}
+          {/* Account Dropdown */}
           <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
@@ -378,55 +312,46 @@ const Topbar = ({ onMenuClick }) => {
             PaperProps={{
               elevation: 0,
               sx: {
-                mt: 1.5,
-                minWidth: 260,
+                mt: 1,
+                minWidth: 240,
                 border: "1px solid",
                 borderColor: "divider",
-                borderRadius: 2.5,
-                boxShadow: "0 12px 32px rgba(0,0,0,0.12)",
-                overflow: "hidden",
+                borderRadius: 2,
+                boxShadow: isDark
+                  ? "0 8px 24px rgba(0,0,0,0.4)"
+                  : "0 8px 24px rgba(0,0,0,0.08)",
               },
             }}
           >
             <Box
               sx={{
-                px: 2.5,
-                py: 2.5,
-                background: isDark
-                  ? "linear-gradient(135deg, #1E293B 0%, #334155 100%)"
-                  : "linear-gradient(135deg, #F8F9FF 0%, #E8EFFF 100%)",
-                borderBottom: "1px solid",
-                borderColor: "divider",
+                px: 2,
+                py: 1.5,
+                bgcolor: isDark ? "rgba(255,255,255,0.02)" : "#F9FAFB",
               }}
             >
-              <Stack direction="row" spacing={1.5} alignItems="center">
+              <Stack direction="row" spacing={1.2} alignItems="center">
                 <Avatar
                   sx={{
-                    width: 48,
-                    height: 48,
-                    fontSize: "1.15rem",
+                    width: 40,
+                    height: 40,
+                    fontSize: "1rem",
                     fontWeight: 800,
                     background: roleStyle.bg,
                     color: "white",
-                    boxShadow: "0 3px 10px rgba(0,0,0,0.15)",
                   }}
                 >
                   {user?.name?.[0]?.toUpperCase()}
                 </Avatar>
                 <Box sx={{ overflow: "hidden", flex: 1 }}>
-                  <Typography
-                    variant="body2"
-                    fontWeight={800}
-                    noWrap
-                    sx={{ color: "text.primary" }}
-                  >
+                  <Typography variant="body2" fontWeight={800} noWrap>
                     {user?.name}
                   </Typography>
                   <Typography
                     variant="caption"
                     color="text.secondary"
                     noWrap
-                    sx={{ display: "block", fontSize: "0.72rem" }}
+                    sx={{ display: "block", fontSize: "0.7rem" }}
                   >
                     {user?.email}
                   </Typography>
@@ -434,12 +359,11 @@ const Topbar = ({ onMenuClick }) => {
                     label={user?.role}
                     size="small"
                     sx={{
-                      mt: 0.6,
-                      height: 20,
-                      fontSize: "0.62rem",
-                      textTransform: "uppercase",
+                      mt: 0.4,
+                      height: 18,
+                      fontSize: "0.6rem",
                       fontWeight: 800,
-                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
                       bgcolor: roleStyle.chip,
                       color: roleStyle.text,
                     }}
@@ -448,29 +372,24 @@ const Topbar = ({ onMenuClick }) => {
               </Stack>
             </Box>
 
+            <Divider />
+
             <Box sx={{ p: 0.5 }}>
               <MenuItem
                 onClick={() => {
                   handleMenuClose();
                   navigate("/profile");
                 }}
-                sx={{ borderRadius: 1.5, my: 0.25, py: 1.1 }}
+                sx={{ borderRadius: 1.5, py: 0.9, fontSize: "0.85rem" }}
               >
                 <ListItemIcon>
                   <PersonOutlinedIcon fontSize="small" />
                 </ListItemIcon>
-                <Typography variant="body2" fontWeight={600}>
-                  My Profile
-                </Typography>
+                My Profile
               </MenuItem>
-
-              {/* ─── THEME TOGGLE IN MENU (alternative location) ─── */}
               <MenuItem
-                onClick={() => {
-                  toggleTheme();
-                  // Don't close menu — let user see the change
-                }}
-                sx={{ borderRadius: 1.5, my: 0.25, py: 1.1 }}
+                onClick={toggleTheme}
+                sx={{ borderRadius: 1.5, py: 0.9, fontSize: "0.85rem" }}
               >
                 <ListItemIcon>
                   {isDark ? (
@@ -479,25 +398,20 @@ const Topbar = ({ onMenuClick }) => {
                     <DarkModeOutlinedIcon fontSize="small" />
                   )}
                 </ListItemIcon>
-                <Typography variant="body2" fontWeight={600}>
-                  {isDark ? "Light Mode" : "Dark Mode"}
-                </Typography>
+                {isDark ? "Light Mode" : "Dark Mode"}
               </MenuItem>
-
               {isAdmin && (
                 <MenuItem
                   onClick={() => {
                     handleMenuClose();
                     navigate("/settings");
                   }}
-                  sx={{ borderRadius: 1.5, my: 0.25, py: 1.1 }}
+                  sx={{ borderRadius: 1.5, py: 0.9, fontSize: "0.85rem" }}
                 >
                   <ListItemIcon>
                     <SettingsOutlinedIcon fontSize="small" />
                   </ListItemIcon>
-                  <Typography variant="body2" fontWeight={600}>
-                    School Settings
-                  </Typography>
+                  Settings
                 </MenuItem>
               )}
             </Box>
@@ -509,8 +423,7 @@ const Topbar = ({ onMenuClick }) => {
                 onClick={handleLogout}
                 sx={{
                   borderRadius: 1.5,
-                  my: 0.25,
-                  py: 1.1,
+                  py: 0.9,
                   color: "error.main",
                   "&:hover": { bgcolor: "error.50" },
                 }}

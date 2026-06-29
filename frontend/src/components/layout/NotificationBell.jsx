@@ -26,6 +26,7 @@ import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutli
 import NotificationsOffOutlinedIcon from "@mui/icons-material/NotificationsOffOutlined";
 import { useSnackbar } from "notistack";
 import useNotifications from "../../hooks/useNotifications";
+import useThemeMode from "../../hooks/useThemeMode";
 
 const PREVIEW_LIMIT = 5;
 
@@ -110,7 +111,6 @@ const NotificationItem = ({ notification, onClick }) => {
           }}
         />
       )}
-
       <Avatar
         sx={{
           width: 36,
@@ -124,7 +124,6 @@ const NotificationItem = ({ notification, onClick }) => {
           sx: { color: config.iconColor, fontSize: 18 },
         })}
       </Avatar>
-
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography
           variant="body2"
@@ -192,6 +191,7 @@ const NotificationItem = ({ notification, onClick }) => {
 
 const NotificationBell = () => {
   const navigate = useNavigate();
+  const { isDark } = useThemeMode();
   const { enqueueSnackbar } = useSnackbar();
   const { unreadCount, fetchList, markAsRead, markAllRead, refresh } =
     useNotifications();
@@ -273,7 +273,7 @@ const NotificationBell = () => {
         <IconButton
           onClick={handleOpen}
           sx={{
-            color: "white",
+            color: isDark ? "#F9FAFB" : "#111827",
             bgcolor: "rgba(255,255,255,0.1)",
             "&:hover": { bgcolor: "rgba(255,255,255,0.18)" },
             borderRadius: 2,

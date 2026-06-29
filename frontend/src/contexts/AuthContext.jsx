@@ -140,6 +140,7 @@ export const AuthProvider = ({ children }) => {
         ...state,
         isAdmin: state.user?.role === "admin",
         isTeacher: state.user?.role === "teacher",
+        isPrincipal: state.user?.role === "principal",
         login,
         logout,
         updateUser,

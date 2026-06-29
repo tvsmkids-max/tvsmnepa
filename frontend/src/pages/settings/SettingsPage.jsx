@@ -18,7 +18,9 @@ import {
   FormControl,
   InputLabel,
   InputAdornment,
+  useTheme,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useSnackbar } from "notistack";
 import SchoolIcon from "@mui/icons-material/School";
 import SaveIcon from "@mui/icons-material/Save";
@@ -50,6 +52,7 @@ const WORKING_DAYS = [
 const SettingsPage = () => {
   const { enqueueSnackbar } = useSnackbar();
   const { settings, fetchSettings } = useSettings();
+  const theme = useTheme();
   const [sessions, setSessions] = useState([]);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -130,8 +133,6 @@ const SettingsPage = () => {
       enqueueSnackbar("School name is required", { variant: "warning" });
       return;
     }
-
-    // Validate idle settings
     if (form.sessionIdleEnabled) {
       if (form.sessionIdleTimeout < 1 || form.sessionIdleTimeout > 240) {
         enqueueSnackbar("Idle timeout must be between 1 and 240 minutes", {
@@ -155,7 +156,6 @@ const SettingsPage = () => {
         return;
       }
     }
-
     setSaving(true);
     try {
       const payload = { ...form };
@@ -174,6 +174,10 @@ const SettingsPage = () => {
 
   const isFirstSetup =
     !settings?.schoolName || settings.schoolName === "Setup Required";
+
+  // ── Theme-aware colors ──
+  const sectionBg = alpha(theme.palette.primary.main, 0.06);
+  const securityBg = alpha(theme.palette.error.main, 0.06);
 
   return (
     <Box>
@@ -203,7 +207,7 @@ const SettingsPage = () => {
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
-          {/* SCHOOL INFO */}
+          {/* ── SCHOOL INFO ── */}
           <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
             <Stack
               direction="row"
@@ -211,8 +215,14 @@ const SettingsPage = () => {
               spacing={1.5}
               sx={{ mb: 2.5 }}
             >
-              <Avatar sx={{ bgcolor: "primary.light", width: 40, height: 40 }}>
-                <SchoolIcon sx={{ color: "primary.dark" }} />
+              <Avatar
+                sx={{
+                  bgcolor: sectionBg,
+                  width: 40,
+                  height: 40,
+                }}
+              >
+                <SchoolIcon sx={{ color: "primary.main", fontSize: 20 }} />
               </Avatar>
               <Box>
                 <Typography variant="h6" fontWeight={700}>
@@ -269,7 +279,7 @@ const SettingsPage = () => {
             </Grid>
           </Paper>
 
-          {/* ACADEMIC CONFIG */}
+          {/* ── ACADEMIC CONFIG ── */}
           <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
             <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
               Academic Configuration
@@ -315,7 +325,7 @@ const SettingsPage = () => {
             </Grid>
           </Paper>
 
-          {/* ATTENDANCE RULES */}
+          {/* ── ATTENDANCE RULES ── */}
           <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
             <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
               Attendance Rules
@@ -367,7 +377,7 @@ const SettingsPage = () => {
             </Grid>
           </Paper>
 
-          {/* SECURITY & SESSION */}
+          {/* ── SECURITY & SESSION ── */}
           <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
             <Stack
               direction="row"
@@ -375,8 +385,14 @@ const SettingsPage = () => {
               spacing={1.5}
               sx={{ mb: 2.5 }}
             >
-              <Avatar sx={{ bgcolor: "error.light", width: 40, height: 40 }}>
-                <SecurityIcon sx={{ color: "error.dark" }} />
+              <Avatar
+                sx={{
+                  bgcolor: securityBg,
+                  width: 40,
+                  height: 40,
+                }}
+              >
+                <SecurityIcon sx={{ color: "error.main", fontSize: 20 }} />
               </Avatar>
               <Box>
                 <Typography variant="h6" fontWeight={700}>
@@ -488,7 +504,7 @@ const SettingsPage = () => {
             )}
           </Paper>
 
-          {/* WORKING DAYS */}
+          {/* ── WORKING DAYS ── */}
           <Paper sx={{ p: 3, borderRadius: 3 }}>
             <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
               Working Days
@@ -523,9 +539,16 @@ const SettingsPage = () => {
           </Paper>
         </Grid>
 
-        {/* SAVE PANEL */}
+        {/* ── SAVE PANEL ── */}
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, borderRadius: 3, position: "sticky", top: 80 }}>
+          <Paper
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              position: "sticky",
+              top: 80,
+            }}
+          >
             <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
               Save Changes
             </Typography>
@@ -595,8 +618,9 @@ const SettingsPage = () => {
               onClick={handleSave}
               disabled={saving}
               sx={{
-                background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
                 py: 1.4,
+                background: (t) =>
+                  `linear-gradient(135deg, ${t.palette.primary.dark} 0%, ${t.palette.primary.main} 100%)`,
               }}
             >
               {saving ? "Saving..." : "Save Settings"}
