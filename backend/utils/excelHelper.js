@@ -2,257 +2,508 @@
 
 const XLSX = require("xlsx");
 
+/* ═══════════════════════════════════════════════════════════
+   CORE PRINCIPLE:
+   - Read Excel cells with rich type info (don't auto-convert)
+   - Inspect each cell's actual type (s=string, n=number, d=date, b=bool)
+   - Apply field-specific cleaners based on column intent
+   - Return predictable, normalized strings
+═══════════════════════════════════════════════════════════ */
+
+// ─── EXCEL DATE CONSTANTS ─────────────────────────────────────
+// Excel "epoch" is Dec 30, 1899 (due to Lotus 1-2-3 leap year bug compatibility)
+const EXCEL_EPOCH_MS = new Date(1899, 11, 30).getTime();
+const MS_PER_DAY = 86400 * 1000;
+
+// ─── MONTH NAME MAP ───────────────────────────────────────────
+const MONTH_MAP = Object.freeze({
+  jan: 0,
+  january: 0,
+  feb: 1,
+  february: 1,
+  mar: 2,
+  march: 2,
+  apr: 3,
+  april: 3,
+  may: 4,
+  jun: 5,
+  june: 5,
+  jul: 6,
+  july: 6,
+  aug: 7,
+  august: 7,
+  sep: 8,
+  sept: 8,
+  september: 8,
+  oct: 9,
+  october: 9,
+  nov: 10,
+  november: 10,
+  dec: 11,
+  december: 11,
+});
+
+// ═══════════════════════════════════════════════════════════
+//  TYPE-SAFE VALUE EXTRACTION
+// ═══════════════════════════════════════════════════════════
+
 /**
- * Convert Excel value to clean string
- * Handles: scientific notation (9.87654E+09), numbers, dates, null, undefined
+ * Convert any Excel cell value to a clean string.
+ * Handles: scientific notation, numbers, dates, booleans, null.
  */
-const toCleanString = (value) => {
+function toCleanString(value) {
   if (value === null || value === undefined) return "";
 
   // Already a string
   if (typeof value === "string") return value.trim();
 
-  // Number (could be normal number, scientific notation, or Excel date)
-  if (typeof value === "number") {
-    // Convert to string without scientific notation
-    // For very large numbers like aadhar, mobile in scientific form
-    if (!Number.isFinite(value)) return "";
-
-    // Check if it's a whole number (like mobile, aadhar)
-    if (Number.isInteger(value)) {
-      return value.toString();
-    }
-
-    // Convert to fixed notation to avoid scientific
-    // toFixed(0) for integers, otherwise normal
-    const fixed = value.toFixed(20).replace(/\.?0+$/, "");
-    return fixed;
-  }
-
   // Boolean
-  if (typeof value === "boolean") return value.toString();
+  if (typeof value === "boolean") return value ? "true" : "false";
 
   // Date object
   if (value instanceof Date) {
     if (isNaN(value.getTime())) return "";
-    const day = String(value.getDate()).padStart(2, "0");
-    const month = String(value.getMonth() + 1).padStart(2, "0");
-    const year = value.getFullYear();
-    return `${day}/${month}/${year}`;
+    return formatDateToDMY(value);
   }
 
-  // Fallback
-  return String(value).trim();
-};
+  // Number — handle scientific notation, decimals
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return "";
+
+    // Integer (mobile, aadhar, scholar number, roll number)
+    if (Number.isInteger(value)) {
+      return value.toString();
+    }
+
+    // Decimal — convert without scientific notation
+    // Use toFixed(20) then strip trailing zeros
+    let str = value.toFixed(20);
+    str = str.replace(/\.?0+$/, "");
+    return str;
+  }
+
+  // Object/Array — stringify safely
+  try {
+    return String(value).trim();
+  } catch {
+    return "";
+  }
+}
 
 /**
- * Smart date parser - handles ANY format
- * - "15/01/2020" (text DD/MM/YYYY)
- * - "15-01-2020" (text DD-MM-YYYY)
- * - "15.01.2020" (text DD.MM.YYYY)
- * - "2020-01-15" (ISO format)
- * - 43846 (Excel serial number)
- * - Date object
- * - "15-Jan-2020"
+ * Convert Excel serial number to JS Date.
+ * Returns null if not a valid Excel date.
  */
-const parseIndianDate = (dateValue) => {
-  if (!dateValue && dateValue !== 0) return null;
+function excelSerialToDate(serial) {
+  if (typeof serial !== "number" || !Number.isFinite(serial)) return null;
+  if (serial < 1 || serial > 100000) return null; // Sanity check
 
-  // Already a Date object
-  if (dateValue instanceof Date) {
-    return isNaN(dateValue.getTime()) ? null : dateValue;
+  const wholeDays = Math.floor(serial);
+  const ms = (serial - wholeDays) * MS_PER_DAY;
+  const date = new Date(EXCEL_EPOCH_MS + wholeDays * MS_PER_DAY + ms);
+
+  return isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * Format Date object to DD/MM/YYYY string.
+ */
+function formatDateToDMY(date) {
+  if (!(date instanceof Date) || isNaN(date.getTime())) return "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FIELD-SPECIFIC CLEANERS
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Clean phone/mobile number to 10-digit format.
+ * Removes: country codes, spaces, dashes, parentheses, leading zeros.
+ */
+function cleanMobile(value) {
+  const str = toCleanString(value);
+  if (!str) return "";
+
+  // Strip all non-digits
+  let digits = str.replace(/\D/g, "");
+  if (!digits) return "";
+
+  // Remove leading 91 if 12 digits (India country code)
+  if (digits.length === 12 && digits.startsWith("91")) {
+    digits = digits.slice(2);
   }
 
-  // Excel serial number (number)
-  if (typeof dateValue === "number") {
-    // Excel epoch is Dec 30, 1899 (accounting for Excel's leap year bug)
-    const excelEpoch = new Date(1899, 11, 30);
-    const days = Math.floor(dateValue);
-    const milliseconds = (dateValue - days) * 86400 * 1000;
-    const result = new Date(
-      excelEpoch.getTime() + days * 86400 * 1000 + milliseconds,
-    );
-    return isNaN(result.getTime()) ? null : result;
+  // Remove leading 0 if 11 digits
+  if (digits.length === 11 && digits.startsWith("0")) {
+    digits = digits.slice(1);
   }
 
-  // String value
-  const dateStr = String(dateValue).trim();
-  if (!dateStr) return null;
+  return digits;
+}
 
-  // Try ISO format first (2020-01-15)
-  const isoMatch = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if (isoMatch) {
-    const [, year, month, day] = isoMatch;
-    const date = new Date(
-      parseInt(year, 10),
-      parseInt(month, 10) - 1,
-      parseInt(day, 10),
-    );
-    if (!isNaN(date.getTime())) return date;
+/**
+ * Clean Aadhar number to 12-digit format.
+ */
+function cleanAadhar(value) {
+  const str = toCleanString(value);
+  if (!str) return "";
+  return str.replace(/\D/g, "");
+}
+
+/**
+ * Clean ID number (scholar, admission no, etc.)
+ * Preserves alphanumeric + dashes + underscores.
+ */
+function cleanIdNumber(value) {
+  const str = toCleanString(value);
+  if (!str) return "";
+  return str.toUpperCase().trim();
+}
+
+/**
+ * Clean roll number (numeric or alphanumeric).
+ */
+function cleanRollNumber(value) {
+  const str = toCleanString(value);
+  if (!str) return "";
+  return str.trim();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DATE PARSING (THE CRITICAL PART)
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Validate parsed date components didn't roll over.
+ * E.g., Feb 31 → Mar 3 (invalid input)
+ */
+function isValidYMD(year, month, day) {
+  if (year < 1900 || year > 2100) return false;
+  if (month < 1 || month > 12) return false;
+  if (day < 1 || day > 31) return false;
+
+  const date = new Date(year, month - 1, day);
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
+}
+
+/**
+ * Normalize 2-digit year to 4-digit.
+ * 00-49 → 2000-2049
+ * 50-99 → 1950-1999
+ */
+function normalizeYear(year) {
+  if (year >= 100) return year;
+  return year < 50 ? 2000 + year : 1900 + year;
+}
+
+/**
+ * Parse date from various string formats.
+ * Returns Date object or null.
+ *
+ * Supported formats:
+ *   - DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, DD MM YYYY
+ *   - YYYY-MM-DD (ISO)
+ *   - DD-MMM-YYYY, DD/MMM/YYYY (15-Jan-2020)
+ *   - MMM DD, YYYY (Jan 15, 2020)
+ *   - Excel serial numbers
+ *   - Date objects
+ */
+function parseIndianDate(value) {
+  if (value === null || value === undefined || value === "") return null;
+
+  // Already a Date
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? null : value;
   }
 
-  // Try DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
-  const dmyMatch = dateStr.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})$/);
-  if (dmyMatch) {
-    let [, day, month, year] = dmyMatch;
-    day = parseInt(day, 10);
-    month = parseInt(month, 10) - 1;
-    year = parseInt(year, 10);
+  // Excel serial number
+  if (typeof value === "number") {
+    return excelSerialToDate(value);
+  }
 
-    // Handle 2-digit year (assume 2000s)
-    if (year < 100) {
-      year = year < 50 ? 2000 + year : 1900 + year;
+  // Coerce to string
+  let str = String(value).trim();
+  if (!str) return null;
+
+  // Remove ordinal suffixes: "1st", "2nd", "3rd", "15th"
+  str = str.replace(/(\d+)(st|nd|rd|th)\b/gi, "$1");
+
+  // ─── Try: YYYY-MM-DD or YYYY/MM/DD (ISO) ───
+  let m = str.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+  if (m) {
+    const year = parseInt(m[1], 10);
+    const month = parseInt(m[2], 10);
+    const day = parseInt(m[3], 10);
+    if (isValidYMD(year, month, day)) {
+      return new Date(year, month - 1, day);
+    }
+  }
+
+  // ─── Try: DD/MM/YYYY (Indian) - PRIMARY ───
+  m = str.match(/^(\d{1,2})[-/.\s](\d{1,2})[-/.\s](\d{2,4})$/);
+  if (m) {
+    const first = parseInt(m[1], 10);
+    const second = parseInt(m[2], 10);
+    let year = parseInt(m[3], 10);
+    year = normalizeYear(year);
+
+    // Smart format detection:
+    // - If first > 12: must be day (Indian DD/MM/YYYY)
+    // - If second > 12: must be day (US MM/DD/YYYY) → swap
+    // - If both ≤ 12: assume Indian (DD/MM/YYYY)
+
+    let day, month;
+    if (first > 12 && second <= 12) {
+      // Indian format
+      day = first;
+      month = second;
+    } else if (second > 12 && first <= 12) {
+      // US format — swap
+      day = second;
+      month = first;
+    } else {
+      // Ambiguous → assume Indian
+      day = first;
+      month = second;
     }
 
-    // Validate
-    if (day >= 1 && day <= 31 && month >= 0 && month <= 11 && year >= 1900) {
-      const date = new Date(year, month, day);
-      if (!isNaN(date.getTime())) return date;
+    if (isValidYMD(year, month, day)) {
+      return new Date(year, month - 1, day);
     }
   }
 
-  // Try natural date parsing (Jan 15, 2020 etc.)
-  const parsed = new Date(dateStr);
-  if (!isNaN(parsed.getTime())) return parsed;
+  // ─── Try: DD-MMM-YYYY (15-Jan-2020, 15/Jan/2020, 15 Jan 2020) ───
+  m = str.match(/^(\d{1,2})[-/.\s]+([A-Za-z]{3,9})[-/.\s]+(\d{2,4})$/);
+  if (m) {
+    const day = parseInt(m[1], 10);
+    const monthStr = m[2].toLowerCase();
+    let year = parseInt(m[3], 10);
+    year = normalizeYear(year);
 
+    const month = MONTH_MAP[monthStr];
+    if (month !== undefined && isValidYMD(year, month + 1, day)) {
+      return new Date(year, month, day);
+    }
+  }
+
+  // ─── Try: MMM DD, YYYY (Jan 15, 2020) ───
+  m = str.match(/^([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{2,4})$/);
+  if (m) {
+    const monthStr = m[1].toLowerCase();
+    const day = parseInt(m[2], 10);
+    let year = parseInt(m[3], 10);
+    year = normalizeYear(year);
+
+    const month = MONTH_MAP[monthStr];
+    if (month !== undefined && isValidYMD(year, month + 1, day)) {
+      return new Date(year, month, day);
+    }
+  }
+
+  // ─── Try: YYYYMMDD (e.g., 20100315) ───
+  m = str.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if (m) {
+    const year = parseInt(m[1], 10);
+    const month = parseInt(m[2], 10);
+    const day = parseInt(m[3], 10);
+    if (isValidYMD(year, month, day)) {
+      return new Date(year, month - 1, day);
+    }
+  }
+
+  // ─── Try: DDMMYYYY (e.g., 15032010) ───
+  m = str.match(/^(\d{2})(\d{2})(\d{4})$/);
+  if (m) {
+    const day = parseInt(m[1], 10);
+    const month = parseInt(m[2], 10);
+    const year = parseInt(m[3], 10);
+    if (isValidYMD(year, month, day)) {
+      return new Date(year, month - 1, day);
+    }
+  }
+
+  // Failed to parse — DO NOT fallback to new Date() (unreliable)
   return null;
-};
+}
+
+// ═══════════════════════════════════════════════════════════
+//  EXCEL READING (THE NEW APPROACH)
+// ═══════════════════════════════════════════════════════════
 
 /**
- * Clean mobile/phone number
- * Handles: "9876543210", 9876543210, "9.87654E+09", "+91-9876543210", "9876 543 210"
+ * Get value from a cell with rich type information.
+ * Uses raw cell object (preserves type), not just .v
  */
-const cleanMobileNumber = (value) => {
-  if (!value && value !== 0) return "";
+function extractCellValue(cell) {
+  if (!cell) return null;
 
-  let str = toCleanString(value);
-  if (!str) return "";
+  // Cell type indicators:
+  // s = string, n = number, d = date, b = boolean, e = error
+  switch (cell.t) {
+    case "s":
+      // String — use raw value
+      return cell.v != null ? String(cell.v) : "";
 
-  // Remove all non-digit characters
-  str = str.replace(/\D/g, "");
+    case "n":
+      // Number — could be date serial or actual number
+      // Check if format suggests date (z = format code)
+      if (cell.z && /[ymd]/i.test(cell.z) && !cell.z.includes("0")) {
+        // Looks like a date format
+        const date = excelSerialToDate(cell.v);
+        return date || cell.v;
+      }
+      return cell.v;
 
-  // If starts with 91 (country code) and has 12 digits, remove it
-  if (str.length === 12 && str.startsWith("91")) {
-    str = str.substring(2);
+    case "d":
+      // Date — already parsed
+      return cell.v instanceof Date ? cell.v : new Date(cell.v);
+
+    case "b":
+      // Boolean
+      return Boolean(cell.v);
+
+    case "e":
+      // Error cell
+      return null;
+
+    default:
+      // Use formatted value if available, else raw
+      return cell.w !== undefined ? cell.w : cell.v;
+  }
+}
+
+/**
+ * Determine cleaner function based on column header.
+ */
+function getCleaner(header) {
+  const h = String(header).toLowerCase();
+
+  if (h.includes("mobile") || h.includes("phone") || h.includes("contact")) {
+    return (val) => cleanMobile(val);
   }
 
-  // If starts with 0 and has 11 digits, remove the 0
-  if (str.length === 11 && str.startsWith("0")) {
-    str = str.substring(1);
+  if (h.includes("aadhar") || h.includes("aadhaar")) {
+    return (val) => cleanAadhar(val);
   }
 
-  return str;
-};
+  if (
+    h.includes("scholar") ||
+    h.includes("admission no") ||
+    h.includes("student id")
+  ) {
+    return (val) => cleanIdNumber(val);
+  }
+
+  if (h.includes("roll")) {
+    return (val) => cleanRollNumber(val);
+  }
+
+  if (h.includes("date") || h.includes("dob") || h.includes("birth")) {
+    // Convert dates to DD/MM/YYYY string
+    return (val) => {
+      if (val === null || val === undefined || val === "") return "";
+
+      // If it's a Date object, format directly
+      if (val instanceof Date) {
+        return formatDateToDMY(val);
+      }
+
+      // If it's a number (Excel serial), convert
+      if (typeof val === "number") {
+        const date = excelSerialToDate(val);
+        return date ? formatDateToDMY(date) : "";
+      }
+
+      // String — return as-is, parser will handle
+      return toCleanString(val);
+    };
+  }
+
+  // Default cleaner
+  return (val) => toCleanString(val);
+}
 
 /**
- * Clean Aadhar number
- * Handles: "123456789012", 123456789012, "1.23457E+11", "1234-5678-9012", "1234 5678 9012"
+ * Read Excel buffer and return cleaned rows.
+ * Each row is an object with header → cleaned value mapping.
  */
-const cleanAadharNumber = (value) => {
-  if (!value && value !== 0) return "";
-
-  let str = toCleanString(value);
-  if (!str) return "";
-
-  // Remove all non-digit characters
-  str = str.replace(/\D/g, "");
-
-  return str;
-};
-
-/**
- * Clean scholar/roll number - keeps alphanumeric, dashes, underscores
- */
-const cleanIdNumber = (value) => {
-  if (!value && value !== 0) return "";
-
-  let str = toCleanString(value);
-  if (!str) return "";
-
-  // Trim and uppercase
-  return str.trim().toUpperCase();
-};
-
-/**
- * Read Excel file and return rows as JSON
- * KEY: Uses raw: false to convert all values to strings (avoids scientific notation)
- */
-const readExcel = (buffer) => {
+function readExcel(buffer) {
   const workbook = XLSX.read(buffer, {
     type: "buffer",
-    cellDates: false, // Don't convert dates - keep raw
-    cellNF: false, // Don't keep number formats
-    cellText: false, // Don't generate text formatting
+    cellDates: true, // Parse dates into Date objects
+    cellNF: true, // Keep number format info (needed for date detection)
+    raw: false, // Get formatted values where appropriate
   });
 
   const sheetName = workbook.SheetNames[0];
+  if (!sheetName) return [];
+
   const sheet = workbook.Sheets[sheetName];
+  const range = XLSX.utils.decode_range(sheet["!ref"] || "A1");
 
-  // ─── KEY FIX: Get raw rows first ───
-  const rawRows = XLSX.utils.sheet_to_json(sheet, {
-    defval: "",
-    blankrows: false,
-    raw: false, // Convert numbers to strings
-  });
+  if (range.s.r === range.e.r) return []; // Only header row, no data
 
-  // ─── Clean each row's values ───
-  const cleanedRows = rawRows.map((row) => {
-    const cleanRow = {};
+  // Read header row
+  const headers = [];
+  for (let C = range.s.c; C <= range.e.c; ++C) {
+    const cellRef = XLSX.utils.encode_cell({ r: range.s.r, c: C });
+    const cell = sheet[cellRef];
+    const headerValue = cell ? toCleanString(extractCellValue(cell)) : "";
+    headers.push(headerValue);
+  }
 
-    Object.keys(row).forEach((key) => {
-      const lowerKey = key.toLowerCase();
-      const value = row[key];
+  // Build cleaners array (one per column)
+  const cleaners = headers.map((h) => getCleaner(h));
 
-      // Special handling for specific fields
-      if (lowerKey.includes("mobile") || lowerKey.includes("phone")) {
-        cleanRow[key] = cleanMobileNumber(value);
-      } else if (lowerKey.includes("aadhar") || lowerKey.includes("aadhaar")) {
-        cleanRow[key] = cleanAadharNumber(value);
-      } else if (
-        lowerKey.includes("scholar") ||
-        lowerKey.includes("admission no")
-      ) {
-        cleanRow[key] = cleanIdNumber(value);
-      } else if (lowerKey.includes("roll")) {
-        // Roll number - keep as string, no special chars
-        cleanRow[key] = toCleanString(value);
-      } else if (lowerKey.includes("date") || lowerKey.includes("dob")) {
-        // Date fields - convert to DD/MM/YYYY string
-        if (typeof value === "number") {
-          // Excel serial number
-          const parsed = parseIndianDate(value);
-          if (parsed) {
-            const day = String(parsed.getDate()).padStart(2, "0");
-            const month = String(parsed.getMonth() + 1).padStart(2, "0");
-            const year = parsed.getFullYear();
-            cleanRow[key] = `${day}/${month}/${year}`;
-          } else {
-            cleanRow[key] = "";
-          }
-        } else if (value instanceof Date) {
-          const day = String(value.getDate()).padStart(2, "0");
-          const month = String(value.getMonth() + 1).padStart(2, "0");
-          const year = value.getFullYear();
-          cleanRow[key] = `${day}/${month}/${year}`;
-        } else {
-          cleanRow[key] = toCleanString(value);
-        }
-      } else {
-        // All other fields - clean string
-        cleanRow[key] = toCleanString(value);
+  // Read data rows
+  const rows = [];
+  for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+    const row = {};
+    let hasData = false;
+
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const header = headers[C - range.s.c];
+      if (!header) continue;
+
+      const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+      const cell = sheet[cellRef];
+
+      const rawValue = extractCellValue(cell);
+      const cleanedValue = cleaners[C - range.s.c](rawValue);
+
+      row[header] = cleanedValue;
+
+      // Track if row has any data
+      if (cleanedValue && String(cleanedValue).trim()) {
+        hasData = true;
       }
-    });
+    }
 
-    return cleanRow;
-  });
+    // Skip empty rows
+    if (hasData) {
+      rows.push(row);
+    }
+  }
 
-  return cleanedRows;
-};
+  return rows;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TEMPLATE GENERATION
+// ═══════════════════════════════════════════════════════════
 
 /**
- * Generate Excel template for student import
+ * Generate Excel template with proper text formatting on cells.
  */
-const generateStudentTemplate = () => {
+function generateStudentTemplate() {
   const headers = [
     "Scholar Number*",
     "Student Name*",
@@ -273,7 +524,6 @@ const generateStudentTemplate = () => {
     "Aadhar Number",
   ];
 
-  // Sample data row
   const sampleData = [
     {
       "Scholar Number*": "SCH001",
@@ -315,12 +565,11 @@ const generateStudentTemplate = () => {
     },
   ];
 
-  // Add instructions sheet
   const instructions = [
     {
       Field: "Scholar Number*",
       Required: "YES",
-      Description: "Unique permanent ID for student (any format)",
+      Description: "Unique permanent ID (e.g., SCH001, NEW-2026-001)",
     },
     {
       Field: "Student Name*",
@@ -340,13 +589,12 @@ const generateStudentTemplate = () => {
     {
       Field: "Date of Birth*",
       Required: "YES",
-      Description:
-        "Any format: 15/03/2010, 15-03-2010, 2010-03-15, or Excel date",
+      Description: "Format: DD/MM/YYYY (also accepts DD-MM-YYYY, DD-Mmm-YYYY)",
     },
     {
       Field: "Gender*",
       Required: "YES",
-      Description: "Male, Female, or Other",
+      Description: "Male, Female, or Other (exact spelling)",
     },
     {
       Field: "Address*",
@@ -356,22 +604,22 @@ const generateStudentTemplate = () => {
     {
       Field: "Class Name*",
       Required: "YES",
-      Description: 'Must exist in system (e.g., "10TH", "Nursery")',
+      Description: 'Must EXACTLY match existing class (e.g., "LKG", "10TH")',
     },
     {
       Field: "Section*",
       Required: "YES",
-      Description: 'Section in class (e.g., "A", "B")',
+      Description: 'Must EXACTLY match section (e.g., "A", "NEW")',
     },
     {
       Field: "Admission Date*",
       Required: "YES",
-      Description: "Any format: 15/03/2010, 15-03-2010, etc.",
+      Description: "Format: DD/MM/YYYY",
     },
     {
       Field: "Roll Number",
       Required: "No",
-      Description: "Auto-generated per class if blank",
+      Description: "Auto-generated if blank",
     },
     {
       Field: "Mobile",
@@ -397,10 +645,10 @@ const generateStudentTemplate = () => {
     {
       Field: "Aadhar Number",
       Required: "No",
-      Description: "12-digit number (auto-cleans formatting)",
+      Description: "12-digit number (auto-cleans)",
     },
     { Field: "", Required: "", Description: "" },
-    { Field: "NOTES:", Required: "", Description: "" },
+    { Field: "═══ IMPORTANT NOTES ═══", Required: "", Description: "" },
     { Field: "1. Fields marked * are required", Required: "", Description: "" },
     {
       Field: "2. Delete sample rows before importing",
@@ -423,12 +671,18 @@ const generateStudentTemplate = () => {
       Description: "",
     },
     {
-      Field: "6. Mobile/Aadhar auto-clean from spaces, dashes, +91 prefix",
+      Field:
+        "6. Mobile/Aadhar accept any format (spaces, dashes, +91 prefix all OK)",
       Required: "",
       Description: "",
     },
     {
-      Field: "7. Dates accept any format - just be consistent",
+      Field: "7. Dates accept: DD/MM/YYYY, DD-MM-YYYY, DD-Mmm-YYYY, YYYY-MM-DD",
+      Required: "",
+      Description: "",
+    },
+    {
+      Field: "8. Empty rows automatically skipped",
       Required: "",
       Description: "",
     },
@@ -436,22 +690,21 @@ const generateStudentTemplate = () => {
 
   const workbook = XLSX.utils.book_new();
 
-  // Sheet 1: Data with sample
+  // ─── Sheet 1: Data with sample ───
   const dataSheet = XLSX.utils.json_to_sheet(sampleData, { header: headers });
 
-  // Set column widths
+  // Column widths
   dataSheet["!cols"] = headers.map((h) => ({
     wch: Math.max(h.length + 2, 18),
   }));
 
-  // ─── KEY: Force all data cells to TEXT format ───
-  // This prevents Excel from converting to scientific notation or date numbers
+  // ─── CRITICAL: Force ALL data cells to TEXT format ───
   const range = XLSX.utils.decode_range(dataSheet["!ref"]);
   for (let R = range.s.r + 1; R <= range.e.r; ++R) {
     for (let C = range.s.c; C <= range.e.c; ++C) {
       const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
       if (dataSheet[cellRef]) {
-        dataSheet[cellRef].t = "s"; // Force string type
+        dataSheet[cellRef].t = "s"; // String type
         dataSheet[cellRef].z = "@"; // Text format
       }
     }
@@ -459,36 +712,52 @@ const generateStudentTemplate = () => {
 
   XLSX.utils.book_append_sheet(workbook, dataSheet, "Students");
 
-  // Sheet 2: Instructions
+  // ─── Sheet 2: Instructions ───
   const instructionsSheet = XLSX.utils.json_to_sheet(instructions);
-  instructionsSheet["!cols"] = [{ wch: 30 }, { wch: 12 }, { wch: 50 }];
+  instructionsSheet["!cols"] = [{ wch: 35 }, { wch: 12 }, { wch: 70 }];
   XLSX.utils.book_append_sheet(workbook, instructionsSheet, "Instructions");
 
   return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
-};
+}
 
 /**
- * Generate error report Excel
+ * Generate error report Excel.
  */
-const generateErrorReport = (errors) => {
+function generateErrorReport(errors) {
+  if (!Array.isArray(errors) || errors.length === 0) {
+    errors = [
+      { rowNum: "-", scholarNumber: "-", name: "-", errors: "No errors" },
+    ];
+  }
+
   const workbook = XLSX.utils.book_new();
   const sheet = XLSX.utils.json_to_sheet(errors);
 
-  // Set column widths
-  sheet["!cols"] = [{ wch: 8 }, { wch: 15 }, { wch: 20 }, { wch: 50 }];
+  sheet["!cols"] = [{ wch: 8 }, { wch: 18 }, { wch: 25 }, { wch: 60 }];
 
   XLSX.utils.book_append_sheet(workbook, sheet, "Import Errors");
   return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
-};
+}
+
+// ═══════════════════════════════════════════════════════════
+//  EXPORTS
+// ═══════════════════════════════════════════════════════════
 
 module.exports = {
-  parseIndianDate,
+  // Main APIs
   readExcel,
   generateStudentTemplate,
   generateErrorReport,
-  // Export helpers for testing/use elsewhere
+  parseIndianDate,
+
+  // Helpers (exported for testing & reuse)
   toCleanString,
-  cleanMobileNumber,
-  cleanAadharNumber,
+  cleanMobile,
+  cleanAadhar,
   cleanIdNumber,
+  cleanRollNumber,
+  formatDateToDMY,
+  excelSerialToDate,
+  isValidYMD,
+  normalizeYear,
 };

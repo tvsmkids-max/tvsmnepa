@@ -39,9 +39,17 @@ const studentSchema = new mongoose.Schema(
     },
     mobile: {
       type: String,
-      required: [true, "Mobile is required"],
+      required: false, // ← Now optional
       trim: true,
-      match: [/^[6-9]\d{9}$/, "Invalid 10-digit Indian mobile number"],
+      default: "",
+      validate: {
+        validator: function (v) {
+          // Allow empty string OR valid 10-digit Indian mobile
+          if (!v || v === "") return true;
+          return /^[6-9]\d{9}$/.test(v);
+        },
+        message: "Invalid mobile number. Must be 10 digits starting with 6-9",
+      },
     },
     alternateMobile: {
       type: String,

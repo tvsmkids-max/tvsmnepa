@@ -136,3 +136,560 @@
 {"level":"http","message":"::1 - - [28/Jun/2026:19:46:53 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 01:16:53"}
 {"level":"http","message":"::1 - - [28/Jun/2026:19:46:57 +0000] \"POST /api/v1/import/students/execute HTTP/1.1\" 200 219 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 01:16:57"}
 {"level":"http","message":"::1 - - [28/Jun/2026:19:46:58 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 184 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 01:16:58"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-29 16:53:21"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-06-29 16:53:21"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 16:53:21"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-29 16:53:21"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 16:53:21"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-29 16:53:21"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-29 16:53:21"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-29 16:53:21"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-29 16:53:21"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 16:53:21"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-06-29 16:53:21"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-06-29 16:53:21"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-06-29 16:53:21"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-29 16:53:21"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-29 16:53:21"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:21 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 379 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:21"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:21 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 379 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:21"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:21 +0000] \"GET /api/v1/settings HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:21"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:22 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:22"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:22 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:22"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:22 +0000] \"GET /api/v1/attendance/dashboard/activity?limit=10 HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:22"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:23 +0000] \"GET /api/v1/attendance/dashboard/alerts HTTP/1.1\" 200 786 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:23"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:23 +0000] \"GET /api/v1/attendance/today-stats HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:23"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:23 +0000] \"GET /api/v1/attendance/dashboard/kpis HTTP/1.1\" 200 388 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:23"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:23 +0000] \"GET /api/v1/backup/stats HTTP/1.1\" 200 350 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:23"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:26 +0000] \"GET /api/v1/sessions HTTP/1.1\" 200 719 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:26"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:26 +0000] \"GET /api/v1/students/sections HTTP/1.1\" 200 111 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:26"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:27 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 184 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:27"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:27 +0000] \"GET /api/v1/sessions HTTP/1.1\" 200 719 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:27"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:27 +0000] \"GET /api/v1/classes?limit=500 HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:27"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:23:42 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:53:42"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-06-29 16:53:51"}
+{"level":"info","message":"[Cron] Backup is recent (0 days ago), skipping reminder","timestamp":"2026-06-29 16:53:51"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:24:01 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:54:01"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:24:08 +0000] \"GET /api/v1/attendance/dashboard/activity?limit=10 HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:54:08"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:24:22 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:54:22"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:24:40 +0000] \"GET /api/v1/sessions HTTP/1.1\" 200 719 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:54:40"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:24:40 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 184 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:54:40"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:24:40 +0000] \"GET /api/v1/sessions HTTP/1.1\" 200 719 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:54:40"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:24:51 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:54:51"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:25:23 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:55:23"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:25:29 +0000] \"POST /api/v1/import/students/error-report HTTP/1.1\" 200 110316 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:55:29"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:25:39 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:55:39"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:25:49 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:55:49"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:26:35 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:56:35"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:26:44 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:56:44"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:27:35 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:57:35"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-29 16:58:04"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-06-29 16:58:04"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 16:58:04"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-29 16:58:04"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 16:58:04"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-29 16:58:04"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-29 16:58:04"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-29 16:58:04"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-29 16:58:04"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 16:58:04"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-06-29 16:58:04"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-06-29 16:58:04"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-06-29 16:58:04"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-29 16:58:04"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-29 16:58:04"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-06-29 16:58:35"}
+{"level":"info","message":"[Cron] Backup is recent (0 days ago), skipping reminder","timestamp":"2026-06-29 16:58:35"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-29 16:58:38"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-06-29 16:58:38"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 16:58:38"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-29 16:58:38"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 16:58:38"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-29 16:58:38"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-29 16:58:38"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-29 16:58:38"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-29 16:58:38"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 16:58:38"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-06-29 16:58:38"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-06-29 16:58:38"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-06-29 16:58:38"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-29 16:58:38"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-29 16:58:38"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-29 16:58:41"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-06-29 16:58:41"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 16:58:41"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-29 16:58:41"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 16:58:41"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-29 16:58:41"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-29 16:58:41"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-29 16:58:41"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-29 16:58:41"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 16:58:41"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-06-29 16:58:41"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-06-29 16:58:42"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-06-29 16:58:42"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-29 16:58:42"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-29 16:58:42"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:29:00 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:59:00"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:29:09 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 16:59:09"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-06-29 16:59:12"}
+{"level":"info","message":"[Cron] Backup is recent (0 days ago), skipping reminder","timestamp":"2026-06-29 16:59:12"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-29 17:01:05"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-06-29 17:01:05"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 17:01:05"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-29 17:01:05"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 17:01:05"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-29 17:01:05"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-29 17:01:05"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-29 17:01:05"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-29 17:01:05"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 17:01:05"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-06-29 17:01:05"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-06-29 17:01:05"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-06-29 17:01:05"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-29 17:01:05"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-29 17:01:05"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:31:11 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:01:11"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:31:22 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:01:22"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:31:22 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:01:22"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:31:33 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:01:33"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-06-29 17:01:35"}
+{"level":"info","message":"[Cron] Backup is recent (0 days ago), skipping reminder","timestamp":"2026-06-29 17:01:35"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:32:19 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:02:19"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:32:22 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:02:22"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:32:39 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:02:39"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:33:40 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:03:40"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:33:48 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:03:48"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-29 17:04:40"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-06-29 17:04:40"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 17:04:40"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-29 17:04:40"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 17:04:40"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-29 17:04:40"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-29 17:04:40"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-29 17:04:40"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-29 17:04:40"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 17:04:40"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-06-29 17:04:40"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-06-29 17:04:41"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-06-29 17:04:41"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-29 17:04:41"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-29 17:04:41"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:34:48 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:04:48"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:34:56 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:04:56"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:35:00 +0000] \"POST /api/v1/import/students/execute HTTP/1.1\" 200 220 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:05:00"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:35:00 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 184 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:05:00"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-06-29 17:05:11"}
+{"level":"info","message":"[Cron] Backup is recent (0 days ago), skipping reminder","timestamp":"2026-06-29 17:05:11"}
+{"level":"warn","message":"MongoDB disconnected. Attempting reconnect...","timestamp":"2026-06-29 17:14:06"}
+{"level":"http","message":"::1 - - [29/Jun/2026:11:44:10 +0000] \"GET /api/v1/auth/me HTTP/1.1\" - - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:14:10"}
+{"level":"error","message":"Authentication error: getaddrinfo ENOTFOUND ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-29 17:51:43"}
+{"level":"error","message":"Error: getaddrinfo ENOTFOUND ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","method":"POST","stack":"MongoServerSelectionError: getaddrinfo ENOTFOUND ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net\n    at AbortSignal.<anonymous> (C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\node_modules\\mongodb\\lib\\sdam\\topology.js:276:34)\n    at [nodejs.internal.kHybridDispatch] (node:internal/event_target:843:20)\n    at AbortSignal.dispatchEvent (node:internal/event_target:776:26)\n    at runAbort (node:internal/abort_controller:488:10)\n    at abortSignal (node:internal/abort_controller:459:3)\n    at TimeoutController.abort (node:internal/abort_controller:507:5)\n    at Timeout.<anonymous> (C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\node_modules\\mongodb\\lib\\utils.js:1010:92)\n    at listOnTimeout (node:internal/timers:605:17)\n    at process.processTimers (node:internal/timers:541:7)","timestamp":"2026-06-29 17:52:30","url":"/api/v1/auth/login","user":"anonymous"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:22:30 +0000] \"POST /api/v1/auth/login HTTP/1.1\" 500 946 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:52:30"}
+{"level":"info","message":"MongoDB reconnected successfully","timestamp":"2026-06-29 17:52:45"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:22:47 +0000] \"POST /api/v1/auth/login HTTP/1.1\" 200 914 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:52:48"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:22:48 +0000] \"GET /api/v1/settings HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:52:48"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:22:49 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:52:49"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:22:49 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:52:49"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:22:49 +0000] \"GET /api/v1/attendance/dashboard/activity?limit=10 HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:52:49"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:22:50 +0000] \"GET /api/v1/attendance/dashboard/alerts HTTP/1.1\" 200 786 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:52:50"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:22:50 +0000] \"GET /api/v1/backup/stats HTTP/1.1\" 200 350 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:52:50"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:22:51 +0000] \"GET /api/v1/attendance/today-stats HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:52:51"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:22:51 +0000] \"GET /api/v1/attendance/dashboard/kpis HTTP/1.1\" 200 388 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:52:51"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:22:52 +0000] \"GET /api/v1/notifications HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:52:52"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:22:54 +0000] \"PATCH /api/v1/notifications/read-all HTTP/1.1\" 200 135 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:52:54"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:22:54 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:52:54"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:23:01 +0000] \"GET /api/v1/sessions HTTP/1.1\" 200 719 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:53:01"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:23:01 +0000] \"GET /api/v1/students/sections HTTP/1.1\" 200 111 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:53:01"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:23:04 +0000] \"GET /api/v1/sessions HTTP/1.1\" 200 719 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:53:04"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:23:05 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 184 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:53:05"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:23:05 +0000] \"GET /api/v1/classes?limit=500 HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:53:05"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:23:48 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:53:48"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:23:49 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:53:49"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:23:52 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:53:52"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:24:00 +0000] \"POST /api/v1/import/students/execute HTTP/1.1\" 200 220 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:54:00"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:24:01 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 184 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:54:01"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:25:58 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:55:58"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:26:09 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:56:09"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:26:16 +0000] \"POST /api/v1/import/students/execute HTTP/1.1\" 200 219 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:56:16"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:26:17 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 184 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:56:17"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:27:09 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 17:57:09"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-29 17:59:05"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-06-29 17:59:05"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 17:59:05"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-29 17:59:05"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 17:59:05"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-29 17:59:05"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-29 17:59:05"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-29 17:59:05"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-29 17:59:05"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 17:59:05"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-06-29 17:59:05"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-06-29 17:59:05"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-06-29 17:59:06"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-29 17:59:06"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-29 17:59:06"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-06-29 17:59:36"}
+{"level":"info","message":"[Cron] Backup is recent (0 days ago), skipping reminder","timestamp":"2026-06-29 17:59:41"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:30:04 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:00:04"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:30:36 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:00:36"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:31:14 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:01:14"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:31:46 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:01:46"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-29 18:02:17"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-06-29 18:02:17"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 18:02:17"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-29 18:02:17"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 18:02:17"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-29 18:02:17"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-29 18:02:17"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-29 18:02:17"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-29 18:02:17"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 18:02:17"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-06-29 18:02:17"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-06-29 18:02:18"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-06-29 18:02:18"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-29 18:02:18"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-29 18:02:18"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-06-29 18:02:48"}
+{"level":"info","message":"[Cron] Backup is recent (0 days ago), skipping reminder","timestamp":"2026-06-29 18:02:48"}
+{"level":"error","message":"MongoDB connection failed: Server selection timed out after 10000 ms","timestamp":"2026-06-29 18:03:03"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-29 18:03:48"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-06-29 18:03:48"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 18:03:48"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-29 18:03:48"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 18:03:48"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-29 18:03:48"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-29 18:03:48"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-29 18:03:48"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-29 18:03:48"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 18:03:48"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-06-29 18:03:48"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-06-29 18:03:49"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-06-29 18:03:49"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-29 18:03:49"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-29 18:03:49"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:33:55 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:03:55"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:34:06 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:04:06"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-06-29 18:04:19"}
+{"level":"info","message":"[Cron] Backup is recent (0 days ago), skipping reminder","timestamp":"2026-06-29 18:04:20"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:34:50 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:04:50"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:04:50"}
+{"level":"info","message":"[Import] Validation started by admin@school.com","timestamp":"2026-06-29 18:04:50"}
+{"level":"info","message":"[Import] Active session: 6a3e61fbc3f791fc97b32113","timestamp":"2026-06-29 18:04:51"}
+{"level":"info","message":"[Import] Excel read: 495 rows","timestamp":"2026-06-29 18:04:51"}
+{"level":"info","message":"[Import] First row keys: Scholar Number*, Student Name*, Father Name*, Mother Name*, Date of Birth* (DD/MM/YYYY), Gender* (Male/Female/Other), Address*, Class Name*, Section*, Admission Date* (DD/MM/YYYY), Roll Number, Mobile, Alternate Mobile, Blood Group, Category, Religion, Aadhar Number","timestamp":"2026-06-29 18:04:51"}
+{"level":"info","message":"[Import] First row sample:","timestamp":"2026-06-29 18:04:51"}
+{"level":"info","message":"{\"scholarNumber\":\"904\",\"name\":\"ADITI KUMARI\",\"dob\":\"15/03/2010\",\"className\":\"LKG-OLD\",\"section\":\"A\"}","timestamp":"2026-06-29 18:04:51"}
+{"level":"info","message":"[Import] Existing scholars in DB: 0","timestamp":"2026-06-29 18:04:51"}
+{"level":"info","message":"[Import] Available classes: 21","timestamp":"2026-06-29 18:04:51"}
+{"level":"info","message":"[Import] Class keys: 10TH|A, NURSERY-OLD|A, NURSERY-NEW|B, LKG-OLD|A, LKG-NEW|B...","timestamp":"2026-06-29 18:04:51"}
+{"level":"info","message":"[Import] Validation complete:","timestamp":"2026-06-29 18:04:51"}
+{"level":"info","message":"[Import]   ✓ Valid: 495","timestamp":"2026-06-29 18:04:51"}
+{"level":"info","message":"[Import]   ⊘ Duplicates: 0","timestamp":"2026-06-29 18:04:51"}
+{"level":"info","message":"[Import]   ✗ Errors: 0","timestamp":"2026-06-29 18:04:51"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:04:51"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:34:51 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:04:51"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:04:53"}
+{"level":"info","message":"[Import] Execute started by admin@school.com","timestamp":"2026-06-29 18:04:53"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:04:53"}
+{"level":"info","message":"[Import] Validation started by admin@school.com","timestamp":"2026-06-29 18:04:53"}
+{"level":"info","message":"[Import] Active session: 6a3e61fbc3f791fc97b32113","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import] Excel read: 495 rows","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import] First row keys: Scholar Number*, Student Name*, Father Name*, Mother Name*, Date of Birth* (DD/MM/YYYY), Gender* (Male/Female/Other), Address*, Class Name*, Section*, Admission Date* (DD/MM/YYYY), Roll Number, Mobile, Alternate Mobile, Blood Group, Category, Religion, Aadhar Number","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import] First row sample:","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"{\"scholarNumber\":\"904\",\"name\":\"ADITI KUMARI\",\"dob\":\"15/03/2010\",\"className\":\"LKG-OLD\",\"section\":\"A\"}","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import] Existing scholars in DB: 0","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import] Available classes: 21","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import] Class keys: 10TH|A, NURSERY-OLD|A, NURSERY-NEW|B, LKG-OLD|A, LKG-NEW|B...","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import] Validation complete:","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import]   ✓ Valid: 495","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import]   ⊘ Duplicates: 0","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import]   ✗ Errors: 0","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import] Validation result:","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import]   Total: 495","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import]   Valid: 495","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import]   Duplicates: 0","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import]   Errors: 0","timestamp":"2026-06-29 18:04:54"}
+{"level":"info","message":"[Import] Prepared 495 student documents","timestamp":"2026-06-29 18:04:57"}
+{"level":"info","message":"[Import] ✅ Inserted 0 students successfully","timestamp":"2026-06-29 18:04:57"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:04:57"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:34:57 +0000] \"POST /api/v1/import/students/execute HTTP/1.1\" 200 220 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:04:57"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:34:58 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 184 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:04:58"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:35:46 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:05:46"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:35:49 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:05:49"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:35:53 +0000] \"GET /api/v1/import/students/template HTTP/1.1\" 200 24490 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:05:53"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:36:04 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:06:04"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:36:26 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:06:26"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:06:34"}
+{"level":"info","message":"[Import] Validation started by admin@school.com","timestamp":"2026-06-29 18:06:34"}
+{"level":"info","message":"[Import] Active session: 6a3e61fbc3f791fc97b32113","timestamp":"2026-06-29 18:06:35"}
+{"level":"info","message":"[Import] Excel read: 18 rows","timestamp":"2026-06-29 18:06:35"}
+{"level":"info","message":"[Import] First row keys: Scholar Number*, Student Name*, Father Name*, Mother Name*, Date of Birth* (DD/MM/YYYY), Gender* (Male/Female/Other), Address*, Class Name*, Section*, Admission Date* (DD/MM/YYYY), Roll Number, Mobile, Alternate Mobile, Blood Group, Category, Religion, Aadhar Number","timestamp":"2026-06-29 18:06:35"}
+{"level":"info","message":"[Import] First row sample:","timestamp":"2026-06-29 18:06:35"}
+{"level":"info","message":"{\"scholarNumber\":\"SCH001\",\"name\":\"Rahul Kumar\",\"dob\":\"15/03/2010\",\"className\":\"10TH\",\"section\":\"A\"}","timestamp":"2026-06-29 18:06:35"}
+{"level":"info","message":"[Import] Existing scholars in DB: 0","timestamp":"2026-06-29 18:06:35"}
+{"level":"info","message":"[Import] Available classes: 21","timestamp":"2026-06-29 18:06:35"}
+{"level":"info","message":"[Import] Class keys: 10TH|A, NURSERY-OLD|A, NURSERY-NEW|B, LKG-OLD|A, LKG-NEW|B...","timestamp":"2026-06-29 18:06:35"}
+{"level":"info","message":"[Import] Validation complete:","timestamp":"2026-06-29 18:06:35"}
+{"level":"info","message":"[Import]   ✓ Valid: 18","timestamp":"2026-06-29 18:06:35"}
+{"level":"info","message":"[Import]   ⊘ Duplicates: 0","timestamp":"2026-06-29 18:06:35"}
+{"level":"info","message":"[Import]   ✗ Errors: 0","timestamp":"2026-06-29 18:06:35"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:06:35"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:36:35 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:06:35"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:06:38"}
+{"level":"info","message":"[Import] Execute started by admin@school.com","timestamp":"2026-06-29 18:06:38"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:06:38"}
+{"level":"info","message":"[Import] Validation started by admin@school.com","timestamp":"2026-06-29 18:06:38"}
+{"level":"info","message":"[Import] Active session: 6a3e61fbc3f791fc97b32113","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import] Excel read: 18 rows","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import] First row keys: Scholar Number*, Student Name*, Father Name*, Mother Name*, Date of Birth* (DD/MM/YYYY), Gender* (Male/Female/Other), Address*, Class Name*, Section*, Admission Date* (DD/MM/YYYY), Roll Number, Mobile, Alternate Mobile, Blood Group, Category, Religion, Aadhar Number","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import] First row sample:","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"{\"scholarNumber\":\"SCH001\",\"name\":\"Rahul Kumar\",\"dob\":\"15/03/2010\",\"className\":\"10TH\",\"section\":\"A\"}","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import] Existing scholars in DB: 0","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import] Available classes: 21","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import] Class keys: 10TH|A, NURSERY-OLD|A, NURSERY-NEW|B, LKG-OLD|A, LKG-NEW|B...","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import] Validation complete:","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import]   ✓ Valid: 18","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import]   ⊘ Duplicates: 0","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import]   ✗ Errors: 0","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import] Validation result:","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import]   Total: 18","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import]   Valid: 18","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import]   Duplicates: 0","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import]   Errors: 0","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import] Prepared 18 student documents","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import] ✅ Inserted 1 students successfully","timestamp":"2026-06-29 18:06:39"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:06:39"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:36:39 +0000] \"POST /api/v1/import/students/execute HTTP/1.1\" 200 218 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:06:39"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:36:40 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 928 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:06:40"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:36:49 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:06:49"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:37:36 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:07:36"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:07:45"}
+{"level":"info","message":"[Import] Validation started by admin@school.com","timestamp":"2026-06-29 18:07:45"}
+{"level":"info","message":"[Import] Active session: 6a3e61fbc3f791fc97b32113","timestamp":"2026-06-29 18:07:45"}
+{"level":"info","message":"[Import] Excel read: 18 rows","timestamp":"2026-06-29 18:07:45"}
+{"level":"info","message":"[Import] First row keys: Scholar Number*, Student Name*, Father Name*, Mother Name*, Date of Birth* (DD/MM/YYYY), Gender* (Male/Female/Other), Address*, Class Name*, Section*, Admission Date* (DD/MM/YYYY), Roll Number, Mobile, Alternate Mobile, Blood Group, Category, Religion, Aadhar Number","timestamp":"2026-06-29 18:07:45"}
+{"level":"info","message":"[Import] First row sample:","timestamp":"2026-06-29 18:07:45"}
+{"level":"info","message":"{\"scholarNumber\":\"SCH001\",\"name\":\"Rahul Kumar\",\"dob\":\"15/03/2010\",\"className\":\"10TH\",\"section\":\"A\"}","timestamp":"2026-06-29 18:07:45"}
+{"level":"info","message":"[Import] Existing scholars in DB: 1","timestamp":"2026-06-29 18:07:46"}
+{"level":"info","message":"[Import] Available classes: 21","timestamp":"2026-06-29 18:07:46"}
+{"level":"info","message":"[Import] Class keys: 10TH|A, NURSERY-OLD|A, NURSERY-NEW|B, LKG-OLD|A, LKG-NEW|B...","timestamp":"2026-06-29 18:07:46"}
+{"level":"info","message":"[Import] Validation complete:","timestamp":"2026-06-29 18:07:46"}
+{"level":"info","message":"[Import]   ✓ Valid: 17","timestamp":"2026-06-29 18:07:46"}
+{"level":"info","message":"[Import]   ⊘ Duplicates: 1","timestamp":"2026-06-29 18:07:46"}
+{"level":"info","message":"[Import]   ✗ Errors: 0","timestamp":"2026-06-29 18:07:46"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:07:46"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:37:46 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:07:46"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:07:49"}
+{"level":"info","message":"[Import] Execute started by admin@school.com","timestamp":"2026-06-29 18:07:49"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:37:49 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:07:49"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:07:50"}
+{"level":"info","message":"[Import] Validation started by admin@school.com","timestamp":"2026-06-29 18:07:50"}
+{"level":"info","message":"[Import] Active session: 6a3e61fbc3f791fc97b32113","timestamp":"2026-06-29 18:07:50"}
+{"level":"info","message":"[Import] Excel read: 18 rows","timestamp":"2026-06-29 18:07:50"}
+{"level":"info","message":"[Import] First row keys: Scholar Number*, Student Name*, Father Name*, Mother Name*, Date of Birth* (DD/MM/YYYY), Gender* (Male/Female/Other), Address*, Class Name*, Section*, Admission Date* (DD/MM/YYYY), Roll Number, Mobile, Alternate Mobile, Blood Group, Category, Religion, Aadhar Number","timestamp":"2026-06-29 18:07:50"}
+{"level":"info","message":"[Import] First row sample:","timestamp":"2026-06-29 18:07:50"}
+{"level":"info","message":"{\"scholarNumber\":\"SCH001\",\"name\":\"Rahul Kumar\",\"dob\":\"15/03/2010\",\"className\":\"10TH\",\"section\":\"A\"}","timestamp":"2026-06-29 18:07:50"}
+{"level":"info","message":"[Import] Existing scholars in DB: 1","timestamp":"2026-06-29 18:07:50"}
+{"level":"info","message":"[Import] Available classes: 21","timestamp":"2026-06-29 18:07:51"}
+{"level":"info","message":"[Import] Class keys: 10TH|A, NURSERY-OLD|A, NURSERY-NEW|B, LKG-OLD|A, LKG-NEW|B...","timestamp":"2026-06-29 18:07:51"}
+{"level":"info","message":"[Import] Validation complete:","timestamp":"2026-06-29 18:07:51"}
+{"level":"info","message":"[Import]   ✓ Valid: 17","timestamp":"2026-06-29 18:07:51"}
+{"level":"info","message":"[Import]   ⊘ Duplicates: 1","timestamp":"2026-06-29 18:07:51"}
+{"level":"info","message":"[Import]   ✗ Errors: 0","timestamp":"2026-06-29 18:07:51"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:07:51"}
+{"level":"info","message":"[Import] Validation result:","timestamp":"2026-06-29 18:07:51"}
+{"level":"info","message":"[Import]   Total: 18","timestamp":"2026-06-29 18:07:51"}
+{"level":"info","message":"[Import]   Valid: 17","timestamp":"2026-06-29 18:07:51"}
+{"level":"info","message":"[Import]   Duplicates: 1","timestamp":"2026-06-29 18:07:51"}
+{"level":"info","message":"[Import]   Errors: 0","timestamp":"2026-06-29 18:07:51"}
+{"level":"info","message":"[Import] Prepared 17 student documents","timestamp":"2026-06-29 18:07:51"}
+{"level":"info","message":"[Import] ✅ Inserted 17 students successfully","timestamp":"2026-06-29 18:07:51"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:07:51"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:37:51 +0000] \"POST /api/v1/import/students/execute HTTP/1.1\" 200 221 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:07:51"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:37:53 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:07:53"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:39:06 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:09:06"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:39:18 +0000] \"POST /api/v1/students/bulk-delete HTTP/1.1\" 200 221 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:09:18"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:39:18 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 184 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:09:18"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:09:30"}
+{"level":"info","message":"[Import] Validation started by admin@school.com","timestamp":"2026-06-29 18:09:30"}
+{"level":"info","message":"[Import] Active session: 6a3e61fbc3f791fc97b32113","timestamp":"2026-06-29 18:09:30"}
+{"level":"info","message":"[Import] Excel read: 701 rows","timestamp":"2026-06-29 18:09:31"}
+{"level":"info","message":"[Import] First row keys: Scholar Number*, Student Name*, Father Name*, Mother Name*, Date of Birth* (DD/MM/YYYY), Gender* (Male/Female/Other), Address*, Class Name*, Section*, Admission Date* (DD/MM/YYYY), Roll Number, Mobile, Alternate Mobile, Blood Group, Category, Religion, Aadhar Number","timestamp":"2026-06-29 18:09:31"}
+{"level":"info","message":"[Import] First row sample:","timestamp":"2026-06-29 18:09:31"}
+{"level":"info","message":"{\"scholarNumber\":\"904\",\"name\":\"ADITI KUMARI\",\"dob\":\"25/07/2021\",\"className\":\"LKG-OLD\",\"section\":\"A\"}","timestamp":"2026-06-29 18:09:31"}
+{"level":"info","message":"[Import] Existing scholars in DB: 0","timestamp":"2026-06-29 18:09:31"}
+{"level":"info","message":"[Import] Available classes: 21","timestamp":"2026-06-29 18:09:31"}
+{"level":"info","message":"[Import] Class keys: 10TH|A, NURSERY-OLD|A, NURSERY-NEW|B, LKG-OLD|A, LKG-NEW|B...","timestamp":"2026-06-29 18:09:31"}
+{"level":"info","message":"[Import] Validation complete:","timestamp":"2026-06-29 18:09:31"}
+{"level":"info","message":"[Import]   ✓ Valid: 701","timestamp":"2026-06-29 18:09:31"}
+{"level":"info","message":"[Import]   ⊘ Duplicates: 0","timestamp":"2026-06-29 18:09:31"}
+{"level":"info","message":"[Import]   ✗ Errors: 0","timestamp":"2026-06-29 18:09:31"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:09:31"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:39:31 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:09:31"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:09:33"}
+{"level":"info","message":"[Import] Execute started by admin@school.com","timestamp":"2026-06-29 18:09:33"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:09:33"}
+{"level":"info","message":"[Import] Validation started by admin@school.com","timestamp":"2026-06-29 18:09:33"}
+{"level":"info","message":"[Import] Active session: 6a3e61fbc3f791fc97b32113","timestamp":"2026-06-29 18:09:34"}
+{"level":"info","message":"[Import] Excel read: 701 rows","timestamp":"2026-06-29 18:09:34"}
+{"level":"info","message":"[Import] First row keys: Scholar Number*, Student Name*, Father Name*, Mother Name*, Date of Birth* (DD/MM/YYYY), Gender* (Male/Female/Other), Address*, Class Name*, Section*, Admission Date* (DD/MM/YYYY), Roll Number, Mobile, Alternate Mobile, Blood Group, Category, Religion, Aadhar Number","timestamp":"2026-06-29 18:09:34"}
+{"level":"info","message":"[Import] First row sample:","timestamp":"2026-06-29 18:09:34"}
+{"level":"info","message":"{\"scholarNumber\":\"904\",\"name\":\"ADITI KUMARI\",\"dob\":\"25/07/2021\",\"className\":\"LKG-OLD\",\"section\":\"A\"}","timestamp":"2026-06-29 18:09:34"}
+{"level":"info","message":"[Import] Existing scholars in DB: 0","timestamp":"2026-06-29 18:09:34"}
+{"level":"info","message":"[Import] Available classes: 21","timestamp":"2026-06-29 18:09:35"}
+{"level":"info","message":"[Import] Class keys: 10TH|A, NURSERY-OLD|A, NURSERY-NEW|B, LKG-OLD|A, LKG-NEW|B...","timestamp":"2026-06-29 18:09:35"}
+{"level":"info","message":"[Import] Validation complete:","timestamp":"2026-06-29 18:09:35"}
+{"level":"info","message":"[Import]   ✓ Valid: 701","timestamp":"2026-06-29 18:09:35"}
+{"level":"info","message":"[Import]   ⊘ Duplicates: 0","timestamp":"2026-06-29 18:09:35"}
+{"level":"info","message":"[Import]   ✗ Errors: 0","timestamp":"2026-06-29 18:09:35"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:09:35"}
+{"level":"info","message":"[Import] Validation result:","timestamp":"2026-06-29 18:09:35"}
+{"level":"info","message":"[Import]   Total: 701","timestamp":"2026-06-29 18:09:35"}
+{"level":"info","message":"[Import]   Valid: 701","timestamp":"2026-06-29 18:09:35"}
+{"level":"info","message":"[Import]   Duplicates: 0","timestamp":"2026-06-29 18:09:35"}
+{"level":"info","message":"[Import]   Errors: 0","timestamp":"2026-06-29 18:09:35"}
+{"level":"info","message":"[Import] Prepared 701 student documents","timestamp":"2026-06-29 18:09:40"}
+{"level":"info","message":"[Import] ✅ Inserted 18 students successfully","timestamp":"2026-06-29 18:09:41"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:09:42"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:39:42 +0000] \"POST /api/v1/import/students/execute HTTP/1.1\" 200 222 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:09:42"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:39:43 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:09:43"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:39:49 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:09:49"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:39:54 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:09:54"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:40:02 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:10:02"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:10:11"}
+{"level":"info","message":"[Import] Validation started by admin@school.com","timestamp":"2026-06-29 18:10:11"}
+{"level":"info","message":"[Import] Active session: 6a3e61fbc3f791fc97b32113","timestamp":"2026-06-29 18:10:12"}
+{"level":"info","message":"[Import] Excel read: 701 rows","timestamp":"2026-06-29 18:10:12"}
+{"level":"info","message":"[Import] First row keys: Scholar Number*, Student Name*, Father Name*, Mother Name*, Date of Birth* (DD/MM/YYYY), Gender* (Male/Female/Other), Address*, Class Name*, Section*, Admission Date* (DD/MM/YYYY), Roll Number, Mobile, Alternate Mobile, Blood Group, Category, Religion, Aadhar Number","timestamp":"2026-06-29 18:10:12"}
+{"level":"info","message":"[Import] First row sample:","timestamp":"2026-06-29 18:10:12"}
+{"level":"info","message":"{\"scholarNumber\":\"904\",\"name\":\"ADITI KUMARI\",\"dob\":\"25/07/2021\",\"className\":\"LKG-OLD\",\"section\":\"A\"}","timestamp":"2026-06-29 18:10:12"}
+{"level":"info","message":"[Import] Existing scholars in DB: 18","timestamp":"2026-06-29 18:10:13"}
+{"level":"info","message":"[Import] Available classes: 21","timestamp":"2026-06-29 18:10:13"}
+{"level":"info","message":"[Import] Class keys: 10TH|A, NURSERY-OLD|A, NURSERY-NEW|B, LKG-OLD|A, LKG-NEW|B...","timestamp":"2026-06-29 18:10:13"}
+{"level":"info","message":"[Import] Validation complete:","timestamp":"2026-06-29 18:10:13"}
+{"level":"info","message":"[Import]   ✓ Valid: 683","timestamp":"2026-06-29 18:10:13"}
+{"level":"info","message":"[Import]   ⊘ Duplicates: 18","timestamp":"2026-06-29 18:10:13"}
+{"level":"info","message":"[Import]   ✗ Errors: 0","timestamp":"2026-06-29 18:10:13"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:10:13"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:40:13 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:10:13"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:10:23"}
+{"level":"info","message":"[Import] Execute started by admin@school.com","timestamp":"2026-06-29 18:10:23"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:10:24"}
+{"level":"info","message":"[Import] Validation started by admin@school.com","timestamp":"2026-06-29 18:10:24"}
+{"level":"info","message":"[Import] Active session: 6a3e61fbc3f791fc97b32113","timestamp":"2026-06-29 18:10:24"}
+{"level":"info","message":"[Import] Excel read: 701 rows","timestamp":"2026-06-29 18:10:24"}
+{"level":"info","message":"[Import] First row keys: Scholar Number*, Student Name*, Father Name*, Mother Name*, Date of Birth* (DD/MM/YYYY), Gender* (Male/Female/Other), Address*, Class Name*, Section*, Admission Date* (DD/MM/YYYY), Roll Number, Mobile, Alternate Mobile, Blood Group, Category, Religion, Aadhar Number","timestamp":"2026-06-29 18:10:24"}
+{"level":"info","message":"[Import] First row sample:","timestamp":"2026-06-29 18:10:24"}
+{"level":"info","message":"{\"scholarNumber\":\"904\",\"name\":\"ADITI KUMARI\",\"dob\":\"25/07/2021\",\"className\":\"LKG-OLD\",\"section\":\"A\"}","timestamp":"2026-06-29 18:10:24"}
+{"level":"info","message":"[Import] Existing scholars in DB: 18","timestamp":"2026-06-29 18:10:24"}
+{"level":"info","message":"[Import] Available classes: 21","timestamp":"2026-06-29 18:10:25"}
+{"level":"info","message":"[Import] Class keys: 10TH|A, NURSERY-OLD|A, NURSERY-NEW|B, LKG-OLD|A, LKG-NEW|B...","timestamp":"2026-06-29 18:10:25"}
+{"level":"info","message":"[Import] Validation complete:","timestamp":"2026-06-29 18:10:25"}
+{"level":"info","message":"[Import]   ✓ Valid: 683","timestamp":"2026-06-29 18:10:25"}
+{"level":"info","message":"[Import]   ⊘ Duplicates: 18","timestamp":"2026-06-29 18:10:25"}
+{"level":"info","message":"[Import]   ✗ Errors: 0","timestamp":"2026-06-29 18:10:25"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:10:25"}
+{"level":"info","message":"[Import] Validation result:","timestamp":"2026-06-29 18:10:25"}
+{"level":"info","message":"[Import]   Total: 701","timestamp":"2026-06-29 18:10:25"}
+{"level":"info","message":"[Import]   Valid: 683","timestamp":"2026-06-29 18:10:25"}
+{"level":"info","message":"[Import]   Duplicates: 18","timestamp":"2026-06-29 18:10:25"}
+{"level":"info","message":"[Import]   Errors: 0","timestamp":"2026-06-29 18:10:25"}
+{"level":"info","message":"[Import] Prepared 683 student documents","timestamp":"2026-06-29 18:10:30"}
+{"level":"info","message":"[Import] ✅ Inserted 0 students successfully","timestamp":"2026-06-29 18:10:30"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:10:30"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:40:30 +0000] \"POST /api/v1/import/students/execute HTTP/1.1\" 200 221 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:10:30"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:40:31 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:10:31"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:40:38 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:10:38"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:40:59 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:10:59"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:41:10 +0000] \"POST /api/v1/students/bulk-delete HTTP/1.1\" 200 221 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:11:10"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:41:11 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 184 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:11:11"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:11:21"}
+{"level":"info","message":"[Import] Validation started by admin@school.com","timestamp":"2026-06-29 18:11:21"}
+{"level":"info","message":"[Import] Active session: 6a3e61fbc3f791fc97b32113","timestamp":"2026-06-29 18:11:22"}
+{"level":"info","message":"[Import] Excel read: 701 rows","timestamp":"2026-06-29 18:11:22"}
+{"level":"info","message":"[Import] First row keys: Scholar Number*, Student Name*, Father Name*, Mother Name*, Date of Birth* (DD/MM/YYYY), Gender* (Male/Female/Other), Address*, Class Name*, Section*, Admission Date* (DD/MM/YYYY), Roll Number, Mobile, Alternate Mobile, Blood Group, Category, Religion, Aadhar Number","timestamp":"2026-06-29 18:11:22"}
+{"level":"info","message":"[Import] First row sample:","timestamp":"2026-06-29 18:11:22"}
+{"level":"info","message":"{\"scholarNumber\":\"904\",\"name\":\"ADITI KUMARI\",\"dob\":\"25/07/2021\",\"className\":\"LKG-OLD\",\"section\":\"A\"}","timestamp":"2026-06-29 18:11:22"}
+{"level":"info","message":"[Import] Existing scholars in DB: 0","timestamp":"2026-06-29 18:11:22"}
+{"level":"info","message":"[Import] Available classes: 21","timestamp":"2026-06-29 18:11:23"}
+{"level":"info","message":"[Import] Class keys: 10TH|A, NURSERY-OLD|A, NURSERY-NEW|B, LKG-OLD|A, LKG-NEW|B...","timestamp":"2026-06-29 18:11:23"}
+{"level":"info","message":"[Import] Validation complete:","timestamp":"2026-06-29 18:11:23"}
+{"level":"info","message":"[Import]   ✓ Valid: 701","timestamp":"2026-06-29 18:11:23"}
+{"level":"info","message":"[Import]   ⊘ Duplicates: 0","timestamp":"2026-06-29 18:11:23"}
+{"level":"info","message":"[Import]   ✗ Errors: 0","timestamp":"2026-06-29 18:11:23"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:11:23"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:41:23 +0000] \"POST /api/v1/import/students/validate HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:11:23"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:11:26"}
+{"level":"info","message":"[Import] Execute started by admin@school.com","timestamp":"2026-06-29 18:11:26"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:11:26"}
+{"level":"info","message":"[Import] Validation started by admin@school.com","timestamp":"2026-06-29 18:11:26"}
+{"level":"info","message":"[Import] Active session: 6a3e61fbc3f791fc97b32113","timestamp":"2026-06-29 18:11:27"}
+{"level":"info","message":"[Import] Excel read: 701 rows","timestamp":"2026-06-29 18:11:27"}
+{"level":"info","message":"[Import] First row keys: Scholar Number*, Student Name*, Father Name*, Mother Name*, Date of Birth* (DD/MM/YYYY), Gender* (Male/Female/Other), Address*, Class Name*, Section*, Admission Date* (DD/MM/YYYY), Roll Number, Mobile, Alternate Mobile, Blood Group, Category, Religion, Aadhar Number","timestamp":"2026-06-29 18:11:27"}
+{"level":"info","message":"[Import] First row sample:","timestamp":"2026-06-29 18:11:27"}
+{"level":"info","message":"{\"scholarNumber\":\"904\",\"name\":\"ADITI KUMARI\",\"dob\":\"25/07/2021\",\"className\":\"LKG-OLD\",\"section\":\"A\"}","timestamp":"2026-06-29 18:11:27"}
+{"level":"info","message":"[Import] Existing scholars in DB: 0","timestamp":"2026-06-29 18:11:28"}
+{"level":"info","message":"[Import] Available classes: 21","timestamp":"2026-06-29 18:11:28"}
+{"level":"info","message":"[Import] Class keys: 10TH|A, NURSERY-OLD|A, NURSERY-NEW|B, LKG-OLD|A, LKG-NEW|B...","timestamp":"2026-06-29 18:11:28"}
+{"level":"info","message":"[Import] Validation complete:","timestamp":"2026-06-29 18:11:28"}
+{"level":"info","message":"[Import]   ✓ Valid: 701","timestamp":"2026-06-29 18:11:28"}
+{"level":"info","message":"[Import]   ⊘ Duplicates: 0","timestamp":"2026-06-29 18:11:28"}
+{"level":"info","message":"[Import]   ✗ Errors: 0","timestamp":"2026-06-29 18:11:28"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:11:28"}
+{"level":"info","message":"[Import] Validation result:","timestamp":"2026-06-29 18:11:28"}
+{"level":"info","message":"[Import]   Total: 701","timestamp":"2026-06-29 18:11:28"}
+{"level":"info","message":"[Import]   Valid: 701","timestamp":"2026-06-29 18:11:28"}
+{"level":"info","message":"[Import]   Duplicates: 0","timestamp":"2026-06-29 18:11:28"}
+{"level":"info","message":"[Import]   Errors: 0","timestamp":"2026-06-29 18:11:28"}
+{"level":"info","message":"[Import] Prepared 701 student documents","timestamp":"2026-06-29 18:11:32"}
+{"level":"info","message":"[Import] ✅ Inserted 701 students successfully","timestamp":"2026-06-29 18:11:34"}
+{"level":"info","message":"[Import] ════════════════════════════════════","timestamp":"2026-06-29 18:11:34"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:41:34 +0000] \"POST /api/v1/import/students/execute HTTP/1.1\" 200 224 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:11:34"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:41:34 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:11:34"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:42:28 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:12:28"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:42:41 +0000] \"POST /api/v1/students/bulk-delete HTTP/1.1\" 200 221 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:12:41"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:42:42 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:12:42"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:42:49 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 116 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:12:49"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:43:03 +0000] \"POST /api/v1/students/bulk-delete HTTP/1.1\" 200 221 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:13:03"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:43:04 +0000] \"GET /api/v1/students?page=1&limit=24&search=&status=Active HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:13:04"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:43:16 +0000] \"GET /api/v1/students?page=2&limit=24&search=&status=Active HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:13:16"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:43:29 +0000] \"POST /api/v1/students/bulk-delete HTTP/1.1\" 200 221 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:13:29"}
+{"level":"http","message":"::1 - - [29/Jun/2026:12:43:32 +0000] \"GET /api/v1/students?page=2&limit=24&search=&status=Active HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-06-29 18:13:32"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-29 18:15:12"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-06-29 18:15:12"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 18:15:12"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-29 18:15:12"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 18:15:12"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-29 18:15:12"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-29 18:15:12"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-29 18:15:12"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-29 18:15:12"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 18:15:12"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-06-29 18:15:12"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-06-29 18:15:25"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-06-29 18:15:25"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-29 18:15:25"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-29 18:15:25"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-06-29 18:15:57"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-06-29 18:15:57"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 18:15:57"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-06-29 18:15:57"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 18:15:57"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-06-29 18:15:57"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-06-29 18:15:57"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-06-29 18:15:57"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-06-29 18:15:57"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-06-29 18:15:57"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-06-29 18:15:57"}
+{"level":"warn","message":"MongoDB disconnected. Attempting reconnect...","timestamp":"2026-06-29 18:16:12"}
+{"level":"info","message":"MongoDB reconnected successfully","timestamp":"2026-06-29 18:16:15"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-06-29 18:16:23"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-06-29 18:16:23"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-06-29 18:16:23"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-06-29 18:16:23"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-06-29 18:16:53"}
+{"level":"info","message":"[Cron] Backup is recent (0 days ago), skipping reminder","timestamp":"2026-06-29 18:16:59"}
+{"level":"error","message":"MongoDB connection failed: Server selection timed out after 10000 ms","timestamp":"2026-06-29 18:19:32"}

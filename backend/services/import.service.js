@@ -11,6 +11,7 @@ const throwError = (message, statusCode = 400) => {
   throw Object.assign(new Error(message), { statusCode });
 };
 
+// ─── Constants ────────────────────────────────────────────────
 const VALID_GENDERS = ["Male", "Female", "Other"];
 const VALID_BLOOD_GROUPS = [
   "A+",
@@ -24,59 +25,128 @@ const VALID_BLOOD_GROUPS = [
   "",
 ];
 const VALID_CATEGORIES = ["General", "OBC", "SC", "ST", "EWS", ""];
+const MAX_IMPORT_ROWS = 1000;
+
+// ─── Header Mapping (handle multiple variations) ──────────────
+const HEADER_MAP = {
+  scholarNumber: [
+    "Scholar Number*",
+    "Scholar Number",
+    "ScholarNumber",
+    "Scholar No",
+    "Scholar",
+  ],
+  name: ["Student Name*", "Student Name", "Name", "StudentName"],
+  fatherName: ["Father Name*", "Father Name", "FatherName", "Father"],
+  motherName: ["Mother Name*", "Mother Name", "MotherName", "Mother"],
+  dob: [
+    "Date of Birth* (DD/MM/YYYY)",
+    "Date of Birth*",
+    "Date of Birth",
+    "DOB",
+    "DateOfBirth",
+  ],
+  gender: ["Gender* (Male/Female/Other)", "Gender*", "Gender"],
+  address: ["Address*", "Address"],
+  className: ["Class Name*", "Class Name", "ClassName", "Class"],
+  section: ["Section*", "Section"],
+  admissionDate: [
+    "Admission Date* (DD/MM/YYYY)",
+    "Admission Date*",
+    "Admission Date",
+    "AdmissionDate",
+  ],
+  rollNumber: ["Roll Number", "RollNumber", "Roll No", "Roll"],
+  mobile: ["Mobile", "Phone", "Contact", "MobileNumber"],
+  alternateMobile: ["Alternate Mobile", "AlternateMobile", "Alt Mobile"],
+  bloodGroup: ["Blood Group", "BloodGroup"],
+  category: ["Category"],
+  religion: ["Religion"],
+  aadharNumber: ["Aadhar Number", "AadharNumber", "Aadhaar"],
+};
+
+/**
+ * Extract field value from row using header variations
+ */
+function getFieldValue(row, fieldKey) {
+  const variations = HEADER_MAP[fieldKey] || [];
+  for (const headerName of variations) {
+    if (
+      row[headerName] !== undefined &&
+      row[headerName] !== null &&
+      row[headerName] !== ""
+    ) {
+      return String(row[headerName]).trim();
+    }
+  }
+  return "";
+}
 
 class ImportService {
   /**
    * Validate Excel file and return preview with errors
    */
   async validateStudents(fileBuffer, user) {
+    logger.info("[Import] ════════════════════════════════════");
+    logger.info(`[Import] Validation started by ${user.email}`);
+
+    // ─── Check active session ───
     const settings = await Settings.getSettings();
     const sessionId = settings?.activeSession?._id || settings?.activeSession;
-    if (!sessionId)
-      throwError("No active session. Please activate a session first.", 400);
 
+    if (!sessionId) {
+      logger.error("[Import] ❌ No active session set");
+      throwError("No active session. Please activate a session first.", 400);
+    }
+
+    logger.info(`[Import] Active session: ${sessionId.toString()}`);
+
+    // ─── Read Excel ───
     let rows;
     try {
       rows = readExcel(fileBuffer);
+      logger.info(`[Import] Excel read: ${rows.length} rows`);
     } catch (err) {
-      throwError("Invalid Excel file format", 400);
+      logger.error(`[Import] ❌ Excel parsing failed: ${err.message}`);
+      throwError(`Invalid Excel file format: ${err.message}`, 400);
     }
-
-    console.log(`[Import] Read ${rows.length} rows from Excel`);
 
     if (rows.length === 0) {
-      throwError("Excel file is empty", 400);
+      throwError("Excel file is empty or has no data rows", 400);
     }
 
-    // ─── KEY FIX: Filter out completely empty rows ───
-    const nonEmptyRows = rows.filter((row) => {
-      // Check if row has ANY meaningful content
-      const hasContent = Object.values(row).some(
-        (val) => val !== null && val !== undefined && String(val).trim() !== "",
-      );
-      return hasContent;
-    });
-
-    console.log(`[Import] After filter: ${nonEmptyRows.length} non-empty rows`);
-
-    if (nonEmptyRows.length === 0) {
+    if (rows.length > MAX_IMPORT_ROWS) {
       throwError(
-        "Excel file has no data rows. Please add students to the template.",
+        `Too many rows (${rows.length}). Maximum ${MAX_IMPORT_ROWS} students per import.`,
         400,
       );
     }
 
-    if (nonEmptyRows.length > 1000) {
-      throwError("Too many rows. Maximum 1000 students per import.", 400);
+    // ─── Log first row for debugging ───
+    if (rows[0]) {
+      logger.info(
+        `[Import] First row keys: ${Object.keys(rows[0]).join(", ")}`,
+      );
+      logger.info(`[Import] First row sample:`);
+      const sample = {};
+      ["scholarNumber", "name", "dob", "className", "section"].forEach(
+        (key) => {
+          sample[key] = getFieldValue(rows[0], key);
+        },
+      );
+      logger.info(JSON.stringify(sample));
     }
 
+    // ─── Load existing scholars (for duplicate check) ───
     const existingScholars = await Student.find({})
       .select("scholarNumber")
       .lean();
     const existingScholarSet = new Set(
       existingScholars.map((s) => String(s.scholarNumber).toUpperCase()),
     );
+    logger.info(`[Import] Existing scholars in DB: ${existingScholars.length}`);
 
+    // ─── Load classes for lookup ───
     const allClasses = await Class.find({
       session: sessionId,
       isArchived: false,
@@ -88,66 +158,47 @@ class ImportService {
       classMap.set(key, c);
     });
 
-    console.log(`[Import] Available classes:`, Array.from(classMap.keys()));
+    logger.info(`[Import] Available classes: ${allClasses.length}`);
+    if (allClasses.length > 0) {
+      logger.info(
+        `[Import] Class keys: ${Array.from(classMap.keys()).slice(0, 5).join(", ")}${classMap.size > 5 ? "..." : ""}`,
+      );
+    } else {
+      logger.warn("[Import] ⚠️  No classes found for active session!");
+    }
 
+    // ─── Track duplicates within Excel ───
     const excelScholars = new Set();
+
+    // ─── Process rows ───
     const valid = [];
     const duplicates = [];
     const errors = [];
 
-    nonEmptyRows.forEach((row, idx) => {
-      const rowNum = idx + 2;
+    rows.forEach((row, idx) => {
+      const rowNum = idx + 2; // +2: row 1 is header, idx starts at 0
       const rowErrors = [];
 
-      const scholarNumber = String(
-        row["Scholar Number*"] || row["Scholar Number"] || "",
-      )
-        .trim()
-        .toUpperCase();
+      // Extract all fields
+      const scholarNumber = getFieldValue(row, "scholarNumber").toUpperCase();
+      const name = getFieldValue(row, "name");
+      const fatherName = getFieldValue(row, "fatherName");
+      const motherName = getFieldValue(row, "motherName");
+      const dobRaw = getFieldValue(row, "dob");
+      const gender = getFieldValue(row, "gender");
+      const address = getFieldValue(row, "address");
+      const className = getFieldValue(row, "className").toUpperCase();
+      const section = getFieldValue(row, "section").toUpperCase();
+      const admissionRaw = getFieldValue(row, "admissionDate");
+      const rollNumberRaw = getFieldValue(row, "rollNumber");
+      const mobile = getFieldValue(row, "mobile");
+      const alternateMobile = getFieldValue(row, "alternateMobile");
+      const bloodGroup = getFieldValue(row, "bloodGroup");
+      const category = getFieldValue(row, "category");
+      const religion = getFieldValue(row, "religion");
+      const aadharNumber = getFieldValue(row, "aadharNumber");
 
-      const name = String(
-        row["Student Name*"] || row["Student Name"] || "",
-      ).trim();
-      const fatherName = String(
-        row["Father Name*"] || row["Father Name"] || "",
-      ).trim();
-      const motherName = String(
-        row["Mother Name*"] || row["Mother Name"] || "",
-      ).trim();
-
-      const dobRaw =
-        row["Date of Birth* (DD/MM/YYYY)"] ||
-        row["Date of Birth*"] ||
-        row["Date of Birth"] ||
-        "";
-      const gender = String(
-        row["Gender* (Male/Female/Other)"] ||
-          row["Gender*"] ||
-          row["Gender"] ||
-          "",
-      ).trim();
-      const address = String(row["Address*"] || row["Address"] || "").trim();
-      const className = String(row["Class Name*"] || row["Class Name"] || "")
-        .trim()
-        .toUpperCase();
-      const section = String(row["Section*"] || row["Section"] || "")
-        .trim()
-        .toUpperCase();
-      const admissionRaw =
-        row["Admission Date* (DD/MM/YYYY)"] ||
-        row["Admission Date*"] ||
-        row["Admission Date"] ||
-        "";
-
-      const rollNumberRaw = String(row["Roll Number"] || "").trim();
-      const mobile = String(row["Mobile"] || "").trim();
-      const alternateMobile = String(row["Alternate Mobile"] || "").trim();
-      const bloodGroup = String(row["Blood Group"] || "").trim();
-      const category = String(row["Category"] || "").trim();
-      const religion = String(row["Religion"] || "").trim();
-      const aadharNumber = String(row["Aadhar Number"] || "").trim();
-
-      // Required fields
+      // ─── Required field validation ───
       if (!scholarNumber) rowErrors.push("Scholar Number is required");
       if (!name) rowErrors.push("Student Name is required");
       if (!fatherName) rowErrors.push("Father's Name is required");
@@ -156,79 +207,105 @@ class ImportService {
       if (!className) rowErrors.push("Class Name is required");
       if (!section) rowErrors.push("Section is required");
 
-      // Try parsing dates safely
+      // ─── DOB validation ───
       let dob = null;
-      try {
-        dob = parseIndianDate(dobRaw);
-      } catch (e) {
-        // ignore, dob stays null
-      }
-
       if (!dobRaw) {
         rowErrors.push("Date of Birth is required");
-      } else if (!dob) {
-        rowErrors.push("Invalid Date of Birth format. Use DD/MM/YYYY");
-      } else if (dob > new Date()) {
-        rowErrors.push("Date of Birth cannot be in the future");
+      } else {
+        try {
+          dob = parseIndianDate(dobRaw);
+          if (!dob) {
+            rowErrors.push(
+              `Invalid Date of Birth: "${dobRaw}". Use DD/MM/YYYY (e.g., 15/03/2010)`,
+            );
+          } else if (dob > new Date()) {
+            rowErrors.push(
+              `Date of Birth "${dobRaw}" is in the future. Check the year.`,
+            );
+          }
+        } catch (err) {
+          rowErrors.push(`Date of Birth parsing error: ${err.message}`);
+        }
       }
 
+      // ─── Admission Date validation ───
       let admissionDate = null;
-      try {
-        admissionDate = parseIndianDate(admissionRaw);
-      } catch (e) {
-        // ignore
-      }
-
       if (!admissionRaw) {
         rowErrors.push("Admission Date is required");
-      } else if (!admissionDate) {
-        rowErrors.push("Invalid Admission Date format. Use DD/MM/YYYY");
+      } else {
+        try {
+          admissionDate = parseIndianDate(admissionRaw);
+          if (!admissionDate) {
+            rowErrors.push(
+              `Invalid Admission Date: "${admissionRaw}". Use DD/MM/YYYY (e.g., 01/04/2024)`,
+            );
+          }
+        } catch (err) {
+          rowErrors.push(`Admission Date parsing error: ${err.message}`);
+        }
       }
 
+      // ─── Gender validation ───
       if (!gender) {
         rowErrors.push("Gender is required");
       } else if (!VALID_GENDERS.includes(gender)) {
-        rowErrors.push(`Invalid Gender. Must be: ${VALID_GENDERS.join(", ")}`);
+        rowErrors.push(
+          `Invalid Gender "${gender}". Must be: ${VALID_GENDERS.join(", ")}`,
+        );
       }
 
+      // ─── Mobile validation (optional) ───
       if (mobile && !/^[6-9]\d{9}$/.test(mobile)) {
-        rowErrors.push("Mobile must be 10 digits starting with 6-9");
+        rowErrors.push(
+          `Invalid Mobile "${mobile}". Must be 10 digits starting with 6-9`,
+        );
       }
 
+      // ─── Blood Group validation ───
       if (bloodGroup && !VALID_BLOOD_GROUPS.includes(bloodGroup)) {
         rowErrors.push(
-          `Invalid Blood Group. Must be: ${VALID_BLOOD_GROUPS.filter((b) => b).join(", ")}`,
+          `Invalid Blood Group "${bloodGroup}". Must be: ${VALID_BLOOD_GROUPS.filter((b) => b).join(", ")}`,
         );
       }
 
+      // ─── Category validation ───
       if (category && !VALID_CATEGORIES.includes(category)) {
         rowErrors.push(
-          `Invalid Category. Must be: ${VALID_CATEGORIES.filter((c) => c).join(", ")}`,
+          `Invalid Category "${category}". Must be: ${VALID_CATEGORIES.filter((c) => c).join(", ")}`,
         );
       }
 
+      // ─── Class existence check ───
       let classRef = null;
       if (className && section) {
         const classKey = `${className}|${section}`;
         classRef = classMap.get(classKey);
         if (!classRef) {
+          const availableClasses = Array.from(classMap.keys())
+            .slice(0, 5)
+            .join(", ");
           rowErrors.push(
-            `Class "${className}-${section}" does not exist. Available: ${Array.from(classMap.keys()).slice(0, 3).join(", ")}...`,
+            `Class "${className}-${section}" not found. Available: ${availableClasses || "none"}`,
           );
         }
       }
 
+      // ─── Duplicate scholar check (in DB) ───
       let isDuplicate = false;
       if (scholarNumber && existingScholarSet.has(scholarNumber)) {
         isDuplicate = true;
       }
 
+      // ─── Duplicate within Excel ───
       if (scholarNumber && excelScholars.has(scholarNumber)) {
-        rowErrors.push(`Duplicate Scholar Number "${scholarNumber}" in Excel`);
+        rowErrors.push(
+          `Duplicate Scholar Number "${scholarNumber}" in Excel file`,
+        );
       } else if (scholarNumber) {
         excelScholars.add(scholarNumber);
       }
 
+      // ─── Build result ───
       const result = {
         rowNum,
         scholarNumber,
@@ -252,6 +329,7 @@ class ImportService {
         errors: rowErrors,
       };
 
+      // ─── Classify row ───
       if (rowErrors.length > 0) {
         errors.push({
           rowNum,
@@ -264,27 +342,32 @@ class ImportService {
           rowNum,
           scholarNumber,
           name,
-          reason: "Scholar Number already exists",
+          reason: "Scholar Number already exists in database",
         });
       } else {
         valid.push(result);
       }
     });
 
-    console.log(
-      `[Import] Validation complete: ${valid.length} valid, ${duplicates.length} duplicates, ${errors.length} errors`,
-    );
+    // ─── Log summary ───
+    logger.info(`[Import] Validation complete:`);
+    logger.info(`[Import]   ✓ Valid: ${valid.length}`);
+    logger.info(`[Import]   ⊘ Duplicates: ${duplicates.length}`);
+    logger.info(`[Import]   ✗ Errors: ${errors.length}`);
 
-    // Log first 3 errors to help debug
     if (errors.length > 0) {
-      console.log("[Import] Sample errors:");
+      logger.warn(`[Import] First 3 errors:`);
       errors.slice(0, 3).forEach((e) => {
-        console.log(`  Row ${e.rowNum}: ${e.errors}`);
+        logger.warn(
+          `[Import]   Row ${e.rowNum} (${e.scholarNumber}): ${e.errors}`,
+        );
       });
     }
 
+    logger.info("[Import] ════════════════════════════════════");
+
     return {
-      total: nonEmptyRows.length, // ← Use filtered count, not raw count
+      total: rows.length,
       valid: valid.length,
       duplicates: duplicates.length,
       errors: errors.length,
@@ -296,94 +379,99 @@ class ImportService {
 
   /**
    * Execute bulk import — only inserts valid rows
-   * WITH DETAILED LOGGING for debugging
    */
   async executeImport(fileBuffer, user, req) {
-    console.log("\n[Import] ═══════════════════════════════════");
-    console.log("[Import] Starting executeImport...");
+    logger.info("[Import] ════════════════════════════════════");
+    logger.info(`[Import] Execute started by ${user.email}`);
 
+    // Get session
     const settings = await Settings.getSettings();
     const sessionId = settings?.activeSession?._id || settings?.activeSession;
-
-    console.log("[Import] Active session ID:", sessionId?.toString() || "NONE");
     if (!sessionId) throwError("No active session", 400);
 
-    // Re-validate to get fresh state
+    // Validate first
     const validation = await this.validateStudents(fileBuffer, user);
 
-    console.log("[Import] Validation result:");
-    console.log("  Total rows:", validation.total);
-    console.log("  Valid rows:", validation.valid);
-    console.log("  Duplicates:", validation.duplicates);
-    console.log("  Errors:", validation.errors);
+    logger.info(`[Import] Validation result:`);
+    logger.info(`[Import]   Total: ${validation.total}`);
+    logger.info(`[Import]   Valid: ${validation.valid}`);
+    logger.info(`[Import]   Duplicates: ${validation.duplicates}`);
+    logger.info(`[Import]   Errors: ${validation.errors}`);
 
+    // ─── If nothing valid, throw with helpful message ───
     if (validation.valid === 0) {
-      console.log("[Import] ❌ No valid rows to import");
-      console.log(
-        "[Import] Sample errors:",
-        JSON.stringify(validation.errorRows.slice(0, 3), null, 2),
-      );
-      console.log(
-        "[Import] Sample duplicates:",
-        JSON.stringify(validation.duplicateRows.slice(0, 3), null, 2),
-      );
-      throwError(
-        `No valid rows to import. ${validation.errors} have errors, ${validation.duplicates} are duplicates.`,
-        400,
-      );
+      let message = "No valid rows to import. ";
+
+      if (validation.errors > 0) {
+        message += `${validation.errors} rows have errors. `;
+      }
+      if (validation.duplicates > 0) {
+        message += `${validation.duplicates} are duplicates. `;
+      }
+
+      // Include first error for context
+      if (validation.errorRows.length > 0) {
+        const first = validation.errorRows[0];
+        message += `First error (row ${first.rowNum}): ${first.errors}`;
+      }
+
+      logger.error(`[Import] ❌ ${message}`);
+      throwError(message, 400);
     }
 
-    console.log("[Import] ✅ Have", validation.valid, "valid rows to insert");
-
-    // Get next roll numbers per class
+    // ─── Get next roll numbers per class ───
     const classIds = [
       ...new Set(validation.validRows.map((r) => r.classRef._id.toString())),
     ];
 
-    console.log("[Import] Classes involved:", classIds.length);
-
     const rollMaxes = {};
     for (const cid of classIds) {
-      const maxRoll = await Student.find({ class: cid })
+      const existing = await Student.find({ class: cid })
         .select("rollNumber")
         .lean();
 
-      const numericRolls = maxRoll
+      const numericRolls = existing
         .map((s) => parseInt(s.rollNumber, 10))
         .filter((n) => !isNaN(n));
       rollMaxes[cid] = numericRolls.length > 0 ? Math.max(...numericRolls) : 0;
     }
 
     const classRollCounter = { ...rollMaxes };
-    const studentDocs = [];
     const usedRollsInClass = {};
 
-    for (const row of validation.validRows) {
+    // ─── Prepare student documents ───
+    const studentDocs = validation.validRows.map((row) => {
       const classId = row.classRef._id.toString();
       let rollNumber;
 
       if (row.rollNumber) {
+        // User-provided roll
         rollNumber = String(row.rollNumber).trim();
+
         if (!usedRollsInClass[classId]) usedRollsInClass[classId] = new Set();
+
+        // If duplicate in this import, auto-generate
         if (usedRollsInClass[classId].has(rollNumber)) {
           classRollCounter[classId]++;
           rollNumber = String(classRollCounter[classId]);
         }
         usedRollsInClass[classId].add(rollNumber);
       } else {
+        // Auto-generate
         classRollCounter[classId]++;
         rollNumber = String(classRollCounter[classId]);
+
         if (!usedRollsInClass[classId]) usedRollsInClass[classId] = new Set();
         usedRollsInClass[classId].add(rollNumber);
       }
 
-      studentDocs.push({
+      return {
         scholarNumber: row.scholarNumber,
         rollNumber,
         name: row.name,
         fatherName: row.fatherName,
         motherName: row.motherName,
-        mobile: row.mobile || "0000000000",
+        mobile: row.mobile || "", // ← Empty string if blank
         alternateMobile: row.alternateMobile || "",
         dob: row.dob,
         gender: row.gender,
@@ -399,40 +487,26 @@ class ImportService {
         aadharNumber: row.aadharNumber || "",
         isActive: true,
         createdBy: user._id,
-      });
-    }
+      };
+    });
 
-    console.log("[Import] Prepared", studentDocs.length, "student documents");
-    console.log("[Import] Sample document (first 1):");
-    console.log(JSON.stringify(studentDocs[0], null, 2));
+    logger.info(`[Import] Prepared ${studentDocs.length} student documents`);
 
-    // ─── BULK INSERT WITH DETAILED ERROR HANDLING ───
+    // ─── Bulk insert ───
     let imported = 0;
     let failed = 0;
     const insertErrors = [];
 
     try {
-      console.log("[Import] Calling Student.insertMany()...");
       const result = await Student.insertMany(studentDocs, {
-        ordered: false,
-        rawResult: false,
+        ordered: false, // Continue on errors
       });
-
       imported = result.length;
-      console.log("[Import] ✅ SUCCESS: Inserted", imported, "students");
+      logger.info(`[Import] ✅ Inserted ${imported} students successfully`);
     } catch (err) {
-      console.log("[Import] ⚠️  insertMany threw error:");
-      console.log("[Import] Error name:", err.name);
-      console.log("[Import] Error code:", err.code);
-      console.log("[Import] Error message:", err.message);
-      console.log("[Import] Has insertedDocs?", !!err.insertedDocs);
-      console.log(
-        "[Import] insertedDocs length:",
-        err.insertedDocs?.length || 0,
-      );
-      console.log("[Import] Has writeErrors?", !!err.writeErrors);
-      console.log("[Import] writeErrors count:", err.writeErrors?.length || 0);
+      logger.error(`[Import] ⚠️  insertMany error: ${err.message}`);
 
+      // Handle partial success
       if (err.insertedDocs) {
         imported = err.insertedDocs.length;
         failed = studentDocs.length - imported;
@@ -440,44 +514,37 @@ class ImportService {
         imported = err.result.insertedCount;
         failed = studentDocs.length - imported;
       } else {
-        // Total failure
         imported = 0;
         failed = studentDocs.length;
       }
 
-      if (err.writeErrors) {
-        err.writeErrors.slice(0, 5).forEach((we) => {
+      // Collect error details
+      if (err.writeErrors && Array.isArray(err.writeErrors)) {
+        err.writeErrors.slice(0, 10).forEach((we) => {
           const idx = we.index;
           insertErrors.push({
-            row: idx,
+            row: idx + 2,
             scholarNumber: studentDocs[idx]?.scholarNumber || "?",
             name: studentDocs[idx]?.name || "?",
             error: we.errmsg || we.message || "Insert failed",
             code: we.code,
           });
         });
-        console.log("[Import] First insert errors:");
-        console.log(JSON.stringify(insertErrors, null, 2));
       }
 
-      logger.error(`[Import] Some inserts failed: ${err.message}`);
+      logger.warn(`[Import] Imported: ${imported}, Failed: ${failed}`);
     }
 
-    console.log("[Import] ═══════════════════════════════════");
-    console.log("[Import] FINAL RESULT:");
-    console.log("  Imported:", imported);
-    console.log("  Failed:", failed);
-    console.log("  Errors count:", insertErrors.length);
-    console.log("[Import] ═══════════════════════════════════\n");
-
-    // Audit log
+    // ─── Audit log ───
     await createAuditLog({
       user,
       action: "IMPORT",
       module: "Student",
-      description: `Imported ${imported} students via Excel (${validation.duplicates} duplicates skipped, ${validation.errors} errors)`,
+      description: `Imported ${imported}/${validation.total} students via Excel (${validation.duplicates} duplicates, ${validation.errors} errors, ${failed} failed)`,
       req,
     });
+
+    logger.info("[Import] ════════════════════════════════════");
 
     return {
       total: validation.total,

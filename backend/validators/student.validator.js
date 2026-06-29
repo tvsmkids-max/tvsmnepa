@@ -12,8 +12,13 @@ const createStudentSchema = Joi.object({
   fatherName: Joi.string().trim().min(2).max(100).required(),
   motherName: Joi.string().trim().min(2).max(100).required(),
   mobile: Joi.string()
+    .trim()
+    .allow("")
+    .optional()
     .pattern(/^[6-9]\d{9}$/)
-    .required(),
+    .messages({
+      "string.pattern.base": "Mobile must be 10 digits starting with 6-9",
+    }),
   alternateMobile: Joi.string().allow(""),
   dob: Joi.date().less("now").required(),
   gender: Joi.string().valid("Male", "Female", "Other").required(),
