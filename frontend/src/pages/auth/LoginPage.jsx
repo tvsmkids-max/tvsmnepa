@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   Box,
   Paper,
@@ -23,6 +23,7 @@ import LoginOutlinedIcon from "@mui/icons-material/LoginOutlined";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { useSnackbar } from "notistack";
 import useAuth from "../../hooks/useAuth";
 import useThemeMode from "../../hooks/useThemeMode";
 
@@ -40,6 +41,9 @@ const schema = yup.object({
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { enqueueSnackbar } = useSnackbar();
   const { login, isAuthenticated, isLoading, error, clearError, user } =
     useAuth();
   const theme = useTheme();
@@ -47,18 +51,72 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // ── Redirect if already authenticated ──
+  // ══════════════════════════════════════════════════════════
+  //  Show reason banner (from URL param)
+  //  e.g., /login?reason=idle or /login?reason=session-expired
+  // ══════════════════════════════════════════════════════════
+  useEffect(() => {
+    const reason = searchParams.get("reason");
+    if (!reason) return;
+
+    const messages = {
+      idle: {
+        text: "⏰ You were logged out due to inactivity. Please log in again.",
+        variant: "warning",
+      },
+      "session-expired": {
+        text: "🔒 Your session has expired. Please log in again.",
+        variant: "warning",
+      },
+      "logged-out": {
+        text: "✅ You have been logged out successfully.",
+        variant: "info",
+      },
+      unauthorized: {
+        text: "🚫 You need to log in to access that page.",
+        variant: "info",
+      },
+    };
+
+    const message = messages[reason];
+    if (message) {
+      enqueueSnackbar(message.text, {
+        variant: message.variant,
+        autoHideDuration: 6000,
+        anchorOrigin: { vertical: "top", horizontal: "center" },
+      });
+
+      // Clean up URL (remove ?reason=... after showing)
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, [searchParams, enqueueSnackbar]);
+
+  // ══════════════════════════════════════════════════════════
+  //  Redirect if already authenticated
+  //  If came from a protected route, redirect back there
+  // ══════════════════════════════════════════════════════════
   useEffect(() => {
     if (isAuthenticated && user) {
-      const route =
+      // Check if user was trying to access a specific page before login
+      const from = location.state?.from?.pathname;
+
+      const defaultRoute =
         user.role === "admin"
           ? "/dashboard"
           : user.role === "principal"
             ? "/principal/dashboard"
             : "/teacher/dashboard";
-      navigate(route, { replace: true });
+
+      // Use "from" if it exists and isn't login/unauthorized
+      const targetRoute =
+        from && from !== "/login" && from !== "/unauthorized"
+          ? from
+          : defaultRoute;
+
+      navigate(targetRoute, { replace: true });
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, navigate, location.state]);
 
   // ── Clear error on unmount ──
   useEffect(() => () => clearError(), []);
@@ -77,39 +135,44 @@ const LoginPage = () => {
     clearError();
     const result = await login(data);
     if (result.success) {
-      const route =
+      // Check if user was trying to access a specific page before login
+      const from = location.state?.from?.pathname;
+
+      const defaultRoute =
         result.user?.role === "admin"
           ? "/dashboard"
           : result.user?.role === "principal"
             ? "/principal/dashboard"
             : "/teacher/dashboard";
-      navigate(route, { replace: true });
+
+      const targetRoute =
+        from && from !== "/login" && from !== "/unauthorized"
+          ? from
+          : defaultRoute;
+
+      navigate(targetRoute, { replace: true });
     }
     setSubmitting(false);
   };
 
   if (isLoading) return null;
 
-  // ── Theme-aware values ──
-  const rightPanelBg = isDark
-    ? theme.palette.background.default // #111827
-    : "#F8F9FC";
+  // ══════════════════════════════════════════════════════════
+  //  Theme-aware values
+  // ══════════════════════════════════════════════════════════
+  const rightPanelBg = isDark ? theme.palette.background.default : "#F8F9FC";
 
-  const cardBg = isDark
-    ? theme.palette.background.paper // #1F2937
-    : "#FFFFFF";
+  const cardBg = isDark ? theme.palette.background.paper : "#FFFFFF";
 
   const cardBorder = isDark
-    ? `1px solid ${theme.palette.divider}` // #374151
+    ? `1px solid ${theme.palette.divider}`
     : "1px solid rgba(0,0,0,0.04)";
 
   const cardShadow = isDark
     ? "0 4px 24px rgba(0,0,0,0.4)"
     : "0 4px 6px rgba(0,0,0,0.02), 0 12px 40px rgba(0,0,0,0.06)";
 
-  const labelColor = isDark
-    ? theme.palette.text.secondary // #9CA3AF
-    : "#374151";
+  const labelColor = isDark ? theme.palette.text.secondary : "#374151";
 
   const subtitleColor = isDark ? theme.palette.text.secondary : "#6B7B99";
 
@@ -123,21 +186,15 @@ const LoginPage = () => {
     ? alpha(theme.palette.common.white, 0.06)
     : "#FFFFFF";
 
-  const inputBorderColor = isDark
-    ? theme.palette.divider // #374151
-    : "#E5E7EB";
+  const inputBorderColor = isDark ? theme.palette.divider : "#E5E7EB";
 
-  const inputFocusBorderColor = isDark
-    ? theme.palette.primary.main // #3B82F6
-    : "#0D1B3E";
+  const inputFocusBorderColor = isDark ? theme.palette.primary.main : "#0D1B3E";
 
   const inputFocusShadow = isDark
     ? `0 0 0 3px ${alpha(theme.palette.primary.main, 0.15)}`
     : "0 0 0 3px rgba(13,27,62,0.08)";
 
-  const iconColor = isDark
-    ? theme.palette.text.disabled // #6B7280
-    : "#9CA3AF";
+  const iconColor = isDark ? theme.palette.text.disabled : "#9CA3AF";
 
   const footerColor = isDark ? theme.palette.text.disabled : "#B0B8C8";
 
@@ -598,7 +655,6 @@ const LoginPage = () => {
                 fontSize: "0.95rem",
                 fontWeight: 800,
                 borderRadius: 2.5,
-                // Always navy gradient — matches left panel branding
                 background:
                   "linear-gradient(135deg, #0D1B3E 0%, #1A3A7A 50%, #1E4D98 100%)",
                 boxShadow: isDark

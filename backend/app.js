@@ -10,6 +10,7 @@ const rateLimit = require("express-rate-limit");
 const mongoSanitize = require("express-mongo-sanitize");
 const cookieParser = require("cookie-parser");
 const path = require("path");
+const dashboardRoutes = require("./routes/dashboard.routes");
 
 const env = require("./config/env");
 const corsOptions = require("./config/cors");
@@ -128,6 +129,7 @@ app.use(
   }),
 );
 
+app.use("/api/v1/dashboard", dashboardRoutes);
 // ─── HTTP Logging ─────────────────────────────────────────────────────────────
 if (env.NODE_ENV !== "test") {
   app.use(
@@ -137,7 +139,6 @@ if (env.NODE_ENV !== "test") {
     }),
   );
 }
-
 // ─── Static Files ─────────────────────────────────────────────────────────────
 app.use(
   "/uploads",

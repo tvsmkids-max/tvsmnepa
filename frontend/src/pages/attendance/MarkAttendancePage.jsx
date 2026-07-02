@@ -1,4 +1,3 @@
-// frontend/src/pages/attendance/MarkAttendancePage.jsx
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
@@ -39,6 +38,7 @@ import SaveIcon from "@mui/icons-material/Save";
 import BeachAccessIcon from "@mui/icons-material/BeachAccess";
 import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
+import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
 import PageHeader from "../../components/common/PageHeader";
 import EmptyState from "../../components/common/EmptyState";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
@@ -60,7 +60,7 @@ const formatDate = (d) => {
 const formatRoll = (n) => String(n ?? "").padStart(2, "0");
 
 // ═══════════════════════════════════════════════════════════════════
-//  SEGMENTED P|A TOGGLE — Used on both mobile + desktop rows
+//  SEGMENTED P|A TOGGLE
 // ═══════════════════════════════════════════════════════════════════
 
 const StatusToggle = React.memo(function StatusToggle({
@@ -97,7 +97,6 @@ const StatusToggle = React.memo(function StatusToggle({
 
   return (
     <Stack direction="row" sx={{ flexShrink: 0 }}>
-      {/* P Button */}
       <Box
         onClick={(e) => {
           e.stopPropagation();
@@ -132,7 +131,6 @@ const StatusToggle = React.memo(function StatusToggle({
         P
       </Box>
 
-      {/* A Button */}
       <Box
         onClick={(e) => {
           e.stopPropagation();
@@ -175,13 +173,15 @@ const StatusToggle = React.memo(function StatusToggle({
 
 const MarkAttendancePage = () => {
   const { enqueueSnackbar } = useSnackbar();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const { settings } = useSettings();
   const { isDark } = useThemeMode();
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
 
-  // ── State ────────────────────────────────────────────────────
+  const isTeacher = user?.role === "teacher";
+
+  // ─── State ────────────────────────────────────────────────────
   const [classes, setClasses] = useState([]);
   const [classesLoading, setClassesLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState("");
@@ -199,7 +199,7 @@ const MarkAttendancePage = () => {
   const [sortBy, setSortBy] = useState("rollNumber");
   const [sortOrder, setSortOrder] = useState("asc");
 
-  // ── Load classes ─────────────────────────────────────────────
+  // ─── Load classes ─────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -212,6 +212,7 @@ const MarkAttendancePage = () => {
         if (!cancelled) {
           const list = res.data?.data || [];
           setClasses(list);
+          // ✅ AUTO-SELECT if teacher has only 1 class
           if (list.length === 1 && !selectedClass) {
             setSelectedClass(list[0]._id);
           }
@@ -233,7 +234,7 @@ const MarkAttendancePage = () => {
     };
   }, [settings?.activeSession, enqueueSnackbar]);
 
-  // ── Load attendance sheet ────────────────────────────────────
+  // ─── Load attendance sheet ────────────────────────────────────
   useEffect(() => {
     if (!selectedClass || !date) {
       setSheet(null);
@@ -278,7 +279,7 @@ const MarkAttendancePage = () => {
 
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  // ── Bulk + single actions ────────────────────────────────────
+  // ─── Handlers ─────────────────────────────────────────────────
   const markAll = useCallback(
     (status) => {
       if (!sheet?.students) return;
@@ -305,7 +306,7 @@ const MarkAttendancePage = () => {
     });
   }, []);
 
-  // ── Stats ────────────────────────────────────────────────────
+  // ─── Stats ────────────────────────────────────────────────────
   const stats = useMemo(() => {
     if (!sheet?.students)
       return { Present: 0, Absent: 0, total: 0, unmarked: 0, marked: 0 };
@@ -329,7 +330,7 @@ const MarkAttendancePage = () => {
   const progressPercent =
     stats.total > 0 ? Math.round((stats.marked / stats.total) * 100) : 0;
 
-  // ── Filtered + Sorted students ───────────────────────────────
+  // ─── Filtered + Sorted students ───────────────────────────────
   const displayStudents = useMemo(() => {
     if (!sheet?.students) return [];
     let list = [...sheet.students];
@@ -388,7 +389,7 @@ const MarkAttendancePage = () => {
     }
   };
 
-  // ── Save ─────────────────────────────────────────────────────
+  // ─── Save ─────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!selectedClass || !date) return;
     if (
@@ -422,7 +423,7 @@ const MarkAttendancePage = () => {
     }
   };
 
-  // ── Lock/Unlock ──────────────────────────────────────────────
+  // ─── Lock/Unlock ──────────────────────────────────────────────
   const handleLockToggle = async () => {
     if (!confirmLock) return;
     try {
@@ -438,9 +439,16 @@ const MarkAttendancePage = () => {
     }
   };
 
-  // ── Computed flags ───────────────────────────────────────────
+  // ─── Computed flags ───────────────────────────────────────────
   const isLockedForMe = sheet?.isLocked && !isAdmin;
   const hasRows = displayStudents.length > 0;
+
+  // ✅ SMART: Determine if we should show dropdown or fixed badge
+  // - Teacher with 1 class → show as badge (auto-selected)
+  // - Teacher with 2+ classes → show dropdown
+  // - Admin/Principal → always show dropdown
+  const showClassAsBadge = isTeacher && classes.length === 1;
+  const singleClass = showClassAsBadge ? classes[0] : null;
 
   // ═══════════════════════════════════════════════════════════════
   //  RENDER
@@ -450,20 +458,22 @@ const MarkAttendancePage = () => {
     <Box
       sx={{
         pb:
-          sheet && !sheet.isHoliday && stats.total > 0 ? { xs: 11, md: 10 } : 2,
+          sheet && !sheet.isHoliday && stats.total > 0 ? { xs: 12, md: 11 } : 2,
       }}
     >
       <PageHeader
         title="Mark Attendance"
         breadcrumbs={[
-          { label: "Dashboard", path: "/dashboard" },
+          {
+            label: "Dashboard",
+            path: isTeacher ? "/teacher/dashboard" : "/dashboard",
+          },
           { label: "Attendance" },
         ]}
       />
 
       {/* ═══════════════════════════════════════════════════════════
-          CONTROL STRIP — Class, Date, Stats, Progress, Bulk actions
-          ALL in ONE compact Paper
+          CONTROL STRIP — Class, Date, Stats, Progress, Actions
       ═══════════════════════════════════════════════════════════ */}
       <Paper
         sx={{
@@ -480,35 +490,99 @@ const MarkAttendancePage = () => {
       >
         {/* ── Row 1: Class + Date ── */}
         <Stack
-          direction={{ xs: "row", sm: "row" }}
+          direction="row"
           spacing={1}
-          sx={{ mb: sheet && !sheet.isHoliday ? 1 : 0 }}
+          sx={{ mb: sheet && !sheet.isHoliday && stats.total > 0 ? 1 : 0 }}
+          alignItems="center"
         >
-          <FormControl size="small" sx={{ flex: 2, minWidth: 0 }}>
-            <InputLabel>Class</InputLabel>
-            <Select
-              value={selectedClass}
-              label="Class"
-              onChange={(e) => setSelectedClass(e.target.value)}
-              disabled={classesLoading}
+          {showClassAsBadge ? (
+            // ═══ TEACHER WITH 1 CLASS — Read-only badge ═══
+            <Box
               sx={{
-                "& .MuiSelect-select": { fontWeight: 700, fontSize: "0.85rem" },
+                flex: 2,
+                minWidth: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                px: 1.5,
+                py: 1,
+                borderRadius: 1.5,
+                border: "1px solid",
+                borderColor: isDark
+                  ? alpha("#1E4D98", 0.4)
+                  : alpha("#1E4D98", 0.2),
+                bgcolor: isDark
+                  ? alpha("#1E4D98", 0.12)
+                  : alpha("#1E4D98", 0.06),
+                minHeight: 40,
               }}
             >
-              {classesLoading ? (
-                <MenuItem disabled>Loading…</MenuItem>
-              ) : classes.length === 0 ? (
-                <MenuItem disabled>No classes</MenuItem>
-              ) : (
-                classes.map((c) => (
-                  <MenuItem key={c._id} value={c._id}>
-                    {c.name} - {c.section}
-                    {c.studentCount !== undefined && ` (${c.studentCount})`}
-                  </MenuItem>
-                ))
-              )}
-            </Select>
-          </FormControl>
+              <ClassOutlinedIcon
+                sx={{
+                  fontSize: 20,
+                  color: isDark ? "#93C5FD" : "#1E4D98",
+                  flexShrink: 0,
+                }}
+              />
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  variant="body2"
+                  fontWeight={800}
+                  sx={{
+                    fontSize: "0.9rem",
+                    color: isDark ? "#93C5FD" : "#1E4D98",
+                    lineHeight: 1.1,
+                  }}
+                  noWrap
+                >
+                  Class {singleClass.name} - {singleClass.section}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontSize: "0.68rem",
+                    color: isDark
+                      ? alpha("#93C5FD", 0.7)
+                      : alpha("#1E4D98", 0.7),
+                    fontWeight: 600,
+                  }}
+                >
+                  {singleClass.studentCount ?? sheet?.students?.length ?? 0}{" "}
+                  students · Your assigned class
+                </Typography>
+              </Box>
+            </Box>
+          ) : (
+            // ═══ ADMIN/PRINCIPAL/MULTI-CLASS TEACHER — Dropdown ═══
+            <FormControl size="small" sx={{ flex: 2, minWidth: 0 }}>
+              <InputLabel>Class</InputLabel>
+              <Select
+                value={selectedClass}
+                label="Class"
+                onChange={(e) => setSelectedClass(e.target.value)}
+                disabled={classesLoading}
+                sx={{
+                  "& .MuiSelect-select": {
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                  },
+                }}
+              >
+                {classesLoading ? (
+                  <MenuItem disabled>Loading…</MenuItem>
+                ) : classes.length === 0 ? (
+                  <MenuItem disabled>No classes available</MenuItem>
+                ) : (
+                  classes.map((c) => (
+                    <MenuItem key={c._id} value={c._id}>
+                      {c.name} - {c.section}
+                      {c.studentCount !== undefined && ` (${c.studentCount})`}
+                    </MenuItem>
+                  ))
+                )}
+              </Select>
+            </FormControl>
+          )}
 
           <TextField
             type="date"
@@ -537,7 +611,6 @@ const MarkAttendancePage = () => {
               useFlexGap
               sx={{ mb: 1 }}
             >
-              {/* Stat pills */}
               <Chip
                 size="small"
                 label={`Total ${stats.total}`}
@@ -583,10 +656,8 @@ const MarkAttendancePage = () => {
                 }}
               />
 
-              {/* Spacer */}
               <Box sx={{ flex: 1 }} />
 
-              {/* Lock badge */}
               {sheet.isLocked && (
                 <Chip
                   icon={<LockIcon sx={{ fontSize: 12 }} />}
@@ -615,8 +686,15 @@ const MarkAttendancePage = () => {
               )}
             </Stack>
 
-            {/* ── Row 3: Slim Progress Bar ── */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+            {/* ── Row 3: Progress Bar ── */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                mb: 1,
+              }}
+            >
               <LinearProgress
                 variant="determinate"
                 value={progressPercent}
@@ -648,16 +726,19 @@ const MarkAttendancePage = () => {
               </Typography>
             </Box>
 
-            {/* ── Row 4: Search + Filter + Bulk Icon Actions ── */}
+            {/* ── Row 4: Search + Bulk Actions ── */}
             <Stack direction="row" spacing={0.75} alignItems="center">
               <TextField
-                placeholder="Search…"
+                placeholder="Search name, roll, scholar…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 size="small"
                 sx={{
                   flex: 1,
-                  "& .MuiInputBase-root": { height: 34, fontSize: "0.82rem" },
+                  "& .MuiInputBase-root": {
+                    height: 34,
+                    fontSize: "0.82rem",
+                  },
                 }}
                 InputProps={{
                   startAdornment: (
@@ -681,7 +762,6 @@ const MarkAttendancePage = () => {
                 }}
               />
 
-              {/* Bulk icon buttons */}
               <Tooltip title="Mark All Present">
                 <span>
                   <IconButton
@@ -749,7 +829,7 @@ const MarkAttendancePage = () => {
               </Tooltip>
             </Stack>
 
-            {/* ── Row 5: Filter chips (horizontal scroll on overflow) ── */}
+            {/* ── Row 5: Filter chips ── */}
             <Stack
               direction="row"
               spacing={0.5}
@@ -801,22 +881,29 @@ const MarkAttendancePage = () => {
       </Paper>
 
       {/* ═══ EMPTY/LOADING STATES ═══ */}
-      {!selectedClass && !classesLoading && classes.length > 0 && (
-        <Paper sx={{ borderRadius: 2 }}>
-          <EmptyState
-            icon={<EventNoteIcon sx={{ fontSize: 64 }} />}
-            title="Select a class"
-            message="Choose a class above to begin marking attendance."
-          />
-        </Paper>
-      )}
+      {!selectedClass &&
+        !classesLoading &&
+        classes.length > 0 &&
+        !isTeacher && (
+          <Paper sx={{ borderRadius: 2 }}>
+            <EmptyState
+              icon={<EventNoteIcon sx={{ fontSize: 64 }} />}
+              title="Select a class"
+              message="Choose a class above to begin marking attendance."
+            />
+          </Paper>
+        )}
 
       {!classesLoading && classes.length === 0 && (
         <Paper sx={{ borderRadius: 2 }}>
           <EmptyState
             icon={<EventNoteIcon sx={{ fontSize: 64 }} />}
             title="No classes assigned"
-            message="Contact admin to assign classes to you."
+            message={
+              isTeacher
+                ? "Contact admin to assign classes to you."
+                : "No classes found. Create one first."
+            }
           />
         </Paper>
       )}
@@ -871,7 +958,7 @@ const MarkAttendancePage = () => {
             </Paper>
           ) : isMobile ? (
             /* ═══════════════════════════════════════════════════════
-                MOBILE LIST — Compact rows, no avatar, P|A toggle
+                MOBILE LIST
             ═══════════════════════════════════════════════════════ */
             <Paper
               sx={{
@@ -910,7 +997,6 @@ const MarkAttendancePage = () => {
                       transition: "background-color 0.15s",
                     }}
                   >
-                    {/* Roll */}
                     <Typography
                       sx={{
                         minWidth: 26,
@@ -925,7 +1011,6 @@ const MarkAttendancePage = () => {
                       {formatRoll(item.student.rollNumber)}
                     </Typography>
 
-                    {/* Name + Father (subtitle) */}
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography
                         variant="body2"
@@ -961,7 +1046,6 @@ const MarkAttendancePage = () => {
                       </Typography>
                     </Box>
 
-                    {/* P | A Toggle */}
                     <StatusToggle
                       status={status}
                       disabled={isLockedForMe}
@@ -985,7 +1069,7 @@ const MarkAttendancePage = () => {
                 borderColor: "divider",
               }}
             >
-              <TableContainer sx={{ maxHeight: "calc(100vh - 340px)" }}>
+              <TableContainer sx={{ maxHeight: "calc(100vh - 380px)" }}>
                 <Table stickyHeader size="small">
                   <TableHead>
                     <TableRow>
@@ -1127,7 +1211,10 @@ const MarkAttendancePage = () => {
                           </TableCell>
                           <TableCell align="center">
                             <Box
-                              sx={{ display: "flex", justifyContent: "center" }}
+                              sx={{
+                                display: "flex",
+                                justifyContent: "center",
+                              }}
                             >
                               <StatusToggle
                                 status={status}

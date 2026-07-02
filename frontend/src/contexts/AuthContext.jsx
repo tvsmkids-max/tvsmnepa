@@ -3,6 +3,7 @@ import React, {
   useReducer,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import authApi from "../api/authApi";
 import { storage } from "../utils/storageUtils";
@@ -41,9 +42,30 @@ const authReducer = (state, action) => {
   }
 };
 
+// ═══════════════════════════════════════════════════════════════════
+//  Helper: Redirect on cross-tab logout (only for protected pages)
+// ═══════════════════════════════════════════════════════════════════
+const redirectAfterCrossTabLogout = (reason = "session-expired") => {
+  const currentPath = window.location.pathname;
+  const publicPaths = ["/login", "/unauthorized"];
+
+  // Only redirect if user is on a protected page
+  if (publicPaths.includes(currentPath)) return;
+
+  // Use location.href to force full reload (clears any stale state)
+  window.location.href = `/login?reason=${reason}`;
+};
+
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
+  // ✅ FIX: Track if THIS tab initiated the logout
+  // Prevents the storage event handler from double-firing
+  const isSelfLogoutRef = useRef(false);
+
+  // ═══════════════════════════════════════════════════════════════
+  //  Initial Auth Check (on app load)
+  // ═══════════════════════════════════════════════════════════════
   useEffect(() => {
     let cancelled = false;
     const init = async () => {
@@ -73,26 +95,41 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // ─── MULTI-TAB LOGOUT SYNC ───
-  // If user logs out in another tab → this tab logs out too
+  // ═══════════════════════════════════════════════════════════════
+  //  MULTI-TAB LOGOUT SYNC
+  //  ✅ FIX: Skip if THIS tab initiated the logout
+  // ═══════════════════════════════════════════════════════════════
   useEffect(() => {
     const handleStorageEvent = (event) => {
-      // Logout broadcast
-      if (event.key === storage.IDLE_LOGOUT_EVENT_KEY && event.newValue) {
-        dispatch({ type: "LOGOUT" });
+      // ✅ Skip if this tab initiated the logout
+      if (isSelfLogoutRef.current) {
+        isSelfLogoutRef.current = false; // Reset flag
         return;
       }
 
-      // Token removed in another tab → sync logout
-      if (event.key === "sams_access_token" && !event.newValue) {
-        dispatch({ type: "LOGOUT" });
-      }
+      // Only act on relevant keys
+      const isIdleLogout =
+        event.key === storage.IDLE_LOGOUT_EVENT_KEY && event.newValue;
+      const isTokenRemoved =
+        event.key === "sams_access_token" && !event.newValue;
+
+      if (!isIdleLogout && !isTokenRemoved) return;
+
+      // Dispatch logout in this tab
+      dispatch({ type: "LOGOUT" });
+
+      // ─── Redirect to login if on a protected page ───
+      const reason = isIdleLogout ? "idle" : "session-expired";
+      redirectAfterCrossTabLogout(reason);
     };
 
     window.addEventListener("storage", handleStorageEvent);
     return () => window.removeEventListener("storage", handleStorageEvent);
   }, []);
 
+  // ═══════════════════════════════════════════════════════════════
+  //  LOGIN
+  // ═══════════════════════════════════════════════════════════════
   const login = useCallback(async (credentials) => {
     dispatch({ type: "CLEAR_ERROR" });
     dispatch({ type: "SET_LOADING", payload: true });
@@ -112,24 +149,43 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // ═══════════════════════════════════════════════════════════════
+  //  LOGOUT
+  //  ✅ FIX: Set flag BEFORE clearing storage
+  // ═══════════════════════════════════════════════════════════════
   const logout = useCallback(async () => {
+    // ✅ Mark this as a self-initiated logout
+    // Storage event handler will see this flag and skip
+    isSelfLogoutRef.current = true;
+
     try {
       const rt = storage.getRefreshToken();
       await authApi.logout(rt);
     } catch {
-      // ignore
+      // ignore server errors — always logout locally
     } finally {
       storage.clearAuth();
       storage.broadcastLogout();
       dispatch({ type: "LOGOUT" });
+
+      // ✅ Reset flag after a delay (in case storage event fires late)
+      setTimeout(() => {
+        isSelfLogoutRef.current = false;
+      }, 500);
     }
   }, []);
 
+  // ═══════════════════════════════════════════════════════════════
+  //  UPDATE USER
+  // ═══════════════════════════════════════════════════════════════
   const updateUser = useCallback((data) => {
     dispatch({ type: "UPDATE_USER", payload: data });
     storage.setUser({ ...storage.getUser(), ...data });
   }, []);
 
+  // ═══════════════════════════════════════════════════════════════
+  //  CLEAR ERROR
+  // ═══════════════════════════════════════════════════════════════
   const clearError = useCallback(() => {
     dispatch({ type: "CLEAR_ERROR" });
   }, []);
