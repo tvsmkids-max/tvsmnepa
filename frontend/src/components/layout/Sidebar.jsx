@@ -9,76 +9,96 @@ import {
   Box,
   Typography,
   Divider,
-  Avatar,
   Tooltip,
-  IconButton,
 } from "@mui/material";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import PeopleIcon from "@mui/icons-material/People";
-import ClassIcon from "@mui/icons-material/Class";
-import PersonIcon from "@mui/icons-material/Person";
-import EventNoteIcon from "@mui/icons-material/EventNote";
-import AssessmentIcon from "@mui/icons-material/Assessment";
-import BeachAccessIcon from "@mui/icons-material/BeachAccess";
-import SchoolIcon from "@mui/icons-material/School";
-import NotificationsIcon from "@mui/icons-material/Notifications";
-import SettingsIcon from "@mui/icons-material/Settings";
-import HistoryIcon from "@mui/icons-material/History";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import AnalyticsIcon from "@mui/icons-material/Analytics";
-import StorageIcon from "@mui/icons-material/Storage";
-import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
-import TimelineIcon from "@mui/icons-material/Timeline";
+import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
+import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
+import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
+import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
+import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
+import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
+import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
+import AnalyticsOutlinedIcon from "@mui/icons-material/AnalyticsOutlined";
+import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
+import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
+import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import useAuth from "../../hooks/useAuth";
 import useThemeMode from "../../hooks/useThemeMode";
 
 const adminNav = [
-  { label: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
+  { label: "Dashboard", icon: <DashboardOutlinedIcon />, path: "/dashboard" },
   { divider: true, label: "Management" },
-  { label: "Students", icon: <PeopleIcon />, path: "/students" },
-  { label: "Section Shift", icon: <SwapHorizIcon />, path: "/students/shift" },
-  { label: "Classes", icon: <ClassIcon />, path: "/classes" },
-  { label: "Teachers", icon: <PersonIcon />, path: "/teachers" },
+  { label: "Students", icon: <PeopleOutlinedIcon />, path: "/students" },
+  {
+    label: "Section Shift",
+    icon: <SwapHorizOutlinedIcon />,
+    path: "/students/shift",
+  },
+  { label: "Classes", icon: <ClassOutlinedIcon />, path: "/classes" },
+  { label: "Teachers", icon: <PersonOutlinedIcon />, path: "/teachers" },
   { divider: true, label: "Attendance" },
-  { label: "Mark", icon: <EventNoteIcon />, path: "/attendance/mark" },
-  { label: "History", icon: <HistoryIcon />, path: "/attendance/history" },
+  { label: "Mark", icon: <EventNoteOutlinedIcon />, path: "/attendance/mark" },
+  {
+    label: "History",
+    icon: <HistoryOutlinedIcon />,
+    path: "/attendance/history",
+  },
   { divider: true, label: "Reports" },
-  { label: "Reports", icon: <AssessmentIcon />, path: "/reports" },
-  { label: "Analytics", icon: <AnalyticsIcon />, path: "/analytics" },
+  { label: "Reports", icon: <AssessmentOutlinedIcon />, path: "/reports" },
+  { label: "Analytics", icon: <AnalyticsOutlinedIcon />, path: "/analytics" },
   { divider: true, label: "Admin" },
-  { label: "Holidays", icon: <BeachAccessIcon />, path: "/holidays" },
-  { label: "Sessions", icon: <SchoolIcon />, path: "/sessions" },
-  { label: "Promotions", icon: <SchoolIcon />, path: "/promotion" },
+  { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
+  { label: "Sessions", icon: <SchoolOutlinedIcon />, path: "/sessions" },
+  { label: "Promotions", icon: <SchoolOutlinedIcon />, path: "/promotion" },
   {
     label: "Notifications",
-    icon: <NotificationsIcon />,
+    icon: <NotificationsOutlinedIcon />,
     path: "/notifications",
   },
-  { label: "Activity Logs", icon: <TimelineIcon />, path: "/activity-logs" },
+  {
+    label: "Activity Logs",
+    icon: <TimelineOutlinedIcon />,
+    path: "/activity-logs",
+  },
   { divider: true, label: "System" },
-  { label: "Backup", icon: <StorageIcon />, path: "/backup" },
-  { label: "Settings", icon: <SettingsIcon />, path: "/settings" },
+  { label: "Backup", icon: <StorageOutlinedIcon />, path: "/backup" },
+  { label: "Settings", icon: <SettingsOutlinedIcon />, path: "/settings" },
 ];
 
 const teacherNav = [
-  { label: "Dashboard", icon: <DashboardIcon />, path: "/teacher/dashboard" },
+  {
+    label: "Dashboard",
+    icon: <DashboardOutlinedIcon />,
+    path: "/teacher/dashboard",
+  },
   { divider: true, label: "Attendance" },
-  { label: "Mark", icon: <EventNoteIcon />, path: "/attendance/mark" },
-  { label: "History", icon: <HistoryIcon />, path: "/attendance/history" },
+  { label: "Mark", icon: <EventNoteOutlinedIcon />, path: "/attendance/mark" },
+  {
+    label: "History",
+    icon: <HistoryOutlinedIcon />,
+    path: "/attendance/history",
+  },
   { divider: true, label: "Students" },
-  { label: "Students", icon: <PeopleIcon />, path: "/students" },
+  { label: "Students", icon: <PeopleOutlinedIcon />, path: "/students" },
   { divider: true, label: "Reports" },
-  { label: "Reports", icon: <AssessmentIcon />, path: "/reports" },
+  { label: "Reports", icon: <AssessmentOutlinedIcon />, path: "/reports" },
 ];
 
 const principalNav = [
-  { label: "Dashboard", icon: <DashboardIcon />, path: "/principal/dashboard" },
+  {
+    label: "Dashboard",
+    icon: <DashboardOutlinedIcon />,
+    path: "/principal/dashboard",
+  },
   { divider: true, label: "School" },
-  { label: "Holidays", icon: <BeachAccessIcon />, path: "/holidays" },
+  { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
 ];
 
-const SidebarContent = ({ collapsed, onCollapseToggle }) => {
+const SidebarContent = ({ collapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -90,7 +110,12 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
     return teacherNav;
   }, [user?.role]);
 
+  // ═══════════════════════════════════════════════════════
+  //  isActive — FIXED: Most-specific match wins
+  //  Prevents "/students" from highlighting when on "/students/shift"
+  // ═══════════════════════════════════════════════════════
   const isActive = (path) => {
+    // Exact-match routes (dashboards)
     if (
       path === "/dashboard" ||
       path === "/teacher/dashboard" ||
@@ -98,22 +123,45 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
     ) {
       return location.pathname === path;
     }
-    return location.pathname.startsWith(path);
+
+    const current = location.pathname;
+
+    // Exact match always wins
+    if (current === path) return true;
+
+    // Sub-route match (e.g., /students/123 under /students)
+    if (current.startsWith(path + "/")) {
+      // Check: is there a MORE SPECIFIC menu item that matches?
+      // If yes, don't highlight this less-specific one
+      const moreSpecificExists = navItems.some(
+        (item) =>
+          !item.divider &&
+          item.path !== path &&
+          item.path.startsWith(path + "/") &&
+          current.startsWith(item.path),
+      );
+      return !moreSpecificExists;
+    }
+
+    return false;
   };
 
-  // ─── THEME-AWARE COLORS ───
+  // ═══════════════════════════════════════════════════════
+  //  UNIFORM COLOR SCHEME
+  // ═══════════════════════════════════════════════════════
   const sidebarBg = isDark ? "#111827" : "#FFFFFF";
-  const textColor = isDark ? "#F9FAFB" : "#111827";
   const borderColor = isDark ? "#1F2937" : "#E5E7EB";
-  const labelColor = isDark ? "#6B7280" : "#9CA3AF";
-  const itemColor = isDark ? "#9CA3AF" : "#6B7280";
-  const itemActiveColor = isDark ? "#F9FAFB" : "#111827";
-  const hoverBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
-  const activeBg = isDark ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.08)";
-  const activeIndicator = isDark ? "#3B82F6" : "#3B82F6";
   const scrollbarThumb = isDark ? "#374151" : "#D1D5DB";
-  const userRoleColor = isDark ? "#6B7280" : "#9CA3AF";
-  const avatarBg = isDark ? "#3B82F6" : "#3B82F6";
+
+  const mainColor = isDark ? "#F1F5F9" : "#1F2937";
+  const headingColor = isDark ? "#F1F5F9" : "#1F2937";
+  const iconColor = mainColor;
+  const itemColor = mainColor;
+  const itemActiveColor = isDark ? "#FFFFFF" : "#000000";
+
+  const hoverBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
+  const activeBg = isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.06)";
+  const activeIndicator = isDark ? "#FFFFFF" : "#000000";
 
   return (
     <Box
@@ -122,49 +170,19 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
         display: "flex",
         flexDirection: "column",
         bgcolor: sidebarBg,
-        color: textColor,
         overflow: "hidden",
         transition: "background-color 0.3s ease",
         borderRight: `1px solid ${borderColor}`,
       }}
     >
-      {/* Collapse Toggle */}
-      <Box
-        sx={{
-          px: 1,
-          py: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: collapsed ? "center" : "flex-end",
-          minHeight: 40,
-          borderBottom: `1px solid ${borderColor}`,
-        }}
-      >
-        <IconButton
-          onClick={onCollapseToggle}
-          size="small"
-          sx={{
-            color: itemColor,
-            "&:hover": { bgcolor: hoverBg },
-            width: 28,
-            height: 28,
-          }}
-        >
-          {collapsed ? (
-            <ChevronRightIcon sx={{ fontSize: 18 }} />
-          ) : (
-            <ChevronLeftIcon sx={{ fontSize: 18 }} />
-          )}
-        </IconButton>
-      </Box>
-
-      {/* Nav Items */}
+      {/* ── Nav Items ── */}
       <Box
         sx={{
           flex: 1,
           overflowY: "auto",
           overflowX: "hidden",
-          py: 0.5,
+          pt: 1,
+          pb: 1,
           "&::-webkit-scrollbar": { width: 4 },
           "&::-webkit-scrollbar-thumb": {
             bgcolor: scrollbarThumb,
@@ -182,26 +200,20 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
                       variant="caption"
                       sx={{
                         px: 2,
-                        pt: idx === 0 ? 0.5 : 1.5,
-                        pb: 0.3,
+                        pt: idx === 0 ? 0.5 : 1.8,
+                        pb: 0.4,
                         display: "block",
-                        color: labelColor,
+                        color: headingColor,
                         textTransform: "uppercase",
-                        letterSpacing: "0.1em",
-                        fontSize: "0.58rem",
-                        fontWeight: 700,
+                        letterSpacing: "0.12em",
+                        fontSize: "0.65rem",
+                        fontWeight: 800,
                       }}
                     >
                       {item.label}
                     </Typography>
                   ) : (
-                    <Divider
-                      sx={{
-                        borderColor,
-                        my: 0.5,
-                        mx: 1,
-                      }}
-                    />
+                    <Divider sx={{ borderColor, my: 0.5, mx: 1 }} />
                   )}
                 </Box>
               );
@@ -240,9 +252,9 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
                 >
                   <ListItemIcon
                     sx={{
-                      color: active ? activeIndicator : "inherit",
+                      color: active ? itemActiveColor : iconColor,
                       minWidth: collapsed ? "unset" : 32,
-                      "& svg": { fontSize: "1.15rem" },
+                      "& svg": { fontSize: "1.2rem" },
                     }}
                   >
                     {item.icon}
@@ -251,9 +263,10 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
                     <ListItemText
                       primary={item.label}
                       primaryTypographyProps={{
-                        fontSize: "0.82rem",
-                        fontWeight: active ? 700 : 500,
+                        fontSize: "0.85rem",
+                        fontWeight: active ? 700 : 600,
                         noWrap: true,
+                        color: "inherit",
                       }}
                     />
                   )}
@@ -263,62 +276,11 @@ const SidebarContent = ({ collapsed, onCollapseToggle }) => {
           })}
         </List>
       </Box>
-
-      {/* User Footer */}
-      <Box
-        sx={{
-          p: 1,
-          borderTop: `1px solid ${borderColor}`,
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-        }}
-      >
-        <Avatar
-          sx={{
-            width: 28,
-            height: 28,
-            bgcolor: avatarBg,
-            fontSize: "0.75rem",
-            fontWeight: 700,
-            flexShrink: 0,
-          }}
-        >
-          {user?.name?.[0]?.toUpperCase()}
-        </Avatar>
-        {!collapsed && (
-          <Box sx={{ overflow: "hidden" }}>
-            <Typography
-              variant="caption"
-              fontWeight={600}
-              noWrap
-              sx={{
-                color: textColor,
-                lineHeight: 1.2,
-                fontSize: "0.75rem",
-                display: "block",
-              }}
-            >
-              {user?.name}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                color: userRoleColor,
-                textTransform: "capitalize",
-                fontSize: "0.62rem",
-              }}
-            >
-              {user?.role}
-            </Typography>
-          </Box>
-        )}
-      </Box>
     </Box>
   );
 };
 
-const Sidebar = ({ drawerWidth, collapsed, onCollapseToggle }) => (
+const Sidebar = ({ drawerWidth, collapsed }) => (
   <Drawer
     variant="permanent"
     sx={{
@@ -336,7 +298,7 @@ const Sidebar = ({ drawerWidth, collapsed, onCollapseToggle }) => (
       },
     }}
   >
-    <SidebarContent collapsed={collapsed} onCollapseToggle={onCollapseToggle} />
+    <SidebarContent collapsed={collapsed} />
   </Drawer>
 );
 

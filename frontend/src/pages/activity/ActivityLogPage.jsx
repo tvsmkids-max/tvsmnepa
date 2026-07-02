@@ -14,15 +14,13 @@ import {
   MenuItem,
   Grid,
   Pagination,
-  Divider,
   Avatar,
   Tooltip,
   useMediaQuery,
   useTheme,
   IconButton,
-  Card,
-  CardContent,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useSnackbar } from "notistack";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
@@ -46,52 +44,51 @@ import EmptyState from "../../components/common/EmptyState";
 import activityLogApi from "../../api/activityLogApi";
 import useDebounce from "../../hooks/useDebounce";
 
-const ACTION_CONFIG = {
-  CREATE: { icon: <AddOutlinedIcon />, color: "#16A34A", bg: "#ECFDF5" },
-  UPDATE: { icon: <EditOutlinedIcon />, color: "#2563EB", bg: "#EFF6FF" },
-  DELETE: { icon: <DeleteOutlinedIcon />, color: "#DC2626", bg: "#FEF2F2" },
-  LOGIN: { icon: <LoginOutlinedIcon />, color: "#7C3AED", bg: "#F5F3FF" },
-  LOGOUT: { icon: <LogoutOutlinedIcon />, color: "#6B7280", bg: "#F3F4F6" },
-  EXPORT: {
-    icon: <FileDownloadOutlinedIcon />,
-    color: "#0891B2",
-    bg: "#ECFEFF",
-  },
-  IMPORT: { icon: <FileUploadOutlinedIcon />, color: "#D97706", bg: "#FFFBEB" },
-  LOCK: { icon: <LockOutlinedIcon />, color: "#DC2626", bg: "#FEF2F2" },
-  UNLOCK: { icon: <LockOpenOutlinedIcon />, color: "#16A34A", bg: "#ECFDF5" },
-  MARK_ATTENDANCE: {
-    icon: <EventNoteOutlinedIcon />,
-    color: "#2563EB",
-    bg: "#EFF6FF",
-  },
-  BACKUP: {
-    icon: <FileDownloadOutlinedIcon />,
-    color: "#0891B2",
-    bg: "#ECFEFF",
-  },
-  RESTORE: {
-    icon: <FileUploadOutlinedIcon />,
-    color: "#D97706",
-    bg: "#FFFBEB",
-  },
-  PROMOTE: {
-    icon: <CheckCircleOutlinedIcon />,
-    color: "#16A34A",
-    bg: "#ECFDF5",
-  },
+// ── Action palette keys (maps to MUI theme palette) ──
+// Each entry: { icon, paletteKey } — bg/color derived from theme at render
+const ACTION_META = {
+  CREATE: { icon: AddOutlinedIcon, paletteKey: "success" },
+  UPDATE: { icon: EditOutlinedIcon, paletteKey: "primary" },
+  DELETE: { icon: DeleteOutlinedIcon, paletteKey: "error" },
+  LOGIN: { icon: LoginOutlinedIcon, paletteKey: "secondary" },
+  LOGOUT: { icon: LogoutOutlinedIcon, paletteKey: null }, // gray
+  EXPORT: { icon: FileDownloadOutlinedIcon, paletteKey: "info" },
+  IMPORT: { icon: FileUploadOutlinedIcon, paletteKey: "warning" },
+  LOCK: { icon: LockOutlinedIcon, paletteKey: "error" },
+  UNLOCK: { icon: LockOpenOutlinedIcon, paletteKey: "success" },
+  MARK_ATTENDANCE: { icon: EventNoteOutlinedIcon, paletteKey: "primary" },
+  BACKUP: { icon: FileDownloadOutlinedIcon, paletteKey: "info" },
+  RESTORE: { icon: FileUploadOutlinedIcon, paletteKey: "warning" },
+  PROMOTE: { icon: CheckCircleOutlinedIcon, paletteKey: "success" },
 };
 
-const getActionConfig = (action) => {
-  return (
-    ACTION_CONFIG[action] || {
-      icon: <HistoryOutlinedIcon />,
-      color: "#6B7280",
-      bg: "#F3F4F6",
-    }
-  );
+// ── Derive colors from theme at call time ──
+const getActionConfig = (action, theme) => {
+  const meta = ACTION_META[action] || {
+    icon: HistoryOutlinedIcon,
+    paletteKey: null,
+  };
+
+  const isDark = theme.palette.mode === "dark";
+
+  if (!meta.paletteKey) {
+    // Gray fallback
+    return {
+      Icon: meta.icon,
+      color: theme.palette.text.secondary,
+      bg: alpha(theme.palette.text.secondary, isDark ? 0.12 : 0.08),
+    };
+  }
+
+  const palette = theme.palette[meta.paletteKey];
+  return {
+    Icon: meta.icon,
+    color: palette.main,
+    bg: alpha(palette.main, isDark ? 0.15 : 0.1),
+  };
 };
 
+// ── Helpers ──
 const formatTime = (date) => {
   if (!date) return "—";
   const d = new Date(date);
@@ -121,9 +118,11 @@ const formatDate = (d) => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 };
 
+// ── Main Component ──
 const ActivityLogPage = () => {
   const { enqueueSnackbar } = useSnackbar();
   const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [logs, setLogs] = useState([]);
@@ -132,7 +131,7 @@ const ActivityLogPage = () => {
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Filters
+  // ── Filters ──
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 400);
   const [filterModule, setFilterModule] = useState("");
@@ -141,21 +140,19 @@ const ActivityLogPage = () => {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  // Filter options
   const [filterOptions, setFilterOptions] = useState({
     modules: [],
     actions: [],
   });
 
-  // Load filter options
+  // ── Load filter options ──
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
         const res = await activityLogApi.getFilters();
-        if (!cancelled) {
+        if (!cancelled)
           setFilterOptions(res.data?.data || { modules: [], actions: [] });
-        }
       } catch {
         // ignore
       }
@@ -166,17 +163,13 @@ const ActivityLogPage = () => {
     };
   }, []);
 
-  // Load logs
+  // ── Load logs ──
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       setLoading(true);
       try {
-        const params = {
-          page,
-          limit: 30,
-          search: debouncedSearch,
-        };
+        const params = { page, limit: 30, search: debouncedSearch };
         if (filterModule) params.module = filterModule;
         if (filterAction) params.action = filterAction;
         if (filterStatus) params.status = filterStatus;
@@ -232,6 +225,13 @@ const ActivityLogPage = () => {
     dateTo ||
     debouncedSearch;
 
+  // ── Theme-aware derived colors ──
+  const modulChipBg = alpha(theme.palette.text.secondary, isDark ? 0.12 : 0.08);
+  const failedBg = alpha(theme.palette.error.main, isDark ? 0.15 : 0.1);
+  const adminRoleBg = alpha(theme.palette.warning.main, isDark ? 0.15 : 0.1);
+  const teacherRoleBg = alpha(theme.palette.primary.main, isDark ? 0.15 : 0.1);
+  const filterDivider = `1px dashed ${theme.palette.divider}`;
+
   return (
     <Box sx={{ pb: { xs: 10, md: 4 } }}>
       <PageHeader
@@ -250,25 +250,29 @@ const ActivityLogPage = () => {
         }
       />
 
-      {/* Filters */}
+      {/* ── Filters Panel ── */}
       <Paper
         sx={{
           p: 2,
           mb: 2,
           borderRadius: 3,
-          border: "1px solid rgba(0,0,0,0.06)",
-          boxShadow: "none",
+          border: "1px solid",
+          borderColor: "divider",
         }}
       >
+        {/* Filter Header */}
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
-          <FilterAltOutlinedIcon sx={{ color: "#8E99A4", fontSize: 18 }} />
+          <FilterAltOutlinedIcon
+            sx={{ color: "text.secondary", fontSize: 18 }}
+          />
           <Typography
             variant="caption"
             fontWeight={700}
+            color="text.secondary"
             sx={{
-              color: "#8E99A4",
               textTransform: "uppercase",
               fontSize: "0.68rem",
+              letterSpacing: "0.06em",
             }}
           >
             Filters
@@ -276,6 +280,7 @@ const ActivityLogPage = () => {
         </Stack>
 
         <Grid container spacing={1.5}>
+          {/* Search */}
           <Grid item xs={12} md={3}>
             <TextField
               placeholder="Search logs..."
@@ -289,22 +294,20 @@ const ActivityLogPage = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ fontSize: 18, color: "#B0B8C1" }} />
+                    <SearchIcon sx={{ fontSize: 18, color: "text.disabled" }} />
                   </InputAdornment>
                 ),
               }}
               sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  "& fieldset": { borderColor: "#E5E7EB" },
-                },
+                "& .MuiOutlinedInput-root": { borderRadius: 2 },
               }}
             />
           </Grid>
 
+          {/* Module */}
           <Grid item xs={6} md={2}>
             <FormControl fullWidth size="small">
-              <InputLabel sx={{ color: "#8E99A4" }}>Module</InputLabel>
+              <InputLabel>Module</InputLabel>
               <Select
                 value={filterModule}
                 label="Module"
@@ -324,9 +327,10 @@ const ActivityLogPage = () => {
             </FormControl>
           </Grid>
 
+          {/* Action */}
           <Grid item xs={6} md={2}>
             <FormControl fullWidth size="small">
-              <InputLabel sx={{ color: "#8E99A4" }}>Action</InputLabel>
+              <InputLabel>Action</InputLabel>
               <Select
                 value={filterAction}
                 label="Action"
@@ -346,6 +350,7 @@ const ActivityLogPage = () => {
             </FormControl>
           </Grid>
 
+          {/* Date From */}
           <Grid item xs={6} md={2.5}>
             <TextField
               type="date"
@@ -362,6 +367,7 @@ const ActivityLogPage = () => {
             />
           </Grid>
 
+          {/* Date To */}
           <Grid item xs={6} md={2.5}>
             <TextField
               type="date"
@@ -380,16 +386,25 @@ const ActivityLogPage = () => {
           </Grid>
         </Grid>
 
+        {/* Active Filter Chips */}
         {hasFilters && (
           <Stack
             direction="row"
             spacing={1}
             alignItems="center"
-            sx={{ mt: 1.5, pt: 1.5, borderTop: "1px dashed #E5E7EB" }}
+            flexWrap="wrap"
+            useFlexGap
+            sx={{
+              mt: 1.5,
+              pt: 1.5,
+              borderTop: filterDivider,
+            }}
           >
             <Typography
               variant="caption"
-              sx={{ color: "#8E99A4", fontWeight: 700, fontSize: "0.65rem" }}
+              fontWeight={700}
+              color="text.disabled"
+              sx={{ fontSize: "0.65rem" }}
             >
               ACTIVE:
             </Typography>
@@ -425,22 +440,30 @@ const ActivityLogPage = () => {
                 sx={{ height: 22, fontSize: "0.68rem", fontWeight: 600 }}
               />
             )}
+            {debouncedSearch && (
+              <Chip
+                label={`Search: ${debouncedSearch}`}
+                size="small"
+                onDelete={() => setSearch("")}
+                sx={{ height: 22, fontSize: "0.68rem", fontWeight: 600 }}
+              />
+            )}
           </Stack>
         )}
       </Paper>
 
-      {/* Logs List */}
+      {/* ── Logs List ── */}
       <Paper
         sx={{
           borderRadius: 3,
-          border: "1px solid rgba(0,0,0,0.06)",
-          boxShadow: "none",
+          border: "1px solid",
+          borderColor: "divider",
           overflow: "hidden",
         }}
       >
         {loading ? (
           <Box sx={{ p: 6, textAlign: "center" }}>
-            <CircularProgress size={28} sx={{ color: "#C5CAD0" }} />
+            <CircularProgress size={28} />
           </Box>
         ) : logs.length === 0 ? (
           <EmptyState
@@ -455,8 +478,10 @@ const ActivityLogPage = () => {
         ) : (
           <>
             {logs.map((log, idx) => {
-              const config = getActionConfig(log.action);
+              const config = getActionConfig(log.action, theme);
+              const { Icon } = config;
               const isLast = idx === logs.length - 1;
+              const userRole = log.userRole || log.user?.role || "";
 
               return (
                 <Box
@@ -465,13 +490,13 @@ const ActivityLogPage = () => {
                     px: { xs: 2, sm: 2.5 },
                     py: 2,
                     borderBottom: isLast ? "none" : "1px solid",
-                    borderColor: "rgba(0,0,0,0.04)",
-                    transition: "background 0.1s",
-                    "&:hover": { bgcolor: "#FAFBFC" },
+                    borderColor: "divider",
+                    transition: "background-color 0.1s",
+                    "&:hover": { bgcolor: "action.hover" },
                   }}
                 >
                   <Stack direction="row" spacing={2} alignItems="flex-start">
-                    {/* Action Icon */}
+                    {/* ── Action Icon ── */}
                     <Avatar
                       sx={{
                         width: 36,
@@ -481,19 +506,17 @@ const ActivityLogPage = () => {
                         mt: 0.3,
                       }}
                     >
-                      {React.cloneElement(config.icon, {
-                        sx: { color: config.color, fontSize: 18 },
-                      })}
+                      <Icon sx={{ color: config.color, fontSize: 18 }} />
                     </Avatar>
 
-                    {/* Content */}
+                    {/* ── Content ── */}
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       {/* Description */}
                       <Typography
                         variant="body2"
+                        fontWeight={600}
+                        color="text.primary"
                         sx={{
-                          color: "#1A1D21",
-                          fontWeight: 600,
                           fontSize: "0.85rem",
                           lineHeight: 1.4,
                           mb: 0.5,
@@ -502,7 +525,7 @@ const ActivityLogPage = () => {
                         {log.description}
                       </Typography>
 
-                      {/* Meta info */}
+                      {/* Meta row */}
                       <Stack
                         direction="row"
                         spacing={1}
@@ -517,15 +540,16 @@ const ActivityLogPage = () => {
                           alignItems="center"
                         >
                           <PersonOutlinedIcon
-                            sx={{ fontSize: 13, color: "#8E99A4" }}
+                            sx={{
+                              fontSize: 13,
+                              color: "text.disabled",
+                            }}
                           />
                           <Typography
                             variant="caption"
-                            sx={{
-                              color: "#5F6B7A",
-                              fontWeight: 600,
-                              fontSize: "0.72rem",
-                            }}
+                            fontWeight={600}
+                            color="text.secondary"
+                            sx={{ fontSize: "0.72rem" }}
                           >
                             {log.userName || log.user?.name || "—"}
                           </Typography>
@@ -539,8 +563,8 @@ const ActivityLogPage = () => {
                             height: 18,
                             fontSize: "0.62rem",
                             fontWeight: 700,
-                            bgcolor: "#F0F1F3",
-                            color: "#5F6B7A",
+                            bgcolor: modulChipBg,
+                            color: "text.secondary",
                           }}
                         />
 
@@ -557,7 +581,7 @@ const ActivityLogPage = () => {
                           }}
                         />
 
-                        {/* Status */}
+                        {/* Failed chip */}
                         {log.status === "failed" && (
                           <Chip
                             icon={<CancelOutlinedIcon sx={{ fontSize: 12 }} />}
@@ -567,8 +591,8 @@ const ActivityLogPage = () => {
                               height: 18,
                               fontSize: "0.62rem",
                               fontWeight: 700,
-                              bgcolor: "#FEF2F2",
-                              color: "#DC2626",
+                              bgcolor: failedBg,
+                              color: "error.main",
                             }}
                           />
                         )}
@@ -576,18 +600,19 @@ const ActivityLogPage = () => {
                         {/* Time */}
                         <Typography
                           variant="caption"
-                          sx={{ color: "#B0B8C1", fontSize: "0.7rem" }}
+                          color="text.disabled"
+                          sx={{ fontSize: "0.7rem" }}
                         >
                           {formatTime(log.createdAt)}
                         </Typography>
                       </Stack>
 
-                      {/* IP if available */}
+                      {/* IP address */}
                       {log.ipAddress && (
                         <Typography
                           variant="caption"
+                          color="text.disabled"
                           sx={{
-                            color: "#C5CAD0",
                             fontSize: "0.65rem",
                             display: "block",
                             mt: 0.5,
@@ -599,24 +624,22 @@ const ActivityLogPage = () => {
                       )}
                     </Box>
 
-                    {/* Role badge */}
+                    {/* ── Role Badge ── */}
                     <Chip
-                      label={log.userRole || log.user?.role || "—"}
+                      label={userRole || "—"}
                       size="small"
                       sx={{
                         height: 20,
                         fontSize: "0.6rem",
                         fontWeight: 700,
                         textTransform: "uppercase",
-                        bgcolor:
-                          (log.userRole || log.user?.role) === "admin"
-                            ? "#FFFBEB"
-                            : "#EFF6FF",
-                        color:
-                          (log.userRole || log.user?.role) === "admin"
-                            ? "#D97706"
-                            : "#2563EB",
                         flexShrink: 0,
+                        bgcolor:
+                          userRole === "admin" ? adminRoleBg : teacherRoleBg,
+                        color:
+                          userRole === "admin"
+                            ? "warning.main"
+                            : "primary.main",
                       }}
                     />
                   </Stack>
@@ -624,14 +647,15 @@ const ActivityLogPage = () => {
               );
             })}
 
-            {/* Pagination */}
+            {/* ── Pagination ── */}
             {totalPages > 1 && (
               <Box
                 sx={{
                   display: "flex",
                   justifyContent: "center",
                   py: 2,
-                  borderTop: "1px solid rgba(0,0,0,0.04)",
+                  borderTop: "1px solid",
+                  borderColor: "divider",
                 }}
               >
                 <Pagination

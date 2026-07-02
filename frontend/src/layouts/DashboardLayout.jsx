@@ -15,6 +15,7 @@ const DashboardLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   const sidebarWidth = collapsed ? COLLAPSED_WIDTH : DRAWER_WIDTH;
+  const toggleSidebar = () => setCollapsed((c) => !c);
 
   return (
     <IdleTimeoutProvider>
@@ -27,14 +28,12 @@ const DashboardLayout = () => {
           maxWidth: "100vw",
         }}
       >
-        <Topbar onMenuClick={() => setCollapsed((c) => !c)} />
+        {/* Topbar — controls sidebar collapse via hamburger */}
+        <Topbar onMenuClick={toggleSidebar} />
 
+        {/* Sidebar — desktop only (no internal collapse button) */}
         {!isMobile && (
-          <Sidebar
-            drawerWidth={sidebarWidth}
-            collapsed={collapsed}
-            onCollapseToggle={() => setCollapsed((c) => !c)}
-          />
+          <Sidebar drawerWidth={sidebarWidth} collapsed={collapsed} />
         )}
 
         <Box

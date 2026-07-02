@@ -29,6 +29,21 @@
             "date": 1782674221029,
             "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\combined-2026-06-29.log",
             "hash": "923214bc5575635a1e286086a550c03c94168dd29dc469f00a7ab749d7580cb7"
+        },
+        {
+            "date": 1782832119360,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\combined-2026-06-30.log",
+            "hash": "9b586f681bd493021c32537b5f7210994441e4f147cfb0a56cc5e2e288c5f2a4"
+        },
+        {
+            "date": 1782844337022,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\combined-2026-07-01.log",
+            "hash": "ad1ed120b08fab07bb1a5dd61c7714bc36f61244bd0dc4bbfe570b8e979cec77"
+        },
+        {
+            "date": 1782996578888,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\combined-2026-07-02.log",
+            "hash": "e1421e22ffdc67ce95b4c9dc27ecbb73309bea0e693760a37c3774735cec07a7"
         }
     ],
     "hashType": "sha256"
