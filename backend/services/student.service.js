@@ -5,12 +5,16 @@ const classRepository = require("../repositories/class.repository");
 const Settings = require("../models/Settings.model");
 const { createAuditLog } = require("../middlewares/audit.middleware");
 const { STATUSES_BLOCKING_ATTENDANCE } = require("../constants/studentStatus");
+const { ROLES } = require("../constants/roles");
 
 const throwError = (message, statusCode = 400) => {
   throw Object.assign(new Error(message), { statusCode });
 };
 
 const MAX_BULK_DELETE = 100;
+
+// ✅ NEW: Teacher can only toggle between these two statuses
+const TEACHER_ALLOWED_STATUSES = ["Active", "Inactive"];
 
 class StudentService {
   async list(query, user) {
@@ -168,6 +172,37 @@ class StudentService {
     const existing = await studentRepository.findById(id);
     if (!existing) throwError("Student not found", 404);
 
+    // ✅ NEW: Teacher restriction on editing
+    // Teacher can only edit students in their assigned classes
+    if (user && user.role === ROLES.TEACHER) {
+      const Teacher = require("../models/Teacher.model");
+      const teacher = await Teacher.findOne({ user: user._id }).lean();
+
+      if (!teacher || !teacher.assignedClasses?.length) {
+        throwError("You are not assigned to any class", 403);
+      }
+
+      const existingClassId = existing.class?.toString();
+      const isAssignedToClass = teacher.assignedClasses.some(
+        (c) => c.toString() === existingClassId,
+      );
+
+      if (!isAssignedToClass) {
+        throwError("You can only edit students in your assigned classes", 403);
+      }
+
+      // ✅ Teachers cannot change class or section
+      if (data.class && data.class.toString() !== existingClassId) {
+        throwError(
+          "Teachers cannot change a student's class. Contact admin.",
+          403,
+        );
+      }
+      // Remove class/section from data to prevent accidental changes
+      delete data.class;
+      delete data.section;
+    }
+
     if (data.class && data.class.toString() !== existing.class.toString()) {
       const newClass = await classRepository.findById(data.class);
       if (!newClass) throwError("New class not found", 400);
@@ -191,9 +226,58 @@ class StudentService {
     return updated;
   }
 
+  /**
+   * ═══════════════════════════════════════════════════════════════
+   *  UPDATE STATUS
+   *  ✅ NEW: Teacher restriction — only Active/Inactive allowed
+   *  ✅ NEW: Teacher can only change status for their assigned classes
+   * ═══════════════════════════════════════════════════════════════
+   */
   async updateStatus(id, statusData, user, req) {
     const existing = await studentRepository.findById(id);
     if (!existing) throwError("Student not found", 404);
+
+    // ═══════════════════════════════════════════════════════════
+    //  TEACHER RESTRICTIONS
+    // ═══════════════════════════════════════════════════════════
+    if (user && user.role === ROLES.TEACHER) {
+      // 1. Verify teacher is assigned to this student's class
+      const Teacher = require("../models/Teacher.model");
+      const teacher = await Teacher.findOne({ user: user._id }).lean();
+
+      if (!teacher || !teacher.assignedClasses?.length) {
+        throwError("You are not assigned to any class", 403);
+      }
+
+      const existingClassId = existing.class?.toString();
+      const isAssignedToClass = teacher.assignedClasses.some(
+        (c) => c.toString() === existingClassId,
+      );
+
+      if (!isAssignedToClass) {
+        throwError(
+          "You can only change status of students in your assigned classes",
+          403,
+        );
+      }
+
+      // 2. Teacher can only toggle between Active and Inactive
+      if (!TEACHER_ALLOWED_STATUSES.includes(statusData.status)) {
+        throwError(
+          `Teachers can only mark students as Active or Inactive. ` +
+            `Contact admin to change status to "${statusData.status}".`,
+          403,
+        );
+      }
+
+      // 3. Teacher cannot change students who are already Transferred/TC/etc
+      if (!TEACHER_ALLOWED_STATUSES.includes(existing.status)) {
+        throwError(
+          `Cannot change status of ${existing.status} student. Contact admin.`,
+          403,
+        );
+      }
+    }
 
     const updated = await studentRepository.updateById(id, {
       status: statusData.status,

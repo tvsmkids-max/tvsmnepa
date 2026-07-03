@@ -20,10 +20,10 @@ import {
   useTheme,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import FilterListIcon from "@mui/icons-material/FilterList";
 import ClearIcon from "@mui/icons-material/Clear";
 import TuneIcon from "@mui/icons-material/Tune";
 import CloseIcon from "@mui/icons-material/Close";
+import useAuth from "../../../hooks/useAuth";
 
 const STATUS_OPTIONS = ["Active", "Inactive", "TC", "Transferred"];
 const GENDER_OPTIONS = ["Male", "Female", "Other"];
@@ -39,7 +39,12 @@ const StudentFilterBar = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const { user, isAdmin } = useAuth();
+  const isTeacher = user?.role === "teacher";
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // ✅ AUTO-HIDE: Class/Section filters when teacher has only 1 class
+  const hideClassSection = isTeacher && classes.length === 1;
 
   const handleChange = (field, value) => {
     onChange({ ...filters, [field]: value, page: 0 });
@@ -49,14 +54,14 @@ const StudentFilterBar = ({
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.search) count++;
-    if (filters.class) count++;
-    if (filters.section) count++;
+    if (filters.class && !hideClassSection) count++;
+    if (filters.section && !hideClassSection) count++;
     if (filters.status && filters.status !== "Active") count++;
     if (filters.gender) count++;
     if (filters.category) count++;
     if (filters.bloodGroup) count++;
     return count;
-  }, [filters]);
+  }, [filters, hideClassSection]);
 
   const hasAnyFilter = activeFilterCount > 0;
 
@@ -70,7 +75,6 @@ const StudentFilterBar = ({
         borderColor: "divider",
       }}
     >
-      {/* ─── PRIMARY FILTERS (always visible) ─── */}
       <Stack spacing={1.2}>
         {/* Search */}
         <TextField
@@ -106,55 +110,59 @@ const StudentFilterBar = ({
 
         {/* Filter Row */}
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-          {/* Class */}
-          <FormControl
-            size="small"
-            sx={{
-              flex: { xs: "1 1 calc(50% - 4px)", sm: 1 },
-              minWidth: 0,
-            }}
-          >
-            <InputLabel>Class</InputLabel>
-            <Select
-              value={filters.class || ""}
-              label="Class"
-              onChange={(e) => handleChange("class", e.target.value)}
+          {/* Class — hidden for teacher with 1 class */}
+          {!hideClassSection && (
+            <FormControl
+              size="small"
+              sx={{
+                flex: { xs: "1 1 calc(50% - 4px)", sm: 1 },
+                minWidth: 0,
+              }}
             >
-              <MenuItem value="">
-                <em>All Classes</em>
-              </MenuItem>
-              {classes.map((c) => (
-                <MenuItem key={c._id} value={c._id}>
-                  {c.name} - {c.section}
+              <InputLabel>Class</InputLabel>
+              <Select
+                value={filters.class || ""}
+                label="Class"
+                onChange={(e) => handleChange("class", e.target.value)}
+              >
+                <MenuItem value="">
+                  <em>All Classes</em>
                 </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                {classes.map((c) => (
+                  <MenuItem key={c._id} value={c._id}>
+                    {c.name} - {c.section}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
-          {/* Section */}
-          <FormControl
-            size="small"
-            sx={{
-              flex: { xs: "1 1 calc(50% - 4px)", sm: 1 },
-              minWidth: 0,
-            }}
-          >
-            <InputLabel>Section</InputLabel>
-            <Select
-              value={filters.section || ""}
-              label="Section"
-              onChange={(e) => handleChange("section", e.target.value)}
+          {/* Section — hidden for teacher with 1 class */}
+          {!hideClassSection && (
+            <FormControl
+              size="small"
+              sx={{
+                flex: { xs: "1 1 calc(50% - 4px)", sm: 1 },
+                minWidth: 0,
+              }}
             >
-              <MenuItem value="">
-                <em>All Sections</em>
-              </MenuItem>
-              {sections.map((s) => (
-                <MenuItem key={s} value={s}>
-                  Section {s}
+              <InputLabel>Section</InputLabel>
+              <Select
+                value={filters.section || ""}
+                label="Section"
+                onChange={(e) => handleChange("section", e.target.value)}
+              >
+                <MenuItem value="">
+                  <em>All Sections</em>
                 </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                {sections.map((s) => (
+                  <MenuItem key={s} value={s}>
+                    Section {s}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
           {/* Status */}
           <FormControl
@@ -191,11 +199,13 @@ const StudentFilterBar = ({
               minWidth: { sm: 130 },
             }}
           >
-            More {activeFilterCount > 3 && `(${activeFilterCount - 3})`}
+            More{" "}
+            {activeFilterCount > (hideClassSection ? 1 : 3) &&
+              `(${activeFilterCount - (hideClassSection ? 1 : 3)})`}
           </Button>
         </Stack>
 
-        {/* ─── ADVANCED FILTERS (collapsible) ─── */}
+        {/* ─── ADVANCED FILTERS ─── */}
         <Collapse in={showAdvanced}>
           <Box>
             <Divider sx={{ my: 1 }} />
@@ -317,7 +327,7 @@ const StudentFilterBar = ({
                   sx={{ height: 22, fontSize: "0.7rem", fontWeight: 600 }}
                 />
               )}
-              {filters.class && (
+              {filters.class && !hideClassSection && (
                 <Chip
                   label={`Class: ${classes.find((c) => c._id === filters.class)?.name || ""}-${classes.find((c) => c._id === filters.class)?.section || ""}`}
                   size="small"
@@ -327,7 +337,7 @@ const StudentFilterBar = ({
                   sx={{ height: 22, fontSize: "0.7rem", fontWeight: 600 }}
                 />
               )}
-              {filters.section && (
+              {filters.section && !hideClassSection && (
                 <Chip
                   label={`Section ${filters.section}`}
                   size="small"

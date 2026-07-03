@@ -22,7 +22,11 @@ router.post("/", adminOrTeacher, studentController.create);
 // ─── Dynamic routes ───
 router.get("/:id", adminOrTeacher, studentController.getById);
 router.put("/:id", adminOrTeacher, studentController.update);
-router.patch("/:id/status", adminOnly, studentController.updateStatus);
+
+// ✅ CHANGED: Teacher can toggle Active/Inactive, service layer enforces restriction
+router.patch("/:id/status", adminOrTeacher, studentController.updateStatus);
+
+// Delete stays admin only
 router.delete("/:id", adminOnly, studentController.remove);
 
 module.exports = router;
