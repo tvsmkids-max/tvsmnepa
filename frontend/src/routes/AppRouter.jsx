@@ -17,9 +17,6 @@ const AdminDashboard = lazy(() => import("../pages/dashboard/AdminDashboard"));
 const TeacherDashboard = lazy(
   () => import("../pages/dashboard/TeacherDashboard"),
 );
-const PrincipalDashboard = lazy(
-  () => import("../pages/dashboard/PrincipalDashboard"),
-);
 
 // ─── Profile ───
 const TeacherProfilePage = lazy(
@@ -139,14 +136,6 @@ const AppRouter = () => (
             element={
               <RoleRoute roles={["teacher"]}>
                 <TeacherDashboard />
-              </RoleRoute>
-            }
-          />
-          <Route
-            path="principal/dashboard"
-            element={
-              <RoleRoute roles={["principal"]}>
-                <PrincipalDashboard />
               </RoleRoute>
             }
           />

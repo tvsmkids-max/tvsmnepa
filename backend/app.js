@@ -43,7 +43,7 @@ app.options("*", cors(corsOptions));
 // Global API limit — allows heavy normal usage
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 3000, // 1000 requests per 15 min per IP (plenty for 25 teachers)
+  max: 3000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -55,10 +55,9 @@ const globalLimiter = rateLimit({
 });
 
 // Login limit — protects against brute force but allows normal logins
-// Per IP: handles ~25 teachers + admins refreshing/relogging
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // 100 login attempts per 15 min per IP
+  windowMs: 15 * 60 * 1000,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -67,14 +66,13 @@ const loginLimiter = rateLimit({
       "Too many login attempts from your network. Please wait 15 minutes and try again.",
     statusCode: 429,
   },
-  // Don't count successful logins toward the limit
   skipSuccessfulRequests: true,
 });
 
 // Auth refresh limit — generous, supports auto-refresh every 7 days
 const refreshLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500, // 200 refresh tokens per 15 min per IP
+  max: 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -86,8 +84,8 @@ const refreshLimiter = rateLimit({
 
 // Attendance marking — high limit since it's the main daily action
 const attendanceLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 500, // 200 attendance saves per 5 min per IP
+  windowMs: 5 * 60 * 1000,
+  max: 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -104,7 +102,7 @@ app.use("/api/v1/auth/refresh", refreshLimiter);
 app.use("/api/v1/attendance/mark", attendanceLimiter);
 
 // ─── Body Parsers ─────────────────────────────────────────────────────────────
-app.use(express.json({ limit: "100mb" })); // For large backup uploads
+app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 app.use(cookieParser());
 
@@ -129,7 +127,9 @@ app.use(
   }),
 );
 
+// ─── Dashboard Routes (for Teacher Dashboard endpoints) ──────────────────────
 app.use("/api/v1/dashboard", dashboardRoutes);
+
 // ─── HTTP Logging ─────────────────────────────────────────────────────────────
 if (env.NODE_ENV !== "test") {
   app.use(
@@ -139,6 +139,7 @@ if (env.NODE_ENV !== "test") {
     }),
   );
 }
+
 // ─── Static Files ─────────────────────────────────────────────────────────────
 app.use(
   "/uploads",

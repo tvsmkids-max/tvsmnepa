@@ -88,16 +88,6 @@ const teacherNav = [
   { label: "Reports", icon: <AssessmentOutlinedIcon />, path: "/reports" },
 ];
 
-const principalNav = [
-  {
-    label: "Dashboard",
-    icon: <DashboardOutlinedIcon />,
-    path: "/principal/dashboard",
-  },
-  { divider: true, label: "School" },
-  { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
-];
-
 const SidebarContent = ({ collapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -106,21 +96,16 @@ const SidebarContent = ({ collapsed }) => {
 
   const navItems = useMemo(() => {
     if (user?.role === "admin") return adminNav;
-    if (user?.role === "principal") return principalNav;
     return teacherNav;
   }, [user?.role]);
 
   // ═══════════════════════════════════════════════════════
-  //  isActive — FIXED: Most-specific match wins
+  //  isActive — Most-specific match wins
   //  Prevents "/students" from highlighting when on "/students/shift"
   // ═══════════════════════════════════════════════════════
   const isActive = (path) => {
     // Exact-match routes (dashboards)
-    if (
-      path === "/dashboard" ||
-      path === "/teacher/dashboard" ||
-      path === "/principal/dashboard"
-    ) {
+    if (path === "/dashboard" || path === "/teacher/dashboard") {
       return location.pathname === path;
     }
 
