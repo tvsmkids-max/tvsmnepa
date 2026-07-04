@@ -19,6 +19,27 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+// ═══════════════════════════════════════════════════════════════════
+//  HELPER: Check if we should skip auth redirects
+//  ✅ Never redirect from management pages (they don't need login)
+// ═══════════════════════════════════════════════════════════════════
+const shouldSkipAuthRedirect = () => {
+  const currentPath = window.location.pathname;
+  return (
+    currentPath === "/login" ||
+    currentPath === "/unauthorized" ||
+    currentPath.startsWith("/management/")
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════
+//  Safe redirect to login (only on protected pages)
+// ═══════════════════════════════════════════════════════════════════
+const safeRedirectToLogin = (reason = "session-expired") => {
+  if (shouldSkipAuthRedirect()) return;
+  window.location.href = `/login?reason=${reason}`;
+};
+
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = storage.getToken();
@@ -32,6 +53,7 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const orig = error.config;
+
     if (error.response?.status === 401 && !orig._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -49,7 +71,8 @@ axiosInstance.interceptors.response.use(
       if (!refreshToken) {
         isRefreshing = false;
         storage.clearAuth();
-        window.location.href = "/login";
+        // ✅ Only redirect if not on public page
+        safeRedirectToLogin("session-expired");
         return Promise.reject(error);
       }
       try {
@@ -67,7 +90,8 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         storage.clearAuth();
-        window.location.href = "/login";
+        // ✅ Only redirect if not on public page
+        safeRedirectToLogin("session-expired");
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

@@ -59,6 +59,10 @@ const AnalyticsDashboard = lazy(
   () => import("../pages/analytics/AnalyticsDashboard"),
 );
 
+const ManagementDashboard = lazy(
+  () => import("../pages/management/ManagementDashboard"),
+);
+
 // ─── Notifications ───
 const NotificationsPage = lazy(
   () => import("../pages/notifications/NotificationsPage"),
@@ -110,6 +114,10 @@ const AppRouter = () => (
         {/* ═══ PUBLIC ROUTES ═══ */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        <Route
+          path="/management/attendance/:secretKey"
+          element={<ManagementDashboard />}
+        />
 
         {/* ═══ PROTECTED ROUTES ═══ */}
         <Route

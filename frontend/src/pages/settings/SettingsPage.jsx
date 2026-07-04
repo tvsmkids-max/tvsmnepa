@@ -32,6 +32,9 @@ import axiosInstance from "../../api/axiosInstance";
 import useSettings from "../../hooks/useSettings";
 import sessionApi from "../../api/sessionApi";
 
+// ✅ NEW: Import Management Access Section
+import ManagementAccessSection from "./components/ManagementAccessSection";
+
 const TIMEZONES = [
   "Asia/Kolkata",
   "Asia/Dubai",
@@ -505,7 +508,7 @@ const SettingsPage = () => {
           </Paper>
 
           {/* ── WORKING DAYS ── */}
-          <Paper sx={{ p: 3, borderRadius: 3 }}>
+          <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
             <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
               Working Days
             </Typography>
@@ -537,6 +540,12 @@ const SettingsPage = () => {
               ))}
             </Grid>
           </Paper>
+
+          {/* ═══════════════════════════════════════════════════════
+              ✅ NEW: MANAGEMENT DASHBOARD ACCESS
+              (Positioned at the end, before save panel)
+          ═══════════════════════════════════════════════════════ */}
+          <ManagementAccessSection />
         </Grid>
 
         {/* ── SAVE PANEL ── */}
