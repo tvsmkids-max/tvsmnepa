@@ -435,10 +435,20 @@ const StudentListPage = () => {
     if (!confirmQuickToggle) return;
     const { student, newStatus } = confirmQuickToggle;
 
+    // ✅ Auto-generate a meaningful remark (backend requires it for Inactive)
+    const remark =
+      newStatus === "Inactive"
+        ? "Marked inactive via quick toggle"
+        : "Reactivated via quick toggle";
+
     try {
       await updateStatusMutation.mutateAsync({
         id: student._id,
-        data: { status: newStatus },
+        data: {
+          status: newStatus,
+          statusRemark: remark, // ✅ Auto-filled
+          statusDate: new Date().toISOString(), // ✅ Today's date
+        },
       });
 
       setAccumulatedStudents((prev) =>
