@@ -14,9 +14,6 @@ const throwError = (message, statusCode = 400) => {
 };
 
 class DashboardService {
-  /**
-   * HELPER: Get active session ID
-   */
   async _getActiveSessionId() {
     const settings = await Settings.findOne().populate("activeSession").lean();
     if (settings?.activeSession) {
@@ -26,12 +23,8 @@ class DashboardService {
     return session?._id || null;
   }
 
-  /**
-   * HELPER: Get teacher's assigned class IDs
-   */
   async _getTeacherClassIds(userId) {
     const teacher = await Teacher.findOne({ user: userId }).lean();
-
     if (
       !teacher ||
       !teacher.assignedClasses ||
@@ -42,10 +35,6 @@ class DashboardService {
     return teacher.assignedClasses.map((id) => id.toString());
   }
 
-  /**
-   * HELPER: Get date range based on period
-   * period: "today" | "week" | "month"
-   */
   _getDateRange(period) {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
@@ -62,11 +51,9 @@ class DashboardService {
       const start = new Date(now);
       start.setDate(now.getDate() + diffToMonday);
       start.setHours(0, 0, 0, 0);
-
       const end = new Date(start);
       end.setDate(start.getDate() + 6);
       end.setHours(23, 59, 59, 999);
-
       return { start, end, label: "This Week" };
     }
 
@@ -89,9 +76,116 @@ class DashboardService {
     return { start: now, end, label: "Today" };
   }
 
-  /**
-   * TEACHER SUMMARY — Main dashboard stats
-   */
+  // ═══════════════════════════════════════════════════════════════
+  //  NEW: Get comprehensive "today status" — holiday/non-working
+  // ═══════════════════════════════════════════════════════════════
+  async _getTodayStatus(sessionId) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dayName = today.toLocaleDateString("en-US", { weekday: "long" });
+    const settings = await Settings.getSettings();
+
+    // Check working day
+    const workingDay = settings?.workingDays?.find((d) => d.day === dayName);
+    const isWorkingDay = !workingDay || workingDay.isWorking;
+
+    // Check holiday
+    const holiday = await Holiday.isHoliday(today, sessionId);
+    const isHoliday = holiday && !holiday.allowAttendance;
+
+    // Compute next working day (skip holidays and non-working days)
+    const nextWorkingDay = await this._findNextWorkingDay(sessionId, today);
+
+    return {
+      isHoliday,
+      isWorkingDay,
+      isNonWorkingDay: !isWorkingDay && !isHoliday,
+      holiday: isHoliday ? holiday : null,
+      today: {
+        date: today.toISOString(),
+        dayName,
+      },
+      nextWorkingDay,
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  NEW: Find next working day (skips Sundays + holidays)
+  // ═══════════════════════════════════════════════════════════════
+  async _findNextWorkingDay(sessionId, fromDate = new Date()) {
+    const settings = await Settings.getSettings();
+    const workingDaysMap = {};
+    (settings?.workingDays || []).forEach((d) => {
+      workingDaysMap[d.day] = d.isWorking;
+    });
+
+    // Get all holidays in next 30 days
+    const start = new Date(fromDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(fromDate);
+    end.setDate(end.getDate() + 30);
+
+    const holidays = await Holiday.find({
+      session: sessionId,
+      date: { $lte: end },
+      allowAttendance: { $ne: true },
+      $or: [
+        { endDate: null, date: { $gte: start } },
+        { endDate: { $gte: start } },
+      ],
+    })
+      .select("date endDate")
+      .lean();
+
+    // Build a quick lookup set of "not working days"
+    const isDateHoliday = (dateStr) => {
+      return holidays.some((h) => {
+        const hStart = new Date(h.date);
+        hStart.setHours(0, 0, 0, 0);
+        const hEnd = h.endDate ? new Date(h.endDate) : hStart;
+        hEnd.setHours(23, 59, 59, 999);
+        const check = new Date(dateStr);
+        return check >= hStart && check <= hEnd;
+      });
+    };
+
+    // Look for next working day (max 14 days ahead)
+    for (let i = 1; i <= 14; i++) {
+      const candidate = new Date(fromDate);
+      candidate.setDate(candidate.getDate() + i);
+      candidate.setHours(0, 0, 0, 0);
+
+      const candidateDayName = candidate.toLocaleDateString("en-US", {
+        weekday: "long",
+      });
+
+      // Check if working day per settings
+      const isWorking =
+        workingDaysMap[candidateDayName] === undefined
+          ? true
+          : workingDaysMap[candidateDayName];
+
+      if (!isWorking) continue;
+      if (isDateHoliday(candidate)) continue;
+
+      return {
+        date: candidate.toISOString(),
+        dayName: candidateDayName,
+        label: candidate.toLocaleDateString("en-IN", {
+          weekday: "long",
+          day: "numeric",
+          month: "short",
+        }),
+      };
+    }
+
+    return null;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  TEACHER SUMMARY — Now with proper holiday/non-working handling
+  // ═══════════════════════════════════════════════════════════════
   async getTeacherSummary({ user, period = "today" }) {
     const activeSessionId = await this._getActiveSessionId();
     if (!activeSessionId) {
@@ -112,20 +206,43 @@ class DashboardService {
       return this._emptySummary();
     }
 
+    // ✅ NEW: Get comprehensive today status
+    const todayStatus = await this._getTodayStatus(activeSessionId);
+
+    // ✅ NEW: If holiday or non-working day → return early with rich info
+    if (todayStatus.isHoliday || todayStatus.isNonWorkingDay) {
+      return {
+        period,
+        periodLabel: this._getDateRange(period).label,
+        // Non-working day info
+        isHoliday: todayStatus.isHoliday,
+        isWorkingDay: todayStatus.isWorkingDay,
+        isNonWorkingDay: todayStatus.isNonWorkingDay,
+        holiday: todayStatus.holiday,
+        today: todayStatus.today,
+        nextWorkingDay: todayStatus.nextWorkingDay,
+        attendanceStatus: todayStatus.isHoliday ? "holiday" : "non_working",
+        // Basic info still needed
+        totalClasses: classes.length,
+        totalStudents: 0,
+        // Empty stats
+        present: 0,
+        absent: 0,
+        marked: 0,
+        percentage: 0,
+        markedClassesToday: 0,
+        pendingClassesToday: 0,
+        classBreakdown: [],
+      };
+    }
+
+    // ─── Normal working day flow ───
     const classObjIds = classes.map((c) => c._id);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const holiday = await Holiday.isHoliday(today, activeSessionId);
-    const isHoliday = holiday && !holiday.allowAttendance;
-
-    const settings = await Settings.getSettings();
-    const dayName = today.toLocaleDateString("en-US", { weekday: "long" });
-    const workingDay = settings?.workingDays?.find((d) => d.day === dayName);
-    const isWorkingDay = !workingDay || workingDay.isWorking;
 
     const students = await Student.find({
       class: { $in: classObjIds },
@@ -160,11 +277,9 @@ class DashboardService {
     attendance.forEach((r) => {
       const sid = r.student.toString();
       if (!activeStudentIds.has(sid)) return;
-
       const key = `${sid}-${r.class.toString()}-${new Date(r.date).toDateString()}`;
       if (seen.has(key)) return;
       seen.add(key);
-
       if (r.status === "Present") periodPresent++;
       else if (r.status === "Absent") periodAbsent++;
     });
@@ -186,11 +301,9 @@ class DashboardService {
     todayAttendance.forEach((r) => {
       const sid = r.student.toString();
       if (!activeStudentIds.has(sid)) return;
-
       const key = `${sid}-${r.class.toString()}`;
       if (seenToday.has(key)) return;
       seenToday.add(key);
-
       const cid = r.class.toString();
       if (!todayClassStats[cid])
         todayClassStats[cid] = { present: 0, absent: 0 };
@@ -201,7 +314,6 @@ class DashboardService {
       const cid = cls._id.toString();
       const stats = todayClassStats[cid] || { present: 0, absent: 0 };
       const totalInClass = studentCountMap[cid] || 0;
-
       const present = Math.min(stats.present, totalInClass);
       const absent = Math.min(stats.absent, totalInClass - present);
       const marked = present + absent;
@@ -227,17 +339,18 @@ class DashboardService {
     const pendingClassesToday = classes.length - markedClassesToday;
 
     let attendanceStatus = "pending";
-    if (isHoliday) attendanceStatus = "holiday";
-    else if (!isWorkingDay) attendanceStatus = "non_working";
-    else if (pendingClassesToday === 0) attendanceStatus = "marked";
+    if (pendingClassesToday === 0) attendanceStatus = "marked";
     else if (markedClassesToday > 0) attendanceStatus = "partial";
 
     return {
       period,
       periodLabel: label,
-      isHoliday,
-      isWorkingDay,
-      holiday: isHoliday ? holiday : null,
+      isHoliday: false,
+      isWorkingDay: true,
+      isNonWorkingDay: false,
+      holiday: null,
+      today: todayStatus.today,
+      nextWorkingDay: null,
       attendanceStatus,
       totalClasses: classes.length,
       totalStudents,
@@ -253,9 +366,6 @@ class DashboardService {
     };
   }
 
-  /**
-   * TEACHER DEFAULTERS — Students below threshold this month
-   */
   async getTeacherDefaulters({ user, limit = 5, threshold = 75 }) {
     const activeSessionId = await this._getActiveSessionId();
     if (!activeSessionId) return [];
@@ -318,7 +428,6 @@ class DashboardService {
         const total = st.present + st.absent;
         const percentage =
           total > 0 ? Math.round((st.present / total) * 100) : 0;
-
         return {
           _id: s._id,
           name: s.name,
@@ -339,9 +448,6 @@ class DashboardService {
     return defaulters;
   }
 
-  /**
-   * UPCOMING HOLIDAYS
-   */
   async getUpcomingHolidays({ limit = 3, days = 60 }) {
     const activeSessionId = await this._getActiveSessionId();
     if (!activeSessionId) return [];
@@ -365,7 +471,6 @@ class DashboardService {
       const daysUntil = Math.ceil(
         (holidayDate - today) / (1000 * 60 * 60 * 24),
       );
-
       return {
         _id: h._id,
         name: h.name,
@@ -377,16 +482,16 @@ class DashboardService {
     });
   }
 
-  /**
-   * Empty summary fallback
-   */
   _emptySummary() {
     return {
       period: "today",
       periodLabel: "Today",
       isHoliday: false,
       isWorkingDay: true,
+      isNonWorkingDay: false,
       holiday: null,
+      today: null,
+      nextWorkingDay: null,
       attendanceStatus: "no_data",
       totalClasses: 0,
       totalStudents: 0,

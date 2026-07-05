@@ -37,6 +37,7 @@ import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 
 import { useTodayOverview } from "../../../hooks/useManagement";
 import { sortClasses } from "../../../utils/classSort";
+import HolidayBanner from "../../../components/common/HolidayBanner";
 
 // ═══════════════════════════════════════════════════════════════════
 //  Status color config
@@ -70,19 +71,18 @@ const HEALTH_LABELS = {
 const TodayPage = ({ secretKey }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
-  const isMobile = useMediaQuery(theme.breakpoints.down("md")); // ✅ Changed to md (900px)
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const { data, isLoading } = useTodayOverview(secretKey);
 
-  // ─── Sorted class list (client-side backup sort) ───
+  // ─── Sorted class list ───
   const sortedClasses = useMemo(() => {
     if (!data?.classWise) return [];
     return sortClasses(data.classWise);
   }, [data]);
 
-  // ─── Chart data: Marked classes in class order, then pending at bottom ───
-  // ─── Chart data with stacked bars (Present + Absent + Pending) ───
+  // ─── Chart data with stacked bars ───
   const chartData = useMemo(() => {
     if (!sortedClasses.length) return [];
     return sortedClasses.map((c) => {
@@ -90,15 +90,14 @@ const TodayPage = ({ secretKey }) => {
       const pending = Math.max(0, c.totalStudents - marked);
       return {
         name: c.label,
-        // Stacked values (each becomes a separate bar segment)
         present: c.isMarked ? c.present : 0,
         absent: c.isMarked ? c.absent : 0,
-        pending: c.isMarked ? pending : c.totalStudents, // If not marked, all are pending
-        // Extra info for tooltip
+        pending: c.isMarked ? pending : c.totalStudents,
         total: c.totalStudents,
         percentage: c.isMarked ? c.percentage : 0,
         isMarked: c.isMarked,
         status: c.status,
+        color: STATUS_CONFIG[c.status]?.dot || STATUS_CONFIG.notMarked.dot,
       };
     });
   }, [sortedClasses]);
@@ -131,32 +130,24 @@ const TodayPage = ({ secretKey }) => {
   if (!data) return null;
 
   // ═══════════════════════════════════════════════════════════════
-  //  HOLIDAY BANNER
+  //  ✅ HOLIDAY / NON-WORKING DAY — Show beautiful banner only
   // ═══════════════════════════════════════════════════════════════
-  if (data.isHoliday) {
+  if (data.isHoliday || data.isNonWorkingDay) {
     return (
-      <Paper
-        sx={{
-          p: 4,
-          borderRadius: 2,
-          textAlign: "center",
-          border: "1px solid",
-          borderColor: "warning.light",
-          bgcolor: isDark ? alpha("#F59E0B", 0.05) : "#FFFBEB",
-        }}
-      >
-        <BeachAccessOutlinedIcon
-          sx={{ fontSize: 64, color: "warning.main", mb: 1 }}
+      <Stack spacing={2}>
+        <HolidayBanner
+          isHoliday={data.isHoliday}
+          holiday={data.holiday}
+          today={data.today}
+          nextWorkingDay={data.nextWorkingDay}
         />
-        <Typography variant="h6" fontWeight={800}>
-          🏖️ {data.holiday?.name || "Holiday"}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          {data.holiday?.type || "Holiday"} · No attendance today
-        </Typography>
-      </Paper>
+      </Stack>
     );
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  NORMAL WORKING DAY — Show full dashboard
+  // ═══════════════════════════════════════════════════════════════
 
   const stats = data.stats || {};
   const health = data.health || {};
@@ -317,10 +308,7 @@ const TodayPage = ({ secretKey }) => {
                   }}
                   divider={
                     <Box
-                      sx={{
-                        borderRight: "1px solid",
-                        borderColor: "divider",
-                      }}
+                      sx={{ borderRight: "1px solid", borderColor: "divider" }}
                     />
                   }
                 >
@@ -412,18 +400,15 @@ const TodayPage = ({ secretKey }) => {
       </Paper>
 
       {/* ══════════════════════════════════════════════════════
-    📋 CLASS-WISE TABLE + CHART (Split on desktop)
-══════════════════════════════════════════════════════ */}
+          📋 CLASS-WISE TABLE + CHART (Split on desktop)
+      ══════════════════════════════════════════════════════ */}
       <Grid container spacing={2} sx={{ width: "100%", m: 0 }}>
         {/* ─── LEFT: Table ─── */}
         <Grid
           item
           xs={12}
           md={6}
-          sx={{
-            width: "100%",
-            pl: { xs: "0 !important", md: undefined },
-          }}
+          sx={{ width: "100%", pl: { xs: "0 !important", md: undefined } }}
         >
           <Paper
             sx={{
@@ -434,10 +419,9 @@ const TodayPage = ({ secretKey }) => {
               height: { md: 500 },
               display: "flex",
               flexDirection: "column",
-              width: "100%", // ✅ Force full width
+              width: "100%",
             }}
           >
-            {/* Header */}
             <Box
               sx={{
                 px: 2,
@@ -459,11 +443,7 @@ const TodayPage = ({ secretKey }) => {
                 <Chip
                   label={`${sortedClasses.length} classes`}
                   size="small"
-                  sx={{
-                    fontWeight: 700,
-                    height: 20,
-                    fontSize: "0.65rem",
-                  }}
+                  sx={{ fontWeight: 700, height: 20, fontSize: "0.65rem" }}
                 />
               </Stack>
             </Box>
@@ -475,17 +455,12 @@ const TodayPage = ({ secretKey }) => {
                 </Typography>
               </Box>
             ) : isSmallMobile ? (
-              // ═══════════════════════════════════════════════════════════
-              //  📱 MOBILE VIEW — Compact cards
-              // ═══════════════════════════════════════════════════════════
+              /* ═══ MOBILE: Compact cards ═══ */
               <Box sx={{ flex: 1, overflowY: "auto", width: "100%" }}>
                 <Stack
                   divider={
                     <Box
-                      sx={{
-                        borderBottom: "1px solid",
-                        borderColor: "divider",
-                      }}
+                      sx={{ borderBottom: "1px solid", borderColor: "divider" }}
                     />
                   }
                   sx={{ width: "100%" }}
@@ -502,11 +477,10 @@ const TodayPage = ({ secretKey }) => {
                           borderLeft: "3px solid",
                           borderLeftColor: config.dot,
                           width: "100%",
-                          boxSizing: "border-box", // ✅ Include padding in width
+                          boxSizing: "border-box",
                           "&:hover": { bgcolor: "action.hover" },
                         }}
                       >
-                        {" "}
                         <Stack
                           direction="row"
                           justifyContent="space-between"
@@ -557,6 +531,7 @@ const TodayPage = ({ secretKey }) => {
                             direction="row"
                             spacing={1.5}
                             alignItems="center"
+                            sx={{ flexShrink: 0 }}
                           >
                             <MobileStatLabel
                               label="Std"
@@ -600,9 +575,7 @@ const TodayPage = ({ secretKey }) => {
                 </Stack>
               </Box>
             ) : (
-              // ═══════════════════════════════════════════════════════════
-              //  💻 DESKTOP/TABLET VIEW — Compact table
-              // ═══════════════════════════════════════════════════════════
+              /* ═══ DESKTOP: Table ═══ */
               <TableContainer sx={{ flex: 1, overflowY: "auto" }}>
                 <Table
                   stickyHeader
@@ -622,10 +595,7 @@ const TodayPage = ({ secretKey }) => {
                       </TableCell>
                       <TableCell
                         align="center"
-                        sx={{
-                          ...headerCellStyle(isDark),
-                          width: 55,
-                        }}
+                        sx={{ ...headerCellStyle(isDark), width: 55 }}
                       >
                         Std
                       </TableCell>
@@ -651,11 +621,7 @@ const TodayPage = ({ secretKey }) => {
                       </TableCell>
                       <TableCell
                         align="center"
-                        sx={{
-                          ...headerCellStyle(isDark),
-                          width: 140,
-                          pr: 2,
-                        }}
+                        sx={{ ...headerCellStyle(isDark), width: 140, pr: 2 }}
                       >
                         Attendance
                       </TableCell>
@@ -669,9 +635,7 @@ const TodayPage = ({ secretKey }) => {
                         <TableRow
                           key={cls._id}
                           hover
-                          sx={{
-                            "& td": { py: 1.1, borderColor: "divider" },
-                          }}
+                          sx={{ "& td": { py: 1.1, borderColor: "divider" } }}
                         >
                           <TableCell
                             sx={{
@@ -683,10 +647,7 @@ const TodayPage = ({ secretKey }) => {
                             <Typography
                               variant="body2"
                               fontWeight={800}
-                              sx={{
-                                fontSize: "0.85rem",
-                                color: "text.primary",
-                              }}
+                              sx={{ fontSize: "0.85rem" }}
                             >
                               {cls.label}
                             </Typography>
@@ -821,7 +782,7 @@ const TodayPage = ({ secretKey }) => {
           </Paper>
         </Grid>
 
-        {/* ─── RIGHT: Chart (DESKTOP ONLY) ─── */}
+        {/* ─── RIGHT: Stacked Bar Chart (DESKTOP ONLY) ─── */}
         {!isMobile && (
           <Grid item xs={12} md={6}>
             <Paper
@@ -835,7 +796,6 @@ const TodayPage = ({ secretKey }) => {
                 flexDirection: "column",
               }}
             >
-              {/* Header */}
               <Box
                 sx={{
                   px: 2,
@@ -864,18 +824,9 @@ const TodayPage = ({ secretKey }) => {
                 </Stack>
               </Box>
 
-              {/* Chart body (scrollable if too many classes) */}
-              {/* Chart body — VERTICAL (standing) bars */}
-              <Box
-                sx={{
-                  flex: 1,
-                  overflow: "auto",
-                  p: 1,
-                }}
-              >
+              <Box sx={{ flex: 1, overflow: "auto", p: 1 }}>
                 <Box
                   sx={{
-                    // Dynamic width based on classes count (40px per bar minimum)
                     width: Math.max(400, chartData.length * 40),
                     height: "100%",
                     minHeight: 400,
@@ -913,7 +864,6 @@ const TodayPage = ({ secretKey }) => {
                       <RechartsTooltip
                         content={<CustomTooltip isDark={isDark} />}
                       />
-                      {/* ✅ STACKED BARS — each color stacks on top */}
                       <Bar
                         dataKey="present"
                         stackId="a"
@@ -943,7 +893,6 @@ const TodayPage = ({ secretKey }) => {
                 </Box>
               </Box>
 
-              {/* Chart footer legend */}
               <Box
                 sx={{
                   px: 2,
@@ -972,7 +921,7 @@ const TodayPage = ({ secretKey }) => {
       </Grid>
 
       {/* ══════════════════════════════════════════════════════
-          🥧 DISTRIBUTION OVERVIEW (below, full width)
+          🥧 DISTRIBUTION OVERVIEW
       ══════════════════════════════════════════════════════ */}
       {pieData.length > 0 && (
         <Paper
@@ -1088,13 +1037,11 @@ const TodayPage = ({ secretKey }) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-//  CUSTOM TOOLTIP for the horizontal bar chart
+//  CUSTOM TOOLTIP for stacked bar chart
 // ═══════════════════════════════════════════════════════════════════
 
 const CustomTooltip = ({ active, payload, isDark }) => {
   if (!active || !payload || !payload.length) return null;
-
-  // Extract data from any payload item (they all have same original data)
   const data = payload[0].payload;
 
   return (
@@ -1115,9 +1062,7 @@ const CustomTooltip = ({ active, payload, isDark }) => {
       >
         {data.name}
       </Typography>
-
       <Stack spacing={0.5}>
-        {/* Total students */}
         <Stack direction="row" justifyContent="space-between">
           <Typography
             variant="caption"
@@ -1134,12 +1079,9 @@ const CustomTooltip = ({ active, payload, isDark }) => {
             {data.total}
           </Typography>
         </Stack>
-
         <Box
           sx={{ borderBottom: "1px solid", borderColor: "divider", my: 0.3 }}
         />
-
-        {/* Present */}
         <Stack direction="row" alignItems="center" spacing={0.75}>
           <Box
             sx={{
@@ -1168,8 +1110,6 @@ const CustomTooltip = ({ active, payload, isDark }) => {
             {data.present}
           </Typography>
         </Stack>
-
-        {/* Absent */}
         <Stack direction="row" alignItems="center" spacing={0.75}>
           <Box
             sx={{
@@ -1198,8 +1138,6 @@ const CustomTooltip = ({ active, payload, isDark }) => {
             {data.absent}
           </Typography>
         </Stack>
-
-        {/* Pending */}
         <Stack direction="row" alignItems="center" spacing={0.75}>
           <Box
             sx={{
@@ -1228,7 +1166,6 @@ const CustomTooltip = ({ active, payload, isDark }) => {
             {data.pending}
           </Typography>
         </Stack>
-
         {data.isMarked && (
           <>
             <Box
@@ -1341,21 +1278,10 @@ const QuickCount = ({ emoji, label, value, color, isDark }) => (
 
 const LegendItem = ({ dot, label, isDark }) => (
   <Stack direction="row" alignItems="center" spacing={0.5}>
-    <Box
-      sx={{
-        width: 8,
-        height: 8,
-        borderRadius: "50%",
-        bgcolor: dot,
-      }}
-    />
+    <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: dot }} />
     <Typography
       variant="caption"
-      sx={{
-        fontSize: "0.68rem",
-        fontWeight: 700,
-        color: "text.secondary",
-      }}
+      sx={{ fontSize: "0.68rem", fontWeight: 700, color: "text.secondary" }}
     >
       {label}
     </Typography>

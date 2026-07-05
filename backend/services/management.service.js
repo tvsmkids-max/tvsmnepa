@@ -38,14 +38,12 @@ class ManagementService {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  NEW: HELPER — Get class sort rank
-  //  Nursery → LKG → UKG → 1st → 2nd → ... → 12th
+  //  HELPER: Get class sort rank (Nursery → LKG → UKG → 1st → 12th)
   // ═══════════════════════════════════════════════════════════════
   _getClassSortRank(className) {
     if (!className) return 999;
     const name = className.toString().trim().toUpperCase();
 
-    // Pre-primary levels
     if (/^NUR/.test(name) || name === "NURSERY") return 1;
     if (/^L\.?K\.?G/.test(name) || name === "LKG" || name === "LOWER KG")
       return 2;
@@ -53,15 +51,12 @@ class ManagementService {
       return 3;
     if (/^PRE/.test(name) || name === "PLAYGROUP" || name === "PLAY") return 0;
 
-    // Numeric classes (1st, 2nd, 3rd, ... 12th)
-    // Matches: "1", "1ST", "1st", "CLASS 1"
     const numericMatch = name.match(/^(?:CLASS\s*)?(\d{1,2})(?:ST|ND|RD|TH)?/);
     if (numericMatch) {
       const num = parseInt(numericMatch[1], 10);
-      if (num >= 1 && num <= 12) return 10 + num; // 11 to 22
+      if (num >= 1 && num <= 12) return 10 + num;
     }
 
-    // Roman numerals (I, II, III, IV, V, VI, VII, VIII, IX, X, XI, XII)
     const romanMap = {
       I: 1,
       II: 2,
@@ -83,24 +78,92 @@ class ManagementService {
       return 10 + romanMap[romanMatch[1]];
     }
 
-    return 999; // Unknown classes go last
+    return 999;
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  NEW: HELPER — Sort array of classes with section as secondary
+  //  HELPER: Sort array of classes with section as secondary
   // ═══════════════════════════════════════════════════════════════
   _sortClasses(classes) {
     return [...classes].sort((a, b) => {
       const rankA = this._getClassSortRank(a.name);
       const rankB = this._getClassSortRank(b.name);
       if (rankA !== rankB) return rankA - rankB;
-      // Same class → sort by section alphabetically
       return (a.section || "").localeCompare(b.section || "");
     });
   }
 
   // ═══════════════════════════════════════════════════════════════
+  //  NEW: HELPER — Find next working day (skips holidays + Sundays)
+  // ═══════════════════════════════════════════════════════════════
+  async _findNextWorkingDay(sessionId, fromDate = new Date()) {
+    const settings = await Settings.getSettings();
+    const workingDaysMap = {};
+    (settings?.workingDays || []).forEach((d) => {
+      workingDaysMap[d.day] = d.isWorking;
+    });
+
+    const start = new Date(fromDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(fromDate);
+    end.setDate(end.getDate() + 30);
+
+    const holidays = await Holiday.find({
+      session: sessionId,
+      date: { $lte: end },
+      allowAttendance: { $ne: true },
+      $or: [
+        { endDate: null, date: { $gte: start } },
+        { endDate: { $gte: start } },
+      ],
+    })
+      .select("date endDate")
+      .lean();
+
+    const isDateHoliday = (checkDate) => {
+      return holidays.some((h) => {
+        const hStart = new Date(h.date);
+        hStart.setHours(0, 0, 0, 0);
+        const hEnd = h.endDate ? new Date(h.endDate) : hStart;
+        hEnd.setHours(23, 59, 59, 999);
+        return checkDate >= hStart && checkDate <= hEnd;
+      });
+    };
+
+    for (let i = 1; i <= 14; i++) {
+      const candidate = new Date(fromDate);
+      candidate.setDate(candidate.getDate() + i);
+      candidate.setHours(0, 0, 0, 0);
+
+      const candidateDayName = candidate.toLocaleDateString("en-US", {
+        weekday: "long",
+      });
+
+      const isWorking =
+        workingDaysMap[candidateDayName] === undefined
+          ? true
+          : workingDaysMap[candidateDayName];
+
+      if (!isWorking) continue;
+      if (isDateHoliday(candidate)) continue;
+
+      return {
+        date: candidate.toISOString(),
+        dayName: candidateDayName,
+        label: candidate.toLocaleDateString("en-IN", {
+          weekday: "long",
+          day: "numeric",
+          month: "short",
+        }),
+      };
+    }
+
+    return null;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   //  PAGE 1: TODAY OVERVIEW
+  //  ✅ NEW: Handles holidays AND non-working days properly
   // ═══════════════════════════════════════════════════════════════
   async getTodayOverview() {
     const activeSessionId = await this._getActiveSessionId();
@@ -111,14 +174,49 @@ class ManagementService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Check holiday
-    const holiday = await Holiday.findOne({
+    // ═══════════════════════════════════════════════════════════════
+    //  CHECK: Holiday AND Non-working day
+    // ═══════════════════════════════════════════════════════════════
+    const dayName = today.toLocaleDateString("en-US", { weekday: "long" });
+    const settings = await Settings.getSettings();
+    const workingDay = settings?.workingDays?.find((d) => d.day === dayName);
+    const isWorkingDay = !workingDay || workingDay.isWorking;
+
+    const holidayToday = await Holiday.findOne({
       session: activeSessionId,
       $or: [
         { date: { $gte: today, $lte: tomorrow }, endDate: null },
         { date: { $lte: tomorrow }, endDate: { $gte: today } },
       ],
     }).lean();
+
+    const isHoliday = holidayToday && !holidayToday.allowAttendance;
+    const isNonWorkingDay = !isWorkingDay && !isHoliday;
+
+    // ✅ If holiday OR non-working day → return early with rich info
+    if (isHoliday || isNonWorkingDay) {
+      const nextWorkingDay = await this._findNextWorkingDay(
+        activeSessionId,
+        today,
+      );
+
+      return {
+        ...this._emptyTodayData(),
+        isHoliday,
+        isNonWorkingDay,
+        isWorkingDay,
+        holiday: isHoliday ? holidayToday : null,
+        today: {
+          date: today.toISOString(),
+          dayName,
+        },
+        nextWorkingDay,
+      };
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  NORMAL WORKING DAY — Full data processing
+    // ═══════════════════════════════════════════════════════════════
 
     // Get all classes
     const classes = await Class.find({
@@ -244,8 +342,15 @@ class ManagementService {
 
     return {
       date: today.toISOString(),
-      isHoliday: !!holiday,
-      holiday: holiday || null,
+      isHoliday: false,
+      isNonWorkingDay: false,
+      isWorkingDay: true,
+      holiday: null,
+      today: {
+        date: today.toISOString(),
+        dayName,
+      },
+      nextWorkingDay: null,
       stats: {
         totalStudents,
         totalClasses: classes.length,
@@ -270,7 +375,6 @@ class ManagementService {
         absent: totalAbsent,
         pending: Math.max(0, totalStudents - totalMarked),
       },
-      // ✅ FIXED: Use proper class sort (Nursery → LKG → UKG → 1st → ... → 12th)
       classWise: this._sortClasses(classWise),
     };
   }
@@ -295,7 +399,6 @@ class ManagementService {
       999,
     );
 
-    // Previous month for comparison
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const prevMonthEnd = new Date(
       now.getFullYear(),
@@ -307,7 +410,6 @@ class ManagementService {
       999,
     );
 
-    // Get all classes
     const classes = await Class.find({
       session: activeSessionId,
       isArchived: false,
@@ -318,7 +420,6 @@ class ManagementService {
     const classIds = classes.map((c) => c._id);
     if (classIds.length === 0) return this._emptyMonthlyData();
 
-    // Active students
     const activeStudents = await Student.find({
       class: { $in: classIds },
       status: "Active",
@@ -331,7 +432,6 @@ class ManagementService {
       activeStudents.map((s) => s._id.toString()),
     );
 
-    // Fetch all attendance for this month
     const attendance = await Attendance.find({
       class: { $in: classIds },
       date: { $gte: monthStart, $lte: monthEnd },
@@ -339,7 +439,6 @@ class ManagementService {
       .select("student status date")
       .lean();
 
-    // Previous month
     const prevAttendance = await Attendance.find({
       class: { $in: classIds },
       date: { $gte: prevMonthStart, $lte: prevMonthEnd },
@@ -347,7 +446,6 @@ class ManagementService {
       .select("student status")
       .lean();
 
-    // Group by date
     const dayStats = {};
     const seenPerDay = new Set();
 
@@ -371,7 +469,6 @@ class ManagementService {
       else if (rec.status === "Absent") dayStats[dateStr].absent++;
     });
 
-    // Build daily trend
     const trend = Object.values(dayStats)
       .sort((a, b) => a.date - b.date)
       .map((d) => {
@@ -388,7 +485,6 @@ class ManagementService {
         };
       });
 
-    // Aggregate month totals
     const workingDays = trend.length;
     const monthTotal = trend.reduce(
       (acc, d) => {
@@ -404,7 +500,6 @@ class ManagementService {
         ? Math.round((monthTotal.present / monthMarked) * 100)
         : 0;
 
-    // Previous month avg
     const prevSeenPerDay = new Set();
     const prevStats = { present: 0, absent: 0 };
     prevAttendance.forEach((rec) => {
@@ -421,7 +516,6 @@ class ManagementService {
       prevMarked > 0 ? Math.round((prevStats.present / prevMarked) * 100) : 0;
     const vsLastMonth = monthAvg - prevAvg;
 
-    // Best day
     const bestDay = trend.reduce(
       (best, d) => (d.percentage > (best?.percentage || 0) ? d : best),
       null,
@@ -434,7 +528,6 @@ class ManagementService {
       null,
     );
 
-    // Day-of-week pattern
     const dowStats = {
       Mon: { total: 0, present: 0 },
       Tue: { total: 0, present: 0 },
@@ -458,7 +551,6 @@ class ManagementService {
       hasData: s.total > 0,
     }));
 
-    // Week-by-week
     const weekStats = { W1: [], W2: [], W3: [], W4: [], W5: [] };
     trend.forEach((d) => {
       const week = Math.min(5, Math.ceil(new Date(d.date).getDate() / 7));
@@ -471,7 +563,6 @@ class ManagementService {
         percentage: Math.round(arr.reduce((sum, p) => sum + p, 0) / arr.length),
       }));
 
-    // Consistency (stddev)
     const percentages = trend.map((d) => d.percentage);
     const mean = percentages.length
       ? percentages.reduce((s, p) => s + p, 0) / percentages.length
@@ -541,7 +632,6 @@ class ManagementService {
     const sessionStart = new Date(session.startDate);
     const sessionEnd = new Date(session.endDate || now);
 
-    // Get classes
     const classes = await Class.find({
       session: activeSessionId,
       isArchived: false,
@@ -552,7 +642,6 @@ class ManagementService {
     const classIds = classes.map((c) => c._id);
     if (classIds.length === 0) return this._emptyYearlyData();
 
-    // Active students
     const activeStudents = await Student.find({
       class: { $in: classIds },
       status: "Active",
@@ -565,7 +654,6 @@ class ManagementService {
       activeStudents.map((s) => s._id.toString()),
     );
 
-    // Get all attendance for session
     const attendance = await Attendance.find({
       class: { $in: classIds },
       date: { $gte: sessionStart, $lte: sessionEnd },
@@ -573,7 +661,6 @@ class ManagementService {
       .select("student status date")
       .lean();
 
-    // Group by month
     const monthlyStats = {};
     const seenPerDay = new Set();
 
@@ -601,7 +688,6 @@ class ManagementService {
       else if (rec.status === "Absent") monthlyStats[monthKey].absent++;
     });
 
-    // Build months array
     const months = Object.entries(monthlyStats)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, s]) => {
@@ -620,16 +706,13 @@ class ManagementService {
         };
       });
 
-    // Session avg
     const totalPresent = months.reduce((s, m) => s + m.present, 0);
     const totalAbsent = months.reduce((s, m) => s + m.absent, 0);
     const totalMarked = totalPresent + totalAbsent;
     const yearAvg =
       totalMarked > 0 ? Math.round((totalPresent / totalMarked) * 100) : 0;
-
     const totalWorkingDays = months.reduce((s, m) => s + m.workingDays, 0);
 
-    // Best/worst months
     const bestMonth = months.reduce(
       (best, m) => (m.percentage > (best?.percentage || 0) ? m : best),
       null,
@@ -642,7 +725,6 @@ class ManagementService {
       null,
     );
 
-    // Quarterly (Apr-Jun = Q1, Jul-Sep = Q2, Oct-Dec = Q3, Jan-Mar = Q4)
     const quarters = {
       Q1: { label: "Q1 (Apr-Jun)", present: 0, absent: 0, months: [] },
       Q2: { label: "Q2 (Jul-Sep)", present: 0, absent: 0, months: [] },
@@ -690,7 +772,7 @@ class ManagementService {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  PAGE 4: ALERTS (Critical + Declining + Chronic)
+  //  PAGE 4: ALERTS
   // ═══════════════════════════════════════════════════════════════
   async getAlerts() {
     const activeSessionId = await this._getActiveSessionId();
@@ -705,7 +787,6 @@ class ManagementService {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     monthStart.setHours(0, 0, 0, 0);
 
-    // Get all classes
     const classes = await Class.find({
       session: activeSessionId,
       isArchived: false,
@@ -717,7 +798,6 @@ class ManagementService {
 
     const classIds = classes.map((c) => c._id);
 
-    // Active students
     const students = await Student.find({
       class: { $in: classIds },
       status: "Active",
@@ -733,7 +813,6 @@ class ManagementService {
       studentCountMap[cid] = (studentCountMap[cid] || 0) + 1;
     });
 
-    // Month attendance for each class
     const monthAttendance = await Attendance.find({
       class: { $in: classIds },
       date: { $gte: monthStart, $lte: now },
@@ -741,7 +820,6 @@ class ManagementService {
       .select("student class status date")
       .lean();
 
-    // Aggregate class-wise monthly
     const classMonthStats = {};
     const seenClassStudentDay = new Set();
 
@@ -761,7 +839,6 @@ class ManagementService {
       else if (rec.status === "Absent") classMonthStats[cid].absent++;
     });
 
-    // Build class alerts
     const criticalClasses = [];
     const lowClasses = [];
 
@@ -788,7 +865,6 @@ class ManagementService {
     criticalClasses.sort((a, b) => a.percentage - b.percentage);
     lowClasses.sort((a, b) => a.percentage - b.percentage);
 
-    // Chronic absentees per class (>25% absent this month)
     const studentAttendance = {};
     monthAttendance.forEach((rec) => {
       const sid = rec.student.toString();
@@ -810,7 +886,6 @@ class ManagementService {
       else if (rec.status === "Absent") studentAttendance[sid].absent++;
     });
 
-    // Count chronic per class
     const chronicPerClass = {};
     let totalChronic = 0;
     Object.entries(studentAttendance).forEach(([sid, stats]) => {
@@ -846,7 +921,6 @@ class ManagementService {
       .filter((c) => c.percentage >= 20 && c.chronicCount > 0)
       .sort((a, b) => b.percentage - a.percentage);
 
-    // Today pending classes (sorted properly)
     const todayAttendance = await Attendance.find({
       class: { $in: classIds },
       date: { $gte: today, $lt: tomorrow },
@@ -914,7 +988,6 @@ class ManagementService {
 
     const classIds = classes.map((c) => c._id);
 
-    // Active students
     const students = await Student.find({
       class: { $in: classIds },
       status: "Active",
@@ -930,7 +1003,6 @@ class ManagementService {
       studentCountMap[cid] = (studentCountMap[cid] || 0) + 1;
     });
 
-    // Attendance in period
     const attendance = await Attendance.find({
       class: { $in: classIds },
       date: { $gte: start, $lte: end },
@@ -938,7 +1010,6 @@ class ManagementService {
       .select("student class status date")
       .lean();
 
-    // Group by class (with daily percentages for consistency calc)
     const classDailyData = {};
     const seenPerDay = new Set();
 
@@ -960,7 +1031,6 @@ class ManagementService {
       else if (rec.status === "Absent") classDailyData[cid][dateStr].absent++;
     });
 
-    // Build rankings
     const rankings = classes.map((cls) => {
       const cid = cls._id.toString();
       const daily = classDailyData[cid] || {};
@@ -983,7 +1053,6 @@ class ManagementService {
       const percentage =
         totalMarked > 0 ? Math.round((totalPresent / totalMarked) * 100) : 0;
 
-      // Consistency (stddev)
       let consistency = 0;
       if (dailyPercentages.length > 1) {
         const mean =
@@ -994,7 +1063,6 @@ class ManagementService {
         consistency = Math.round(Math.sqrt(variance));
       }
 
-      // Simple trend (compare first half vs second half of period)
       let trend = "stable";
       if (dailyPercentages.length >= 4) {
         const mid = Math.floor(dailyPercentages.length / 2);
@@ -1024,12 +1092,10 @@ class ManagementService {
       };
     });
 
-    // Sort by percentage desc
     const sortedByPercentage = [...rankings]
       .filter((r) => r.hasData)
       .sort((a, b) => b.percentage - a.percentage);
 
-    // Sort by consistency (lowest stddev = most consistent)
     const sortedByConsistency = [...rankings]
       .filter((r) => r.hasData && r.consistency > 0)
       .sort((a, b) => a.consistency - b.consistency)
@@ -1055,7 +1121,11 @@ class ManagementService {
     return {
       date: new Date().toISOString(),
       isHoliday: false,
+      isNonWorkingDay: false,
+      isWorkingDay: true,
       holiday: null,
+      today: null,
+      nextWorkingDay: null,
       stats: {
         totalStudents: 0,
         totalClasses: 0,
@@ -1069,7 +1139,12 @@ class ManagementService {
         goodClasses: 0,
         lowClasses: 0,
       },
-      health: { level: "unknown", label: "No Data", percentage: 0, target: 90 },
+      health: {
+        level: "unknown",
+        label: "No Data",
+        percentage: 0,
+        target: 90,
+      },
       distribution: { present: 0, absent: 0, pending: 0 },
       classWise: [],
     };
@@ -1095,7 +1170,12 @@ class ManagementService {
   _emptyYearlyData() {
     return {
       session: "",
-      stats: { totalWorkingDays: 0, yearAvg: 0, totalMonths: 0, vsLastYear: 0 },
+      stats: {
+        totalWorkingDays: 0,
+        yearAvg: 0,
+        totalMonths: 0,
+        vsLastYear: 0,
+      },
       months: [],
       quarterly: [],
       insights: {},

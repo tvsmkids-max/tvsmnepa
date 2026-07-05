@@ -31,3 +31,154 @@
 {"level":"http","message":"::1 - - [04/Jul/2026:18:46:59 +0000] \"PATCH /api/v1/students/6a426d3f49f07007f88505da/status HTTP/1.1\" 200 828 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 00:16:59"}
 {"level":"http","message":"::1 - - [04/Jul/2026:18:47:00 +0000] \"GET /api/v1/students?page=1&limit=30&search=&status=Inactive HTTP/1.1\" 200 184 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 00:17:00"}
 {"level":"info","message":"\nSIGINT received. Starting graceful shutdown...","timestamp":"2026-07-05 00:19:11"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-07-05 13:17:58"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-07-05 13:17:58"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:17:58"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-07-05 13:17:58"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:17:58"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-07-05 13:17:58"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-07-05 13:17:58"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-07-05 13:17:58"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-07-05 13:17:58"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:17:58"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-07-05 13:17:58"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-07-05 13:18:02"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-07-05 13:18:02"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-07-05 13:18:02"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-07-05 13:18:02"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-07-05 13:18:32"}
+{"level":"info","message":"[Cron] Backup is recent (6 days ago), skipping reminder","timestamp":"2026-07-05 13:18:35"}
+{"level":"http","message":"::1 - - [05/Jul/2026:07:56:09 +0000] \"GET /api/v1/management/-wy-kGblhdrxmChBx4GAf403/validate HTTP/1.1\" 200 148 \"http://localhost:5173/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1 Edg/149.0.0.0\"","timestamp":"2026-07-05 13:26:09"}
+{"level":"http","message":"::1 - - [05/Jul/2026:07:56:11 +0000] \"GET /api/v1/management/-wy-kGblhdrxmChBx4GAf403/today HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1 Edg/149.0.0.0\"","timestamp":"2026-07-05 13:26:11"}
+{"level":"http","message":"::1 - - [05/Jul/2026:07:56:13 +0000] \"GET /api/v1/management/-wy-kGblhdrxmChBx4GAf403/alerts HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1 Edg/149.0.0.0\"","timestamp":"2026-07-05 13:26:13"}
+{"level":"warn","message":"MongoDB disconnected. Attempting reconnect...","timestamp":"2026-07-05 13:27:54"}
+{"level":"info","message":"MongoDB reconnected successfully","timestamp":"2026-07-05 13:28:33"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-07-05 13:42:45"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-07-05 13:42:45"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:42:45"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-07-05 13:42:45"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:42:45"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-07-05 13:42:45"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-07-05 13:42:45"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-07-05 13:42:45"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-07-05 13:42:45"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:42:45"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-07-05 13:42:45"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-07-05 13:42:46"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-07-05 13:42:46"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-07-05 13:42:46"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-07-05 13:42:46"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-07-05 13:43:16"}
+{"level":"info","message":"[Cron] Backup is recent (6 days ago), skipping reminder","timestamp":"2026-07-05 13:43:17"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-07-05 13:43:35"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-07-05 13:43:35"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:43:35"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-07-05 13:43:35"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:43:35"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-07-05 13:43:35"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-07-05 13:43:35"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-07-05 13:43:35"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-07-05 13:43:35"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:43:35"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-07-05 13:43:35"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-07-05 13:43:36"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-07-05 13:43:36"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-07-05 13:43:36"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-07-05 13:43:36"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-07-05 13:44:05"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-07-05 13:44:05"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:44:05"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-07-05 13:44:05"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:44:05"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-07-05 13:44:05"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-07-05 13:44:05"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-07-05 13:44:05"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-07-05 13:44:05"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:44:05"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-07-05 13:44:05"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-07-05 13:44:06"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-07-05 13:44:06"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-07-05 13:44:06"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-07-05 13:44:06"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-07-05 13:44:15"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-07-05 13:44:15"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:44:15"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-07-05 13:44:15"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:44:15"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-07-05 13:44:15"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-07-05 13:44:15"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-07-05 13:44:15"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-07-05 13:44:15"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:44:15"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-07-05 13:44:15"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-07-05 13:44:16"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-07-05 13:44:16"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-07-05 13:44:16"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-07-05 13:44:16"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-07-05 13:44:46"}
+{"level":"info","message":"[Cron] Backup is recent (6 days ago), skipping reminder","timestamp":"2026-07-05 13:44:46"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-07-05 13:46:28"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-07-05 13:46:28"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:46:28"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-07-05 13:46:28"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:46:28"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-07-05 13:46:28"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-07-05 13:46:28"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-07-05 13:46:28"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-07-05 13:46:28"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:46:28"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-07-05 13:46:28"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-07-05 13:46:29"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-07-05 13:46:29"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-07-05 13:46:29"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-07-05 13:46:29"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-07-05 13:46:59"}
+{"level":"info","message":"[Cron] Backup is recent (6 days ago), skipping reminder","timestamp":"2026-07-05 13:46:59"}
+{"level":"info","message":"MongoDB Connected: ac-rw5ornf-shard-00-00.ginlrnu.mongodb.net","timestamp":"2026-07-05 13:47:33"}
+{"level":"info","message":"Database: school_attendance","timestamp":"2026-07-05 13:47:33"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:47:33"}
+{"level":"info","message":"  SCHOOL ATTENDANCE MANAGEMENT SYSTEM","timestamp":"2026-07-05 13:47:33"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:47:33"}
+{"level":"info","message":"  Environment : development","timestamp":"2026-07-05 13:47:33"}
+{"level":"info","message":"  Port        : 5000","timestamp":"2026-07-05 13:47:33"}
+{"level":"info","message":"  API Base    : http://localhost:5000/api/v1","timestamp":"2026-07-05 13:47:33"}
+{"level":"info","message":"  Health      : http://localhost:5000/api/v1/health","timestamp":"2026-07-05 13:47:33"}
+{"level":"info","message":"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━","timestamp":"2026-07-05 13:47:33"}
+{"level":"info","message":"[Cron] Initializing scheduler...","timestamp":"2026-07-05 13:47:33"}
+{"level":"info","message":"[Cron] Scheduling pending attendance check at 15:00 daily","timestamp":"2026-07-05 13:47:33"}
+{"level":"info","message":"[Cron] ✅ Attendance scheduler started","timestamp":"2026-07-05 13:47:33"}
+{"level":"info","message":"[Cron] Scheduling weekly backup reminder (Mondays 9:00 AM)","timestamp":"2026-07-05 13:47:33"}
+{"level":"info","message":"[Cron] ✅ Weekly backup reminder scheduler started","timestamp":"2026-07-05 13:47:33"}
+{"level":"info","message":"[Cron] Running startup backup reminder check...","timestamp":"2026-07-05 13:48:03"}
+{"level":"info","message":"[Cron] Backup is recent (6 days ago), skipping reminder","timestamp":"2026-07-05 13:48:04"}
+{"level":"http","message":"::1 - - [05/Jul/2026:08:19:09 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 389 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 13:49:09"}
+{"level":"http","message":"::1 - - [05/Jul/2026:08:19:10 +0000] \"GET /api/v1/auth/me HTTP/1.1\" 200 389 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 13:49:10"}
+{"level":"http","message":"::1 - - [05/Jul/2026:08:19:11 +0000] \"GET /api/v1/settings HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 13:49:11"}
+{"level":"http","message":"::1 - - [05/Jul/2026:08:19:13 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 117 \"http://localhost:5173/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1 Edg/149.0.0.0\"","timestamp":"2026-07-05 13:49:13"}
+{"level":"http","message":"::1 - - [05/Jul/2026:08:19:15 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 117 \"http://localhost:5173/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1 Edg/149.0.0.0\"","timestamp":"2026-07-05 13:49:15"}
+{"level":"http","message":"::1 - - [05/Jul/2026:08:19:23 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 117 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 13:49:23"}
+{"level":"http","message":"::1 - - [05/Jul/2026:08:19:26 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 117 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 13:49:26"}
+{"level":"http","message":"::1 - - [05/Jul/2026:08:19:33 +0000] \"GET /api/v1/classes?limit=500&isArchived=false&session=6a3e61fbc3f791fc97b32113 HTTP/1.1\" 200 617 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 13:49:33"}
+{"level":"http","message":"::1 - - [05/Jul/2026:08:19:34 +0000] \"GET /api/v1/classes?limit=500&isArchived=false&session=6a3e61fbc3f791fc97b32113 HTTP/1.1\" 200 617 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 13:49:34"}
+{"level":"http","message":"::1 - - [05/Jul/2026:08:19:35 +0000] \"GET /api/v1/attendance/sheet?class=6a41615b4e8b534cc9a33472&date=2026-07-05 HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 13:49:35"}
+{"level":"warn","message":"MongoDB disconnected. Attempting reconnect...","timestamp":"2026-07-05 14:03:47"}
+{"level":"info","message":"MongoDB reconnected successfully","timestamp":"2026-07-05 15:38:58"}
+{"level":"http","message":"::1 - - [05/Jul/2026:10:09:11 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 117 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 15:39:11"}
+{"level":"http","message":"::1 - - [05/Jul/2026:10:09:11 +0000] \"GET /api/v1/notifications/unread-count HTTP/1.1\" 200 117 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 15:39:11"}
+{"level":"http","message":"::1 - - [05/Jul/2026:10:09:11 +0000] \"POST /api/v1/auth/logout HTTP/1.1\" 200 108 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 15:39:11"}
+{"level":"http","message":"::1 - - [05/Jul/2026:10:09:14 +0000] \"GET /api/v1/management/-wy-kGblhdrxmChBx4GAf403/validate HTTP/1.1\" 200 148 \"http://localhost:5173/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1 Edg/149.0.0.0\"","timestamp":"2026-07-05 15:39:14"}
+{"level":"error","message":"Error: this._findNextWorkingDay is not a function","method":"GET","stack":"TypeError: this._findNextWorkingDay is not a function\n    at ManagementService.getTodayOverview (C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\services\\management.service.js:133:41)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\controllers\\management.controller.js:13:16","timestamp":"2026-07-05 15:39:15","url":"/api/v1/management/-wy-kGblhdrxmChBx4GAf403/today","user":"anonymous"}
+{"level":"http","message":"::1 - - [05/Jul/2026:10:09:15 +0000] \"GET /api/v1/management/-wy-kGblhdrxmChBx4GAf403/today HTTP/1.1\" 500 504 \"http://localhost:5173/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1 Edg/149.0.0.0\"","timestamp":"2026-07-05 15:39:15"}
+{"level":"http","message":"::1 - - [05/Jul/2026:10:09:17 +0000] \"GET /api/v1/management/-wy-kGblhdrxmChBx4GAf403/alerts HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1 Edg/149.0.0.0\"","timestamp":"2026-07-05 15:39:17"}
+{"level":"http","message":"::1 - - [05/Jul/2026:10:09:17 +0000] \"GET /api/v1/management/-wy-kGblhdrxmChBx4GAf403/today HTTP/1.1\" - - \"http://localhost:5173/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1 Edg/149.0.0.0\"","timestamp":"2026-07-05 15:39:17"}
+{"level":"error","message":"Error: this._findNextWorkingDay is not a function","method":"GET","stack":"TypeError: this._findNextWorkingDay is not a function\n    at ManagementService.getTodayOverview (C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\services\\management.service.js:133:41)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\controllers\\management.controller.js:13:16","timestamp":"2026-07-05 15:39:18","url":"/api/v1/management/-wy-kGblhdrxmChBx4GAf403/today","user":"anonymous"}
+{"level":"http","message":"::1 - - [05/Jul/2026:10:09:47 +0000] \"GET /api/v1/management/-wy-kGblhdrxmChBx4GAf403/validate HTTP/1.1\" 200 148 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 15:39:47"}
+{"level":"error","message":"Error: this._findNextWorkingDay is not a function","method":"GET","stack":"TypeError: this._findNextWorkingDay is not a function\n    at ManagementService.getTodayOverview (C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\services\\management.service.js:133:41)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\controllers\\management.controller.js:13:16","timestamp":"2026-07-05 15:39:48","url":"/api/v1/management/-wy-kGblhdrxmChBx4GAf403/today","user":"anonymous"}
+{"level":"http","message":"::1 - - [05/Jul/2026:10:09:48 +0000] \"GET /api/v1/management/-wy-kGblhdrxmChBx4GAf403/today HTTP/1.1\" 500 504 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 15:39:48"}
+{"level":"http","message":"::1 - - [05/Jul/2026:10:09:48 +0000] \"GET /api/v1/management/-wy-kGblhdrxmChBx4GAf403/alerts HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 15:39:48"}
+{"level":"error","message":"Error: this._findNextWorkingDay is not a function","method":"GET","stack":"TypeError: this._findNextWorkingDay is not a function\n    at ManagementService.getTodayOverview (C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\services\\management.service.js:133:41)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\controllers\\management.controller.js:13:16","timestamp":"2026-07-05 15:39:49","url":"/api/v1/management/-wy-kGblhdrxmChBx4GAf403/today","user":"anonymous"}
+{"level":"http","message":"::1 - - [05/Jul/2026:10:09:49 +0000] \"GET /api/v1/management/-wy-kGblhdrxmChBx4GAf403/today HTTP/1.1\" 500 504 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 15:39:49"}
+{"level":"error","message":"Error: this._findNextWorkingDay is not a function","method":"GET","stack":"TypeError: this._findNextWorkingDay is not a function\n    at ManagementService.getTodayOverview (C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\services\\management.service.js:133:41)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\controllers\\management.controller.js:13:16","timestamp":"2026-07-05 15:41:49","url":"/api/v1/management/-wy-kGblhdrxmChBx4GAf403/today","user":"anonymous"}
+{"level":"http","message":"::1 - - [05/Jul/2026:10:11:49 +0000] \"GET /api/v1/management/-wy-kGblhdrxmChBx4GAf403/today HTTP/1.1\" 500 504 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 15:41:49"}
+{"level":"error","message":"Error: this._findNextWorkingDay is not a function","method":"GET","stack":"TypeError: this._findNextWorkingDay is not a function\n    at ManagementService.getTodayOverview (C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\services\\management.service.js:133:41)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\controllers\\management.controller.js:13:16","timestamp":"2026-07-05 15:42:02","url":"/api/v1/management/-wy-kGblhdrxmChBx4GAf403/today","user":"anonymous"}
+{"level":"http","message":"::1 - - [05/Jul/2026:10:12:02 +0000] \"GET /api/v1/management/-wy-kGblhdrxmChBx4GAf403/today HTTP/1.1\" 500 504 \"http://localhost:5173/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0\"","timestamp":"2026-07-05 15:42:02"}

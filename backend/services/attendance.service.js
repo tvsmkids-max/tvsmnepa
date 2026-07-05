@@ -324,6 +324,7 @@ class AttendanceService {
     const Student = require("../models/Student.model");
     const Attendance = require("../models/Attendance.model");
     const AcademicSession = require("../models/AcademicSession.model");
+    const Holiday = require("../models/Holiday.model");
 
     // ─── Get active session ───
     let activeSessionId = null;
@@ -344,17 +345,42 @@ class AttendanceService {
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    // ─── Check holiday ───
+    // ═══════════════════════════════════════════════════════════════
+    //  NEW: Check both holiday AND non-working day
+    // ═══════════════════════════════════════════════════════════════
+    const dayName = today.toLocaleDateString("en-US", { weekday: "long" });
+    const settingsFull = await Settings.getSettings();
+    const workingDay = settingsFull?.workingDays?.find(
+      (d) => d.day === dayName,
+    );
+    const isWorkingDay = !workingDay || workingDay.isWorking;
+
     const holiday = await holidayRepository.isHoliday(today, activeSessionId);
-    if (holiday && !holiday.allowAttendance) {
+    const isHoliday = holiday && !holiday.allowAttendance;
+    const isNonWorkingDay = !isWorkingDay && !isHoliday;
+
+    // ✅ If holiday OR non-working day, return early with rich info
+    if (isHoliday || isNonWorkingDay) {
+      // Find next working day
+      const nextWorkingDay = await this._findNextWorkingDayForAttendance(
+        activeSessionId,
+        today,
+      );
+
       return {
         ...this._emptyTodayStats(),
-        isHoliday: true,
-        holiday,
+        isHoliday,
+        isNonWorkingDay,
+        isWorkingDay,
+        holiday: isHoliday ? holiday : null,
+        today: {
+          date: today.toISOString(),
+          dayName,
+        },
+        nextWorkingDay,
       };
     }
 
@@ -378,14 +404,12 @@ class AttendanceService {
 
     const classIds = classes.map((c) => c._id);
 
-    // ─── Get TODAY's ACTIVE students only ───
     const todayStudents = await Student.find({
       class: { $in: classIds },
       status: "Active",
       isActive: true,
     }).lean();
 
-    // Build active student set & class count
     const activeStudentIds = new Set(
       todayStudents.map((s) => s._id.toString()),
     );
@@ -398,32 +422,23 @@ class AttendanceService {
 
     const totalStudents = todayStudents.length;
 
-    // ─── Get today's attendance ───
     const todayAttendance = await Attendance.find({
       class: { $in: classIds },
       date: { $gte: today, $lt: tomorrow },
     }).lean();
 
-    // ─── KEY FIX: Only count attendance for ACTIVE students ───
-    // ─── KEY FIX: Only count attendance for ACTIVE students + Dedupe ───
     const classStatsMap = {};
-    const countedStudentInClass = new Set(); // Prevent duplicates
+    const countedStudentInClass = new Set();
 
     todayAttendance.forEach((rec) => {
       const studentId = rec.student.toString();
       const cid = rec.class.toString();
       const uniqueKey = `${cid}-${studentId}`;
 
-      // Skip if student is no longer active
       if (!activeStudentIds.has(studentId)) return;
-
-      // Skip if we've already counted this student in this class
-      // (handles duplicate records bug)
       if (countedStudentInClass.has(uniqueKey)) return;
       countedStudentInClass.add(uniqueKey);
 
-      // Verify student actually belongs to THIS class (not another class)
-      // This prevents counting students from one class in another
       const actualClassId = todayStudents
         .find((s) => s._id.toString() === studentId)
         ?.class?.toString();
@@ -434,16 +449,12 @@ class AttendanceService {
         (classStatsMap[cid][rec.status] || 0) + 1;
     });
 
-    // ─── Build class breakdown ───
     const classBreakdown = classes.map((cls) => {
       const cid = cls._id.toString();
       const stats = classStatsMap[cid] || { Present: 0, Absent: 0 };
       const totalInClass = studentCountMap[cid] || 0;
-
-      // ✅ CRITICAL: Cap counts to total students (prevents inflation)
       const present = Math.min(stats.Present, totalInClass);
       const absent = Math.min(stats.Absent, totalInClass - present);
-
       const marked = present + absent;
       const unmarkedInClass = Math.max(0, totalInClass - marked);
       const percentage = marked > 0 ? Math.round((present / marked) * 100) : 0;
@@ -455,8 +466,8 @@ class AttendanceService {
         classTeacher: cls.classTeacher?.name || null,
         classTeacherId: cls.classTeacher?._id || null,
         totalStudents: totalInClass,
-        present, // ← use capped value
-        absent, // ← use capped value
+        present,
+        absent,
         marked,
         unmarked: unmarkedInClass,
         isMarked: marked > 0,
@@ -468,12 +479,11 @@ class AttendanceService {
     const absent = classBreakdown.reduce((sum, c) => sum + c.absent, 0);
     const markedClasses = classBreakdown.filter((c) => c.isMarked).length;
     const totalMarked = present + absent;
-    const unmarked = Math.max(0, totalStudents - totalMarked); // ✅ FIX
-
+    const unmarked = Math.max(0, totalStudents - totalMarked);
     const percentage =
       totalMarked > 0 ? Math.round((present / totalMarked) * 100) : 0;
 
-    // ─── YESTERDAY COMPARISON ───
+    // Yesterday comparison
     let yesterdayStats = null;
     try {
       const yesterdayAttendance = await Attendance.find({
@@ -485,7 +495,7 @@ class AttendanceService {
       let yAbsent = 0;
       yesterdayAttendance.forEach((r) => {
         const sid = r.student.toString();
-        if (!activeStudentIds.has(sid)) return; // Filter inactive students
+        if (!activeStudentIds.has(sid)) return;
         if (r.status === "Present") yPresent++;
         else if (r.status === "Absent") yAbsent++;
       });
@@ -511,7 +521,11 @@ class AttendanceService {
 
     return {
       isHoliday: false,
+      isNonWorkingDay: false,
+      isWorkingDay: true,
       holiday: null,
+      today: { date: today.toISOString(), dayName },
+      nextWorkingDay: null,
       totalStudents,
       totalClasses: classes.length,
       markedClasses,
@@ -528,13 +542,86 @@ class AttendanceService {
     };
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  NEW HELPER: Find next working day
+  // ═══════════════════════════════════════════════════════════════
+  async _findNextWorkingDayForAttendance(sessionId, fromDate) {
+    const Holiday = require("../models/Holiday.model");
+    const settings = await Settings.getSettings();
+    const workingDaysMap = {};
+    (settings?.workingDays || []).forEach((d) => {
+      workingDaysMap[d.day] = d.isWorking;
+    });
+
+    const start = new Date(fromDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(fromDate);
+    end.setDate(end.getDate() + 30);
+
+    const holidays = await Holiday.find({
+      session: sessionId,
+      date: { $lte: end },
+      allowAttendance: { $ne: true },
+      $or: [
+        { endDate: null, date: { $gte: start } },
+        { endDate: { $gte: start } },
+      ],
+    })
+      .select("date endDate")
+      .lean();
+
+    const isDateHoliday = (checkDate) => {
+      return holidays.some((h) => {
+        const hStart = new Date(h.date);
+        hStart.setHours(0, 0, 0, 0);
+        const hEnd = h.endDate ? new Date(h.endDate) : hStart;
+        hEnd.setHours(23, 59, 59, 999);
+        return checkDate >= hStart && checkDate <= hEnd;
+      });
+    };
+
+    for (let i = 1; i <= 14; i++) {
+      const candidate = new Date(fromDate);
+      candidate.setDate(candidate.getDate() + i);
+      candidate.setHours(0, 0, 0, 0);
+
+      const candidateDayName = candidate.toLocaleDateString("en-US", {
+        weekday: "long",
+      });
+
+      const isWorking =
+        workingDaysMap[candidateDayName] === undefined
+          ? true
+          : workingDaysMap[candidateDayName];
+
+      if (!isWorking) continue;
+      if (isDateHoliday(candidate)) continue;
+
+      return {
+        date: candidate.toISOString(),
+        dayName: candidateDayName,
+        label: candidate.toLocaleDateString("en-IN", {
+          weekday: "long",
+          day: "numeric",
+          month: "short",
+        }),
+      };
+    }
+
+    return null;
+  }
+
   /**
    * Empty stats object (for fallback)
    */
   _emptyTodayStats() {
     return {
       isHoliday: false,
+      isNonWorkingDay: false,
+      isWorkingDay: true,
       holiday: null,
+      today: null,
+      nextWorkingDay: null,
       totalStudents: 0,
       totalClasses: 0,
       markedClasses: 0,
