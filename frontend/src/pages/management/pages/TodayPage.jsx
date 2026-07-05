@@ -412,11 +412,19 @@ const TodayPage = ({ secretKey }) => {
       </Paper>
 
       {/* ══════════════════════════════════════════════════════
-          📋 CLASS-WISE TABLE + CHART (Split on desktop)
-      ══════════════════════════════════════════════════════ */}
-      <Grid container spacing={2}>
+    📋 CLASS-WISE TABLE + CHART (Split on desktop)
+══════════════════════════════════════════════════════ */}
+      <Grid container spacing={2} sx={{ width: "100%", m: 0 }}>
         {/* ─── LEFT: Table ─── */}
-        <Grid item xs={12} md={6}>
+        <Grid
+          item
+          xs={12}
+          md={6}
+          sx={{
+            width: "100%",
+            pl: { xs: "0 !important", md: undefined },
+          }}
+        >
           <Paper
             sx={{
               borderRadius: 2,
@@ -426,6 +434,7 @@ const TodayPage = ({ secretKey }) => {
               height: { md: 500 },
               display: "flex",
               flexDirection: "column",
+              width: "100%", // ✅ Force full width
             }}
           >
             {/* Header */}
@@ -469,7 +478,7 @@ const TodayPage = ({ secretKey }) => {
               // ═══════════════════════════════════════════════════════════
               //  📱 MOBILE VIEW — Compact cards
               // ═══════════════════════════════════════════════════════════
-              <Box sx={{ flex: 1, overflowY: "auto" }}>
+              <Box sx={{ flex: 1, overflowY: "auto", width: "100%" }}>
                 <Stack
                   divider={
                     <Box
@@ -479,6 +488,7 @@ const TodayPage = ({ secretKey }) => {
                       }}
                     />
                   }
+                  sx={{ width: "100%" }}
                 >
                   {sortedClasses.map((cls) => {
                     const config =
@@ -491,9 +501,12 @@ const TodayPage = ({ secretKey }) => {
                           py: 1.25,
                           borderLeft: "3px solid",
                           borderLeftColor: config.dot,
+                          width: "100%",
+                          boxSizing: "border-box", // ✅ Include padding in width
                           "&:hover": { bgcolor: "action.hover" },
                         }}
                       >
+                        {" "}
                         <Stack
                           direction="row"
                           justifyContent="space-between"

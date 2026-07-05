@@ -166,9 +166,13 @@ const ManagementDashboard = () => {
         sx={{
           flex: 1,
           overflow: "auto",
+          overflowX: "hidden", // ✅ Prevent horizontal scroll
           pb: { xs: 9, sm: 10 },
           px: { xs: 1.5, sm: 2.5 },
           py: 2,
+          width: "100%", // ✅ Force full width
+          maxWidth: "100vw", // ✅ Never exceed viewport
+          boxSizing: "border-box", // ✅ Include padding in width
         }}
         className="management-content"
       >
