@@ -102,6 +102,9 @@ class ClassService {
     return { ...cls, studentCount };
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  CREATE — with bi-directional teacher sync
+  // ═══════════════════════════════════════════════════════════════
   async create(data, user, req) {
     const exists = await classRepository.exists({
       name: data.name,
@@ -121,21 +124,48 @@ class ClassService {
       createdBy: user._id,
     });
 
+    // ═══════════════════════════════════════════════════════════
+    //  ✅ FIX: Sync teachers bi-directionally
+    // ═══════════════════════════════════════════════════════════
+    const Teacher = require("../models/Teacher.model");
+
+    // Collect ALL teacher IDs that need this class in their assignedClasses
+    const teacherIdsToSync = new Set();
+
+    // Add classTeacher (if set)
+    if (data.classTeacher) {
+      teacherIdsToSync.add(data.classTeacher.toString());
+    }
+
+    // Add all assignedTeachers
     if (data.assignedTeachers?.length > 0) {
-      const Teacher = require("../models/Teacher.model");
+      data.assignedTeachers.forEach((id) =>
+        teacherIdsToSync.add(id.toString()),
+      );
+    }
+
+    // Sync: Add this class to each teacher's assignedClasses
+    if (teacherIdsToSync.size > 0) {
+      const teacherIds = Array.from(teacherIdsToSync);
+
       await Teacher.updateMany(
-        { _id: { $in: data.assignedTeachers } },
+        { _id: { $in: teacherIds } },
         { $addToSet: { assignedClasses: cls._id } },
       );
 
-      // ─── NOTIFY ASSIGNED TEACHERS ───
+      // Also ensure classTeacher is in assignedTeachers list on the Class
+      if (
+        data.classTeacher &&
+        !data.assignedTeachers?.includes(data.classTeacher.toString())
+      ) {
+        await classRepository.updateById(cls._id, {
+          $addToSet: { assignedTeachers: data.classTeacher },
+        });
+      }
+
+      // Notify assigned teachers
       try {
-        await this._notifyTeacherAssignment(
-          data.assignedTeachers,
-          cls,
-          user,
-          "assigned",
-        );
+        await this._notifyTeacherAssignment(teacherIds, cls, user, "assigned");
       } catch (err) {
         logger.error(`[Class] Teacher notification failed: ${err.message}`);
       }
@@ -155,6 +185,9 @@ class ClassService {
     return cls;
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  UPDATE — with bi-directional teacher sync
+  // ═══════════════════════════════════════════════════════════════
   async update(id, data, user, req) {
     const existing = await classRepository.findById(id);
     if (!existing) throwError("Class not found", 404);
@@ -173,7 +206,26 @@ class ClassService {
         throwError("Another class with same name & section exists", 409);
     }
 
-    // ─── Detect teacher assignment changes ───
+    const Teacher = require("../models/Teacher.model");
+
+    // ═══════════════════════════════════════════════════════════
+    //  ✅ FIX: Track ALL teacher changes (classTeacher + assignedTeachers)
+    // ═══════════════════════════════════════════════════════════
+
+    // --- Track classTeacher changes ---
+    const oldClassTeacher = existing.classTeacher
+      ? existing.classTeacher.toString()
+      : null;
+    const newClassTeacher =
+      data.classTeacher !== undefined
+        ? data.classTeacher
+          ? data.classTeacher.toString()
+          : null
+        : oldClassTeacher;
+
+    const classTeacherChanged = oldClassTeacher !== newClassTeacher;
+
+    // --- Track assignedTeachers changes ---
     const oldTeachers = (existing.assignedTeachers || []).map((t) =>
       t.toString(),
     );
@@ -184,7 +236,56 @@ class ClassService {
     const addedTeachers = newTeachers.filter((t) => !oldTeachers.includes(t));
     const removedTeachers = oldTeachers.filter((t) => !newTeachers.includes(t));
 
+    // --- Ensure classTeacher is always in assignedTeachers ---
+    if (newClassTeacher && !newTeachers.includes(newClassTeacher)) {
+      newTeachers.push(newClassTeacher);
+      addedTeachers.push(newClassTeacher);
+      data.assignedTeachers = newTeachers;
+    }
+
+    // --- Perform the update ---
     const updated = await classRepository.updateById(id, data);
+
+    // ═══════════════════════════════════════════════════════════
+    //  ✅ FIX: Sync Teacher.assignedClasses for added teachers
+    // ═══════════════════════════════════════════════════════════
+    if (addedTeachers.length > 0) {
+      await Teacher.updateMany(
+        { _id: { $in: addedTeachers } },
+        { $addToSet: { assignedClasses: id } },
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  ✅ FIX: Remove class from removed teachers' assignedClasses
+    // ═══════════════════════════════════════════════════════════
+    if (removedTeachers.length > 0) {
+      await Teacher.updateMany(
+        { _id: { $in: removedTeachers } },
+        { $pull: { assignedClasses: id } },
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  ✅ FIX: Handle classTeacher change specifically
+    // ═══════════════════════════════════════════════════════════
+    if (classTeacherChanged) {
+      // Remove class from old classTeacher (if they're also not in assignedTeachers)
+      if (oldClassTeacher && !newTeachers.includes(oldClassTeacher)) {
+        await Teacher.updateOne(
+          { _id: oldClassTeacher },
+          { $pull: { assignedClasses: id } },
+        );
+      }
+
+      // Add class to new classTeacher
+      if (newClassTeacher) {
+        await Teacher.updateOne(
+          { _id: newClassTeacher },
+          { $addToSet: { assignedClasses: id } },
+        );
+      }
+    }
 
     await createAuditLog({
       user,
@@ -237,6 +338,7 @@ class ClassService {
 
     await classRepository.deleteById(id);
 
+    // ✅ Clean up ALL teacher references
     const Teacher = require("../models/Teacher.model");
     await Teacher.updateMany(
       { assignedClasses: id },

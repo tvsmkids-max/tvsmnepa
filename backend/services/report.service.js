@@ -13,7 +13,7 @@ const throwError = (message, statusCode = 400) => {
 
 class ReportService {
   /**
-   * Get daily report — attendance for a specific date
+   * Get daily report — enhanced with teacher info, status, smart sort
    */
   async getDailyReport({ date, classId, user }) {
     const settings = await Settings.getSettings();
@@ -28,7 +28,14 @@ class ReportService {
     // Check holiday
     const holiday = await Holiday.isHoliday(day, sessionId);
 
-    // Get classes
+    // Check non-working day
+    const dayName = day.toLocaleDateString("en-US", { weekday: "long" });
+    const workingDay = settings?.workingDays?.find((d) => d.day === dayName);
+    const isWorkingDay = !workingDay || workingDay.isWorking;
+    const isHoliday = holiday && !holiday.allowAttendance;
+    const isNonWorkingDay = !isWorkingDay && !isHoliday;
+
+    // Get classes with teacher info
     const classFilter = { session: sessionId, isArchived: false };
     if (classId) classFilter._id = classId;
 
@@ -42,12 +49,20 @@ class ReportService {
           classes: [],
           summary: this._emptySummary(),
           holiday,
+          isHoliday,
+          isNonWorkingDay,
+          isWorkingDay,
+          today: { date: day.toISOString(), dayName },
         };
       }
       classFilter._id = { $in: teacher.assignedClasses };
     }
 
-    const classes = await Class.find(classFilter).lean();
+    // ✅ Populate classTeacher for teacher name
+    const classes = await Class.find(classFilter)
+      .populate("classTeacher", "name employeeId")
+      .lean();
+
     const classIds = classes.map((c) => c._id);
 
     // Get all students in these classes
@@ -63,17 +78,38 @@ class ReportService {
       studentMap[s.class.toString()].push(s);
     });
 
-    // Get attendance records for the date
+    // ✅ Get attendance records WITH markedBy and editedBy
     const records = await Attendance.find({
       class: { $in: classIds },
       date: { $gte: day, $lt: tomorrow },
-    }).lean();
+    })
+      .populate("markedBy", "name")
+      .populate("editedBy", "name")
+      .lean();
 
     const recordMap = {};
     records.forEach((r) => {
       if (!recordMap[r.class.toString()]) recordMap[r.class.toString()] = {};
       recordMap[r.class.toString()][r.student.toString()] = r;
     });
+
+    // ✅ Smart class sort helper
+    const getClassRank = (className) => {
+      if (!className) return 999;
+      const name = className.toString().trim().toUpperCase();
+      if (/^NUR/.test(name) || name === "NURSERY") return 1;
+      if (/^L\.?K\.?G/.test(name) || name === "LKG" || name === "LOWER KG")
+        return 2;
+      if (/^U\.?K\.?G/.test(name) || name === "UKG" || name === "UPPER KG")
+        return 3;
+      if (/^PRE/.test(name) || name === "PLAYGROUP") return 0;
+      const numMatch = name.match(/^(?:CLASS\s*)?(\d{1,2})(?:ST|ND|RD|TH)?/);
+      if (numMatch) {
+        const num = parseInt(numMatch[1], 10);
+        if (num >= 1 && num <= 12) return 10 + num;
+      }
+      return 999;
+    };
 
     // Build report per class
     const classReports = classes.map((cls) => {
@@ -82,22 +118,68 @@ class ReportService {
 
       let present = 0;
       let absent = 0;
-      const studentDetails = classStudents.map((s) => {
-        const rec = classRecords[s._id.toString()];
-        if (rec?.status === "Present") present++;
-        else if (rec?.status === "Absent") absent++;
-        return {
-          _id: s._id,
-          name: s.name,
-          rollNumber: s.rollNumber,
-          scholarNumber: s.scholarNumber,
-          status: rec?.status || "Unmarked",
-        };
-      });
+
+      // ✅ Track who marked and who edited
+      let markedByName = null;
+      let editedByName = null;
+      let markedAt = null;
+      let editedAt = null;
+      let hasEdits = false;
+
+      const studentDetails = classStudents
+        .sort((a, b) => {
+          const rollA = parseInt(a.rollNumber, 10) || 0;
+          const rollB = parseInt(b.rollNumber, 10) || 0;
+          return rollA - rollB;
+        })
+        .map((s) => {
+          const rec = classRecords[s._id.toString()];
+          if (rec?.status === "Present") present++;
+          else if (rec?.status === "Absent") absent++;
+
+          // Capture first markedBy (all records in a class usually marked by same person)
+          if (rec?.markedBy?.name && !markedByName) {
+            markedByName = rec.markedBy.name;
+            markedAt = rec.markedAt || rec.createdAt;
+          }
+
+          // Capture if any record was edited
+          if (rec?.editedBy?.name) {
+            editedByName = rec.editedBy.name;
+            editedAt = rec.editedAt;
+            hasEdits = true;
+          }
+
+          return {
+            _id: s._id,
+            name: s.name,
+            rollNumber: s.rollNumber,
+            scholarNumber: s.scholarNumber,
+            fatherName: s.fatherName,
+            motherName: s.motherName,
+            gender: s.gender,
+            mobile: s.mobile,
+            status: rec?.status || "Unmarked",
+          };
+        });
 
       const total = classStudents.length;
       const marked = present + absent;
+      const unmarked = total - marked;
       const percentage = marked > 0 ? Math.round((present / marked) * 100) : 0;
+
+      // ✅ Determine status
+      let status = "pending";
+      if (total === 0) {
+        status = "empty";
+      } else if (marked === total) {
+        status = "completed";
+      } else if (marked > 0) {
+        status = "partial";
+      }
+
+      // ✅ Low attendance warning
+      const isLowAttendance = marked > 0 && percentage < 80;
 
       return {
         _id: cls._id,
@@ -106,21 +188,49 @@ class ReportService {
         total,
         present,
         absent,
-        unmarked: total - marked,
+        unmarked,
         percentage,
         isMarked: marked > 0,
+        isEmpty: total === 0,
+        status,
+        isLowAttendance,
+        // ✅ NEW: Teacher info
+        classTeacher: cls.classTeacher?.name || null,
+        classTeacherEmpId: cls.classTeacher?.employeeId || null,
+        // ✅ NEW: Who marked/edited
+        markedBy: markedByName,
+        markedAt,
+        editedBy: hasEdits ? editedByName : null,
+        editedAt: hasEdits ? editedAt : null,
+        hasEdits,
+        // ✅ NEW: Sort rank for frontend backup
+        sortRank: getClassRank(cls.name),
         students: studentDetails,
       };
+    });
+
+    // ✅ Sort classes: Nursery → LKG → UKG → 1st → ... → 12th, then by section
+    classReports.sort((a, b) => {
+      const rankA = getClassRank(a.name);
+      const rankB = getClassRank(b.name);
+      if (rankA !== rankB) return rankA - rankB;
+      return (a.section || "").localeCompare(b.section || "");
     });
 
     // Overall summary
     const summary = {
       totalClasses: classes.length,
-      markedClasses: classReports.filter((c) => c.isMarked).length,
+      markedClasses: classReports.filter((c) => c.status === "completed")
+        .length,
+      partialClasses: classReports.filter((c) => c.status === "partial").length,
+      pendingClasses: classReports.filter((c) => c.status === "pending").length,
+      emptyClasses: classReports.filter((c) => c.status === "empty").length,
       totalStudents: classReports.reduce((s, c) => s + c.total, 0),
       totalPresent: classReports.reduce((s, c) => s + c.present, 0),
       totalAbsent: classReports.reduce((s, c) => s + c.absent, 0),
       totalUnmarked: classReports.reduce((s, c) => s + c.unmarked, 0),
+      lowAttendanceClasses: classReports.filter((c) => c.isLowAttendance)
+        .length,
       overallPercentage: 0,
     };
     const totalMarked = summary.totalPresent + summary.totalAbsent;
@@ -132,9 +242,16 @@ class ReportService {
 
     return {
       date: day,
+      isHoliday,
+      isNonWorkingDay,
+      isWorkingDay,
+      holiday: isHoliday ? holiday : null,
+      today: {
+        date: day.toISOString(),
+        dayName,
+      },
       classes: classReports,
       summary,
-      holiday,
     };
   }
 

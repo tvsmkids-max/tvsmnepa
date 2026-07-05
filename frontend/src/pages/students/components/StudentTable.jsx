@@ -337,7 +337,7 @@ const StudentTable = ({
         borderColor: "divider",
       }}
     >
-      <TableContainer sx={{ maxHeight: "calc(100vh - 300px)" }}>
+      <TableContainer>
         <Table stickyHeader size="small" sx={{ tableLayout: "auto" }}>
           <TableHead>
             <TableRow>

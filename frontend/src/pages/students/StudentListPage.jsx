@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useCallback,
-  useMemo,
-  useEffect,
-  useRef,
-} from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Box,
   Paper,
@@ -23,7 +17,7 @@ import StudentFilterBar from "./components/StudentFilterBar";
 import StudentCard from "./components/StudentCard";
 import StudentTable from "./components/StudentTable";
 import BulkActionToolbar from "./components/BulkActionToolbar";
-import MobileSortMenu from "./components/MobileSortMenu"; // ✅ NEW
+import MobileSortMenu from "./components/MobileSortMenu";
 
 import StudentFormDialog from "./StudentFormDialog";
 import StudentStatusDialog from "./StudentStatusDialog";
@@ -44,7 +38,6 @@ import {
 import studentApi from "../../api/studentApi";
 import { exportStudentsToExcel } from "../../utils/exportUtils";
 
-const PAGE_SIZE = 30;
 const MAX_BULK_SELECT = 100;
 const EXPORT_LIMIT = 5000;
 
@@ -58,7 +51,27 @@ const DEFAULT_FILTERS = {
   bloodGroup: "",
 };
 
-const DEFAULT_SORT = { sortBy: "name", sortOrder: "asc" };
+const DEFAULT_SORT = { sortBy: "class", sortOrder: "asc" };
+
+// ═══════════════════════════════════════════════════════════════════
+//  Smart class rank (Nursery → LKG → UKG → 1st → ... → 12th)
+// ═══════════════════════════════════════════════════════════════════
+const getClassRank = (cls) => {
+  if (!cls?.name) return 999;
+  const name = cls.name.toString().trim().toUpperCase();
+  if (/^NUR/.test(name) || name === "NURSERY") return 1;
+  if (/^L\.?K\.?G/.test(name) || name === "LKG" || name === "LOWER KG")
+    return 2;
+  if (/^U\.?K\.?G/.test(name) || name === "UKG" || name === "UPPER KG")
+    return 3;
+  if (/^PRE/.test(name) || name === "PLAYGROUP" || name === "PLAY") return 0;
+  const numMatch = name.match(/^(?:CLASS\s*)?(\d{1,2})(?:ST|ND|RD|TH)?/);
+  if (numMatch) {
+    const num = parseInt(numMatch[1], 10);
+    if (num >= 1 && num <= 12) return 10 + num;
+  }
+  return 999;
+};
 
 const StudentListPage = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -81,27 +94,11 @@ const StudentListPage = () => {
 
   const debouncedSearch = useDebounce(filters.search, 400);
 
-  const [page, setPage] = useState(1);
-  const [accumulatedStudents, setAccumulatedStudents] = useState([]);
-  const observerTarget = useRef(null);
-
-  useEffect(() => {
-    setPage(1);
-    setAccumulatedStudents([]);
-  }, [
-    debouncedSearch,
-    filters.status,
-    filters.class,
-    filters.section,
-    filters.gender,
-    filters.category,
-    filters.bloodGroup,
-  ]);
-
+  // ✅ Load ALL students at once (no pagination complexity)
   const queryParams = useMemo(
     () => ({
-      page,
-      limit: PAGE_SIZE,
+      page: 1,
+      limit: 2000, // Load all students
       search: debouncedSearch,
       status: filters.status,
       ...(filters.class && { class: filters.class }),
@@ -111,7 +108,6 @@ const StudentListPage = () => {
       ...(filters.bloodGroup && { bloodGroup: filters.bloodGroup }),
     }),
     [
-      page,
       debouncedSearch,
       filters.status,
       filters.class,
@@ -134,30 +130,43 @@ const StudentListPage = () => {
   const deleteMutation = useDeleteStudent();
   const updateStatusMutation = useUpdateStudentStatus();
 
+  const allStudents = studentsData?.data || [];
   const pagination = studentsData?.pagination || {
     page: 1,
     total: 0,
     totalPages: 0,
   };
 
-  useEffect(() => {
-    if (!studentsData?.data) return;
-    if (page === 1) {
-      setAccumulatedStudents(studentsData.data);
-    } else {
-      setAccumulatedStudents((prev) => {
-        const existingIds = new Set(prev.map((s) => s._id));
-        const newStudents = studentsData.data.filter(
-          (s) => !existingIds.has(s._id),
-        );
-        return [...prev, ...newStudents];
-      });
-    }
-  }, [studentsData, page]);
-
+  // ✅ Sort ALL students with smart class ordering
   const sortedStudents = useMemo(() => {
-    const list = [...accumulatedStudents];
+    const list = [...allStudents];
+
     list.sort((a, b) => {
+      // Smart class sort
+      if (sortBy === "class") {
+        const rankA = getClassRank(a.class);
+        const rankB = getClassRank(b.class);
+
+        if (rankA !== rankB) {
+          return sortOrder === "asc" ? rankA - rankB : rankB - rankA;
+        }
+
+        // Same class → sort by section
+        const secA = (a.class?.section || "").toLowerCase();
+        const secB = (b.class?.section || "").toLowerCase();
+        if (secA !== secB) {
+          return sortOrder === "asc"
+            ? secA.localeCompare(secB)
+            : secB.localeCompare(secA);
+        }
+
+        // Same class + section → sort by name
+        const nameA = (a.name || "").toLowerCase();
+        const nameB = (b.name || "").toLowerCase();
+        return nameA.localeCompare(nameB);
+      }
+
+      // Standard sorting for other columns
       let aVal, bVal;
 
       switch (sortBy) {
@@ -189,12 +198,6 @@ const StudentListPage = () => {
           aVal = a.mobile || "";
           bVal = b.mobile || "";
           break;
-        case "class":
-          aVal =
-            `${a.class?.name || ""}-${a.class?.section || ""}`.toLowerCase();
-          bVal =
-            `${b.class?.name || ""}-${b.class?.section || ""}`.toLowerCase();
-          break;
         case "status":
           aVal = a.status?.toLowerCase() || "";
           bVal = b.status?.toLowerCase() || "";
@@ -211,11 +214,11 @@ const StudentListPage = () => {
       }
       return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
     });
+
     return list;
-  }, [accumulatedStudents, sortBy, sortOrder]);
+  }, [allStudents, sortBy, sortOrder]);
 
   const students = sortedStudents;
-  const hasMore = page < pagination.totalPages;
 
   const handleSort = useCallback((field) => {
     setSortBy((prev) => {
@@ -228,26 +231,7 @@ const StudentListPage = () => {
     });
   }, []);
 
-  useEffect(() => {
-    if (!hasMore || isFetching || isLoading) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setPage((p) => p + 1);
-        }
-      },
-      { threshold: 0.1, rootMargin: "200px" },
-    );
-
-    const target = observerTarget.current;
-    if (target) observer.observe(target);
-
-    return () => {
-      if (target) observer.unobserve(target);
-    };
-  }, [hasMore, isFetching, isLoading]);
-
+  // ─── DIALOG STATES ───
   const [formOpen, setFormOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -257,6 +241,7 @@ const StudentListPage = () => {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [confirmQuickToggle, setConfirmQuickToggle] = useState(null);
 
+  // ─── BULK SELECTION ───
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [exporting, setExporting] = useState(false);
@@ -382,9 +367,9 @@ const StudentListPage = () => {
     try {
       const params = { ...queryParams, page: 1, limit: EXPORT_LIMIT };
       const res = await studentApi.list(params);
-      const allStudents = res.data?.data || [];
+      const allExportStudents = res.data?.data || [];
 
-      if (allStudents.length === 0) {
+      if (allExportStudents.length === 0) {
         enqueueSnackbar("No students to export", { variant: "info" });
         return;
       }
@@ -399,8 +384,8 @@ const StudentListPage = () => {
       const dateLabel = new Date().toISOString().split("T")[0];
       const filename = `students_${classLabel}${statusLabel}${dateLabel}`;
 
-      exportStudentsToExcel(allStudents, filename);
-      enqueueSnackbar(`${allStudents.length} students exported`, {
+      exportStudentsToExcel(allExportStudents, filename);
+      enqueueSnackbar(`${allExportStudents.length} students exported`, {
         variant: "success",
       });
     } catch (err) {
@@ -417,17 +402,12 @@ const StudentListPage = () => {
     setStatusOpen(false);
     setEditingStudent(null);
     setStatusStudent(null);
-    setPage(1);
-    setAccumulatedStudents([]);
     refetch();
   };
 
   const handleConfirmDelete = async () => {
     if (!confirmDelete) return;
     await deleteMutation.mutateAsync(confirmDelete._id);
-    setAccumulatedStudents((prev) =>
-      prev.filter((s) => s._id !== confirmDelete._id),
-    );
     setConfirmDelete(null);
   };
 
@@ -435,7 +415,6 @@ const StudentListPage = () => {
     if (!confirmQuickToggle) return;
     const { student, newStatus } = confirmQuickToggle;
 
-    // ✅ Auto-generate a meaningful remark (backend requires it for Inactive)
     const remark =
       newStatus === "Inactive"
         ? "Marked inactive via quick toggle"
@@ -446,17 +425,10 @@ const StudentListPage = () => {
         id: student._id,
         data: {
           status: newStatus,
-          statusRemark: remark, // ✅ Auto-filled
-          statusDate: new Date().toISOString(), // ✅ Today's date
+          statusRemark: remark,
+          statusDate: new Date().toISOString(),
         },
       });
-
-      setAccumulatedStudents((prev) =>
-        prev.map((s) =>
-          s._id === student._id ? { ...s, status: newStatus } : s,
-        ),
-      );
-
       setConfirmQuickToggle(null);
     } catch (err) {
       enqueueSnackbar(
@@ -468,15 +440,11 @@ const StudentListPage = () => {
 
   const handleImported = () => {
     setImportOpen(false);
-    setPage(1);
-    setAccumulatedStudents([]);
     refetch();
   };
 
   const handleBulkDeleted = () => {
     exitSelectionMode();
-    setPage(1);
-    setAccumulatedStudents([]);
     refetch();
   };
 
@@ -556,7 +524,7 @@ const StudentListPage = () => {
         sections={sections}
       />
 
-      {isLoading && students.length === 0 ? (
+      {isLoading ? (
         <Paper sx={{ p: 8, textAlign: "center", borderRadius: 2 }}>
           <CircularProgress />
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
@@ -595,8 +563,40 @@ const StudentListPage = () => {
         </Paper>
       ) : (
         <>
+          {/* Background loading indicator */}
+          {isFetching && (
+            <Box
+              sx={{
+                position: "sticky",
+                top: 0,
+                zIndex: 5,
+                display: "flex",
+                justifyContent: "center",
+                mb: 1,
+              }}
+            >
+              <Box
+                sx={{
+                  bgcolor: "primary.main",
+                  color: "white",
+                  px: 2,
+                  py: 0.4,
+                  borderRadius: 2,
+                  fontSize: "0.7rem",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.8,
+                  boxShadow: "0 4px 12px rgba(13,27,62,0.2)",
+                }}
+              >
+                <CircularProgress size={10} sx={{ color: "white" }} />
+                Refreshing...
+              </Box>
+            </Box>
+          )}
+
           {!isMobile ? (
-            /* ═══ DESKTOP: TABLE ═══ */
             <StudentTable
               students={students}
               isAdmin={isAdmin}
@@ -617,9 +617,7 @@ const StudentListPage = () => {
               onSort={handleSort}
             />
           ) : (
-            /* ═══ MOBILE: CARDS with SORT BUTTON ═══ */
             <>
-              {/* ✅ NEW: Mobile Sort Menu */}
               <MobileSortMenu
                 sortBy={sortBy}
                 sortOrder={sortOrder}
@@ -649,49 +647,17 @@ const StudentListPage = () => {
             </>
           )}
 
-          <Box
-            ref={observerTarget}
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              py: 3,
-              minHeight: 60,
-            }}
-          >
-            {isFetching && page > 1 ? (
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <CircularProgress size={18} />
-                <Typography variant="caption" color="text.secondary">
-                  Loading more students...
-                </Typography>
-              </Stack>
-            ) : hasMore ? (
-              <Typography variant="caption" color="text.secondary">
-                Scroll down to load more
-              </Typography>
-            ) : (
-              <Stack spacing={0.5} alignItems="center">
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ fontWeight: 700 }}
-                >
-                  ✓ All {pagination.total} students loaded
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.disabled"
-                  sx={{ fontSize: "0.7rem" }}
-                >
-                  Showing {students.length} of {pagination.total}
-                </Typography>
-              </Stack>
-            )}
+          {/* Student count footer */}
+          <Box sx={{ textAlign: "center", mt: 3, mb: 1 }}>
+            <Typography variant="caption" color="text.secondary">
+              Showing <strong>{students.length}</strong> of{" "}
+              <strong>{pagination.total}</strong> students
+            </Typography>
           </Box>
         </>
       )}
 
+      {/* ─── DIALOGS ─── */}
       <StudentFormDialog
         open={formOpen}
         onClose={() => {
