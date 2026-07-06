@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Box,
   Paper,
@@ -35,9 +35,10 @@ import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import HourglassBottomOutlinedIcon from "@mui/icons-material/HourglassBottomOutlined";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 
-import { useTodayOverview } from "../../../hooks/useManagement";
+import { useTodayOverview, useClassDetail } from "../../../hooks/useManagement";
 import { sortClasses } from "../../../utils/classSort";
 import HolidayBanner from "../../../components/common/HolidayBanner";
+import ClassAttendanceDialog from "../../reports/ClassAttendanceDialog";
 
 // ═══════════════════════════════════════════════════════════════════
 //  Status color config
@@ -75,6 +76,27 @@ const TodayPage = ({ secretKey }) => {
   const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const { data, isLoading } = useTodayOverview(secretKey);
+
+  // ─── Dialog state ───
+  const [selectedClassId, setSelectedClassId] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const { data: classDetail } = useClassDetail(
+    secretKey,
+    selectedClassId,
+    data?.date,
+    dialogOpen,
+  );
+
+  const handleClassClick = (classId) => {
+    setSelectedClassId(classId);
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setTimeout(() => setSelectedClassId(null), 300);
+  };
 
   // ─── Sorted class list ───
   const sortedClasses = useMemo(() => {
@@ -471,6 +493,7 @@ const TodayPage = ({ secretKey }) => {
                     return (
                       <Box
                         key={cls._id}
+                        onClick={() => handleClassClick(cls._id)}
                         sx={{
                           px: 1.5,
                           py: 1.25,
@@ -478,7 +501,9 @@ const TodayPage = ({ secretKey }) => {
                           borderLeftColor: config.dot,
                           width: "100%",
                           boxSizing: "border-box",
+                          cursor: "pointer",
                           "&:hover": { bgcolor: "action.hover" },
+                          "&:active": { bgcolor: "action.selected" },
                         }}
                       >
                         <Stack
@@ -635,7 +660,11 @@ const TodayPage = ({ secretKey }) => {
                         <TableRow
                           key={cls._id}
                           hover
-                          sx={{ "& td": { py: 1.1, borderColor: "divider" } }}
+                          onClick={() => handleClassClick(cls._id)}
+                          sx={{
+                            cursor: "pointer",
+                            "& td": { py: 1.1, borderColor: "divider" },
+                          }}
                         >
                           <TableCell
                             sx={{
@@ -1032,6 +1061,17 @@ const TodayPage = ({ secretKey }) => {
           </Grid>
         </Paper>
       )}
+
+      {/* ══════════════════════════════════════════════════════
+          🔍 CLASS DETAIL DIALOG (Management view)
+      ══════════════════════════════════════════════════════ */}
+      <ClassAttendanceDialog
+        open={dialogOpen}
+        onClose={handleDialogClose}
+        classData={classDetail}
+        date={data?.date}
+        mode="management"
+      />
     </Stack>
   );
 };

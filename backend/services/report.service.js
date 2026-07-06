@@ -256,7 +256,7 @@ class ReportService {
   }
 
   /**
-   * Get monthly report — class-wise summary for a month
+   * Get monthly report — enhanced with teacher, rank, trend, smart sort
    */
   async getMonthlyReport({ year, month, classId, user }) {
     const settings = await Settings.getSettings();
@@ -265,6 +265,10 @@ class ReportService {
 
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+    // Previous month for trend comparison
+    const prevStartDate = new Date(year, month - 2, 1);
+    const prevEndDate = new Date(year, month - 1, 0, 23, 59, 59, 999);
 
     const classFilter = { session: sessionId, isArchived: false };
     if (classId) classFilter._id = classId;
@@ -278,10 +282,13 @@ class ReportService {
       classFilter._id = { $in: teacher.assignedClasses };
     }
 
-    const classes = await Class.find(classFilter).lean();
+    // ✅ Populate classTeacher
+    const classes = await Class.find(classFilter)
+      .populate("classTeacher", "name employeeId")
+      .lean();
     const classIds = classes.map((c) => c._id);
 
-    // Aggregate attendance by class
+    // Aggregate attendance by class for THIS month
     const attendanceAgg = await Attendance.aggregate([
       {
         $match: {
@@ -297,12 +304,35 @@ class ReportService {
       },
     ]);
 
-    // Build class-wise stats
     const classStatsMap = {};
     attendanceAgg.forEach((a) => {
       const cid = a._id.class.toString();
       if (!classStatsMap[cid]) classStatsMap[cid] = { Present: 0, Absent: 0 };
       classStatsMap[cid][a._id.status] = a.count;
+    });
+
+    // ✅ Aggregate attendance for PREVIOUS month (for trend)
+    const prevAttendanceAgg = await Attendance.aggregate([
+      {
+        $match: {
+          class: { $in: classIds },
+          date: { $gte: prevStartDate, $lte: prevEndDate },
+        },
+      },
+      {
+        $group: {
+          _id: { class: "$class", status: "$status" },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const prevClassStatsMap = {};
+    prevAttendanceAgg.forEach((a) => {
+      const cid = a._id.class.toString();
+      if (!prevClassStatsMap[cid])
+        prevClassStatsMap[cid] = { Present: 0, Absent: 0 };
+      prevClassStatsMap[cid][a._id.status] = a.count;
     });
 
     // Get student counts per class
@@ -329,7 +359,6 @@ class ReportService {
     }).lean();
 
     // Calculate working days
-    const totalDays = endDate.getDate();
     const workingDays = this._calculateWorkingDays(
       startDate,
       endDate,
@@ -337,14 +366,108 @@ class ReportService {
       settings,
     );
 
+    // ✅ Get last attendance record per class (for "last modified by")
+    const lastRecords = await Attendance.aggregate([
+      {
+        $match: {
+          class: { $in: classIds },
+          date: { $gte: startDate, $lte: endDate },
+        },
+      },
+      { $sort: { updatedAt: -1 } },
+      {
+        $group: {
+          _id: "$class",
+          lastMarkedBy: { $first: "$markedBy" },
+          lastMarkedAt: { $first: "$markedAt" },
+          lastEditedBy: { $first: "$editedBy" },
+          lastEditedAt: { $first: "$editedAt" },
+          lastUpdatedAt: { $first: "$updatedAt" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "lastMarkedBy",
+          foreignField: "_id",
+          as: "markedByUser",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "lastEditedBy",
+          foreignField: "_id",
+          as: "editedByUser",
+        },
+      },
+    ]);
+
+    const lastRecordMap = {};
+    lastRecords.forEach((r) => {
+      lastRecordMap[r._id.toString()] = {
+        markedBy: r.markedByUser?.[0]?.name || null,
+        markedAt: r.lastMarkedAt,
+        editedBy: r.editedByUser?.[0]?.name || null,
+        editedAt: r.lastEditedAt,
+        lastUpdatedAt: r.lastUpdatedAt,
+      };
+    });
+
+    // ✅ Smart class sort helper
+    const getClassRank = (className) => {
+      if (!className) return 999;
+      const name = className.toString().trim().toUpperCase();
+      if (/^NUR/.test(name) || name === "NURSERY") return 1;
+      if (/^L\.?K\.?G/.test(name) || name === "LKG" || name === "LOWER KG")
+        return 2;
+      if (/^U\.?K\.?G/.test(name) || name === "UKG" || name === "UPPER KG")
+        return 3;
+      if (/^PRE/.test(name) || name === "PLAYGROUP") return 0;
+      const numMatch = name.match(/^(?:CLASS\s*)?(\d{1,2})(?:ST|ND|RD|TH)?/);
+      if (numMatch) {
+        const num = parseInt(numMatch[1], 10);
+        if (num >= 1 && num <= 12) return 10 + num;
+      }
+      return 999;
+    };
+
+    // Build class reports
     const classReports = classes.map((cls) => {
       const cid = cls._id.toString();
       const stats = classStatsMap[cid] || { Present: 0, Absent: 0 };
+      const prevStats = prevClassStatsMap[cid] || { Present: 0, Absent: 0 };
       const totalStudents = studentCountMap[cid] || 0;
       const totalMarks = stats.Present + stats.Absent;
       const expectedMarks = totalStudents * workingDays;
       const percentage =
         totalMarks > 0 ? Math.round((stats.Present / totalMarks) * 100) : 0;
+
+      // Previous month percentage (for trend)
+      const prevTotalMarks = prevStats.Present + prevStats.Absent;
+      const prevPercentage =
+        prevTotalMarks > 0
+          ? Math.round((prevStats.Present / prevTotalMarks) * 100)
+          : 0;
+
+      // Trend
+      const trendDiff = percentage - prevPercentage;
+      let trend = "stable";
+      if (trendDiff > 2) trend = "up";
+      else if (trendDiff < -2) trend = "down";
+
+      // Average per student
+      const avgPresentDays =
+        totalStudents > 0
+          ? Math.round((stats.Present / totalStudents) * 10) / 10
+          : 0;
+      const avgAbsentDays =
+        totalStudents > 0
+          ? Math.round((stats.Absent / totalStudents) * 10) / 10
+          : 0;
+
+      // Last modified info
+      const lastRecord = lastRecordMap[cid] || {};
 
       return {
         _id: cls._id,
@@ -357,9 +480,58 @@ class ReportService {
         present: stats.Present,
         absent: stats.Absent,
         percentage,
+        isEmpty: totalStudents === 0,
+        isLowAttendance: totalMarks > 0 && percentage < 80,
+        // ✅ NEW: Teacher info
+        classTeacher: cls.classTeacher?.name || null,
+        // ✅ NEW: Trend
+        prevPercentage,
+        trendDiff,
+        trend,
+        // ✅ NEW: Averages
+        avgPresentDays,
+        avgAbsentDays,
+        // ✅ NEW: Last modified
+        markedBy: lastRecord.markedBy,
+        editedBy: lastRecord.editedBy,
+        lastUpdatedAt: lastRecord.lastUpdatedAt,
+        // ✅ NEW: Sort rank
+        sortRank: getClassRank(cls.name),
       };
     });
 
+    // ✅ Sort classes (Nursery → 10th)
+    classReports.sort((a, b) => {
+      if (a.sortRank !== b.sortRank) return a.sortRank - b.sortRank;
+      return (a.section || "").localeCompare(b.section || "");
+    });
+
+    // ✅ Assign monthly rank (by percentage, descending)
+    const ranked = [...classReports]
+      .filter((c) => !c.isEmpty && c.totalMarks > 0)
+      .sort((a, b) => b.percentage - a.percentage);
+
+    ranked.forEach((cls, idx) => {
+      const original = classReports.find(
+        (c) => c._id.toString() === cls._id.toString(),
+      );
+      if (original) original.rank = idx + 1;
+    });
+
+    // Mark highest and lowest
+    if (ranked.length > 0) {
+      const highest = classReports.find(
+        (c) => c._id.toString() === ranked[0]._id.toString(),
+      );
+      if (highest) highest.isHighest = true;
+
+      const lowest = classReports.find(
+        (c) => c._id.toString() === ranked[ranked.length - 1]._id.toString(),
+      );
+      if (lowest && ranked.length > 1) lowest.isLowest = true;
+    }
+
+    // Summary
     const summary = {
       totalClasses: classes.length,
       totalStudents: classReports.reduce((s, c) => s + c.totalStudents, 0),
@@ -367,6 +539,9 @@ class ReportService {
       totalAbsent: classReports.reduce((s, c) => s + c.absent, 0),
       workingDays,
       holidays: holidays.length,
+      emptyClasses: classReports.filter((c) => c.isEmpty).length,
+      lowAttendanceClasses: classReports.filter((c) => c.isLowAttendance)
+        .length,
       overallPercentage: 0,
     };
     const totalMarked = summary.totalPresent + summary.totalAbsent;
@@ -393,6 +568,141 @@ class ReportService {
     };
   }
 
+  /**
+   * Get student-wise monthly attendance for a specific class
+   * Used when user clicks a class card in monthly report
+   */
+  async getMonthlyClassDetail({ classId, year, month, user }) {
+    if (!classId) throwError("Class ID is required", 400);
+
+    const settings = await Settings.getSettings();
+    const sessionId = settings?.activeSession?._id || settings?.activeSession;
+    if (!sessionId) throwError("No active session", 400);
+
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+    // Teacher RBAC
+    if (user?.role === "teacher") {
+      const Teacher = require("../models/Teacher.model");
+      const teacher = await Teacher.findOne({ user: user._id }).lean();
+      if (
+        !teacher?.assignedClasses?.length ||
+        !teacher.assignedClasses.some(
+          (c) => c.toString() === classId.toString(),
+        )
+      ) {
+        throwError("You are not assigned to this class", 403);
+      }
+    }
+
+    // Get class info
+    const cls = await Class.findById(classId)
+      .populate("classTeacher", "name")
+      .lean();
+    if (!cls) throwError("Class not found", 404);
+
+    // Get students
+    const students = await Student.find({
+      class: classId,
+      session: sessionId,
+      status: "Active",
+      isActive: true,
+    })
+      .sort({ rollNumber: 1, name: 1 })
+      .lean();
+
+    // Get holidays
+    const holidays = await Holiday.find({
+      session: sessionId,
+      date: { $gte: startDate, $lte: endDate },
+    }).lean();
+
+    const workingDays = this._calculateWorkingDays(
+      startDate,
+      endDate,
+      holidays,
+      settings,
+    );
+
+    // Get attendance records
+    const records = await Attendance.find({
+      class: classId,
+      date: { $gte: startDate, $lte: endDate },
+    }).lean();
+
+    // Build student-wise stats
+    const studentStatsMap = {};
+    records.forEach((r) => {
+      const sid = r.student.toString();
+      if (!studentStatsMap[sid])
+        studentStatsMap[sid] = { present: 0, absent: 0 };
+      if (r.status === "Present") studentStatsMap[sid].present++;
+      else if (r.status === "Absent") studentStatsMap[sid].absent++;
+    });
+
+    const studentDetails = students.map((s) => {
+      const stats = studentStatsMap[s._id.toString()] || {
+        present: 0,
+        absent: 0,
+      };
+      const total = stats.present + stats.absent;
+      const percentage =
+        total > 0 ? Math.round((stats.present / total) * 100) : 0;
+
+      return {
+        _id: s._id,
+        name: s.name,
+        rollNumber: s.rollNumber,
+        fatherName: s.fatherName,
+        gender: s.gender,
+        mobile: s.mobile,
+        present: stats.present,
+        absent: stats.absent,
+        total,
+        workingDays,
+        percentage,
+        isLowAttendance: total > 0 && percentage < 75,
+      };
+    });
+
+    // Sort by percentage (lowest first for quick identification)
+    const sortedByPercentage = [...studentDetails].sort(
+      (a, b) => a.percentage - b.percentage,
+    );
+
+    // Summary
+    const totalPresent = studentDetails.reduce((s, st) => s + st.present, 0);
+    const totalAbsent = studentDetails.reduce((s, st) => s + st.absent, 0);
+    const totalMarked = totalPresent + totalAbsent;
+
+    return {
+      class: {
+        _id: cls._id,
+        name: cls.name,
+        section: cls.section,
+        classTeacher: cls.classTeacher?.name || null,
+      },
+      year,
+      month,
+      monthName: new Date(year, month - 1).toLocaleString("en-IN", {
+        month: "long",
+      }),
+      workingDays,
+      students: studentDetails,
+      summary: {
+        totalStudents: students.length,
+        totalPresent,
+        totalAbsent,
+        totalMarked,
+        workingDays,
+        overallPercentage:
+          totalMarked > 0 ? Math.round((totalPresent / totalMarked) * 100) : 0,
+        lowAttendanceStudents: studentDetails.filter((s) => s.isLowAttendance)
+          .length,
+      },
+    };
+  }
   /**
    * Get student-wise attendance report
    */
@@ -435,7 +745,7 @@ class ReportService {
   }
 
   /**
-   * Get defaulter report — students below threshold %
+   * Get defaulter report — OPTIMIZED (single aggregation instead of per-student loop)
    */
   async getDefaulterReport({
     classId,
@@ -459,48 +769,73 @@ class ReportService {
       const Teacher = require("../models/Teacher.model");
       const teacher = await Teacher.findOne({ user: user._id }).lean();
       if (!teacher?.assignedClasses?.length)
-        return { defaulters: [], threshold };
-      studentFilter.class = { $in: teacher.assignedClasses };
+        return { defaulters: [], threshold, total: 0 };
+      if (classId) {
+        const isAssigned = teacher.assignedClasses.some(
+          (c) => c.toString() === classId.toString(),
+        );
+        if (!isAssigned) return { defaulters: [], threshold, total: 0 };
+      } else {
+        studentFilter.class = { $in: teacher.assignedClasses };
+      }
     }
 
     const students = await Student.find(studentFilter)
       .populate("class", "name section")
       .lean();
 
-    const dateFilter = {};
-    if (dateFrom) {
-      const from = new Date(dateFrom);
-      from.setHours(0, 0, 0, 0);
-      dateFilter.$gte = from;
-    }
-    if (dateTo) {
-      const to = new Date(dateTo);
-      to.setHours(23, 59, 59, 999);
-      dateFilter.$lte = to;
+    if (students.length === 0) {
+      return { defaulters: [], threshold, total: 0 };
     }
 
+    const studentIds = students.map((s) => s._id);
+
+    // ✅ Build date filter for attendance query
+    const attendanceMatch = { student: { $in: studentIds } };
+    if (dateFrom || dateTo) {
+      attendanceMatch.date = {};
+      if (dateFrom) {
+        const from = new Date(dateFrom);
+        from.setHours(0, 0, 0, 0);
+        attendanceMatch.date.$gte = from;
+      }
+      if (dateTo) {
+        const to = new Date(dateTo);
+        to.setHours(23, 59, 59, 999);
+        attendanceMatch.date.$lte = to;
+      }
+    }
+
+    // ✅ OPTIMIZED: Single aggregation for ALL students at once
+    const allStats = await Attendance.aggregate([
+      { $match: attendanceMatch },
+      {
+        $group: {
+          _id: { student: "$student", status: "$status" },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Build stats map: { studentId: { present: X, absent: Y } }
+    const statsMap = {};
+    allStats.forEach((r) => {
+      const sid = r._id.student.toString();
+      if (!statsMap[sid]) statsMap[sid] = { present: 0, absent: 0 };
+      if (r._id.status === "Present") statsMap[sid].present = r.count;
+      else if (r._id.status === "Absent") statsMap[sid].absent = r.count;
+    });
+
+    // Build defaulters list
     const defaulters = [];
 
-    for (const s of students) {
-      const matchFilter = { student: s._id };
-      if (Object.keys(dateFilter).length > 0) matchFilter.date = dateFilter;
+    students.forEach((s) => {
+      const stats = statsMap[s._id.toString()] || { present: 0, absent: 0 };
+      const total = stats.present + stats.absent;
+      if (total === 0) return; // Skip students with no attendance data
 
-      const stats = await Attendance.aggregate([
-        { $match: matchFilter },
-        { $group: { _id: "$status", count: { $sum: 1 } } },
-      ]);
-
-      let present = 0,
-        absent = 0;
-      stats.forEach((r) => {
-        if (r._id === "Present") present = r.count;
-        if (r._id === "Absent") absent = r.count;
-      });
-
-      const total = present + absent;
-      const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
-
-      if (total > 0 && percentage < threshold) {
+      const percentage = Math.round((stats.present / total) * 100);
+      if (percentage < threshold) {
         defaulters.push({
           _id: s._id,
           name: s.name,
@@ -509,14 +844,15 @@ class ReportService {
           class: s.class,
           mobile: s.mobile,
           fatherName: s.fatherName,
-          present,
-          absent,
+          present: stats.present,
+          absent: stats.absent,
           total,
           percentage,
         });
       }
-    }
+    });
 
+    // Sort by percentage (lowest first)
     defaulters.sort((a, b) => a.percentage - b.percentage);
 
     return {

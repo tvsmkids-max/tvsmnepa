@@ -60,6 +60,14 @@ const managementApi = {
     publicClient.get(`/management/${secretKey}/rankings`, {
       params: { period },
     }),
+
+  /**
+   * Get class detail for management dialog
+   */
+  getClassDetail: (secretKey, classId, date) =>
+    publicClient.get(`/management/${secretKey}/class/${classId}`, {
+      params: date ? { date } : {},
+    }),
 };
 
 // ═══════════════════════════════════════════════════════════════════

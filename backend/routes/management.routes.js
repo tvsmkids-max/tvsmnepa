@@ -74,4 +74,10 @@ router.get(
   managementController.getRankings,
 );
 
+router.get(
+  "/:secretKey/class/:classId",
+  validateManagementKey,
+  managementController.getClassDetail,
+);
+
 module.exports = router;

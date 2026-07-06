@@ -53,12 +53,24 @@ const HolidayManagePage = lazy(
   () => import("../pages/holidays/HolidayManagePage"),
 );
 
-// ─── Reports & Analytics ───
-const ReportsPage = lazy(() => import("../pages/reports/ReportsPage"));
+// ─── Reports (4 separate pages) ───
+const DailyReportPage = lazy(() => import("../pages/reports/DailyReportPage"));
+const MonthlyReportPage = lazy(
+  () => import("../pages/reports/MonthlyReportPage"),
+);
+const DefaultersReportPage = lazy(
+  () => import("../pages/reports/DefaultersReportPage"),
+);
+const RegisterReportPage = lazy(
+  () => import("../pages/reports/RegisterReportPage"),
+);
+
+// ─── Analytics ───
 const AnalyticsDashboard = lazy(
   () => import("../pages/analytics/AnalyticsDashboard"),
 );
 
+// ─── Management Dashboard (Public) ───
 const ManagementDashboard = lazy(
   () => import("../pages/management/ManagementDashboard"),
 );
@@ -77,9 +89,7 @@ const PromotionPage = lazy(() => import("../pages/promotion/PromotionPage"));
 // ─── Backup ───
 const BackupPage = lazy(() => import("../pages/backup/BackupPage"));
 
-// ─── Improved Suspense Loader ───
-// Uses LinearProgress (thin top bar) instead of full-page spinner
-// Theme-aware via MUI — works in both light and dark mode
+// ─── Suspense Loader ───
 const PageLoader = () => (
   <Box
     sx={{
@@ -208,8 +218,17 @@ const AppRouter = () => (
           {/* ─── Holidays ─── */}
           <Route path="holidays" element={<HolidayManagePage />} />
 
-          {/* ─── Reports & Analytics ─── */}
-          <Route path="reports" element={<ReportsPage />} />
+          {/* ─── Reports (4 separate pages) ─── */}
+          <Route
+            path="reports"
+            element={<Navigate to="/reports/daily" replace />}
+          />
+          <Route path="reports/daily" element={<DailyReportPage />} />
+          <Route path="reports/monthly" element={<MonthlyReportPage />} />
+          <Route path="reports/defaulters" element={<DefaultersReportPage />} />
+          <Route path="reports/register" element={<RegisterReportPage />} />
+
+          {/* ─── Analytics ─── */}
           <Route path="analytics" element={<AnalyticsDashboard />} />
 
           {/* ─── Notifications ─── */}

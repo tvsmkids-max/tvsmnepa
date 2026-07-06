@@ -55,6 +55,16 @@ const getRankings = asyncHandler(async (req, res) => {
   });
 });
 
+const getClassDetail = asyncHandler(async (req, res) => {
+  const { classId } = req.params;
+  const { date } = req.query;
+  const data = await managementService.getClassDetail({ classId, date });
+  return sendResponse(res).success({
+    message: "Class detail fetched",
+    data,
+  });
+});
+
 // ═══════════════════════════════════════════════════════════════════
 //  VALIDATE ACCESS (used by frontend to verify secret key)
 // ═══════════════════════════════════════════════════════════════════
@@ -127,14 +137,13 @@ const deleteAccessUrl = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  // Public endpoints
   getTodayOverview,
   getMonthlyTrends,
   getYearlyPerformance,
   getAlerts,
   getRankings,
+  getClassDetail,
   validateAccess,
-  // Admin endpoints
   listAccessUrls,
   createAccessUrl,
   revokeAccessUrl,

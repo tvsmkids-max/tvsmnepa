@@ -26,12 +26,28 @@ import AnalyticsOutlinedIcon from "@mui/icons-material/AnalyticsOutlined";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
+import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
+import ListAltOutlinedIcon from "@mui/icons-material/ListAltOutlined";
 import useAuth from "../../hooks/useAuth";
 import useThemeMode from "../../hooks/useThemeMode";
 
+// ═══════════════════════════════════════════════════════════════════
+//  NAV STRUCTURE — Flat sections (NO dropdown, always visible)
+// ═══════════════════════════════════════════════════════════════════
+
 const adminNav = [
-  { label: "Dashboard", icon: <DashboardOutlinedIcon />, path: "/dashboard" },
-  { divider: true, label: "Management" },
+  // Dashboard — standalone
+  {
+    type: "item",
+    label: "Dashboard",
+    icon: <DashboardOutlinedIcon />,
+    path: "/dashboard",
+  },
+
+  // Management section
+  { type: "section", label: "Management" },
   { label: "Students", icon: <PeopleOutlinedIcon />, path: "/students" },
   {
     label: "Section Shift",
@@ -40,20 +56,61 @@ const adminNav = [
   },
   { label: "Classes", icon: <ClassOutlinedIcon />, path: "/classes" },
   { label: "Teachers", icon: <PersonOutlinedIcon />, path: "/teachers" },
-  { divider: true, label: "Attendance" },
-  { label: "Mark", icon: <EventNoteOutlinedIcon />, path: "/attendance/mark" },
+
+  // Attendance section
+  { type: "section", label: "Attendance" },
+  {
+    label: "Mark",
+    icon: <EventNoteOutlinedIcon />,
+    path: "/attendance/mark",
+  },
   {
     label: "History",
     icon: <HistoryOutlinedIcon />,
     path: "/attendance/history",
   },
-  { divider: true, label: "Reports" },
-  { label: "Reports", icon: <AssessmentOutlinedIcon />, path: "/reports" },
-  { label: "Analytics", icon: <AnalyticsOutlinedIcon />, path: "/analytics" },
-  { divider: true, label: "Admin" },
-  { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
+
+  // Reports section
+  { type: "section", label: "Reports" },
+  {
+    label: "Daily",
+    icon: <TodayOutlinedIcon />,
+    path: "/reports/daily",
+  },
+  {
+    label: "Monthly",
+    icon: <CalendarMonthOutlinedIcon />,
+    path: "/reports/monthly",
+  },
+  {
+    label: "Defaulters",
+    icon: <WarningAmberOutlinedIcon />,
+    path: "/reports/defaulters",
+  },
+  {
+    label: "Register",
+    icon: <ListAltOutlinedIcon />,
+    path: "/reports/register",
+  },
+  {
+    label: "Analytics",
+    icon: <AnalyticsOutlinedIcon />,
+    path: "/analytics",
+  },
+
+  // Admin section
+  { type: "section", label: "Admin" },
+  {
+    label: "Holidays",
+    icon: <BeachAccessOutlinedIcon />,
+    path: "/holidays",
+  },
   { label: "Sessions", icon: <SchoolOutlinedIcon />, path: "/sessions" },
-  { label: "Promotions", icon: <SchoolOutlinedIcon />, path: "/promotion" },
+  {
+    label: "Promotions",
+    icon: <SchoolOutlinedIcon />,
+    path: "/promotion",
+  },
   {
     label: "Notifications",
     icon: <NotificationsOutlinedIcon />,
@@ -64,29 +121,60 @@ const adminNav = [
     icon: <TimelineOutlinedIcon />,
     path: "/activity-logs",
   },
-  { divider: true, label: "System" },
+
+  // System section
+  { type: "section", label: "System" },
   { label: "Backup", icon: <StorageOutlinedIcon />, path: "/backup" },
-  { label: "Settings", icon: <SettingsOutlinedIcon />, path: "/settings" },
+  {
+    label: "Settings",
+    icon: <SettingsOutlinedIcon />,
+    path: "/settings",
+  },
 ];
 
 const teacherNav = [
+  // Dashboard — standalone
   {
+    type: "item",
     label: "Dashboard",
     icon: <DashboardOutlinedIcon />,
     path: "/teacher/dashboard",
   },
-  { divider: true, label: "Attendance" },
-  { label: "Mark", icon: <EventNoteOutlinedIcon />, path: "/attendance/mark" },
+
+  // Attendance section
+  { type: "section", label: "Attendance" },
+  {
+    label: "Mark",
+    icon: <EventNoteOutlinedIcon />,
+    path: "/attendance/mark",
+  },
   {
     label: "History",
     icon: <HistoryOutlinedIcon />,
     path: "/attendance/history",
   },
-  { divider: true, label: "Students" },
+
+  // Students section
+  { type: "section", label: "Students" },
   { label: "Students", icon: <PeopleOutlinedIcon />, path: "/students" },
-  { divider: true, label: "Reports" },
-  { label: "Reports", icon: <AssessmentOutlinedIcon />, path: "/reports" },
+
+  // Reports section — ✅ Register REMOVED, Monthly ADDED
+  { type: "section", label: "Reports" },
+  {
+    label: "Daily",
+    icon: <TodayOutlinedIcon />,
+    path: "/reports/daily",
+  },
+  {
+    label: "Monthly", // ✅ ADDED
+    icon: <CalendarMonthOutlinedIcon />,
+    path: "/reports/monthly",
+  },
 ];
+
+// ═══════════════════════════════════════════════════════════════════
+//  SIDEBAR CONTENT
+// ═══════════════════════════════════════════════════════════════════
 
 const SidebarContent = ({ collapsed }) => {
   const navigate = useNavigate();
@@ -100,30 +188,24 @@ const SidebarContent = ({ collapsed }) => {
   }, [user?.role]);
 
   // ═══════════════════════════════════════════════════════
-  //  isActive — Most-specific match wins
-  //  Prevents "/students" from highlighting when on "/students/shift"
+  //  Flatten all paths for active matching
   // ═══════════════════════════════════════════════════════
+
+  const allPaths = useMemo(() => {
+    return navItems.filter((item) => item.path).map((item) => item.path);
+  }, [navItems]);
+
   const isActive = (path) => {
-    // Exact-match routes (dashboards)
     if (path === "/dashboard" || path === "/teacher/dashboard") {
       return location.pathname === path;
     }
 
     const current = location.pathname;
-
-    // Exact match always wins
     if (current === path) return true;
 
-    // Sub-route match (e.g., /students/123 under /students)
     if (current.startsWith(path + "/")) {
-      // Check: is there a MORE SPECIFIC menu item that matches?
-      // If yes, don't highlight this less-specific one
-      const moreSpecificExists = navItems.some(
-        (item) =>
-          !item.divider &&
-          item.path !== path &&
-          item.path.startsWith(path + "/") &&
-          current.startsWith(item.path),
+      const moreSpecificExists = allPaths.some(
+        (p) => p !== path && p.startsWith(path + "/") && current.startsWith(p),
       );
       return !moreSpecificExists;
     }
@@ -132,16 +214,17 @@ const SidebarContent = ({ collapsed }) => {
   };
 
   // ═══════════════════════════════════════════════════════
-  //  UNIFORM COLOR SCHEME
+  //  COLORS — 100% same as original
   // ═══════════════════════════════════════════════════════
+
   const sidebarBg = isDark ? "#111827" : "#FFFFFF";
   const borderColor = isDark ? "#1F2937" : "#E5E7EB";
   const scrollbarThumb = isDark ? "#374151" : "#D1D5DB";
 
   const mainColor = isDark ? "#F1F5F9" : "#1F2937";
-  const headingColor = isDark ? "#F1F5F9" : "#1F2937";
+  const headingColor = isDark ? "#9CA3AF" : "#6B7280";
   const iconColor = mainColor;
-  const itemColor = mainColor;
+  const itemColor = isDark ? "#D1D5DB" : "#4B5563";
   const itemActiveColor = isDark ? "#FFFFFF" : "#000000";
 
   const hoverBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
@@ -160,7 +243,6 @@ const SidebarContent = ({ collapsed }) => {
         borderRight: `1px solid ${borderColor}`,
       }}
     >
-      {/* ── Nav Items ── */}
       <Box
         sx={{
           flex: 1,
@@ -177,34 +259,37 @@ const SidebarContent = ({ collapsed }) => {
       >
         <List dense disablePadding>
           {navItems.map((item, idx) => {
-            if (item.divider) {
+            // ── SECTION LABEL (flat, not clickable) ──
+            if (item.type === "section") {
               return (
-                <Box key={`div-${idx}`}>
+                <Box key={`section-${idx}`} sx={{ mt: 1.5, mb: 0.3 }}>
                   {!collapsed ? (
+                    // Show label when expanded
                     <Typography
-                      variant="caption"
                       sx={{
-                        px: 2,
-                        pt: idx === 0 ? 0.5 : 1.8,
-                        pb: 0.4,
-                        display: "block",
-                        color: headingColor,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.12em",
-                        fontSize: "0.65rem",
+                        px: 2.3,
+                        py: 0.4,
+                        fontSize: "0.68rem",
                         fontWeight: 800,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.1em",
+                        color: headingColor,
+                        userSelect: "none",
                       }}
                     >
                       {item.label}
                     </Typography>
                   ) : (
-                    <Divider sx={{ borderColor, my: 0.5, mx: 1 }} />
+                    // Show divider when collapsed
+                    <Divider sx={{ borderColor, mx: 1 }} />
                   )}
                 </Box>
               );
             }
 
+            // ── NAV ITEM (Dashboard + all children) ──
             const active = isActive(item.path);
+            const isDashboard = item.type === "item";
 
             return (
               <Tooltip
@@ -217,13 +302,18 @@ const SidebarContent = ({ collapsed }) => {
                   onClick={() => navigate(item.path)}
                   sx={{
                     mx: 0.8,
-                    mb: 0.2,
+                    mb: 0.15,
                     borderRadius: 1.5,
-                    py: 0.7,
-                    px: collapsed ? 1.2 : 1.5,
+                    py: isDashboard ? 0.8 : 0.6,
+                    pl: collapsed ? 1.2 : isDashboard ? 1.5 : 2.5,
+                    pr: collapsed ? 1.2 : 1.5,
                     justifyContent: collapsed ? "center" : "flex-start",
-                    minHeight: 36,
-                    color: active ? itemActiveColor : itemColor,
+                    minHeight: isDashboard ? 38 : 34,
+                    color: active
+                      ? itemActiveColor
+                      : isDashboard
+                        ? mainColor
+                        : itemColor,
                     bgcolor: active ? activeBg : "transparent",
                     borderLeft: active
                       ? `3px solid ${activeIndicator}`
@@ -238,18 +328,21 @@ const SidebarContent = ({ collapsed }) => {
                   <ListItemIcon
                     sx={{
                       color: active ? itemActiveColor : iconColor,
-                      minWidth: collapsed ? "unset" : 32,
-                      "& svg": { fontSize: "1.2rem" },
+                      minWidth: collapsed ? "unset" : isDashboard ? 32 : 28,
+                      "& svg": {
+                        fontSize: isDashboard ? "1.2rem" : "1.1rem",
+                      },
                     }}
                   >
                     {item.icon}
                   </ListItemIcon>
+
                   {!collapsed && (
                     <ListItemText
                       primary={item.label}
                       primaryTypographyProps={{
-                        fontSize: "0.85rem",
-                        fontWeight: active ? 700 : 600,
+                        fontSize: isDashboard ? "0.85rem" : "0.82rem",
+                        fontWeight: active ? 700 : isDashboard ? 600 : 500,
                         noWrap: true,
                         color: "inherit",
                       }}
@@ -264,6 +357,10 @@ const SidebarContent = ({ collapsed }) => {
     </Box>
   );
 };
+
+// ═══════════════════════════════════════════════════════════════════
+//  SIDEBAR WRAPPER — 100% same as original
+// ═══════════════════════════════════════════════════════════════════
 
 const Sidebar = ({ drawerWidth, collapsed }) => (
   <Drawer

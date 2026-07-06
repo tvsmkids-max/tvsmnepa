@@ -4,6 +4,8 @@ const reportApi = {
   getDaily: (params = {}) => axiosInstance.get("/reports/daily", { params }),
   getMonthly: (params = {}) =>
     axiosInstance.get("/reports/monthly", { params }),
+  getMonthlyClassDetail: (classId, params = {}) =>
+    axiosInstance.get(`/reports/monthly/class/${classId}`, { params }),
   getStudent: (id, params = {}) =>
     axiosInstance.get(`/reports/student/${id}`, { params }),
   getDefaulters: (params = {}) =>

@@ -15,6 +15,13 @@ export const managementKeys = {
   yearly: (key) => [...managementKeys.all, "yearly", key],
   alerts: (key) => [...managementKeys.all, "alerts", key],
   rankings: (key, period) => [...managementKeys.all, "rankings", key, period],
+  classDetail: (key, classId, date) => [
+    ...managementKeys.all,
+    "classDetail",
+    key,
+    classId,
+    date,
+  ],
   // Admin
   accessUrls: () => [...managementKeys.all, "admin", "access-urls"],
 };
@@ -143,6 +150,23 @@ export const useRankings = (secretKey, period = "month", options = {}) => {
 };
 
 /**
+ * Class Detail (for management click-through dialog)
+ * Fetches when classId is set + enabled=true
+ */
+export const useClassDetail = (secretKey, classId, date, enabled = true) => {
+  return useQuery({
+    queryKey: managementKeys.classDetail(secretKey, classId, date),
+    queryFn: async () => {
+      const res = await managementApi.getClassDetail(secretKey, classId, date);
+      return res.data?.data || null;
+    },
+    enabled: !!secretKey && !!classId && enabled,
+    staleTime: 60 * 1000, // 1 min
+    refetchOnWindowFocus: false,
+  });
+};
+
+/**
  * Manual refresh helper — invalidates all data for a secret key
  */
 export const useRefreshManagement = () => {
@@ -163,6 +187,9 @@ export const useRefreshManagement = () => {
     });
     queryClient.invalidateQueries({
       queryKey: [...managementKeys.all, "rankings", secretKey],
+    });
+    queryClient.invalidateQueries({
+      queryKey: [...managementKeys.all, "classDetail", secretKey],
     });
   };
 };

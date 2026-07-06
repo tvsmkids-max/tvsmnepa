@@ -15,37 +15,30 @@ import {
   TableRow,
   TableCell,
   TableContainer,
-  LinearProgress,
   useTheme,
   useMediaQuery,
   alpha,
 } from "@mui/material";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
-import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
-import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
-import HourglassBottomOutlinedIcon from "@mui/icons-material/HourglassBottomOutlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 
-const ClassAttendanceDialog = ({ open, onClose, classData, date }) => {
+const ClassAttendanceDialog = ({
+  open,
+  onClose,
+  classData,
+  date,
+  mode = "admin",
+}) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  // Group students by status
-  const grouped = useMemo(() => {
-    if (!classData?.students) return { present: [], absent: [], unmarked: [] };
-
-    const present = [];
-    const absent = [];
-    const unmarked = [];
-
-    classData.students.forEach((s) => {
-      if (s.status === "Present") present.push(s);
-      else if (s.status === "Absent") absent.push(s);
-      else unmarked.push(s);
-    });
-
-    return { present, absent, unmarked };
+  // ✅ SORT ALL STUDENTS A → Z
+  const sortedStudents = useMemo(() => {
+    if (!classData?.students) return [];
+    return [...classData.students].sort((a, b) =>
+      (a.name || "").localeCompare(b.name || ""),
+    );
   }, [classData]);
 
   if (!classData) return null;
@@ -66,6 +59,43 @@ const ClassAttendanceDialog = ({ open, onClose, classData, date }) => {
         ? "#F59E0B"
         : "#DC2626";
 
+  // ✅ STATUS CHIP HELPER
+  const getStatusChip = (status) => {
+    if (status === "Present") {
+      return {
+        label: "P",
+        color: "#16A34A",
+        bg: isDark ? alpha("#16A34A", 0.18) : "#DCFCE7",
+        textColor: isDark ? "#86EFAC" : "#15803D",
+      };
+    }
+    if (status === "Absent") {
+      return {
+        label: "A",
+        color: "#DC2626",
+        bg: isDark ? alpha("#DC2626", 0.18) : "#FEE2E2",
+        textColor: isDark ? "#FCA5A5" : "#B91C1C",
+      };
+    }
+    return {
+      label: "—",
+      color: "#F59E0B",
+      bg: isDark ? alpha("#F59E0B", 0.18) : "#FEF3C7",
+      textColor: isDark ? "#FCD34D" : "#B45309",
+    };
+  };
+
+  // ✅ ROW BACKGROUND (subtle by status)
+  const getRowBg = (status) => {
+    if (status === "Present") {
+      return isDark ? alpha("#16A34A", 0.05) : "#F0FDF4";
+    }
+    if (status === "Absent") {
+      return isDark ? alpha("#DC2626", 0.05) : "#FEF2F2";
+    }
+    return "transparent";
+  };
+
   return (
     <Dialog
       open={open}
@@ -80,7 +110,9 @@ const ClassAttendanceDialog = ({ open, onClose, classData, date }) => {
         },
       }}
     >
-      {/* ── HEADER ── */}
+      {/* ═══════════════════════════════════════════
+          HEADER
+      ═══════════════════════════════════════════ */}
       <DialogTitle
         component="div"
         sx={{
@@ -106,7 +138,7 @@ const ClassAttendanceDialog = ({ open, onClose, classData, date }) => {
             <CloseOutlinedIcon fontSize="small" />
           </IconButton>
 
-          {/* Class info */}
+          {/* Header text */}
           <Typography
             variant="caption"
             sx={{
@@ -146,7 +178,7 @@ const ClassAttendanceDialog = ({ open, onClose, classData, date }) => {
             </Typography>
           )}
 
-          {/* Stats row */}
+          {/* Stats bar */}
           <Stack
             direction="row"
             spacing={2}
@@ -180,52 +212,11 @@ const ClassAttendanceDialog = ({ open, onClose, classData, date }) => {
         </Box>
       </DialogTitle>
 
-      {/* ── CONTENT ── */}
+      {/* ═══════════════════════════════════════════
+          CONTENT — ONE TABLE (A → Z)
+      ═══════════════════════════════════════════ */}
       <DialogContent sx={{ p: 0, overflow: "auto" }}>
-        {/* ── PRESENT STUDENTS ── */}
-        {grouped.present.length > 0 && (
-          <StudentSection
-            title="Present"
-            icon={CheckCircleOutlinedIcon}
-            count={grouped.present.length}
-            color="#16A34A"
-            bg={isDark ? alpha("#16A34A", 0.08) : "#F0FDF4"}
-            students={grouped.present}
-            isDark={isDark}
-            isMobile={isMobile}
-          />
-        )}
-
-        {/* ── ABSENT STUDENTS ── */}
-        {grouped.absent.length > 0 && (
-          <StudentSection
-            title="Absent"
-            icon={CancelOutlinedIcon}
-            count={grouped.absent.length}
-            color="#DC2626"
-            bg={isDark ? alpha("#DC2626", 0.08) : "#FEF2F2"}
-            students={grouped.absent}
-            isDark={isDark}
-            isMobile={isMobile}
-          />
-        )}
-
-        {/* ── UNMARKED STUDENTS ── */}
-        {grouped.unmarked.length > 0 && (
-          <StudentSection
-            title="Unmarked"
-            icon={HourglassBottomOutlinedIcon}
-            count={grouped.unmarked.length}
-            color="#F59E0B"
-            bg={isDark ? alpha("#F59E0B", 0.08) : "#FFFBEB"}
-            students={grouped.unmarked}
-            isDark={isDark}
-            isMobile={isMobile}
-          />
-        )}
-
-        {/* ── ALL EMPTY ── */}
-        {classData.total === 0 && (
+        {classData.total === 0 ? (
           <Box sx={{ p: 4, textAlign: "center" }}>
             <PersonOutlineIcon
               sx={{ fontSize: 48, color: "text.disabled", mb: 1 }}
@@ -234,10 +225,270 @@ const ClassAttendanceDialog = ({ open, onClose, classData, date }) => {
               No students in this class
             </Typography>
           </Box>
+        ) : isMobile ? (
+          /* ── MOBILE: Compact cards ── */
+          <Stack
+            divider={
+              <Divider
+                sx={{
+                  borderColor: isDark
+                    ? alpha("#fff", 0.06)
+                    : alpha("#000", 0.06),
+                }}
+              />
+            }
+          >
+            {sortedStudents.map((s) => {
+              const chip = getStatusChip(s.status);
+              return (
+                <Box
+                  key={s._id}
+                  sx={{
+                    px: 2,
+                    py: 1.25,
+                    bgcolor: getRowBg(s.status),
+                    "&:hover": { bgcolor: "action.hover" },
+                  }}
+                >
+                  <Stack direction="row" alignItems="center" spacing={1.25}>
+                    <Typography
+                      sx={{
+                        minWidth: 26,
+                        fontWeight: 800,
+                        fontSize: "0.78rem",
+                        color: isDark ? "#93C5FD" : "#1E4D98",
+                        fontFamily: "monospace",
+                        textAlign: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {String(s.rollNumber || "").padStart(2, "0")}
+                    </Typography>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
+                        variant="body2"
+                        fontWeight={700}
+                        noWrap
+                        sx={{
+                          fontSize: "0.85rem",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {s.name}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        noWrap
+                        sx={{ fontSize: "0.68rem", display: "block" }}
+                      >
+                        F: {s.fatherName || "—"}
+                        <Box component="span" sx={{ mx: 0.5, opacity: 0.5 }}>
+                          ·
+                        </Box>
+                        #{s.scholarNumber}
+                      </Typography>
+                    </Box>
+                    <Chip
+                      label={chip.label}
+                      size="small"
+                      sx={{
+                        fontWeight: 900,
+                        fontSize: "0.75rem",
+                        height: 26,
+                        minWidth: 32,
+                        bgcolor: chip.bg,
+                        color: chip.textColor,
+                        border: `1.5px solid ${chip.color}`,
+                        flexShrink: 0,
+                      }}
+                    />
+                  </Stack>
+                </Box>
+              );
+            })}
+          </Stack>
+        ) : (
+          /* ── DESKTOP: Table ── */
+          <TableContainer>
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: "0.68rem",
+                      textTransform: "uppercase",
+                      width: 55,
+                      py: 1,
+                      bgcolor: isDark ? "#1E293B" : "#F8FAFC",
+                    }}
+                  >
+                    Roll
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: "0.68rem",
+                      textTransform: "uppercase",
+                      width: 90,
+                      py: 1,
+                      bgcolor: isDark ? "#1E293B" : "#F8FAFC",
+                    }}
+                  >
+                    Scholar
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: "0.68rem",
+                      textTransform: "uppercase",
+                      py: 1,
+                      bgcolor: isDark ? "#1E293B" : "#F8FAFC",
+                    }}
+                  >
+                    Name
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: "0.68rem",
+                      textTransform: "uppercase",
+                      py: 1,
+                      bgcolor: isDark ? "#1E293B" : "#F8FAFC",
+                    }}
+                  >
+                    Father Name
+                  </TableCell>
+                  {mode !== "management" && (
+                    <TableCell
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: "0.68rem",
+                        textTransform: "uppercase",
+                        width: 110,
+                        py: 1,
+                        bgcolor: isDark ? "#1E293B" : "#F8FAFC",
+                      }}
+                    >
+                      Mobile
+                    </TableCell>
+                  )}
+                  <TableCell
+                    align="center"
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: "0.68rem",
+                      textTransform: "uppercase",
+                      width: 70,
+                      py: 1,
+                      bgcolor: isDark ? "#1E293B" : "#F8FAFC",
+                    }}
+                  >
+                    Status
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {sortedStudents.map((s) => {
+                  const chip = getStatusChip(s.status);
+                  return (
+                    <TableRow
+                      key={s._id}
+                      hover
+                      sx={{ bgcolor: getRowBg(s.status) }}
+                    >
+                      <TableCell sx={{ py: 0.9 }}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={800}
+                          sx={{
+                            fontFamily: "monospace",
+                            fontSize: "0.8rem",
+                            color: isDark ? "#93C5FD" : "#1E4D98",
+                          }}
+                        >
+                          {String(s.rollNumber || "").padStart(2, "0")}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ py: 0.9 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontFamily: "monospace",
+                            fontWeight: 700,
+                            fontSize: "0.72rem",
+                            color: "text.secondary",
+                          }}
+                        >
+                          {s.scholarNumber}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ py: 0.9 }}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={700}
+                          sx={{
+                            fontSize: "0.82rem",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {s.name}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ py: 0.9 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: "0.78rem",
+                            color: "text.secondary",
+                          }}
+                        >
+                          {s.fatherName || "—"}
+                        </Typography>
+                      </TableCell>
+                      {mode !== "management" && (
+                        <TableCell sx={{ py: 0.9 }}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontFamily: "monospace",
+                              fontSize: "0.75rem",
+                              color:
+                                s.mobile === "0000000000"
+                                  ? "text.disabled"
+                                  : "text.primary",
+                            }}
+                          >
+                            {s.mobile || "—"}
+                          </Typography>
+                        </TableCell>
+                      )}
+                      <TableCell align="center" sx={{ py: 0.9 }}>
+                        <Chip
+                          label={chip.label}
+                          size="small"
+                          sx={{
+                            fontWeight: 900,
+                            fontSize: "0.78rem",
+                            height: 26,
+                            minWidth: 36,
+                            bgcolor: chip.bg,
+                            color: chip.textColor,
+                            border: `1.5px solid ${chip.color}`,
+                          }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
 
         {/* ── MARKED BY INFO ── */}
-        {classData.markedBy && (
+        {mode !== "management" && classData.markedBy && (
           <Box
             sx={{
               px: 2.5,
@@ -245,6 +496,8 @@ const ClassAttendanceDialog = ({ open, onClose, classData, date }) => {
               borderTop: "1px solid",
               borderColor: "divider",
               bgcolor: isDark ? alpha("#fff", 0.02) : "#FAFBFC",
+              position: "sticky",
+              bottom: 0,
             }}
           >
             <Typography
@@ -279,254 +532,7 @@ const ClassAttendanceDialog = ({ open, onClose, classData, date }) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-//  STUDENT SECTION (Present / Absent / Unmarked group)
-// ═══════════════════════════════════════════════════════════════════
-
-const StudentSection = ({
-  title,
-  icon: Icon,
-  count,
-  color,
-  bg,
-  students,
-  isDark,
-  isMobile,
-}) => (
-  <Box>
-    {/* Section header */}
-    <Box
-      sx={{
-        px: 2.5,
-        py: 1.25,
-        bgcolor: bg,
-        borderBottom: "1px solid",
-        borderColor: "divider",
-        display: "flex",
-        alignItems: "center",
-        gap: 1,
-      }}
-    >
-      <Icon sx={{ fontSize: 18, color }} />
-      <Typography variant="body2" fontWeight={800} sx={{ color, flex: 1 }}>
-        {title}
-      </Typography>
-      <Chip
-        label={count}
-        size="small"
-        sx={{
-          fontWeight: 800,
-          height: 22,
-          fontSize: "0.72rem",
-          bgcolor: color,
-          color: "white",
-          minWidth: 32,
-        }}
-      />
-    </Box>
-
-    {/* Student list */}
-    {isMobile ? (
-      // ── MOBILE: Compact cards ──
-      <Stack
-        divider={
-          <Divider
-            sx={{
-              borderColor: isDark ? alpha("#fff", 0.06) : alpha("#000", 0.06),
-            }}
-          />
-        }
-      >
-        {students.map((s) => (
-          <Box
-            key={s._id}
-            sx={{
-              px: 2.5,
-              py: 1.25,
-              "&:hover": { bgcolor: "action.hover" },
-            }}
-          >
-            <Stack direction="row" alignItems="center" spacing={1.25}>
-              <Typography
-                sx={{
-                  minWidth: 26,
-                  fontWeight: 800,
-                  fontSize: "0.78rem",
-                  color: isDark ? "#93C5FD" : "#1E4D98",
-                  fontFamily: "monospace",
-                  textAlign: "center",
-                  flexShrink: 0,
-                }}
-              >
-                {String(s.rollNumber || "").padStart(2, "0")}
-              </Typography>
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography
-                  variant="body2"
-                  fontWeight={700}
-                  noWrap
-                  sx={{
-                    fontSize: "0.85rem",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {s.name}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  noWrap
-                  sx={{ fontSize: "0.68rem", display: "block" }}
-                >
-                  F: {s.fatherName || "—"}
-                  <Box component="span" sx={{ mx: 0.5, opacity: 0.5 }}>
-                    ·
-                  </Box>
-                  #{s.scholarNumber}
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
-        ))}
-      </Stack>
-    ) : (
-      // ── DESKTOP: Table ──
-      <TableContainer>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell
-                sx={{
-                  fontWeight: 800,
-                  fontSize: "0.68rem",
-                  textTransform: "uppercase",
-                  width: 55,
-                  py: 1,
-                }}
-              >
-                Roll
-              </TableCell>
-              <TableCell
-                sx={{
-                  fontWeight: 800,
-                  fontSize: "0.68rem",
-                  textTransform: "uppercase",
-                  width: 90,
-                  py: 1,
-                }}
-              >
-                Scholar
-              </TableCell>
-              <TableCell
-                sx={{
-                  fontWeight: 800,
-                  fontSize: "0.68rem",
-                  textTransform: "uppercase",
-                  py: 1,
-                }}
-              >
-                Name
-              </TableCell>
-              <TableCell
-                sx={{
-                  fontWeight: 800,
-                  fontSize: "0.68rem",
-                  textTransform: "uppercase",
-                  py: 1,
-                }}
-              >
-                Father Name
-              </TableCell>
-              <TableCell
-                sx={{
-                  fontWeight: 800,
-                  fontSize: "0.68rem",
-                  textTransform: "uppercase",
-                  width: 100,
-                  py: 1,
-                }}
-              >
-                Mobile
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {students.map((s) => (
-              <TableRow key={s._id} hover>
-                <TableCell sx={{ py: 0.9 }}>
-                  <Typography
-                    variant="body2"
-                    fontWeight={800}
-                    sx={{
-                      fontFamily: "monospace",
-                      fontSize: "0.8rem",
-                      color: isDark ? "#93C5FD" : "#1E4D98",
-                    }}
-                  >
-                    {String(s.rollNumber || "").padStart(2, "0")}
-                  </Typography>
-                </TableCell>
-                <TableCell sx={{ py: 0.9 }}>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontFamily: "monospace",
-                      fontWeight: 700,
-                      fontSize: "0.72rem",
-                      color: "text.secondary",
-                    }}
-                  >
-                    {s.scholarNumber}
-                  </Typography>
-                </TableCell>
-                <TableCell sx={{ py: 0.9 }}>
-                  <Typography
-                    variant="body2"
-                    fontWeight={700}
-                    sx={{
-                      fontSize: "0.82rem",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {s.name}
-                  </Typography>
-                </TableCell>
-                <TableCell sx={{ py: 0.9 }}>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontSize: "0.78rem",
-                      color: "text.secondary",
-                    }}
-                  >
-                    {s.fatherName || "—"}
-                  </Typography>
-                </TableCell>
-                <TableCell sx={{ py: 0.9 }}>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontFamily: "monospace",
-                      fontSize: "0.75rem",
-                      color:
-                        s.mobile === "0000000000"
-                          ? "text.disabled"
-                          : "text.primary",
-                    }}
-                  >
-                    {s.mobile || "—"}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    )}
-  </Box>
-);
-
-// ═══════════════════════════════════════════════════════════════════
-//  STAT ITEM (for dialog header)
+//  STAT ITEM (for dialog header) — unchanged
 // ═══════════════════════════════════════════════════════════════════
 
 const StatItem = ({ value, label, color }) => (

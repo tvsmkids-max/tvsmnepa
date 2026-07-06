@@ -10,6 +10,11 @@ router.use(authenticate);
 
 router.get("/daily", adminOrTeacher, reportController.getDaily);
 router.get("/monthly", adminOrTeacher, reportController.getMonthly);
+router.get(
+  "/monthly/class/:classId",
+  adminOrTeacher,
+  reportController.getMonthlyClassDetail,
+);
 router.get("/student/:id", adminOrTeacher, reportController.getStudent);
 router.get("/defaulters", adminOrTeacher, reportController.getDefaulters);
 router.get(

@@ -59,6 +59,16 @@
             "date": 1783237666151,
             "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\error-2026-07-05.log",
             "hash": "7c9602d7ff78d41b20e7afe806cfa85b1992f3a79b6058c725fdf7413d9ae332"
+        },
+        {
+            "date": 1783353853207,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\error-2026-07-06.log",
+            "hash": "c7673ec3666d6f2421d0f2b2ef3b66cd4da778081acbd5a0e299d105cb7c34f4"
+        },
+        {
+            "date": 1783362795247,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\error-2026-07-07.log",
+            "hash": "08f196d7853b3d99df1e0833a1d4b5063ef30cf17b729897daac1175f7c7cba7"
         }
     ],
     "hashType": "sha256"

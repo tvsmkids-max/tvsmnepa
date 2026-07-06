@@ -71,9 +71,25 @@ const getRegister = asyncHandler(async (req, res) => {
   });
 });
 
+const getMonthlyClassDetail = asyncHandler(async (req, res) => {
+  const now = new Date();
+  const data = await reportService.getMonthlyClassDetail({
+    classId: req.params.classId,
+    year: parseInt(req.query.year) || now.getFullYear(),
+    month: parseInt(req.query.month) || now.getMonth() + 1,
+    user: req.user,
+  });
+  return sendResponse(res).success({
+    message: "Monthly class detail",
+    data,
+  });
+});
+
+// Add to exports:
 module.exports = {
   getDaily,
   getMonthly,
+  getMonthlyClassDetail,
   getStudent,
   getDefaulters,
   getClassTrend,

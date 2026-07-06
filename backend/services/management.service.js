@@ -1113,7 +1113,83 @@ class ManagementService {
       byConsistency: sortedByConsistency,
     };
   }
+  // ═══════════════════════════════════════════════════════════════
+  //  CLASS DETAIL — For management dialog (no mobile numbers)
+  // ═══════════════════════════════════════════════════════════════
+  async getClassDetail({ classId, date }) {
+    const activeSessionId = await this._getActiveSessionId();
+    if (!activeSessionId) throwError("No active session", 400);
 
+    const cls = await Class.findById(classId)
+      .populate("classTeacher", "name")
+      .lean();
+    if (!cls) throwError("Class not found", 404);
+
+    // Parse date
+    const targetDate = date ? new Date(date) : new Date();
+    targetDate.setHours(0, 0, 0, 0);
+    const nextDay = new Date(targetDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    // Get active students (NO mobile field selected)
+    const students = await Student.find({
+      class: classId,
+      status: "Active",
+      isActive: true,
+    })
+      .select("_id name rollNumber scholarNumber fatherName")
+      .sort({ name: 1 })
+      .lean();
+
+    // Get attendance records for this date
+    const records = await Attendance.find({
+      class: classId,
+      date: { $gte: targetDate, $lt: nextDay },
+    })
+      .select("student status")
+      .lean();
+
+    const recordMap = {};
+    records.forEach((r) => {
+      recordMap[r.student.toString()] = r.status;
+    });
+
+    // Build student list with status
+    let present = 0;
+    let absent = 0;
+    const studentsWithStatus = students.map((s) => {
+      const status = recordMap[s._id.toString()] || "Unmarked";
+      if (status === "Present") present++;
+      else if (status === "Absent") absent++;
+      return {
+        _id: s._id,
+        name: s.name,
+        rollNumber: s.rollNumber,
+        scholarNumber: s.scholarNumber,
+        fatherName: s.fatherName,
+        status,
+      };
+    });
+
+    const total = students.length;
+    const marked = present + absent;
+    const unmarked = total - marked;
+    const percentage = marked > 0 ? Math.round((present / marked) * 100) : 0;
+
+    return {
+      _id: cls._id,
+      name: cls.name,
+      section: cls.section,
+      classTeacher: cls.classTeacher?.name || null,
+      total,
+      present,
+      absent,
+      unmarked,
+      percentage,
+      date: targetDate.toISOString(),
+      students: studentsWithStatus,
+    };
+  }
   // ═══════════════════════════════════════════════════════════════
   //  EMPTY DATA HELPERS
   // ═══════════════════════════════════════════════════════════════
