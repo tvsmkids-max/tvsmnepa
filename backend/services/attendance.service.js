@@ -1023,7 +1023,6 @@ class AttendanceService {
     if (module === "Class") return "class";
     if (module === "Teacher") return "teacher";
     if (module === "Holiday") return "holiday";
-    if (module === "Notification") return "notification";
     if (module === "Settings") return "settings";
     return "default";
   }

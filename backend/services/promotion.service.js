@@ -4,7 +4,6 @@ const Student = require("../models/Student.model");
 const Class = require("../models/Class.model");
 const AcademicSession = require("../models/AcademicSession.model");
 const { createAuditLog } = require("../middlewares/audit.middleware");
-const notificationService = require("./notification.service");
 const logger = require("../utils/logger");
 
 const throwError = (message, statusCode = 400) => {
@@ -236,47 +235,6 @@ class PromotionService {
       description: `Promoted ${promoted} students from ${sourceClass?.name}-${sourceClass?.section} to ${targetClass.name}-${targetClass.section}`,
       req,
     });
-
-    // ─── NOTIFICATION: Notify admins about promotion success ───
-    try {
-      const fromLabel = `${sourceClass?.name}-${sourceClass?.section}`;
-      const toLabel = `${targetClass.name}-${targetClass.section}`;
-
-      let title = `🎓 Students Promoted Successfully`;
-      let type = "success";
-
-      if (failed > 0) {
-        title = `⚠️ Promotion Completed with Errors`;
-        type = "warning";
-      }
-
-      let message = `${promoted} student${promoted !== 1 ? "s" : ""} promoted from ${fromLabel} to ${toLabel}.`;
-      if (failed > 0) {
-        message += ` ${failed} failed.`;
-      }
-      if (alreadyPromoted.length > 0) {
-        message += ` ${alreadyPromoted.length} already promoted (skipped).`;
-      }
-
-      await notificationService.notifyAdmins({
-        title,
-        message,
-        type,
-        link: "/students",
-        metadata: {
-          promoted,
-          failed,
-          skipped: alreadyPromoted.length,
-          total: students.length,
-          fromClass: fromLabel,
-          toClass: toLabel,
-          targetSession: targetSession.name,
-        },
-        createdBy: user._id,
-      });
-    } catch (err) {
-      logger.error(`[Promotion] Notification failed: ${err.message}`);
-    }
 
     return {
       promoted,

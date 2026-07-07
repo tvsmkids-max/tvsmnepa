@@ -31,7 +31,6 @@ import useAuth from "../../hooks/useAuth";
 import useSettings from "../../hooks/useSettings";
 import useThemeMode from "../../hooks/useThemeMode";
 import SchoolInfoSheet from "./SchoolInfoSheet";
-import NotificationBell from "./NotificationBell";
 
 const SCHOOL_LOGO = import.meta.env.VITE_SCHOOL_LOGO || "/logo.png";
 const DEFAULT_SCHOOL_NAME =
@@ -87,17 +86,11 @@ const Topbar = ({ onMenuClick }) => {
           chip: "#FFF4E5",
           text: "#B45309",
         }
-      : user?.role === "principal"
-        ? {
-            bg: "linear-gradient(135deg, #16A34A 0%, #15803D 100%)",
-            chip: "#E6F4EA",
-            text: "#15803D",
-          }
-        : {
-            bg: "linear-gradient(135deg, #1E4D98 0%, #0D1B3E 100%)",
-            chip: "#E0EBFF",
-            text: "#1E4D98",
-          };
+      : {
+          bg: "linear-gradient(135deg, #1E4D98 0%, #0D1B3E 100%)",
+          chip: "#E0EBFF",
+          text: "#1E4D98",
+        };
 
   // ─── THEME-AWARE COLORS ───
   const topbarBg = isDark ? "#111827" : "#FFFFFF";
@@ -243,9 +236,6 @@ const Topbar = ({ onMenuClick }) => {
                 )}
               </IconButton>
             </Tooltip>
-
-            {/* Notification Bell */}
-            <NotificationBell />
 
             {/* Avatar */}
             <Tooltip title="Account">

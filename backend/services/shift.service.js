@@ -21,7 +21,6 @@ class ShiftService {
       throwError("Source and target class cannot be the same", 400);
     }
 
-    // Validate classes
     const sourceClass = await Class.findById(sourceClassId).lean();
     if (!sourceClass) throwError("Source class not found", 404);
 
@@ -32,14 +31,12 @@ class ShiftService {
       throwError("Cannot shift to archived class", 400);
     }
 
-    // Get students from source class
     let studentFilter = {
       class: sourceClassId,
       status: "Active",
       isActive: true,
     };
 
-    // If specific students provided, filter by them
     if (Array.isArray(studentIds) && studentIds.length > 0) {
       studentFilter._id = { $in: studentIds };
     }
@@ -52,7 +49,6 @@ class ShiftService {
       throwError("No eligible students found in source class", 400);
     }
 
-    // Get existing roll numbers in target class
     const targetStudents = await Student.find({
       class: targetClassId,
       isActive: true,
@@ -65,12 +61,10 @@ class ShiftService {
       .filter((n) => !isNaN(n));
     const maxRoll = existingRolls.length > 0 ? Math.max(...existingRolls) : 0;
 
-    // Check for scholar conflicts in target class
     const targetScholars = new Set(
       targetStudents.map((s) => s.scholarNumber.toUpperCase()),
     );
 
-    // Build preview
     let nextRoll = maxRoll;
     const shiftable = [];
     const conflicts = [];
@@ -125,7 +119,7 @@ class ShiftService {
   }
 
   /**
-   * Execute the shift — actually moves students
+   * Execute the shift
    */
   async execute({ sourceClassId, targetClassId, studentIds, user, req }) {
     if (!sourceClassId) throwError("Source class is required", 400);
@@ -138,7 +132,6 @@ class ShiftService {
       throwError("Select at least one student to shift", 400);
     }
 
-    // Validate target class
     const targetClass = await Class.findById(targetClassId).lean();
     if (!targetClass) throwError("Target class not found", 404);
     if (targetClass.isArchived) {
@@ -148,7 +141,6 @@ class ShiftService {
     const sourceClass = await Class.findById(sourceClassId).lean();
     if (!sourceClass) throwError("Source class not found", 404);
 
-    // Get students to shift
     const students = await Student.find({
       _id: { $in: studentIds },
       class: sourceClassId,
@@ -163,7 +155,6 @@ class ShiftService {
       );
     }
 
-    // Check for scholar conflicts in target
     const targetScholars = await Student.find({
       class: targetClassId,
       scholarNumber: { $in: students.map((s) => s.scholarNumber) },
@@ -183,7 +174,6 @@ class ShiftService {
       throwError("All selected students already exist in target class", 400);
     }
 
-    // Get next roll number
     const existingTarget = await Student.find({
       class: targetClassId,
       isActive: true,
@@ -196,7 +186,6 @@ class ShiftService {
       .filter((n) => !isNaN(n));
     let nextRoll = existingRolls.length > 0 ? Math.max(...existingRolls) : 0;
 
-    // Shift each student (update class + section + rollNumber)
     let shifted = 0;
     let failed = 0;
     const shiftedDetails = [];
@@ -227,7 +216,6 @@ class ShiftService {
       }
     }
 
-    // Audit log
     const sampleNames = shiftedDetails
       .slice(0, 5)
       .map((s) => `${s.name} (${s.scholarNumber})`)
@@ -253,27 +241,6 @@ class ShiftService {
       },
       req,
     });
-
-    // Notification for admin
-    try {
-      const notificationService = require("./notification.service");
-      await notificationService.notifyAdmins({
-        title: `🔄 ${shifted} Students Shifted`,
-        message: `Moved from ${sourceClass.name}-${sourceClass.section} to ${targetClass.name}-${targetClass.section}`,
-        type: "info",
-        link: "/students",
-        metadata: {
-          shifted,
-          failed,
-          sourceClass: `${sourceClass.name}-${sourceClass.section}`,
-          targetClass: `${targetClass.name}-${targetClass.section}`,
-          actor: user.name || user.email,
-        },
-        createdBy: user._id,
-      });
-    } catch {
-      // Silent fail
-    }
 
     return {
       shifted,

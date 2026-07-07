@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, startTransition } from "react";
+import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
@@ -53,7 +53,7 @@ const HolidayManagePage = lazy(
   () => import("../pages/holidays/HolidayManagePage"),
 );
 
-// ─── Reports (4 separate pages) ───
+// ─── Reports ───
 const DailyReportPage = lazy(() => import("../pages/reports/DailyReportPage"));
 const MonthlyReportPage = lazy(
   () => import("../pages/reports/MonthlyReportPage"),
@@ -73,11 +73,6 @@ const AnalyticsDashboard = lazy(
 // ─── Management Dashboard (Public) ───
 const ManagementDashboard = lazy(
   () => import("../pages/management/ManagementDashboard"),
-);
-
-// ─── Notifications ───
-const NotificationsPage = lazy(
-  () => import("../pages/notifications/NotificationsPage"),
 );
 
 // ─── Activity Logs ───
@@ -218,7 +213,7 @@ const AppRouter = () => (
           {/* ─── Holidays ─── */}
           <Route path="holidays" element={<HolidayManagePage />} />
 
-          {/* ─── Reports (4 separate pages) ─── */}
+          {/* ─── Reports ─── */}
           <Route
             path="reports"
             element={<Navigate to="/reports/daily" replace />}
@@ -230,9 +225,6 @@ const AppRouter = () => (
 
           {/* ─── Analytics ─── */}
           <Route path="analytics" element={<AnalyticsDashboard />} />
-
-          {/* ─── Notifications ─── */}
-          <Route path="notifications" element={<NotificationsPage />} />
 
           {/* ─── Activity Logs (Admin only) ─── */}
           <Route

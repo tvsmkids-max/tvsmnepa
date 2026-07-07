@@ -12,7 +12,6 @@ const Holiday = require("../models/Holiday.model");
 const AcademicSession = require("../models/AcademicSession.model");
 const Settings = require("../models/Settings.model");
 const User = require("../models/User.model");
-const Notification = require("../models/Notification.model");
 const ActivityLog = require("../models/ActivityLog.model");
 
 const { createAuditLog } = require("../middlewares/audit.middleware");
@@ -25,7 +24,7 @@ const BACKUP_VERSION = "1.0.0";
 
 // Models config for backup/restore (ordered by dependency)
 const BACKUP_MODELS = [
-  { name: "users", model: User, includeInRestore: false }, // Excluded from default restore (security)
+  { name: "users", model: User, includeInRestore: false },
   { name: "settings", model: Settings, includeInRestore: true },
   { name: "academicSessions", model: AcademicSession, includeInRestore: true },
   { name: "classes", model: Class, includeInRestore: true },
@@ -33,15 +32,10 @@ const BACKUP_MODELS = [
   { name: "students", model: Student, includeInRestore: true },
   { name: "attendance", model: Attendance, includeInRestore: true },
   { name: "holidays", model: Holiday, includeInRestore: true },
-  { name: "notifications", model: Notification, includeInRestore: false },
   { name: "activityLogs", model: ActivityLog, includeInRestore: false },
 ];
 
 class BackupService {
-  /**
-   * Generate full backup of database
-   * Returns JSON object ready to be downloaded
-   */
   async createBackup(user, req) {
     try {
       logger.info(`[Backup] Started by ${user.email}`);
@@ -50,7 +44,6 @@ class BackupService {
       const data = {};
       const stats = {};
 
-      // Fetch all collections
       for (const config of BACKUP_MODELS) {
         try {
           const docs = await config.model.find({}).lean();
@@ -68,7 +61,6 @@ class BackupService {
       const totalDocs = Object.values(stats).reduce((sum, n) => sum + n, 0);
       const durationMs = Date.now() - startTime;
 
-      // Build backup object
       const backup = {
         metadata: {
           version: BACKUP_VERSION,
@@ -88,7 +80,6 @@ class BackupService {
         data,
       };
 
-      // Audit log
       await createAuditLog({
         user,
         action: "BACKUP",
@@ -99,7 +90,6 @@ class BackupService {
         req,
       });
 
-      // Update last backup timestamp in settings
       await this._updateLastBackupTime();
 
       logger.info(
@@ -113,10 +103,6 @@ class BackupService {
     }
   }
 
-  /**
-   * Get current backup-able stats (without creating full backup)
-   * Used to show what would be backed up
-   */
   async getBackupStats() {
     const stats = {};
     let total = 0;
@@ -146,9 +132,6 @@ class BackupService {
     };
   }
 
-  /**
-   * Validate uploaded backup file structure
-   */
   async validateBackup(backupData) {
     if (!backupData || typeof backupData !== "object") {
       throwError("Invalid backup file format", 400);
@@ -162,7 +145,6 @@ class BackupService {
       throwError("Backup version missing", 400);
     }
 
-    // Version check (allow same major version)
     const backupMajor = backupData.metadata.version.split(".")[0];
     const currentMajor = BACKUP_VERSION.split(".")[0];
 
@@ -177,7 +159,6 @@ class BackupService {
       throwError("Backup file is not from TVSMNEPA system", 400);
     }
 
-    // Validate data structure
     const issues = [];
     for (const config of BACKUP_MODELS) {
       if (config.includeInRestore && backupData.data[config.name]) {
@@ -198,15 +179,11 @@ class BackupService {
     };
   }
 
-  /**
-   * Restore data from backup (merge mode - skips duplicates)
-   */
   async restoreBackup(backupData, options = {}, user, req) {
     try {
       logger.info(`[Restore] Started by ${user.email}`);
       const startTime = Date.now();
 
-      // Validate first
       const validation = await this.validateBackup(backupData);
       if (!validation.valid) {
         throwError("Invalid backup", 400);
@@ -215,9 +192,7 @@ class BackupService {
       const { collections = null } = options;
       const results = {};
 
-      // Restore each collection
       for (const config of BACKUP_MODELS) {
-        // Skip if model is excluded from restore
         if (!config.includeInRestore) {
           results[config.name] = {
             skipped: true,
@@ -226,7 +201,6 @@ class BackupService {
           continue;
         }
 
-        // Skip if user specified collections and this isn't in the list
         if (collections && !collections.includes(config.name)) {
           results[config.name] = { skipped: true, reason: "Not selected" };
           continue;
@@ -253,7 +227,6 @@ class BackupService {
       const durationMs = Date.now() - startTime;
       const summary = this._buildRestoreSummary(results, durationMs);
 
-      // Audit log
       await createAuditLog({
         user,
         action: "RESTORE",
@@ -276,8 +249,6 @@ class BackupService {
     }
   }
 
-  // ─── PRIVATE HELPERS ───
-
   async _restoreCollection(Model, name, docs) {
     let inserted = 0;
     let skipped = 0;
@@ -291,14 +262,12 @@ class BackupService {
           continue;
         }
 
-        // Check if document already exists
         const existing = await Model.findById(doc._id).lean();
         if (existing) {
           skipped++;
           continue;
         }
 
-        // Insert with original _id
         const cleanDoc = this._cleanDocument(doc);
         await Model.create(cleanDoc);
         inserted++;
@@ -318,14 +287,9 @@ class BackupService {
     };
   }
 
-  /**
-   * Clean document for insertion (remove problematic fields)
-   */
   _cleanDocument(doc) {
     const clean = { ...doc };
-    // Remove version key if present (MongoDB will set it)
     delete clean.__v;
-    // Convert _id string to ObjectId if needed
     if (clean._id && typeof clean._id === "string") {
       try {
         clean._id = new mongoose.Types.ObjectId(clean._id);

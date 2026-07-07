@@ -16,10 +16,8 @@ import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
-import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
-import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import AnalyticsOutlinedIcon from "@mui/icons-material/AnalyticsOutlined";
@@ -112,11 +110,6 @@ const adminNav = [
     path: "/promotion",
   },
   {
-    label: "Notifications",
-    icon: <NotificationsOutlinedIcon />,
-    path: "/notifications",
-  },
-  {
     label: "Activity Logs",
     icon: <TimelineOutlinedIcon />,
     path: "/activity-logs",
@@ -158,7 +151,7 @@ const teacherNav = [
   { type: "section", label: "Students" },
   { label: "Students", icon: <PeopleOutlinedIcon />, path: "/students" },
 
-  // Reports section — ✅ Register REMOVED, Monthly ADDED
+  // Reports section
   { type: "section", label: "Reports" },
   {
     label: "Daily",
@@ -166,7 +159,7 @@ const teacherNav = [
     path: "/reports/daily",
   },
   {
-    label: "Monthly", // ✅ ADDED
+    label: "Monthly",
     icon: <CalendarMonthOutlinedIcon />,
     path: "/reports/monthly",
   },
@@ -214,7 +207,7 @@ const SidebarContent = ({ collapsed }) => {
   };
 
   // ═══════════════════════════════════════════════════════
-  //  COLORS — 100% same as original
+  //  COLORS
   // ═══════════════════════════════════════════════════════
 
   const sidebarBg = isDark ? "#111827" : "#FFFFFF";
@@ -264,7 +257,6 @@ const SidebarContent = ({ collapsed }) => {
               return (
                 <Box key={`section-${idx}`} sx={{ mt: 1.5, mb: 0.3 }}>
                   {!collapsed ? (
-                    // Show label when expanded
                     <Typography
                       sx={{
                         px: 2.3,
@@ -280,14 +272,13 @@ const SidebarContent = ({ collapsed }) => {
                       {item.label}
                     </Typography>
                   ) : (
-                    // Show divider when collapsed
                     <Divider sx={{ borderColor, mx: 1 }} />
                   )}
                 </Box>
               );
             }
 
-            // ── NAV ITEM (Dashboard + all children) ──
+            // ── NAV ITEM ──
             const active = isActive(item.path);
             const isDashboard = item.type === "item";
 
@@ -359,7 +350,7 @@ const SidebarContent = ({ collapsed }) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-//  SIDEBAR WRAPPER — 100% same as original
+//  SIDEBAR WRAPPER
 // ═══════════════════════════════════════════════════════════════════
 
 const Sidebar = ({ drawerWidth, collapsed }) => (

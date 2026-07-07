@@ -13,7 +13,7 @@ const throwError = (message, statusCode = 400) => {
 
 const MAX_BULK_DELETE = 100;
 
-// ✅ NEW: Teacher can only toggle between these two statuses
+// Teacher can only toggle between these two statuses
 const TEACHER_ALLOWED_STATUSES = ["Active", "Inactive"];
 
 class StudentService {
@@ -32,7 +32,6 @@ class StudentService {
 
     const filter = { ...filterParams };
 
-    // Default to active session
     if (!filter.session) {
       const settings = await Settings.getSettings();
       if (settings?.activeSession) {
@@ -40,7 +39,6 @@ class StudentService {
       }
     }
 
-    // Teacher RBAC
     if (user && user.role === "teacher") {
       const Teacher = require("../models/Teacher.model");
       const teacher = await Teacher.findOne({ user: user._id }).lean();
@@ -72,13 +70,11 @@ class StudentService {
       }
     }
 
-    // ─── ADVANCED FILTERS ───
     if (section) filter.section = section;
     if (gender) filter.gender = gender;
     if (category) filter.category = category;
     if (bloodGroup) filter.bloodGroup = bloodGroup;
 
-    // ─── SEARCH ───
     if (search && search.trim()) {
       const trimmed = search.trim();
       filter.$or = [
@@ -103,9 +99,6 @@ class StudentService {
     });
   }
 
-  /**
-   * Get unique sections (for filter dropdown)
-   */
   async getSections(user) {
     const settings = await Settings.getSettings();
     const sessionId = settings?.activeSession?._id || settings?.activeSession;
@@ -113,7 +106,6 @@ class StudentService {
     const filter = { isActive: true };
     if (sessionId) filter.session = sessionId;
 
-    // Teacher restriction
     if (user && user.role === "teacher") {
       const Teacher = require("../models/Teacher.model");
       const teacher = await Teacher.findOne({ user: user._id }).lean();
@@ -172,8 +164,6 @@ class StudentService {
     const existing = await studentRepository.findById(id);
     if (!existing) throwError("Student not found", 404);
 
-    // ✅ NEW: Teacher restriction on editing
-    // Teacher can only edit students in their assigned classes
     if (user && user.role === ROLES.TEACHER) {
       const Teacher = require("../models/Teacher.model");
       const teacher = await Teacher.findOne({ user: user._id }).lean();
@@ -191,14 +181,12 @@ class StudentService {
         throwError("You can only edit students in your assigned classes", 403);
       }
 
-      // ✅ Teachers cannot change class or section
       if (data.class && data.class.toString() !== existingClassId) {
         throwError(
           "Teachers cannot change a student's class. Contact admin.",
           403,
         );
       }
-      // Remove class/section from data to prevent accidental changes
       delete data.class;
       delete data.section;
     }
@@ -226,22 +214,11 @@ class StudentService {
     return updated;
   }
 
-  /**
-   * ═══════════════════════════════════════════════════════════════
-   *  UPDATE STATUS
-   *  ✅ NEW: Teacher restriction — only Active/Inactive allowed
-   *  ✅ NEW: Teacher can only change status for their assigned classes
-   * ═══════════════════════════════════════════════════════════════
-   */
   async updateStatus(id, statusData, user, req) {
     const existing = await studentRepository.findById(id);
     if (!existing) throwError("Student not found", 404);
 
-    // ═══════════════════════════════════════════════════════════
-    //  TEACHER RESTRICTIONS
-    // ═══════════════════════════════════════════════════════════
     if (user && user.role === ROLES.TEACHER) {
-      // 1. Verify teacher is assigned to this student's class
       const Teacher = require("../models/Teacher.model");
       const teacher = await Teacher.findOne({ user: user._id }).lean();
 
@@ -261,7 +238,6 @@ class StudentService {
         );
       }
 
-      // 2. Teacher can only toggle between Active and Inactive
       if (!TEACHER_ALLOWED_STATUSES.includes(statusData.status)) {
         throwError(
           `Teachers can only mark students as Active or Inactive. ` +
@@ -270,7 +246,6 @@ class StudentService {
         );
       }
 
-      // 3. Teacher cannot change students who are already Transferred/TC/etc
       if (!TEACHER_ALLOWED_STATUSES.includes(existing.status)) {
         throwError(
           `Cannot change status of ${existing.status} student. Contact admin.`,
@@ -400,35 +375,6 @@ class StudentService {
       after: { deleted: students.length, attendanceDeleted },
       req,
     });
-
-    // Notification for large bulk deletes
-    try {
-      if (students.length >= 5) {
-        const notificationService = require("./notification.service");
-        await notificationService.notifyAdmins({
-          title:
-            mode === "hard"
-              ? `🗑️ ${students.length} Students Permanently Deleted`
-              : `📤 ${students.length} Students Soft Deleted`,
-          message: `Bulk delete performed by ${user.name || user.email}. ${
-            mode === "hard"
-              ? `${attendanceDeleted} attendance records also removed.`
-              : "Students marked as Inactive."
-          }`,
-          type: mode === "hard" ? "warning" : "info",
-          link: "/students",
-          metadata: {
-            count: students.length,
-            mode,
-            attendanceDeleted,
-            actor: user.name || user.email,
-          },
-          createdBy: user._id,
-        });
-      }
-    } catch (err) {
-      // Silent fail
-    }
 
     return {
       mode,

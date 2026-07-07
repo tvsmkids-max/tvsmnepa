@@ -19,6 +19,7 @@ import {
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
@@ -26,7 +27,6 @@ import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
 import AnalyticsOutlinedIcon from "@mui/icons-material/AnalyticsOutlined";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
-import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
@@ -35,6 +35,8 @@ import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
+import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
+import ListAltOutlinedIcon from "@mui/icons-material/ListAltOutlined";
 import useAuth from "../../hooks/useAuth";
 
 const MobileBottomNav = () => {
@@ -47,8 +49,11 @@ const MobileBottomNav = () => {
     const path = location.pathname;
     if (path === "/dashboard" || path === "/teacher/dashboard") return "home";
     if (path.startsWith("/attendance/mark")) return "mark";
-    if (path.startsWith("/reports/monthly")) return "monthly";
-    if (path.startsWith("/attendance/history")) return "history";
+
+    // Admin uses "daily", teacher uses "monthly"
+    if (isAdmin && path.startsWith("/reports/daily")) return "daily";
+    if (!isAdmin && path.startsWith("/reports/monthly")) return "monthly";
+
     if (path.startsWith("/students")) return "students";
     return false;
   };
@@ -64,8 +69,8 @@ const MobileBottomNav = () => {
     const routes = {
       home: homeRoute,
       mark: "/attendance/mark",
+      daily: "/reports/daily",
       monthly: "/reports/monthly",
-      history: "/attendance/history",
       students: "/students",
     };
     if (routes[newValue]) navigate(routes[newValue]);
@@ -86,6 +91,7 @@ const MobileBottomNav = () => {
   const adminMoreItems = [
     { divider: true, label: "Personal" },
     { label: "My Profile", icon: <PersonOutlinedIcon />, path: "/profile" },
+
     { divider: true, label: "Management" },
     { label: "Classes", icon: <ClassOutlinedIcon />, path: "/classes" },
     { label: "Teachers", icon: <PersonOutlinedIcon />, path: "/teachers" },
@@ -94,29 +100,42 @@ const MobileBottomNav = () => {
       icon: <SwapHorizOutlinedIcon />,
       path: "/students/shift",
     },
+
     { divider: true, label: "Attendance" },
     {
       label: "History",
       icon: <HistoryOutlinedIcon />,
       path: "/attendance/history",
     },
+
     { divider: true, label: "Reports" },
-    { label: "Reports", icon: <AssessmentOutlinedIcon />, path: "/reports" },
+    {
+      label: "Monthly Report",
+      icon: <CalendarMonthOutlinedIcon />,
+      path: "/reports/monthly",
+    },
+    {
+      label: "Defaulters",
+      icon: <WarningAmberOutlinedIcon />,
+      path: "/reports/defaulters",
+    },
+    {
+      label: "Register",
+      icon: <ListAltOutlinedIcon />,
+      path: "/reports/register",
+    },
     { label: "Analytics", icon: <AnalyticsOutlinedIcon />, path: "/analytics" },
+
     { divider: true, label: "Administration" },
     { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
     { label: "Sessions", icon: <SchoolOutlinedIcon />, path: "/sessions" },
     { label: "Promotions", icon: <SchoolOutlinedIcon />, path: "/promotion" },
     {
-      label: "Notifications",
-      icon: <NotificationsOutlinedIcon />,
-      path: "/notifications",
-    },
-    {
       label: "Activity Logs",
       icon: <TimelineOutlinedIcon />,
       path: "/activity-logs",
     },
+
     { divider: true, label: "System" },
     {
       label: "Backup & Restore",
@@ -130,21 +149,18 @@ const MobileBottomNav = () => {
   const teacherMoreItems = [
     { divider: true, label: "Personal" },
     { label: "My Profile", icon: <PersonOutlinedIcon />, path: "/profile" },
-    {
-      label: "Notifications",
-      icon: <NotificationsOutlinedIcon />,
-      path: "/notifications",
-    },
+
     { divider: true, label: "Attendance" },
     {
       label: "Attendance History",
       icon: <HistoryOutlinedIcon />,
       path: "/attendance/history",
     },
+
     { divider: true, label: "Reports" },
     {
       label: "Daily Report",
-      icon: <AssessmentOutlinedIcon />,
+      icon: <TodayOutlinedIcon />,
       path: "/reports/daily",
     },
   ];
@@ -202,11 +218,20 @@ const MobileBottomNav = () => {
             value="mark"
             icon={<EventNoteOutlinedIcon sx={{ fontSize: 22 }} />}
           />
-          <BottomNavigationAction
-            label="Monthly"
-            value="monthly"
-            icon={<CalendarMonthOutlinedIcon sx={{ fontSize: 22 }} />}
-          />
+          {/* Admin → Daily · Teacher → Monthly */}
+          {isAdmin ? (
+            <BottomNavigationAction
+              label="Daily"
+              value="daily"
+              icon={<TodayOutlinedIcon sx={{ fontSize: 22 }} />}
+            />
+          ) : (
+            <BottomNavigationAction
+              label="Monthly"
+              value="monthly"
+              icon={<CalendarMonthOutlinedIcon sx={{ fontSize: 22 }} />}
+            />
+          )}
           <BottomNavigationAction
             label="Students"
             value="students"
