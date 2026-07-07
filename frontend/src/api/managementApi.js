@@ -36,7 +36,7 @@ const managementApi = {
     publicClient.get(`/management/${secretKey}/today`),
 
   /**
-   * Page 2: Monthly Trends
+   * Page 2: Monthly Trends (OLD — kept for backward compatibility)
    */
   getMonthlyTrends: (secretKey) =>
     publicClient.get(`/management/${secretKey}/monthly`),
@@ -62,11 +62,27 @@ const managementApi = {
     }),
 
   /**
-   * Get class detail for management dialog
+   * Get class detail for TODAY dialog
    */
   getClassDetail: (secretKey, classId, date) =>
     publicClient.get(`/management/${secretKey}/class/${classId}`, {
       params: date ? { date } : {},
+    }),
+
+  /**
+   * ✅ NEW: Monthly Report — all class cards
+   */
+  getMonthlyReport: (secretKey, year, month) =>
+    publicClient.get(`/management/${secretKey}/monthly-report`, {
+      params: { year, month },
+    }),
+
+  /**
+   * ✅ NEW: Monthly Class Detail — calendar view for one class
+   */
+  getMonthlyClassDetail: (secretKey, classId, year, month) =>
+    publicClient.get(`/management/${secretKey}/monthly-class/${classId}`, {
+      params: { year, month },
     }),
 };
 

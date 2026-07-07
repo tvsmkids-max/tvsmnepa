@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
-import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
@@ -34,6 +34,7 @@ import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
+import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import useAuth from "../../hooks/useAuth";
 
 const MobileBottomNav = () => {
@@ -42,17 +43,11 @@ const MobileBottomNav = () => {
   const { user, isAdmin, logout } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const isPrincipal = user?.role === "principal";
-
   const getCurrentValue = () => {
     const path = location.pathname;
-    if (
-      path === "/dashboard" ||
-      path === "/teacher/dashboard" ||
-      path === "/principal/dashboard"
-    )
-      return "home";
+    if (path === "/dashboard" || path === "/teacher/dashboard") return "home";
     if (path.startsWith("/attendance/mark")) return "mark";
+    if (path.startsWith("/reports/monthly")) return "monthly";
     if (path.startsWith("/attendance/history")) return "history";
     if (path.startsWith("/students")) return "students";
     return false;
@@ -64,15 +59,12 @@ const MobileBottomNav = () => {
       return;
     }
 
-    const homeRoute = isAdmin
-      ? "/dashboard"
-      : isPrincipal
-        ? "/principal/dashboard"
-        : "/teacher/dashboard";
+    const homeRoute = isAdmin ? "/dashboard" : "/teacher/dashboard";
 
     const routes = {
       home: homeRoute,
       mark: "/attendance/mark",
+      monthly: "/reports/monthly",
       history: "/attendance/history",
       students: "/students",
     };
@@ -101,6 +93,12 @@ const MobileBottomNav = () => {
       label: "Section Shift",
       icon: <SwapHorizOutlinedIcon />,
       path: "/students/shift",
+    },
+    { divider: true, label: "Attendance" },
+    {
+      label: "History",
+      icon: <HistoryOutlinedIcon />,
+      path: "/attendance/history",
     },
     { divider: true, label: "Reports" },
     { label: "Reports", icon: <AssessmentOutlinedIcon />, path: "/reports" },
@@ -137,28 +135,24 @@ const MobileBottomNav = () => {
       icon: <NotificationsOutlinedIcon />,
       path: "/notifications",
     },
+    { divider: true, label: "Attendance" },
+    {
+      label: "Attendance History",
+      icon: <HistoryOutlinedIcon />,
+      path: "/attendance/history",
+    },
     { divider: true, label: "Reports" },
-    { label: "Reports", icon: <AssessmentOutlinedIcon />, path: "/reports" },
+    {
+      label: "Daily Report",
+      icon: <AssessmentOutlinedIcon />,
+      path: "/reports/daily",
+    },
   ];
 
-  // ─── PRINCIPAL MORE ITEMS ───
-  const principalMoreItems = [
-    { divider: true, label: "School" },
-    { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
-  ];
-
-  // Choose menu items based on role
-  const moreItems = isAdmin
-    ? adminMoreItems
-    : isPrincipal
-      ? principalMoreItems
-      : teacherMoreItems;
+  const moreItems = isAdmin ? adminMoreItems : teacherMoreItems;
 
   const isActivePath = (path) =>
     location.pathname === path || location.pathname.startsWith(path);
-
-  // Principal bottom nav: only Home + More (no Mark/History/Students)
-  const showFullNav = !isPrincipal;
 
   return (
     <>
@@ -203,27 +197,21 @@ const MobileBottomNav = () => {
             value="home"
             icon={<HomeOutlinedIcon sx={{ fontSize: 22 }} />}
           />
-          {showFullNav && (
-            <BottomNavigationAction
-              label="Mark"
-              value="mark"
-              icon={<EventNoteOutlinedIcon sx={{ fontSize: 22 }} />}
-            />
-          )}
-          {showFullNav && (
-            <BottomNavigationAction
-              label="History"
-              value="history"
-              icon={<HistoryOutlinedIcon sx={{ fontSize: 22 }} />}
-            />
-          )}
-          {showFullNav && (
-            <BottomNavigationAction
-              label="Students"
-              value="students"
-              icon={<PeopleOutlinedIcon sx={{ fontSize: 22 }} />}
-            />
-          )}
+          <BottomNavigationAction
+            label="Mark"
+            value="mark"
+            icon={<EventNoteOutlinedIcon sx={{ fontSize: 22 }} />}
+          />
+          <BottomNavigationAction
+            label="Monthly"
+            value="monthly"
+            icon={<CalendarMonthOutlinedIcon sx={{ fontSize: 22 }} />}
+          />
+          <BottomNavigationAction
+            label="Students"
+            value="students"
+            icon={<PeopleOutlinedIcon sx={{ fontSize: 22 }} />}
+          />
           <BottomNavigationAction
             label="More"
             value="more"
@@ -268,7 +256,7 @@ const MobileBottomNav = () => {
                 sx={{
                   width: 40,
                   height: 40,
-                  bgcolor: isPrincipal ? "success.main" : "primary.main",
+                  bgcolor: "primary.main",
                   fontSize: "0.95rem",
                   fontWeight: 800,
                 }}

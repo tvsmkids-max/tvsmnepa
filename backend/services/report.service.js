@@ -570,6 +570,7 @@ class ReportService {
 
   /**
    * Get student-wise monthly attendance for a specific class
+   * ✅ NEW: Returns date-wise attendance matrix (calendar view)
    * Used when user clicks a class card in monthly report
    */
   async getMonthlyClassDetail({ classId, year, month, user }) {
@@ -580,6 +581,7 @@ class ReportService {
     if (!sessionId) throwError("No active session", 400);
 
     const startDate = new Date(year, month - 1, 1);
+    startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
     // Teacher RBAC
@@ -602,7 +604,7 @@ class ReportService {
       .lean();
     if (!cls) throwError("Class not found", 404);
 
-    // Get students
+    // Get students (Active only)
     const students = await Student.find({
       class: classId,
       session: sessionId,
@@ -612,66 +614,134 @@ class ReportService {
       .sort({ rollNumber: 1, name: 1 })
       .lean();
 
-    // Get holidays
+    // Get holidays in the month
     const holidays = await Holiday.find({
       session: sessionId,
-      date: { $gte: startDate, $lte: endDate },
+      $or: [
+        { date: { $gte: startDate, $lte: endDate }, endDate: null },
+        { date: { $lte: endDate }, endDate: { $gte: startDate } },
+      ],
     }).lean();
 
-    const workingDays = this._calculateWorkingDays(
-      startDate,
-      endDate,
-      holidays,
-      settings,
+    // Build holiday date map (dateKey → true)
+    const holidayMap = {};
+    holidays.forEach((h) => {
+      const hStart = new Date(h.date);
+      hStart.setHours(0, 0, 0, 0);
+      const hEnd = h.endDate ? new Date(h.endDate) : new Date(h.date);
+      hEnd.setHours(23, 59, 59, 999);
+
+      const cur = new Date(hStart);
+      while (cur <= hEnd) {
+        const key = this._dateKey(cur);
+        holidayMap[key] = { name: h.name, allowAttendance: h.allowAttendance };
+        cur.setDate(cur.getDate() + 1);
+      }
+    });
+
+    // Working days config
+    const workingDayNames = new Set(
+      (settings?.workingDays || [])
+        .filter((d) => d.isWorking)
+        .map((d) => d.day),
     );
 
-    // Get attendance records
+    // ─── Build date array (1 to end of month) ───
+    const dateArray = [];
+    const cur = new Date(startDate);
+    while (cur <= endDate) {
+      const key = this._dateKey(cur);
+      const dayName = cur.toLocaleDateString("en-US", { weekday: "long" });
+      const dayShort = cur.toLocaleDateString("en-US", { weekday: "short" });
+      const isSunday = dayName === "Sunday";
+      const isWorkingDay = workingDayNames.has(dayName);
+      const holiday = holidayMap[key];
+      const isHoliday = !!holiday && !holiday.allowAttendance;
+      const isBlocked = isHoliday || !isWorkingDay;
+
+      dateArray.push({
+        day: cur.getDate(),
+        dateKey: key,
+        dayName,
+        dayShort,
+        isSunday,
+        isHoliday,
+        isWorkingDay,
+        isBlocked,
+        holidayName: holiday?.name || null,
+      });
+
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    const workingDays = dateArray.filter((d) => !d.isBlocked).length;
+
+    // ─── Get attendance records for month ───
     const records = await Attendance.find({
       class: classId,
       date: { $gte: startDate, $lte: endDate },
-    }).lean();
+    })
+      .select("student status date")
+      .lean();
 
-    // Build student-wise stats
-    const studentStatsMap = {};
+    // Build attendance map: { studentId: { dateKey: "P"/"A" } }
+    const attendanceMap = {};
     records.forEach((r) => {
       const sid = r.student.toString();
-      if (!studentStatsMap[sid])
-        studentStatsMap[sid] = { present: 0, absent: 0 };
-      if (r.status === "Present") studentStatsMap[sid].present++;
-      else if (r.status === "Absent") studentStatsMap[sid].absent++;
+      const dateKey = this._dateKey(r.date);
+      if (!attendanceMap[sid]) attendanceMap[sid] = {};
+      attendanceMap[sid][dateKey] =
+        r.status === "Present" ? "P" : r.status === "Absent" ? "A" : "";
     });
 
+    // ─── Build student rows with dailyAttendance + totals ───
     const studentDetails = students.map((s) => {
-      const stats = studentStatsMap[s._id.toString()] || {
-        present: 0,
-        absent: 0,
-      };
-      const total = stats.present + stats.absent;
-      const percentage =
-        total > 0 ? Math.round((stats.present / total) * 100) : 0;
+      const sid = s._id.toString();
+      const dailyAttendance = {};
+      let present = 0;
+      let absent = 0;
+
+      dateArray.forEach((d) => {
+        if (d.isHoliday) {
+          dailyAttendance[d.dateKey] = "H";
+        } else if (d.isBlocked) {
+          dailyAttendance[d.dateKey] = "-"; // Sunday / Non-working
+        } else {
+          const status = attendanceMap[sid]?.[d.dateKey];
+          if (status === "P") {
+            dailyAttendance[d.dateKey] = "P";
+            present++;
+          } else if (status === "A") {
+            dailyAttendance[d.dateKey] = "A";
+            absent++;
+          } else {
+            dailyAttendance[d.dateKey] = ""; // Unmarked
+          }
+        }
+      });
+
+      const total = present + absent;
+      const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
 
       return {
         _id: s._id,
         name: s.name,
         rollNumber: s.rollNumber,
+        scholarNumber: s.scholarNumber,
         fatherName: s.fatherName,
         gender: s.gender,
-        mobile: s.mobile,
-        present: stats.present,
-        absent: stats.absent,
+        present,
+        absent,
         total,
         workingDays,
         percentage,
         isLowAttendance: total > 0 && percentage < 75,
+        isPerfect: total > 0 && percentage === 100,
+        dailyAttendance,
       };
     });
 
-    // Sort by percentage (lowest first for quick identification)
-    const sortedByPercentage = [...studentDetails].sort(
-      (a, b) => a.percentage - b.percentage,
-    );
-
-    // Summary
+    // ─── Summary ───
     const totalPresent = studentDetails.reduce((s, st) => s + st.present, 0);
     const totalAbsent = studentDetails.reduce((s, st) => s + st.absent, 0);
     const totalMarked = totalPresent + totalAbsent;
@@ -689,7 +759,9 @@ class ReportService {
         month: "long",
       }),
       workingDays,
-      students: studentDetails,
+      dates: dateArray, // ✅ NEW: Date array for column headers
+      holidays: holidays.length,
+      students: studentDetails, // ✅ Each student has dailyAttendance map
       summary: {
         totalStudents: students.length,
         totalPresent,
@@ -699,6 +771,8 @@ class ReportService {
         overallPercentage:
           totalMarked > 0 ? Math.round((totalPresent / totalMarked) * 100) : 0,
         lowAttendanceStudents: studentDetails.filter((s) => s.isLowAttendance)
+          .length,
+        perfectAttendanceStudents: studentDetails.filter((s) => s.isPerfect)
           .length,
       },
     };

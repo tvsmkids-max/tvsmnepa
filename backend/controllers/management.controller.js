@@ -55,6 +55,7 @@ const getRankings = asyncHandler(async (req, res) => {
   });
 });
 
+// ─── Class Detail (Today dialog) ───
 const getClassDetail = asyncHandler(async (req, res) => {
   const { classId } = req.params;
   const { date } = req.query;
@@ -65,8 +66,37 @@ const getClassDetail = asyncHandler(async (req, res) => {
   });
 });
 
+// ─── NEW: Monthly Report (class cards) ───
+const getMonthlyReport = asyncHandler(async (req, res) => {
+  const now = new Date();
+  const year = parseInt(req.query.year) || now.getFullYear();
+  const month = parseInt(req.query.month) || now.getMonth() + 1;
+  const data = await managementService.getMonthlyReport({ year, month });
+  return sendResponse(res).success({
+    message: "Monthly report fetched",
+    data,
+  });
+});
+
+// ─── NEW: Monthly Class Detail (calendar dialog) ───
+const getMonthlyClassDetail = asyncHandler(async (req, res) => {
+  const { classId } = req.params;
+  const now = new Date();
+  const year = parseInt(req.query.year) || now.getFullYear();
+  const month = parseInt(req.query.month) || now.getMonth() + 1;
+  const data = await managementService.getMonthlyClassDetail({
+    classId,
+    year,
+    month,
+  });
+  return sendResponse(res).success({
+    message: "Monthly class detail fetched",
+    data,
+  });
+});
+
 // ═══════════════════════════════════════════════════════════════════
-//  VALIDATE ACCESS (used by frontend to verify secret key)
+//  VALIDATE ACCESS
 // ═══════════════════════════════════════════════════════════════════
 const validateAccess = asyncHandler(async (req, res) => {
   const { secretKey } = req.params;
@@ -137,13 +167,17 @@ const deleteAccessUrl = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  // Public endpoints
   getTodayOverview,
   getMonthlyTrends,
   getYearlyPerformance,
   getAlerts,
   getRankings,
   getClassDetail,
+  getMonthlyReport,
+  getMonthlyClassDetail,
   validateAccess,
+  // Admin endpoints
   listAccessUrls,
   createAccessUrl,
   revokeAccessUrl,

@@ -230,3 +230,130 @@ export const exportRegisterToExcel = (register, filename = "register") => {
   // ─── Write file ───
   XLSX.writeFile(wb, `${filename}.xlsx`);
 };
+
+/**
+ * Export monthly class attendance (calendar-style table)
+ * Includes P/A/H per date + totals per student
+ */
+export const exportMonthlyClassToExcel = (
+  detail,
+  filename = "monthly-class",
+) => {
+  if (!detail || !detail.students?.length) {
+    throw new Error("No data to export");
+  }
+
+  const {
+    students,
+    dates,
+    class: classInfo,
+    monthName,
+    year,
+    workingDays,
+    summary,
+  } = detail;
+
+  // ─── Build rows ───
+  const rows = [];
+
+  // Title row
+  rows.push([
+    `Monthly Attendance — Class ${classInfo.name}-${classInfo.section} — ${monthName} ${year}`,
+  ]);
+
+  // Info row
+  rows.push([
+    `Teacher: ${classInfo.classTeacher || "—"} | Students: ${summary.totalStudents} | Working Days: ${workingDays} | Overall: ${summary.overallPercentage}%`,
+  ]);
+
+  rows.push([]); // empty spacer
+
+  // Header row 1: day short names
+  const dayNameRow = ["S.No", "Scholar", "Name", "Father"];
+  dates.forEach((d) => dayNameRow.push(d.dayShort.charAt(0)));
+  dayNameRow.push("P", "A", "%");
+  rows.push(dayNameRow);
+
+  // Header row 2: day numbers
+  const dayNumRow = ["", "", "", ""];
+  dates.forEach((d) => dayNumRow.push(d.day));
+  dayNumRow.push("", "", "");
+  rows.push(dayNumRow);
+
+  // Data rows
+  students.forEach((s, idx) => {
+    const row = [
+      idx + 1,
+      s.scholarNumber || "",
+      s.name || "",
+      s.fatherName || "",
+    ];
+    dates.forEach((d) => {
+      const status = s.dailyAttendance[d.dateKey];
+      if (status === "P") row.push("P");
+      else if (status === "A") row.push("A");
+      else if (status === "H") row.push("H");
+      else if (status === "-") row.push("");
+      else row.push("");
+    });
+    row.push(s.present, s.absent, `${s.percentage}%`);
+    rows.push(row);
+  });
+
+  // ─── Build worksheet ───
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // Column widths
+  const colWidths = [
+    { wch: 5 }, // S.No
+    { wch: 12 }, // Scholar
+    { wch: 25 }, // Name
+    { wch: 22 }, // Father
+  ];
+  dates.forEach(() => colWidths.push({ wch: 4 })); // Date columns
+  colWidths.push({ wch: 5 }, { wch: 5 }, { wch: 7 }); // P, A, %
+  ws["!cols"] = colWidths;
+
+  // Merge title + info rows
+  const totalCols = 4 + dates.length + 3;
+  ws["!merges"] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: totalCols - 1 } },
+  ];
+
+  // Freeze first 4 cols + first 5 rows
+  ws["!freeze"] = { xSplit: 4, ySplit: 5 };
+
+  // ─── Workbook ───
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+
+  // Summary sheet
+  const summaryData = [
+    { Metric: "Class", Value: `${classInfo.name}-${classInfo.section}` },
+    { Metric: "Teacher", Value: classInfo.classTeacher || "—" },
+    { Metric: "Month", Value: `${monthName} ${year}` },
+    { Metric: "Total Students", Value: summary.totalStudents },
+    { Metric: "Working Days", Value: workingDays },
+    { Metric: "Total Present", Value: summary.totalPresent },
+    { Metric: "Total Absent", Value: summary.totalAbsent },
+    { Metric: "Overall %", Value: `${summary.overallPercentage}%` },
+    {
+      Metric: "Perfect Attendance",
+      Value: summary.perfectAttendanceStudents || 0,
+    },
+    { Metric: "Below 75%", Value: summary.lowAttendanceStudents || 0 },
+    { Metric: "", Value: "" },
+    { Metric: "LEGEND", Value: "" },
+    { Metric: "P", Value: "Present" },
+    { Metric: "A", Value: "Absent" },
+    { Metric: "H", Value: "Holiday" },
+    { Metric: "(blank)", Value: "Sunday / Non-working / Not marked" },
+  ];
+
+  const summaryWs = XLSX.utils.json_to_sheet(summaryData);
+  summaryWs["!cols"] = [{ wch: 22 }, { wch: 40 }];
+  XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
+
+  XLSX.writeFile(wb, `${filename}.xlsx`);
+};

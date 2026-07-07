@@ -11,7 +11,6 @@ const {
 
 // ═══════════════════════════════════════════════════════════════════
 //  ADMIN ROUTES — Manage access URLs
-//  (Requires admin login)
 // ═══════════════════════════════════════════════════════════════════
 router.get(
   "/admin/access-urls",
@@ -40,7 +39,6 @@ router.delete(
 
 // ═══════════════════════════════════════════════════════════════════
 //  PUBLIC ROUTES — Accessed via secret key
-//  (NO login required, just valid key)
 // ═══════════════════════════════════════════════════════════════════
 router.get("/:secretKey/validate", managementController.validateAccess);
 
@@ -74,10 +72,25 @@ router.get(
   managementController.getRankings,
 );
 
+// ─── Class Detail (Today dialog) ───
 router.get(
   "/:secretKey/class/:classId",
   validateManagementKey,
   managementController.getClassDetail,
+);
+
+// ─── NEW: Monthly Report (all classes) ───
+router.get(
+  "/:secretKey/monthly-report",
+  validateManagementKey,
+  managementController.getMonthlyReport,
+);
+
+// ─── NEW: Monthly Class Detail (calendar view) ───
+router.get(
+  "/:secretKey/monthly-class/:classId",
+  validateManagementKey,
+  managementController.getMonthlyClassDetail,
 );
 
 module.exports = router;

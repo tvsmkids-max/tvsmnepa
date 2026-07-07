@@ -22,6 +22,21 @@ export const managementKeys = {
     classId,
     date,
   ],
+  monthlyReport: (key, year, month) => [
+    ...managementKeys.all,
+    "monthlyReport",
+    key,
+    year,
+    month,
+  ],
+  monthlyClassDetail: (key, classId, year, month) => [
+    ...managementKeys.all,
+    "monthlyClassDetail",
+    key,
+    classId,
+    year,
+    month,
+  ],
   // Admin
   accessUrls: () => [...managementKeys.all, "admin", "access-urls"],
 };
@@ -30,11 +45,8 @@ export const managementKeys = {
 //  AUTO-REFRESH SETTINGS
 // ═══════════════════════════════════════════════════════════════════
 
-// Auto-refresh every 1 hour (as decided in design)
-const AUTO_REFRESH_MS = 60 * 60 * 1000;
-
-// Stale time: 5 minutes (data considered fresh)
-const STALE_TIME_MS = 5 * 60 * 1000;
+const AUTO_REFRESH_MS = 60 * 60 * 1000; // 1 hour
+const STALE_TIME_MS = 5 * 60 * 1000; // 5 minutes
 
 // ═══════════════════════════════════════════════════════════════════
 //  PUBLIC HOOKS (Management Dashboard Pages)
@@ -42,7 +54,6 @@ const STALE_TIME_MS = 5 * 60 * 1000;
 
 /**
  * Validate secret key (called once on dashboard load)
- * Returns { valid: true, label: "..." } if valid
  */
 export const useValidateAccess = (secretKey, options = {}) => {
   return useQuery({
@@ -77,7 +88,7 @@ export const useTodayOverview = (secretKey, options = {}) => {
 };
 
 /**
- * Page 2: Monthly Trends
+ * Page 2 (OLD): Monthly Trends — kept for backward compatibility
  */
 export const useMonthlyTrends = (secretKey, options = {}) => {
   return useQuery({
@@ -144,14 +155,13 @@ export const useRankings = (secretKey, period = "month", options = {}) => {
     staleTime: STALE_TIME_MS,
     refetchInterval: AUTO_REFRESH_MS,
     refetchOnWindowFocus: false,
-    keepPreviousData: true, // Smooth period toggle
+    keepPreviousData: true,
     ...options,
   });
 };
 
 /**
- * Class Detail (for management click-through dialog)
- * Fetches when classId is set + enabled=true
+ * Class Detail (for TODAY click-through dialog)
  */
 export const useClassDetail = (secretKey, classId, date, enabled = true) => {
   return useQuery({
@@ -161,7 +171,57 @@ export const useClassDetail = (secretKey, classId, date, enabled = true) => {
       return res.data?.data || null;
     },
     enabled: !!secretKey && !!classId && enabled,
-    staleTime: 60 * 1000, // 1 min
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+/**
+ * ✅ NEW: Monthly Report — class cards for management
+ */
+export const useMonthlyReport = (secretKey, year, month, options = {}) => {
+  return useQuery({
+    queryKey: managementKeys.monthlyReport(secretKey, year, month),
+    queryFn: async () => {
+      const res = await managementApi.getMonthlyReport(secretKey, year, month);
+      return res.data?.data || null;
+    },
+    enabled: !!secretKey && !!year && !!month,
+    staleTime: STALE_TIME_MS,
+    refetchOnWindowFocus: false,
+    keepPreviousData: true,
+    ...options,
+  });
+};
+
+/**
+ * ✅ NEW: Monthly Class Detail — calendar view for one class
+ */
+export const useMonthlyClassDetail = (
+  secretKey,
+  classId,
+  year,
+  month,
+  enabled = true,
+) => {
+  return useQuery({
+    queryKey: managementKeys.monthlyClassDetail(
+      secretKey,
+      classId,
+      year,
+      month,
+    ),
+    queryFn: async () => {
+      const res = await managementApi.getMonthlyClassDetail(
+        secretKey,
+        classId,
+        year,
+        month,
+      );
+      return res.data?.data || null;
+    },
+    enabled: !!secretKey && !!classId && !!year && !!month && enabled,
+    staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
   });
 };
@@ -191,16 +251,19 @@ export const useRefreshManagement = () => {
     queryClient.invalidateQueries({
       queryKey: [...managementKeys.all, "classDetail", secretKey],
     });
+    queryClient.invalidateQueries({
+      queryKey: [...managementKeys.all, "monthlyReport", secretKey],
+    });
+    queryClient.invalidateQueries({
+      queryKey: [...managementKeys.all, "monthlyClassDetail", secretKey],
+    });
   };
 };
 
 // ═══════════════════════════════════════════════════════════════════
-//  ADMIN HOOKS (For admin to manage URLs — used in Settings later)
+//  ADMIN HOOKS
 // ═══════════════════════════════════════════════════════════════════
 
-/**
- * List all access URLs (admin only)
- */
 export const useAccessUrls = (options = {}) => {
   return useQuery({
     queryKey: managementKeys.accessUrls(),
@@ -213,9 +276,6 @@ export const useAccessUrls = (options = {}) => {
   });
 };
 
-/**
- * Create new access URL
- */
 export const useCreateAccessUrl = () => {
   const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
@@ -237,9 +297,6 @@ export const useCreateAccessUrl = () => {
   });
 };
 
-/**
- * Revoke access URL (disable)
- */
 export const useRevokeAccessUrl = () => {
   const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
@@ -258,9 +315,6 @@ export const useRevokeAccessUrl = () => {
   });
 };
 
-/**
- * Delete access URL permanently
- */
 export const useDeleteAccessUrl = () => {
   const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();

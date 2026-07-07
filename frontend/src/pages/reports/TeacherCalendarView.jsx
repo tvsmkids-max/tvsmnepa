@@ -1,31 +1,29 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
   Box,
+  Paper,
   Stack,
   Typography,
-  Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
+  InputAdornment,
   IconButton,
+  Chip,
+  Button,
   Table,
   TableHead,
   TableBody,
   TableRow,
   TableCell,
   TableContainer,
-  FormControl,
-  Select,
-  MenuItem,
-  TextField,
-  InputAdornment,
-  Button,
   useTheme,
   useMediaQuery,
   alpha,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
-import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import ClearIcon from "@mui/icons-material/Clear";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
@@ -33,22 +31,36 @@ import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import reportApi from "../../api/reportApi";
-import managementApi from "../../api/managementApi";
 import { exportMonthlyClassToExcel } from "../../utils/exportUtils";
+
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
 // ═══════════════════════════════════════════════════════════════════
 //  LOADING
 // ═══════════════════════════════════════════════════════════════════
 
-const InlineLoader = ({ label = "Loading student data..." }) => (
-  <Box sx={{ textAlign: "center", py: 6 }}>
+const InlineLoader = () => (
+  <Box sx={{ textAlign: "center", py: 8 }}>
     <Box
       component="img"
       src="/loading.png"
       alt="Loading"
       sx={{
-        width: 56,
-        height: 56,
+        width: 72,
+        height: 72,
         animation: "spin 1.5s linear infinite",
         "@keyframes spin": {
           "0%": { transform: "rotate(0deg)" },
@@ -59,8 +71,8 @@ const InlineLoader = ({ label = "Loading student data..." }) => (
         e.target.style.display = "none";
       }}
     />
-    <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-      {label}
+    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+      Loading attendance data...
     </Typography>
   </Box>
 );
@@ -70,40 +82,32 @@ const InlineLoader = ({ label = "Loading student data..." }) => (
 // ═══════════════════════════════════════════════════════════════════
 
 const StatusCell = ({ status, isDark, isSunday }) => {
-  const config = useMemo(() => {
-    if (status === "P") {
+  const cfg = useMemo(() => {
+    if (status === "P")
       return {
         label: "P",
         color: isDark ? "#86EFAC" : "#15803D",
         bg: isDark ? alpha("#16A34A", 0.2) : "#DCFCE7",
       };
-    }
-    if (status === "A") {
+    if (status === "A")
       return {
         label: "A",
         color: isDark ? "#FCA5A5" : "#B91C1C",
         bg: isDark ? alpha("#DC2626", 0.2) : "#FEE2E2",
       };
-    }
-    if (status === "H") {
+    if (status === "H")
       return {
         label: "H",
         color: isDark ? "#93C5FD" : "#1E4D98",
         bg: isDark ? alpha("#3B82F6", 0.18) : "#DBEAFE",
       };
-    }
-    if (status === "-" || isSunday) {
+    if (status === "-" || isSunday)
       return {
         label: "—",
         color: isDark ? "#6B7280" : "#94A3B8",
         bg: isDark ? alpha("#fff", 0.03) : "#F1F5F9",
       };
-    }
-    return {
-      label: "",
-      color: "text.disabled",
-      bg: "transparent",
-    };
+    return { label: "", color: "text.disabled", bg: "transparent" };
   }, [status, isDark, isSunday]);
 
   return (
@@ -115,35 +119,34 @@ const StatusCell = ({ status, isDark, isSunday }) => {
         alignItems: "center",
         justifyContent: "center",
         borderRadius: 0.75,
-        bgcolor: config.bg,
-        color: config.color,
+        bgcolor: cfg.bg,
+        color: cfg.color,
         fontWeight: 900,
         fontSize: "0.72rem",
         fontFamily: "monospace",
         mx: "auto",
       }}
     >
-      {config.label}
+      {cfg.label}
     </Box>
   );
 };
 
 // ═══════════════════════════════════════════════════════════════════
-//  MAIN DIALOG
+//  MAIN
 // ═══════════════════════════════════════════════════════════════════
 
-const MonthlyClassDialog = ({
-  open,
-  onClose,
-  classData,
+const TeacherCalendarView = ({
+  classInfo,
   year,
   month,
-  mode = "admin",
-  secretKey = null,
+  onYearChange,
+  onMonthChange,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isXs = useMediaQuery(theme.breakpoints.down("sm"));
   const { enqueueSnackbar } = useSnackbar();
 
   const [detail, setDetail] = useState(null);
@@ -152,45 +155,27 @@ const MonthlyClassDialog = ({
   const [filter, setFilter] = useState("all");
   const [sortBy, setSortBy] = useState("name");
 
-  const isManagementMode = mode === "management";
-
-  // ─── Fetch data ───
+  // ─── Fetch ───
   useEffect(() => {
-    if (!open || !classData?._id) {
-      setDetail(null);
-      setSearch("");
-      setFilter("all");
-      return;
-    }
-
+    if (!classInfo?._id) return;
     let cancelled = false;
     const load = async () => {
       setLoading(true);
       try {
-        const res = isManagementMode
-          ? await managementApi.getMonthlyClassDetail(
-              secretKey,
-              classData._id,
-              year,
-              month,
-            )
-          : await reportApi.getMonthlyClassDetail(classData._id, {
-              year,
-              month,
-            });
-
+        const res = await reportApi.getMonthlyClassDetail(classInfo._id, {
+          year,
+          month,
+        });
         if (!cancelled) {
           setDetail(res.data?.data || null);
           setLoading(false);
         }
       } catch (err) {
         if (!cancelled) {
-          setDetail(null);
           setLoading(false);
-          enqueueSnackbar(
-            err.response?.data?.message || "Failed to load class data",
-            { variant: "error" },
-          );
+          enqueueSnackbar(err.response?.data?.message || "Failed to load", {
+            variant: "error",
+          });
         }
       }
     };
@@ -198,21 +183,12 @@ const MonthlyClassDialog = ({
     return () => {
       cancelled = true;
     };
-  }, [
-    open,
-    classData,
-    year,
-    month,
-    isManagementMode,
-    secretKey,
-    enqueueSnackbar,
-  ]);
+  }, [classInfo, year, month, enqueueSnackbar]);
 
-  // ─── Filtered + Sorted students ───
+  // ─── Filtered + Sorted ───
   const filteredStudents = useMemo(() => {
     if (!detail?.students) return [];
     let list = [...detail.students];
-
     if (filter === "perfect") list = list.filter((s) => s.isPerfect);
     else if (filter === "low") list = list.filter((s) => s.isLowAttendance);
 
@@ -246,7 +222,6 @@ const MonthlyClassDialog = ({
     return list;
   }, [detail, search, filter, sortBy]);
 
-  // ─── Export ───
   const handleExport = () => {
     if (!detail) return;
     try {
@@ -260,400 +235,350 @@ const MonthlyClassDialog = ({
     }
   };
 
-  if (!classData) return null;
-
-  const monthName = detail?.monthName || "";
   const summary = detail?.summary || {};
   const dates = detail?.dates || [];
+  const pctColor =
+    (summary.overallPercentage || 0) >= 90
+      ? "#16A34A"
+      : (summary.overallPercentage || 0) >= 75
+        ? "#F59E0B"
+        : "#DC2626";
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth={false}
-      fullWidth
-      fullScreen
-      PaperProps={{
-        sx: {
-          bgcolor: isDark ? "#0F172A" : "#F8FAFC",
-        },
-      }}
-    >
-      {/* ═══════════════════════════════════════════════════════════
-          HEADER
-      ═══════════════════════════════════════════════════════════ */}
-      <DialogTitle
-        component="div"
+    <Box sx={{ pb: 2 }}>
+      {/* ── FILTER BAR ── */}
+      <Paper
         sx={{
-          p: 0,
-          background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
-          color: "white",
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
+          p: { xs: 1.5, sm: 2 },
+          mb: 2,
+          borderRadius: 3,
+          border: "1px solid",
+          borderColor: "divider",
         }}
       >
-        <Box sx={{ p: { xs: 1.5, sm: 2.5 }, position: "relative" }}>
-          <IconButton
-            onClick={onClose}
-            sx={{
-              position: "absolute",
-              top: 8,
-              right: 8,
-              color: "white",
-              bgcolor: "rgba(255,255,255,0.1)",
-              "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
-            }}
-            size="small"
-          >
-            <CloseOutlinedIcon fontSize="small" />
-          </IconButton>
-
-          <Typography
-            variant="caption"
-            sx={{
-              color: "rgba(255,255,255,0.7)",
-              fontSize: "0.65rem",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-            }}
-          >
-            Monthly Attendance · {monthName} {year}
-          </Typography>
-
-          <Typography
-            variant="h5"
-            fontWeight={900}
-            sx={{
-              fontSize: { xs: "1.15rem", sm: "1.4rem" },
-              mt: 0.3,
-              pr: 5,
-            }}
-          >
-            Class {classData.name} - {classData.section}
-          </Typography>
-
-          {classData.classTeacher && (
-            <Typography
-              variant="caption"
-              sx={{
-                color: "rgba(255,255,255,0.8)",
-                fontSize: "0.75rem",
-                display: "block",
-                mt: 0.3,
-              }}
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.2}>
+          <FormControl size="small" sx={{ flex: 1 }}>
+            <InputLabel>Month</InputLabel>
+            <Select
+              value={month}
+              label="Month"
+              onChange={(e) => onMonthChange(e.target.value)}
             >
-              👨‍🏫 {classData.classTeacher}
-            </Typography>
-          )}
+              {MONTHS.map((m, i) => (
+                <MenuItem key={m} value={i + 1}>
+                  {isXs ? m.slice(0, 3) : m}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ flex: 1 }}>
+            <InputLabel>Year</InputLabel>
+            <Select
+              value={year}
+              label="Year"
+              onChange={(e) => onYearChange(e.target.value)}
+            >
+              {[2024, 2025, 2026, 2027, 2028].map((y) => (
+                <MenuItem key={y} value={y}>
+                  {y}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Stack>
+      </Paper>
 
-          {/* Stats row */}
-          {!loading && detail && (
+      {/* ── HEADER STATS ── */}
+      {!loading && detail && (
+        <Paper
+          sx={{
+            p: 2,
+            mb: 2,
+            borderRadius: 3,
+            background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+            color: "white",
+          }}
+        >
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            justifyContent="space-between"
+            alignItems={{ xs: "flex-start", sm: "center" }}
+            spacing={1}
+          >
+            <Box>
+              <Typography
+                variant="caption"
+                sx={{
+                  opacity: 0.8,
+                  fontSize: "0.7rem",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                }}
+              >
+                {detail.monthName} {year}
+              </Typography>
+              <Typography
+                variant="h5"
+                fontWeight={900}
+                sx={{ fontSize: "1.3rem" }}
+              >
+                Class {classInfo.name}-{classInfo.section}
+              </Typography>
+              {detail.class?.classTeacher && (
+                <Typography
+                  variant="caption"
+                  sx={{ opacity: 0.85, fontSize: "0.75rem" }}
+                >
+                  👨‍🏫 {detail.class.classTeacher}
+                </Typography>
+              )}
+            </Box>
             <Stack
               direction="row"
               spacing={{ xs: 1, sm: 2 }}
-              sx={{
-                mt: 1.5,
-                p: 1,
-                borderRadius: 2,
-                bgcolor: "rgba(255,255,255,0.1)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                overflowX: "auto",
-                "&::-webkit-scrollbar": { display: "none" },
-              }}
-              justifyContent="space-around"
+              sx={{ p: 1, borderRadius: 2, bgcolor: "rgba(255,255,255,0.1)" }}
             >
-              <StatItem
+              <Stat
                 value={summary.totalStudents || 0}
                 label="Students"
                 color="white"
               />
-              <StatItem
+              <Stat
                 value={detail.workingDays || 0}
-                label="Working Days"
+                label="Days"
                 color="#93C5FD"
               />
-              <StatItem
+              <Stat
                 value={`${summary.overallPercentage || 0}%`}
                 label="Rate"
-                color={
-                  (summary.overallPercentage || 0) >= 75 ? "#86EFAC" : "#FCD34D"
-                }
+                color={pctColor === "#16A34A" ? "#86EFAC" : "#FCD34D"}
               />
             </Stack>
-          )}
-        </Box>
-      </DialogTitle>
+          </Stack>
+        </Paper>
+      )}
 
-      {/* ═══════════════════════════════════════════════════════════
-          CONTENT
-      ═══════════════════════════════════════════════════════════ */}
-      <DialogContent sx={{ p: 0, overflow: "hidden" }}>
-        {loading ? (
-          <InlineLoader />
-        ) : !detail || !detail.students?.length ? (
-          <Box sx={{ p: 6, textAlign: "center" }}>
-            <PersonOutlineIcon
-              sx={{ fontSize: 56, color: "text.disabled", mb: 1 }}
-            />
-            <Typography variant="body2" color="text.secondary">
-              No student data available for this month
-            </Typography>
-          </Box>
-        ) : (
+      {/* ── LOADING / EMPTY / TABLE ── */}
+      {loading ? (
+        <InlineLoader />
+      ) : !detail || !detail.students?.length ? (
+        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3 }}>
+          <PersonOutlineIcon
+            sx={{ fontSize: 56, color: "text.disabled", mb: 1 }}
+          />
+          <Typography variant="body2" color="text.secondary">
+            No student data available for this month
+          </Typography>
+        </Paper>
+      ) : (
+        <Paper
+          sx={{
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: "divider",
+            overflow: "hidden",
+          }}
+        >
+          {/* Filter bar */}
           <Box
             sx={{
-              display: "flex",
-              flexDirection: "column",
-              height: "calc(100vh - 200px)",
+              px: 2,
+              py: 1.25,
+              borderBottom: "1px solid",
+              borderColor: "divider",
             }}
           >
-            {/* ─── FILTER BAR ─── */}
-            <Box
-              sx={{
-                px: { xs: 1.5, sm: 2 },
-                py: 1.25,
-                bgcolor: isDark ? "#1E293B" : "#FFFFFF",
-                borderBottom: "1px solid",
-                borderColor: "divider",
-                flexShrink: 0,
-              }}
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={1}
+              alignItems={{ xs: "stretch", sm: "center" }}
             >
-              <Stack
-                direction={{ xs: "column", sm: "row" }}
-                spacing={1}
-                alignItems={{ xs: "stretch", sm: "center" }}
-              >
-                <TextField
-                  placeholder="Search name, scholar, father..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+              <TextField
+                placeholder="Search name, scholar, father..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                size="small"
+                sx={{
+                  flex: 1,
+                  "& .MuiInputBase-root": { height: 36, fontSize: "0.82rem" },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchOutlinedIcon
+                        sx={{ fontSize: 16, color: "text.disabled" }}
+                      />
+                    </InputAdornment>
+                  ),
+                  endAdornment: search && (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={() => setSearch("")}
+                        sx={{ p: 0.25 }}
+                      >
+                        <ClearIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                <Chip
+                  label={`All ${detail.students.length}`}
                   size="small"
-                  sx={{
-                    flex: 1,
-                    "& .MuiInputBase-root": {
-                      height: 36,
-                      fontSize: "0.82rem",
-                    },
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchOutlinedIcon
-                          sx={{ fontSize: 16, color: "text.disabled" }}
-                        />
-                      </InputAdornment>
-                    ),
-                    endAdornment: search && (
-                      <InputAdornment position="end">
-                        <IconButton
-                          size="small"
-                          onClick={() => setSearch("")}
-                          sx={{ p: 0.25 }}
-                        >
-                          <ClearIcon sx={{ fontSize: 14 }} />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
+                  onClick={() => setFilter("all")}
+                  color={filter === "all" ? "primary" : "default"}
+                  variant={filter === "all" ? "filled" : "outlined"}
+                  sx={{ fontWeight: 700, height: 30, fontSize: "0.72rem" }}
                 />
-
-                <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                  <Chip
-                    label={`All ${detail.students.length}`}
-                    size="small"
-                    onClick={() => setFilter("all")}
-                    color={filter === "all" ? "primary" : "default"}
-                    variant={filter === "all" ? "filled" : "outlined"}
-                    sx={{ fontWeight: 700, height: 30, fontSize: "0.72rem" }}
-                  />
-                  <Chip
-                    icon={<EmojiEventsOutlinedIcon sx={{ fontSize: 14 }} />}
-                    label={`Perfect ${summary.perfectAttendanceStudents || 0}`}
-                    size="small"
-                    onClick={() => setFilter("perfect")}
-                    color={filter === "perfect" ? "success" : "default"}
-                    variant={filter === "perfect" ? "filled" : "outlined"}
-                    sx={{ fontWeight: 700, height: 30, fontSize: "0.72rem" }}
-                  />
-                  <Chip
-                    icon={<WarningAmberOutlinedIcon sx={{ fontSize: 14 }} />}
-                    label={`<75% (${summary.lowAttendanceStudents || 0})`}
-                    size="small"
-                    onClick={() => setFilter("low")}
-                    color={filter === "low" ? "error" : "default"}
-                    variant={filter === "low" ? "filled" : "outlined"}
-                    sx={{ fontWeight: 700, height: 30, fontSize: "0.72rem" }}
-                  />
-                </Stack>
-
-                <FormControl
+                <Chip
+                  icon={<EmojiEventsOutlinedIcon sx={{ fontSize: 14 }} />}
+                  label={`Perfect ${summary.perfectAttendanceStudents || 0}`}
                   size="small"
-                  sx={{ minWidth: 160, display: { xs: "none", md: "flex" } }}
+                  onClick={() => setFilter("perfect")}
+                  color={filter === "perfect" ? "success" : "default"}
+                  variant={filter === "perfect" ? "filled" : "outlined"}
+                  sx={{ fontWeight: 700, height: 30, fontSize: "0.72rem" }}
+                />
+                <Chip
+                  icon={<WarningAmberOutlinedIcon sx={{ fontSize: 14 }} />}
+                  label={`<75% (${summary.lowAttendanceStudents || 0})`}
+                  size="small"
+                  onClick={() => setFilter("low")}
+                  color={filter === "low" ? "error" : "default"}
+                  variant={filter === "low" ? "filled" : "outlined"}
+                  sx={{ fontWeight: 700, height: 30, fontSize: "0.72rem" }}
+                />
+              </Stack>
+              <FormControl
+                size="small"
+                sx={{ minWidth: 160, display: { xs: "none", md: "flex" } }}
+              >
+                <Select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  sx={{ height: 36, fontSize: "0.78rem", fontWeight: 700 }}
                 >
-                  <Select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    sx={{ height: 36, fontSize: "0.78rem", fontWeight: 700 }}
-                  >
-                    <MenuItem value="name">Name (A → Z)</MenuItem>
-                    <MenuItem value="scholar">Scholar No.</MenuItem>
-                    <MenuItem value="percentage-desc">% High → Low</MenuItem>
-                    <MenuItem value="percentage-asc">% Low → High</MenuItem>
-                    <MenuItem value="absent-desc">Most Absent</MenuItem>
-                  </Select>
-                </FormControl>
-
-                {!isManagementMode && (
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={handleExport}
-                    startIcon={
-                      <FileDownloadOutlinedIcon sx={{ fontSize: 16 }} />
-                    }
-                    sx={{
-                      height: 36,
-                      fontWeight: 700,
-                      fontSize: "0.78rem",
-                      textTransform: "none",
-                      background:
-                        "linear-gradient(135deg, #16A34A 0%, #15803D 100%)",
-                      "&:hover": {
-                        background:
-                          "linear-gradient(135deg, #15803D 0%, #166534 100%)",
-                      },
-                    }}
-                  >
-                    Export Excel
-                  </Button>
-                )}
-              </Stack>
-            </Box>
-
-            {/* ─── LEGEND ─── */}
-            <Box
-              sx={{
-                px: { xs: 1.5, sm: 2 },
-                py: 0.75,
-                bgcolor: isDark ? alpha("#fff", 0.02) : "#F8FAFC",
-                borderBottom: "1px solid",
-                borderColor: "divider",
-                flexShrink: 0,
-              }}
-            >
-              <Stack
-                direction="row"
-                spacing={2}
-                alignItems="center"
-                flexWrap="wrap"
-                useFlexGap
+                  <MenuItem value="name">Name (A → Z)</MenuItem>
+                  <MenuItem value="scholar">Scholar No.</MenuItem>
+                  <MenuItem value="percentage-desc">% High → Low</MenuItem>
+                  <MenuItem value="percentage-asc">% Low → High</MenuItem>
+                  <MenuItem value="absent-desc">Most Absent</MenuItem>
+                </Select>
+              </FormControl>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleExport}
+                startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 16 }} />}
+                sx={{
+                  height: 36,
+                  fontWeight: 700,
+                  fontSize: "0.78rem",
+                  textTransform: "none",
+                  background:
+                    "linear-gradient(135deg, #16A34A 0%, #15803D 100%)",
+                }}
               >
-                <LegendBox
-                  letter="P"
-                  bg="#DCFCE7"
-                  color="#15803D"
-                  label="Present"
-                />
-                <LegendBox
-                  letter="A"
-                  bg="#FEE2E2"
-                  color="#B91C1C"
-                  label="Absent"
-                />
-                <LegendBox
-                  letter="H"
-                  bg="#DBEAFE"
-                  color="#1E4D98"
-                  label="Holiday"
-                />
-                <LegendBox
-                  letter="—"
-                  bg="#F1F5F9"
-                  color="#94A3B8"
-                  label="Sunday / Non-working"
-                />
-              </Stack>
-            </Box>
-
-            {/* ─── CALENDAR TABLE (same on all devices) ─── */}
-            <CalendarTable
-              students={filteredStudents}
-              dates={dates}
-              isDark={isDark}
-              isMobile={isMobile}
-            />
-
-            {/* ─── COUNT FOOTER ─── */}
-            <Box
-              sx={{
-                px: 2,
-                py: 1,
-                borderTop: "1px solid",
-                borderColor: "divider",
-                bgcolor: isDark ? "#1E293B" : "#FFFFFF",
-                flexShrink: 0,
-              }}
-            >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontSize: "0.72rem" }}
-              >
-                Showing <strong>{filteredStudents.length}</strong> of{" "}
-                <strong>{detail.students.length}</strong> students
-              </Typography>
-            </Box>
+                Export
+              </Button>
+            </Stack>
           </Box>
-        )}
-      </DialogContent>
-    </Dialog>
+
+          {/* Legend */}
+          <Box
+            sx={{
+              px: 2,
+              py: 0.75,
+              bgcolor: isDark ? alpha("#fff", 0.02) : "#F8FAFC",
+              borderBottom: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+              <Legend letter="P" bg="#DCFCE7" color="#15803D" label="Present" />
+              <Legend letter="A" bg="#FEE2E2" color="#B91C1C" label="Absent" />
+              <Legend letter="H" bg="#DBEAFE" color="#1E4D98" label="Holiday" />
+              <Legend
+                letter="—"
+                bg="#F1F5F9"
+                color="#94A3B8"
+                label="Sunday / Non-working"
+              />
+            </Stack>
+          </Box>
+
+          {/* Table — same on all devices */}
+          <CalendarTable
+            students={filteredStudents}
+            dates={dates}
+            isDark={isDark}
+            isMobile={isMobile}
+          />
+
+          {/* Footer */}
+          <Box
+            sx={{
+              px: 2,
+              py: 1,
+              borderTop: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: "0.72rem" }}
+            >
+              Showing <strong>{filteredStudents.length}</strong> of{" "}
+              <strong>{detail.students.length}</strong> students
+            </Typography>
+          </Box>
+        </Paper>
+      )}
+    </Box>
   );
 };
 
 // ═══════════════════════════════════════════════════════════════════
-//  CALENDAR TABLE (works on both desktop & mobile)
-//  Mobile: hides Scholar column, sticky Name + Father only
+//  CALENDAR TABLE — sticky Name only on mobile, Name+Father on desktop
 // ═══════════════════════════════════════════════════════════════════
+
 const CalendarTable = ({ students, dates, isDark, isMobile }) => {
   const stickyBg = isDark ? "#1E293B" : "#FFFFFF";
   const headerBg = isDark ? "#0F172A" : "#F1F5F9";
+  const headStyle = {
+    fontWeight: 800,
+    fontSize: "0.68rem",
+    textTransform: "uppercase",
+    bgcolor: headerBg,
+    py: 1,
+  };
 
+  // Column widths
   const scholarWidth = 90;
   const nameWidth = isMobile ? 100 : 180;
   const fatherWidth = isMobile ? 130 : 160;
 
+  // Sticky positions (mobile: only Name is sticky, Father scrolls with dates)
   const nameLeft = isMobile ? 0 : scholarWidth;
   const fatherLeft = isMobile ? null : scholarWidth + nameWidth;
 
   return (
-    <TableContainer
-      sx={{
-        flex: 1,
-        overflow: "auto",
-        bgcolor: isDark ? "#0F172A" : "#F8FAFC",
-      }}
-    >
+    <TableContainer sx={{ maxHeight: "calc(100vh - 400px)" }}>
       <Table
         size="small"
         stickyHeader
-        sx={{
-          borderCollapse: "separate",
-          borderSpacing: 0,
-          "& td, & th": {
-            borderColor: "divider",
-            borderBottomStyle: "solid",
-            borderBottomWidth: "1px",
-          },
-        }}
+        sx={{ borderCollapse: "separate", borderSpacing: 0 }}
       >
         <TableHead>
           <TableRow>
+            {/* Scholar — hidden on mobile */}
             {!isMobile && (
               <TableCell
                 sx={{
-                  ...stickyHeaderStyle(headerBg),
+                  ...headStyle,
                   position: "sticky",
                   left: 0,
                   zIndex: 3,
@@ -664,9 +589,11 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
                 Scholar
               </TableCell>
             )}
+
+            {/* Name — always sticky */}
             <TableCell
               sx={{
-                ...stickyHeaderStyle(headerBg),
+                ...headStyle,
                 position: "sticky",
                 left: nameLeft,
                 zIndex: 3,
@@ -676,9 +603,11 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
             >
               Name
             </TableCell>
+
+            {/* Father — sticky on desktop, scrolls on mobile */}
             <TableCell
               sx={{
-                ...stickyHeaderStyle(headerBg),
+                ...headStyle,
                 ...(isMobile
                   ? { position: "static" }
                   : { position: "sticky", left: fatherLeft, zIndex: 3 }),
@@ -691,12 +620,13 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
               Father
             </TableCell>
 
+            {/* Date columns */}
             {dates.map((d) => (
               <TableCell
                 key={d.dateKey}
                 align="center"
                 sx={{
-                  ...stickyHeaderStyle(headerBg),
+                  ...headStyle,
                   width: 32,
                   minWidth: 32,
                   px: 0.5,
@@ -730,10 +660,11 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
               </TableCell>
             ))}
 
+            {/* Totals */}
             <TableCell
               align="center"
               sx={{
-                ...stickyHeaderStyle(headerBg),
+                ...headStyle,
                 width: 45,
                 color: "#16A34A",
                 borderLeft: "2px solid",
@@ -744,22 +675,16 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
             </TableCell>
             <TableCell
               align="center"
-              sx={{
-                ...stickyHeaderStyle(headerBg),
-                width: 45,
-                color: "#DC2626",
-              }}
+              sx={{ ...headStyle, width: 45, color: "#DC2626" }}
             >
               A
             </TableCell>
-            <TableCell
-              align="center"
-              sx={{ ...stickyHeaderStyle(headerBg), width: 70 }}
-            >
+            <TableCell align="center" sx={{ ...headStyle, width: 70 }}>
               %
             </TableCell>
           </TableRow>
         </TableHead>
+
         <TableBody>
           {students.map((s) => {
             const pctColor =
@@ -771,6 +696,7 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
 
             return (
               <TableRow key={s._id} hover>
+                {/* Scholar — hidden on mobile */}
                 {!isMobile && (
                   <TableCell
                     sx={{
@@ -795,6 +721,7 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
                   </TableCell>
                 )}
 
+                {/* Name — sticky, smaller font on mobile */}
                 <TableCell
                   sx={{
                     position: "sticky",
@@ -819,6 +746,7 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
                   </Typography>
                 </TableCell>
 
+                {/* Father — sticky on desktop, scrolls on mobile */}
                 <TableCell
                   sx={{
                     ...(isMobile
@@ -846,6 +774,7 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
                   </Typography>
                 </TableCell>
 
+                {/* Date cells */}
                 {dates.map((d) => (
                   <TableCell
                     key={d.dateKey}
@@ -860,6 +789,7 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
                   </TableCell>
                 ))}
 
+                {/* Totals */}
                 <TableCell
                   align="center"
                   sx={{
@@ -913,13 +843,12 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
     </TableContainer>
   );
 };
-
 // ═══════════════════════════════════════════════════════════════════
 //  SMALL COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
 
-const StatItem = ({ value, label, color }) => (
-  <Stack alignItems="center" sx={{ flexShrink: 0, px: 1 }}>
+const Stat = ({ value, label, color }) => (
+  <Stack alignItems="center" sx={{ flexShrink: 0, px: 0.5 }}>
     <Typography
       fontWeight={900}
       sx={{ fontSize: "1rem", color, lineHeight: 1 }}
@@ -941,7 +870,7 @@ const StatItem = ({ value, label, color }) => (
   </Stack>
 );
 
-const LegendBox = ({ letter, bg, color, label }) => (
+const Legend = ({ letter, bg, color, label }) => (
   <Stack direction="row" alignItems="center" spacing={0.5}>
     <Box
       sx={{
@@ -952,7 +881,7 @@ const LegendBox = ({ letter, bg, color, label }) => (
         justifyContent: "center",
         borderRadius: 0.5,
         bgcolor: bg,
-        color: color,
+        color,
         fontWeight: 900,
         fontSize: "0.65rem",
         fontFamily: "monospace",
@@ -969,13 +898,4 @@ const LegendBox = ({ letter, bg, color, label }) => (
   </Stack>
 );
 
-const stickyHeaderStyle = (bg) => ({
-  fontWeight: 800,
-  fontSize: "0.68rem",
-  textTransform: "uppercase",
-  letterSpacing: "0.03em",
-  bgcolor: bg,
-  py: 1,
-});
-
-export default MonthlyClassDialog;
+export default TeacherCalendarView;
