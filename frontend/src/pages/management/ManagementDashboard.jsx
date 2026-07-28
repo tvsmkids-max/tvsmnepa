@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Box, CircularProgress, Typography, useTheme } from "@mui/material";
+import {
+  Box,
+  CircularProgress,
+  Typography,
+  useTheme,
+  alpha,
+} from "@mui/material";
 
 import DashboardHeader from "./components/DashboardHeader";
 import BottomNav from "./components/BottomNav";
@@ -26,21 +32,13 @@ const ManagementDashboard = () => {
 
   const [activePage, setActivePage] = useState("today");
 
-  // ═══════════════════════════════════════════════════════════════
-  //  ✅ SAFETY: Clear any auth tokens on management page load
-  //  Management pages should NEVER use logged-in user's session
-  //  This prevents accidental auth-related redirects
-  // ═══════════════════════════════════════════════════════════════
   useEffect(() => {
-    // Set global flag (for other components/hooks to detect)
     window.__isPublicManagementPage = true;
-
     return () => {
       window.__isPublicManagementPage = false;
     };
   }, []);
 
-  // ─── VALIDATE ACCESS FIRST ───
   const {
     data: validation,
     isLoading: validating,
@@ -49,7 +47,6 @@ const ManagementDashboard = () => {
     refetch: retryValidation,
   } = useValidateAccess(secretKey);
 
-  // ─── FETCH DATA (only if valid) ───
   const {
     data: todayData,
     isRefetching: todayRefetching,
@@ -64,7 +61,6 @@ const ManagementDashboard = () => {
 
   const refreshAll = useRefreshManagement();
 
-  // ─── DYNAMIC PAGE TITLE ───
   useEffect(() => {
     if (validation?.valid) {
       document.title = `Management Dashboard · TVSM School`;
@@ -73,10 +69,6 @@ const ManagementDashboard = () => {
       document.title = "TVSM School";
     };
   }, [validation?.valid]);
-
-  // ═══════════════════════════════════════════════════════════════
-  //  LOADING / ERROR STATES
-  // ═══════════════════════════════════════════════════════════════
 
   if (validating) {
     return (
@@ -105,10 +97,6 @@ const ManagementDashboard = () => {
     return <AccessDenied reason={reason} onRetry={retryValidation} />;
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  //  HANDLERS
-  // ═══════════════════════════════════════════════════════════════
-
   const handleRefresh = () => {
     refreshAll(secretKey);
   };
@@ -120,10 +108,6 @@ const ManagementDashboard = () => {
   const alertCount =
     (alertsData?.counts?.criticalClasses || 0) +
     (alertsData?.counts?.pendingClasses || 0);
-
-  // ═══════════════════════════════════════════════════════════════
-  //  RENDER
-  // ═══════════════════════════════════════════════════════════════
 
   const renderPage = () => {
     const commonProps = { secretKey };
@@ -142,6 +126,8 @@ const ManagementDashboard = () => {
         return <TodayPage {...commonProps} />;
     }
   };
+
+  const currentYear = new Date().getFullYear();
 
   return (
     <Box
@@ -166,17 +152,52 @@ const ManagementDashboard = () => {
         sx={{
           flex: 1,
           overflow: "auto",
-          overflowX: "hidden", // ✅ Prevent horizontal scroll
+          overflowX: "hidden",
           pb: { xs: 9, sm: 10 },
           px: { xs: 1.5, sm: 2.5 },
           py: 2,
-          width: "100%", // ✅ Force full width
-          maxWidth: "100vw", // ✅ Never exceed viewport
-          boxSizing: "border-box", // ✅ Include padding in width
+          width: "100%",
+          maxWidth: "100vw",
+          boxSizing: "border-box",
         }}
         className="management-content"
       >
         {renderPage()}
+
+        {/* ══════════════════════════════════════════
+            FOOTER — Developed by Abhishek
+        ══════════════════════════════════════════ */}
+        <Box
+          sx={{
+            mt: 4,
+            pt: 2.5,
+            pb: 1,
+            borderTop: "1px solid",
+            borderColor: "divider",
+            textAlign: "center",
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              fontSize: "0.72rem",
+              fontWeight: 600,
+              color: "text.secondary",
+              letterSpacing: "0.03em",
+            }}
+          >
+            © {currentYear} · Developed by{" "}
+            <Box
+              component="span"
+              sx={{
+                fontWeight: 800,
+                color: isDark ? "#93C5FD" : "#1E4D98",
+              }}
+            >
+              Abhishek
+            </Box>
+          </Typography>
+        </Box>
       </Box>
 
       {/* BOTTOM NAV */}

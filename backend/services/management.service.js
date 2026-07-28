@@ -223,6 +223,7 @@ class ManagementService {
       session: activeSessionId,
       isArchived: false,
     })
+      .populate("classTeacher", "name")
       .sort({ name: 1, section: 1 })
       .lean();
 
@@ -292,6 +293,7 @@ class ManagementService {
         name: cls.name,
         section: cls.section,
         label: `${cls.name}-${cls.section}`,
+        classTeacher: cls.classTeacher?.name || null,
         totalStudents: totalInClass,
         present,
         absent,

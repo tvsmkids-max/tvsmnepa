@@ -33,7 +33,6 @@ import {
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import HourglassBottomOutlinedIcon from "@mui/icons-material/HourglassBottomOutlined";
-import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 
 import { useTodayOverview, useClassDetail } from "../../../hooks/useManagement";
 import { sortClasses } from "../../../utils/classSort";
@@ -48,25 +47,6 @@ const STATUS_CONFIG = {
   good: { dot: "#F59E0B", label: "Good" },
   low: { dot: "#DC2626", label: "Low" },
   notMarked: { dot: "#94A3B8", label: "Pending" },
-};
-
-// Health colors
-const HEALTH_COLORS = {
-  excellent: "#16A34A",
-  veryGood: "#22C55E",
-  good: "#F59E0B",
-  fair: "#F97316",
-  poor: "#DC2626",
-  unknown: "#6B7280",
-};
-
-const HEALTH_LABELS = {
-  excellent: "Excellent",
-  veryGood: "Very Good",
-  good: "Good",
-  fair: "Fair",
-  poor: "Needs Attention",
-  unknown: "No Data",
 };
 
 const TodayPage = ({ secretKey }) => {
@@ -152,7 +132,7 @@ const TodayPage = ({ secretKey }) => {
   if (!data) return null;
 
   // ═══════════════════════════════════════════════════════════════
-  //  ✅ HOLIDAY / NON-WORKING DAY — Show beautiful banner only
+  //  HOLIDAY / NON-WORKING DAY
   // ═══════════════════════════════════════════════════════════════
   if (data.isHoliday || data.isNonWorkingDay) {
     return (
@@ -168,14 +148,15 @@ const TodayPage = ({ secretKey }) => {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  NORMAL WORKING DAY — Show full dashboard
+  //  NORMAL WORKING DAY
   // ═══════════════════════════════════════════════════════════════
 
   const stats = data.stats || {};
-  const health = data.health || {};
-  const healthColor = HEALTH_COLORS[health.level] || HEALTH_COLORS.unknown;
-  const healthLabel = HEALTH_LABELS[health.level] || "No Data";
   const overallPct = stats.overallPercentage || 0;
+  const totalPending = Math.max(
+    0,
+    (stats.totalStudents || 0) - (stats.totalMarked || 0),
+  );
 
   const pctColor =
     overallPct >= 90 ? "#16A34A" : overallPct >= 75 ? "#F59E0B" : "#DC2626";
@@ -183,36 +164,39 @@ const TodayPage = ({ secretKey }) => {
   return (
     <Stack spacing={2}>
       {/* ══════════════════════════════════════════════════════
-          🎯 HERO: SCHOOL SUMMARY
+          🎯 HERO: SIMPLIFIED SCHOOL SUMMARY
       ══════════════════════════════════════════════════════ */}
       <Paper
         sx={{
-          p: { xs: 2, sm: 3 },
+          p: { xs: 2, sm: 2.5 },
           borderRadius: 2.5,
           border: "1px solid",
           borderColor: "divider",
           background: `linear-gradient(135deg, ${alpha(pctColor, isDark ? 0.15 : 0.08)} 0%, ${alpha(pctColor, isDark ? 0.05 : 0.02)} 100%)`,
-          position: "relative",
-          overflow: "hidden",
         }}
       >
+        {/* Top row: Label + marked badge */}
         <Stack
           direction="row"
           justifyContent="space-between"
           alignItems="center"
-          sx={{ mb: 2 }}
+          sx={{ mb: 1.5 }}
         >
           <Typography
             variant="caption"
             fontWeight={800}
             sx={{
-              fontSize: "0.7rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
+              fontSize: "0.75rem",
+              letterSpacing: "0.05em",
               color: "text.secondary",
             }}
           >
-            🎯 Today's Attendance
+            {new Date().toLocaleDateString("en-IN", {
+              weekday: "short",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
           </Typography>
           <Chip
             label={`${stats.markedClasses}/${stats.totalClasses} classes marked`}
@@ -241,191 +225,131 @@ const TodayPage = ({ secretKey }) => {
           />
         </Stack>
 
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={5}>
-            <Box>
-              <Typography
-                variant="h1"
-                sx={{
-                  fontSize: { xs: "3.5rem", sm: "4.5rem" },
-                  fontWeight: 900,
-                  color: pctColor,
-                  lineHeight: 1,
-                }}
-              >
-                {overallPct}%
-              </Typography>
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={0.75}
-                sx={{ mt: 0.5 }}
-              >
-                <Box
-                  sx={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    bgcolor: healthColor,
-                  }}
-                />
-                <Typography
-                  variant="body2"
-                  fontWeight={800}
-                  sx={{ color: healthColor, fontSize: "0.95rem" }}
-                >
-                  {healthLabel}
-                </Typography>
-              </Stack>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontSize: "0.72rem", display: "block", mt: 0.3 }}
-              >
-                {overallPct >= 90
-                  ? `Above target of 90% ✓`
-                  : `Below target of 90% by ${90 - overallPct}%`}
-              </Typography>
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} sm={7}>
-            <Grid container spacing={1.5}>
-              <Grid item xs={4}>
-                <SummaryStat
-                  icon={CheckCircleOutlineIcon}
-                  value={stats.totalPresent || 0}
-                  label="Present"
-                  color="#16A34A"
-                  isDark={isDark}
-                />
-              </Grid>
-              <Grid item xs={4}>
-                <SummaryStat
-                  icon={CancelOutlinedIcon}
-                  value={stats.totalAbsent || 0}
-                  label="Absent"
-                  color="#DC2626"
-                  isDark={isDark}
-                />
-              </Grid>
-              <Grid item xs={4}>
-                <SummaryStat
-                  icon={HourglassBottomOutlinedIcon}
-                  value={stats.totalStudents - (stats.totalMarked || 0)}
-                  label="Pending"
-                  color="#F59E0B"
-                  isDark={isDark}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Stack
-                  direction="row"
-                  spacing={1.5}
-                  sx={{
-                    p: 1,
-                    borderRadius: 1.5,
-                    bgcolor: isDark ? alpha("#fff", 0.04) : "#FAFBFC",
-                    justifyContent: "space-around",
-                  }}
-                  divider={
-                    <Box
-                      sx={{ borderRight: "1px solid", borderColor: "divider" }}
-                    />
-                  }
-                >
-                  <Stack alignItems="center" sx={{ flex: 1 }}>
-                    <Typography
-                      variant="body2"
-                      fontWeight={900}
-                      sx={{ fontSize: "0.85rem" }}
-                    >
-                      {stats.totalStudents || 0}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontSize: "0.6rem",
-                        color: "text.secondary",
-                        fontWeight: 700,
-                      }}
-                    >
-                      TOTAL
-                    </Typography>
-                  </Stack>
-                  <Stack alignItems="center" sx={{ flex: 1 }}>
-                    <Typography
-                      variant="body2"
-                      fontWeight={900}
-                      sx={{ fontSize: "0.85rem" }}
-                    >
-                      {stats.totalClasses || 0}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontSize: "0.6rem",
-                        color: "text.secondary",
-                        fontWeight: 700,
-                      }}
-                    >
-                      CLASSES
-                    </Typography>
-                  </Stack>
-                </Stack>
-              </Grid>
-            </Grid>
-          </Grid>
-        </Grid>
-
-        <Stack
-          direction="row"
-          spacing={{ xs: 1, sm: 2 }}
-          flexWrap="wrap"
-          useFlexGap
+        {/* Big percentage */}
+        <Typography
           sx={{
-            mt: 2,
-            pt: 2,
-            borderTop: "1px solid",
-            borderColor: "divider",
+            fontSize: { xs: "3.2rem", sm: "4rem" },
+            fontWeight: 900,
+            color: pctColor,
+            lineHeight: 1,
+            mb: 1.5,
           }}
         >
-          <QuickCount
-            emoji="🟢"
-            label="Excellent"
-            value={stats.excellentClasses || 0}
+          {overallPct}%
+        </Typography>
+
+        {/* Merged stats row: Present · Absent · Pending */}
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-around"
+          sx={{
+            p: 1.25,
+            borderRadius: 2,
+            bgcolor: isDark ? alpha("#fff", 0.04) : alpha("#fff", 0.6),
+            border: "1px solid",
+            borderColor: "divider",
+            mb: 1.25,
+          }}
+          divider={
+            <Box
+              sx={{
+                borderLeft: "1px solid",
+                borderColor: "divider",
+                height: 32,
+              }}
+            />
+          }
+        >
+          <MergedStat
+            icon={CheckCircleOutlineIcon}
+            value={stats.totalPresent || 0}
+            label="Present"
             color="#16A34A"
-            isDark={isDark}
           />
-          <QuickCount
-            emoji="🟡"
-            label="Good"
-            value={stats.goodClasses || 0}
-            color="#F59E0B"
-            isDark={isDark}
-          />
-          <QuickCount
-            emoji="🔴"
-            label="Low"
-            value={stats.lowClasses || 0}
+          <MergedStat
+            icon={CancelOutlinedIcon}
+            value={stats.totalAbsent || 0}
+            label="Absent"
             color="#DC2626"
-            isDark={isDark}
           />
-          <QuickCount
-            emoji="⏳"
+          <MergedStat
+            icon={HourglassBottomOutlinedIcon}
+            value={totalPending}
             label="Pending"
-            value={stats.pendingClasses || 0}
-            color="#6B7280"
-            isDark={isDark}
+            color="#F59E0B"
           />
+        </Stack>
+
+        {/* Bottom bar: Total | Classes */}
+        <Stack
+          direction="row"
+          justifyContent="space-around"
+          alignItems="center"
+          sx={{
+            p: 1,
+            borderRadius: 1.5,
+            bgcolor: isDark ? alpha("#fff", 0.03) : "#FAFBFC",
+            border: "1px solid",
+            borderColor: "divider",
+          }}
+          divider={
+            <Box
+              sx={{
+                borderLeft: "1px solid",
+                borderColor: "divider",
+                height: 22,
+              }}
+            />
+          }
+        >
+          <Stack alignItems="center" sx={{ flex: 1 }}>
+            <Typography
+              variant="body2"
+              fontWeight={900}
+              sx={{ fontSize: "0.9rem" }}
+            >
+              {stats.totalStudents || 0}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                fontSize: "0.6rem",
+                color: "text.secondary",
+                fontWeight: 700,
+                letterSpacing: "0.05em",
+              }}
+            >
+              TOTAL
+            </Typography>
+          </Stack>
+          <Stack alignItems="center" sx={{ flex: 1 }}>
+            <Typography
+              variant="body2"
+              fontWeight={900}
+              sx={{ fontSize: "0.9rem" }}
+            >
+              {stats.totalClasses || 0}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                fontSize: "0.6rem",
+                color: "text.secondary",
+                fontWeight: 700,
+                letterSpacing: "0.05em",
+              }}
+            >
+              CLASSES
+            </Typography>
+          </Stack>
         </Stack>
       </Paper>
 
       {/* ══════════════════════════════════════════════════════
-          📋 CLASS-WISE TABLE + CHART (Split on desktop)
+          📋 CLASS-WISE TABLE + CHART
       ══════════════════════════════════════════════════════ */}
       <Grid container spacing={2} sx={{ width: "100%", m: 0 }}>
-        {/* ─── LEFT: Table ─── */}
         <Grid
           item
           xs={12}
@@ -477,16 +401,55 @@ const TodayPage = ({ secretKey }) => {
                 </Typography>
               </Box>
             ) : isSmallMobile ? (
-              /* ═══ MOBILE: Compact cards ═══ */
-              <Box sx={{ flex: 1, overflowY: "auto", width: "100%" }}>
-                <Stack
-                  divider={
-                    <Box
-                      sx={{ borderBottom: "1px solid", borderColor: "divider" }}
-                    />
-                  }
-                  sx={{ width: "100%" }}
+              /* ═══ MOBILE: Tabular list ═══ */
+              <Box
+                sx={{
+                  flex: 1,
+                  overflowY: "auto",
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                {/* Sticky header */}
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "1.6fr 0.7fr 0.6fr 0.6fr 1.3fr",
+                    alignItems: "center",
+                    px: 1.5,
+                    py: 1,
+                    bgcolor: isDark ? "#1E293B" : "#F1F5F9",
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 2,
+                  }}
                 >
+                  <Typography sx={mobileHeaderStyle}>Class</Typography>
+                  <Typography align="center" sx={mobileHeaderStyle}>
+                    Total
+                  </Typography>
+                  <Typography
+                    align="center"
+                    sx={{ ...mobileHeaderStyle, color: "#16A34A" }}
+                  >
+                    P
+                  </Typography>
+                  <Typography
+                    align="center"
+                    sx={{ ...mobileHeaderStyle, color: "#DC2626" }}
+                  >
+                    A
+                  </Typography>
+                  <Typography align="center" sx={mobileHeaderStyle}>
+                    %
+                  </Typography>
+                </Box>
+
+                {/* Data rows */}
+                <Box sx={{ flex: 1, overflowY: "auto" }}>
                   {sortedClasses.map((cls) => {
                     const config =
                       STATUS_CONFIG[cls.status] || STATUS_CONFIG.notMarked;
@@ -496,108 +459,208 @@ const TodayPage = ({ secretKey }) => {
                         onClick={() => handleClassClick(cls._id)}
                         sx={{
                           px: 1.5,
-                          py: 1.25,
+                          py: 1,
                           borderLeft: "3px solid",
                           borderLeftColor: config.dot,
-                          width: "100%",
-                          boxSizing: "border-box",
+                          borderBottom: "1px solid",
+                          borderColor: "divider",
                           cursor: "pointer",
                           "&:hover": { bgcolor: "action.hover" },
                           "&:active": { bgcolor: "action.selected" },
                         }}
                       >
-                        <Stack
-                          direction="row"
-                          justifyContent="space-between"
-                          alignItems="center"
-                          sx={{ mb: 0.5 }}
+                        {/* Row: Class | Total | P | A | % */}
+                        <Box
+                          sx={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "1.6fr 0.7fr 0.6fr 0.6fr 1.3fr",
+                            alignItems: "center",
+                          }}
                         >
                           <Typography
-                            variant="body2"
                             fontWeight={800}
-                            sx={{ fontSize: "0.85rem" }}
+                            sx={{ fontSize: "0.82rem" }}
                           >
                             {cls.label}
                           </Typography>
-                          {cls.isMarked ? (
-                            <Typography
-                              variant="body2"
-                              fontWeight={900}
-                              sx={{
-                                fontSize: "1rem",
-                                color: config.dot,
-                                fontFamily: "monospace",
-                              }}
-                            >
-                              {cls.percentage}%
-                            </Typography>
-                          ) : (
-                            <Chip
-                              label="Pending"
-                              size="small"
-                              sx={{
-                                height: 20,
-                                fontSize: "0.62rem",
-                                fontWeight: 700,
-                                bgcolor: isDark
-                                  ? alpha("#F59E0B", 0.15)
-                                  : "#FEF3C7",
-                                color: isDark ? "#FCD34D" : "#B45309",
-                              }}
-                            />
-                          )}
-                        </Stack>
-                        <Stack
-                          direction="row"
-                          alignItems="center"
-                          spacing={1.5}
-                        >
-                          <Stack
-                            direction="row"
-                            spacing={1.5}
-                            alignItems="center"
-                            sx={{ flexShrink: 0 }}
+                          <Typography
+                            align="center"
+                            fontWeight={700}
+                            sx={{
+                              fontSize: "0.85rem",
+                              fontFamily: "monospace",
+                            }}
                           >
-                            <MobileStatLabel
-                              label="Std"
-                              value={cls.totalStudents}
-                              color="text.primary"
-                            />
-                            <MobileStatLabel
-                              label="P"
-                              value={cls.isMarked ? cls.present : "—"}
-                              color={cls.isMarked ? "#16A34A" : "text.disabled"}
-                            />
-                            <MobileStatLabel
-                              label="A"
-                              value={cls.isMarked ? cls.absent : "—"}
-                              color={cls.isMarked ? "#DC2626" : "text.disabled"}
-                            />
-                          </Stack>
-                          {cls.isMarked && (
-                            <Box sx={{ flex: 1, ml: 0.5 }}>
-                              <LinearProgress
-                                variant="determinate"
-                                value={cls.percentage}
+                            {cls.totalStudents}
+                          </Typography>
+                          <Typography
+                            align="center"
+                            fontWeight={800}
+                            sx={{
+                              fontSize: "0.85rem",
+                              fontFamily: "monospace",
+                              color: cls.isMarked ? "#16A34A" : "text.disabled",
+                            }}
+                          >
+                            {cls.isMarked ? cls.present : "—"}
+                          </Typography>
+                          <Typography
+                            align="center"
+                            fontWeight={800}
+                            sx={{
+                              fontSize: "0.85rem",
+                              fontFamily: "monospace",
+                              color: cls.isMarked ? "#DC2626" : "text.disabled",
+                            }}
+                          >
+                            {cls.isMarked ? cls.absent : "—"}
+                          </Typography>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "center",
+                            }}
+                          >
+                            {cls.isMarked ? (
+                              <Typography
+                                fontWeight={900}
                                 sx={{
-                                  height: 4,
-                                  borderRadius: 2,
+                                  fontSize: "0.88rem",
+                                  color: config.dot,
+                                  fontFamily: "monospace",
+                                }}
+                              >
+                                {cls.percentage}%
+                              </Typography>
+                            ) : (
+                              <Chip
+                                label="Pending"
+                                size="small"
+                                sx={{
+                                  height: 18,
+                                  fontSize: "0.6rem",
+                                  fontWeight: 700,
                                   bgcolor: isDark
-                                    ? alpha("#fff", 0.08)
-                                    : alpha("#000", 0.06),
-                                  "& .MuiLinearProgress-bar": {
-                                    bgcolor: config.dot,
-                                    borderRadius: 2,
-                                  },
+                                    ? alpha("#F59E0B", 0.15)
+                                    : "#FEF3C7",
+                                  color: isDark ? "#FCD34D" : "#B45309",
+                                  "& .MuiChip-label": { px: 0.6 },
                                 }}
                               />
-                            </Box>
-                          )}
-                        </Stack>
+                            )}
+                          </Box>
+                        </Box>
+
+                        {/* Teacher name below class */}
+                        <Typography
+                          sx={{
+                            fontSize: "0.68rem",
+                            color: cls.classTeacher
+                              ? "text.secondary"
+                              : "text.disabled",
+                            fontStyle: cls.classTeacher ? "normal" : "italic",
+                            mt: 0.2,
+                            mb: cls.isMarked ? 0.5 : 0,
+                          }}
+                        >
+                          {cls.classTeacher || "No teacher assigned"}
+                        </Typography>
+
+                        {/* Progress bar */}
+                        {cls.isMarked && (
+                          <LinearProgress
+                            variant="determinate"
+                            value={cls.percentage}
+                            sx={{
+                              mt: 0.4,
+                              height: 3,
+                              borderRadius: 2,
+                              bgcolor: isDark
+                                ? alpha("#fff", 0.08)
+                                : alpha("#000", 0.06),
+                              "& .MuiLinearProgress-bar": {
+                                bgcolor: config.dot,
+                                borderRadius: 2,
+                              },
+                            }}
+                          />
+                        )}
                       </Box>
                     );
                   })}
-                </Stack>
+                </Box>
+
+                {/* Grand total footer */}
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "1.6fr 0.7fr 0.6fr 0.6fr 1.3fr",
+                    alignItems: "center",
+                    px: 1.5,
+                    py: 1.25,
+                    bgcolor: isDark ? "#0F172A" : "#F8FAFC",
+                    borderTop: "2px solid",
+                    borderColor: "divider",
+                    position: "sticky",
+                    bottom: 0,
+                    zIndex: 2,
+                  }}
+                >
+                  <Typography
+                    fontWeight={900}
+                    sx={{
+                      fontSize: "0.78rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    Total
+                  </Typography>
+                  <Typography
+                    align="center"
+                    fontWeight={900}
+                    sx={{
+                      fontSize: "0.88rem",
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    {stats.totalStudents || 0}
+                  </Typography>
+                  <Typography
+                    align="center"
+                    fontWeight={900}
+                    sx={{
+                      fontSize: "0.88rem",
+                      fontFamily: "monospace",
+                      color: "#16A34A",
+                    }}
+                  >
+                    {stats.totalPresent || 0}
+                  </Typography>
+                  <Typography
+                    align="center"
+                    fontWeight={900}
+                    sx={{
+                      fontSize: "0.88rem",
+                      fontFamily: "monospace",
+                      color: "#DC2626",
+                    }}
+                  >
+                    {stats.totalAbsent || 0}
+                  </Typography>
+                  <Typography
+                    align="center"
+                    fontWeight={900}
+                    sx={{
+                      fontSize: "0.92rem",
+                      fontFamily: "monospace",
+                      color: pctColor,
+                    }}
+                  >
+                    {overallPct}%
+                  </Typography>
+                </Box>
               </Box>
             ) : (
               /* ═══ DESKTOP: Table ═══ */
@@ -1063,7 +1126,7 @@ const TodayPage = ({ secretKey }) => {
       )}
 
       {/* ══════════════════════════════════════════════════════
-          🔍 CLASS DETAIL DIALOG (Management view)
+          🔍 CLASS DETAIL DIALOG
       ══════════════════════════════════════════════════════ */}
       <ClassAttendanceDialog
         open={dialogOpen}
@@ -1251,67 +1314,33 @@ const CustomTooltip = ({ active, payload, isDark }) => {
 //  SMALL COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
 
-const SummaryStat = ({ icon: Icon, value, label, color, isDark }) => (
-  <Box
-    sx={{
-      p: 1,
-      borderRadius: 1.5,
-      bgcolor: alpha(color, isDark ? 0.12 : 0.06),
-      border: "1px solid",
-      borderColor: alpha(color, 0.2),
-      textAlign: "center",
-    }}
-  >
-    <Icon sx={{ fontSize: 16, color, mb: 0.3 }} />
+const MergedStat = ({ icon: Icon, value, label, color }) => (
+  <Stack alignItems="center" sx={{ flex: 1 }}>
+    <Stack direction="row" alignItems="center" spacing={0.5}>
+      <Icon sx={{ fontSize: 16, color }} />
+      <Typography
+        fontWeight={900}
+        sx={{
+          fontSize: "1.1rem",
+          color,
+          lineHeight: 1,
+          fontFamily: "monospace",
+        }}
+      >
+        {value}
+      </Typography>
+    </Stack>
     <Typography
-      variant="body2"
-      fontWeight={900}
-      sx={{ fontSize: "1.05rem", color, lineHeight: 1 }}
-    >
-      {value}
-    </Typography>
-    <Typography
-      variant="caption"
       sx={{
-        fontSize: "0.6rem",
+        fontSize: "0.62rem",
         fontWeight: 800,
-        color,
+        color: "text.secondary",
         textTransform: "uppercase",
-        letterSpacing: "0.03em",
+        letterSpacing: "0.05em",
+        mt: 0.3,
       }}
     >
       {label}
-    </Typography>
-  </Box>
-);
-
-const QuickCount = ({ emoji, label, value, color, isDark }) => (
-  <Stack
-    direction="row"
-    spacing={0.75}
-    alignItems="center"
-    sx={{
-      px: 1.25,
-      py: 0.5,
-      borderRadius: 1.5,
-      bgcolor: alpha(color, isDark ? 0.12 : 0.06),
-      minWidth: "fit-content",
-    }}
-  >
-    <Typography sx={{ fontSize: "0.85rem", lineHeight: 1 }}>{emoji}</Typography>
-    <Typography
-      variant="caption"
-      fontWeight={700}
-      sx={{ fontSize: "0.7rem", color: "text.secondary" }}
-    >
-      {label}
-    </Typography>
-    <Typography
-      variant="caption"
-      fontWeight={900}
-      sx={{ fontSize: "0.78rem", color, fontFamily: "monospace" }}
-    >
-      {value}
     </Typography>
   </Stack>
 );
@@ -1328,34 +1357,13 @@ const LegendItem = ({ dot, label, isDark }) => (
   </Stack>
 );
 
-const MobileStatLabel = ({ label, value, color }) => (
-  <Box>
-    <Typography
-      component="span"
-      variant="caption"
-      sx={{
-        fontSize: "0.68rem",
-        color: "text.secondary",
-        fontWeight: 700,
-        mr: 0.4,
-      }}
-    >
-      {label}:
-    </Typography>
-    <Typography
-      component="span"
-      variant="caption"
-      sx={{
-        fontSize: "0.75rem",
-        fontWeight: 800,
-        fontFamily: "monospace",
-        color,
-      }}
-    >
-      {value}
-    </Typography>
-  </Box>
-);
+const mobileHeaderStyle = {
+  fontSize: "0.62rem",
+  fontWeight: 800,
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+  color: "text.secondary",
+};
 
 const headerCellStyle = (isDark) => ({
   fontWeight: 800,

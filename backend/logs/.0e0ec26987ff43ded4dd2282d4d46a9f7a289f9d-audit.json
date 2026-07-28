@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\.0e0ec26987ff43ded4dd2282d4d46a9f7a289f9d-audit.json",
+    "files": [
+        {
+            "date": 1785241177143,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\error-2026-07-28.log",
+            "hash": "0e32035724b5eaa9b3eb66f73b9795eea0651f00ace788df532797600d4dace4"
+        }
+    ],
+    "hashType": "sha256"
+}

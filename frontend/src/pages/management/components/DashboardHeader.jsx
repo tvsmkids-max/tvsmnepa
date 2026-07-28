@@ -9,15 +9,12 @@ import {
   useTheme,
   alpha,
 } from "@mui/material";
-import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 
-const SCHOOL_NAME =
-  import.meta.env.VITE_SCHOOL_NAME ||
-  "Thakur Virendra Singh Memorial H. Sec. School";
 const SCHOOL_LOGO = import.meta.env.VITE_SCHOOL_LOGO || "/logo.png";
+const SCHOOL_SHORT_NAME = "TVSM H. SEC. SCHOOL";
 
 const DashboardHeader = ({
   label,
@@ -28,14 +25,6 @@ const DashboardHeader = ({
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
-
-  const now = new Date();
-  const todayStr = now.toLocaleDateString("en-IN", {
-    weekday: "long",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 
   const lastUpdatedStr = lastUpdated
     ? new Date(lastUpdated).toLocaleTimeString("en-IN", {
@@ -55,13 +44,13 @@ const DashboardHeader = ({
         zIndex: 50,
       }}
     >
-      <Box sx={{ px: { xs: 1.5, sm: 2.5 }, py: { xs: 1, sm: 1.5 } }}>
+      <Box sx={{ px: { xs: 1.5, sm: 2.5 }, py: { xs: 1, sm: 1.25 } }}>
         <Stack direction="row" alignItems="center" spacing={1.5}>
           {/* Logo */}
           <Box
             sx={{
-              width: { xs: 34, sm: 40 },
-              height: { xs: 34, sm: 40 },
+              width: { xs: 36, sm: 42 },
+              height: { xs: 36, sm: 42 },
               borderRadius: 1.5,
               bgcolor: isDark ? "#1E293B" : "#F1F5F9",
               display: "flex",
@@ -76,51 +65,33 @@ const DashboardHeader = ({
               src={SCHOOL_LOGO}
               alt="Logo"
               sx={{
-                width: "80%",
-                height: "80%",
+                width: "82%",
+                height: "82%",
                 objectFit: "contain",
               }}
               onError={(e) => {
                 e.currentTarget.style.display = "none";
                 e.currentTarget.parentElement.innerHTML =
-                  '<span style="font-size:1rem;font-weight:900;color:#1E4D98">🏫</span>';
+                  '<span style="font-size:1.1rem;font-weight:900;color:#1E4D98">🏫</span>';
               }}
             />
           </Box>
 
-          {/* School Info */}
+          {/* School Name (short) */}
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
-              variant="body2"
-              fontWeight={800}
+              variant="body1"
+              fontWeight={900}
               noWrap
               sx={{
-                fontSize: { xs: "0.85rem", sm: "0.95rem" },
+                fontSize: { xs: "0.95rem", sm: "1.05rem" },
                 color: "text.primary",
-                lineHeight: 1.2,
+                letterSpacing: "0.02em",
               }}
-              title={SCHOOL_NAME}
+              title="Thakur Virendra Singh Memorial H. Sec. School"
             >
-              {SCHOOL_NAME}
+              {SCHOOL_SHORT_NAME}
             </Typography>
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={1}
-              sx={{ mt: 0.15 }}
-            >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  fontSize: { xs: "0.65rem", sm: "0.7rem" },
-                  fontWeight: 600,
-                }}
-                noWrap
-              >
-                Management View · {todayStr}
-              </Typography>
-            </Stack>
           </Box>
 
           {/* Actions */}
