@@ -175,7 +175,7 @@ const TodayPage = ({ secretKey }) => {
           background: `linear-gradient(135deg, ${alpha(pctColor, isDark ? 0.15 : 0.08)} 0%, ${alpha(pctColor, isDark ? 0.05 : 0.02)} 100%)`,
         }}
       >
-        {/* Top row: Label + marked badge */}
+        {/* Top row: Label + marked badge ok */}
         <Stack
           direction="row"
           justifyContent="space-between"
