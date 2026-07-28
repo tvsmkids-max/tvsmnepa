@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Paper,
@@ -40,6 +40,32 @@ const MONTHS = [
   "November",
   "December",
 ];
+
+// ═══════════════════════════════════════════════════════════════════
+//  HELPER: Shorten class names for narrow column
+// ═══════════════════════════════════════════════════════════════════
+const shortenClassName = (name, section) => {
+  if (!name) return "";
+  const upper = name.toString().trim().toUpperCase();
+
+  // Common abbreviations
+  const abbreviations = {
+    NURSERY: "NUR",
+    "LOWER KG": "LKG",
+    "UPPER KG": "UKG",
+    PRESCHOOL: "PRE",
+    PLAYGROUP: "PLAY",
+    PLAY: "PLAY",
+  };
+
+  let shortName = abbreviations[upper] || upper;
+
+  // Remove "CLASS " prefix if present
+  shortName = shortName.replace(/^CLASS\s+/i, "");
+
+  // For 10TH, 11TH, 12TH → keep as is (short enough)
+  return section ? `${shortName}-${section}` : shortName;
+};
 
 // ═══════════════════════════════════════════════════════════════════
 //  LOADING
@@ -254,8 +280,6 @@ const MonthlyPage = ({ secretKey }) => {
 
 // ═══════════════════════════════════════════════════════════════════
 //  MATRIX TABLE (Class × Date grid)
-//  Sticky: Class column + P/A label column
-//  Scroll: dates horizontally
 // ═══════════════════════════════════════════════════════════════════
 
 const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
@@ -264,11 +288,10 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
   const blockedBg = isDark ? alpha("#DC2626", 0.15) : "#FEE2E2";
   const totalRowBg = isDark ? alpha("#F5A623", 0.12) : "#FEF3C7";
 
-  // Cell dimensions
-  const classColWidth = 78;
-  const labelColWidth = 60;
-  const dateColWidth = 44;
-  const rowHeight = 34;
+  // Compact cell dimensions (mobile-friendly)
+  const classColWidth = 62; // ← Reduced from 78 (short names like NUR-A)
+  const labelColWidth = 28; // ← Reduced from 60 (just "P" or "A")
+  const dateColWidth = 40; // ← Slightly smaller
 
   return (
     <Paper
@@ -311,7 +334,7 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                   width: classColWidth,
                   minWidth: classColWidth,
                   textAlign: "left",
-                  pl: 1.5,
+                  pl: 1,
                 }}
               >
                 Class
@@ -330,6 +353,7 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                   minWidth: labelColWidth,
                   borderRight: "2px solid",
                   borderRightColor: isDark ? "#334155" : "#CBD5E1",
+                  px: 0,
                 }}
               >
                 &nbsp;
@@ -358,7 +382,7 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                   <Box sx={{ lineHeight: 1.1 }}>
                     <Typography
                       sx={{
-                        fontSize: "0.58rem",
+                        fontSize: "0.56rem",
                         fontWeight: 700,
                         opacity: 0.75,
                       }}
@@ -367,7 +391,7 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                     </Typography>
                     <Typography
                       sx={{
-                        fontSize: "0.78rem",
+                        fontSize: "0.75rem",
                         fontWeight: 900,
                         fontFamily: "monospace",
                       }}
@@ -382,142 +406,137 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
 
           {/* ═══ BODY ROWS ═══ */}
           <Box component="tbody">
-            {classes.map((cls, idx) => {
-              const isLastInGroup = idx === classes.length - 1;
-              return (
-                <React.Fragment key={cls._id}>
-                  {/* PRESENT row */}
-                  <Box component="tr">
-                    <Box
-                      component="td"
-                      rowSpan={2}
-                      sx={{
-                        ...cellBase,
-                        position: "sticky",
-                        left: 0,
-                        zIndex: 3,
-                        bgcolor: stickyBg,
-                        width: classColWidth,
-                        minWidth: classColWidth,
-                        textAlign: "left",
-                        pl: 1.5,
-                        fontWeight: 800,
-                        fontSize: "0.8rem",
-                        borderBottom: "2px solid",
-                        borderBottomColor: isDark ? "#334155" : "#CBD5E1",
-                        verticalAlign: "middle",
-                      }}
-                    >
-                      {cls.label}
-                    </Box>
-                    <Box
-                      component="td"
-                      sx={{
-                        ...cellBase,
-                        position: "sticky",
-                        left: classColWidth,
-                        zIndex: 2,
-                        bgcolor: stickyBg,
-                        width: labelColWidth,
-                        minWidth: labelColWidth,
-                        fontSize: "0.7rem",
-                        fontWeight: 700,
-                        color: "#16A34A",
-                        textAlign: "left",
-                        pl: 1,
-                        borderRight: "2px solid",
-                        borderRightColor: isDark ? "#334155" : "#CBD5E1",
-                      }}
-                    >
-                      Present
-                    </Box>
-                    {dates.map((d) => {
-                      const cell = cls.daily?.[d.dateKey];
-                      const value = cell?.present;
-                      return (
-                        <Box
-                          component="td"
-                          key={d.dateKey}
-                          sx={{
-                            ...cellBase,
-                            width: dateColWidth,
-                            minWidth: dateColWidth,
-                            bgcolor: d.isBlocked ? blockedBg : "transparent",
-                            fontSize: "0.78rem",
-                            fontWeight: 700,
-                            fontFamily: "monospace",
-                            color: d.isBlocked
-                              ? "transparent"
-                              : cls.hasStudents && value > 0
-                                ? "#16A34A"
-                                : "text.disabled",
-                          }}
-                        >
-                          {d.isBlocked ? "" : value > 0 ? value : "—"}
-                        </Box>
-                      );
-                    })}
+            {classes.map((cls) => (
+              <React.Fragment key={cls._id}>
+                {/* PRESENT row */}
+                <Box component="tr">
+                  <Box
+                    component="td"
+                    rowSpan={2}
+                    sx={{
+                      ...cellBase,
+                      position: "sticky",
+                      left: 0,
+                      zIndex: 3,
+                      bgcolor: stickyBg,
+                      width: classColWidth,
+                      minWidth: classColWidth,
+                      textAlign: "left",
+                      pl: 1,
+                      fontWeight: 800,
+                      fontSize: "0.78rem",
+                      borderBottom: "2px solid",
+                      borderBottomColor: isDark ? "#334155" : "#CBD5E1",
+                      verticalAlign: "middle",
+                    }}
+                  >
+                    {shortenClassName(cls.name, cls.section)}
                   </Box>
-
-                  {/* ABSENT row */}
-                  <Box component="tr">
-                    <Box
-                      component="td"
-                      sx={{
-                        ...cellBase,
-                        position: "sticky",
-                        left: classColWidth,
-                        zIndex: 2,
-                        bgcolor: stickyBg,
-                        width: labelColWidth,
-                        minWidth: labelColWidth,
-                        fontSize: "0.7rem",
-                        fontWeight: 700,
-                        color: "#DC2626",
-                        textAlign: "left",
-                        pl: 1,
-                        borderRight: "2px solid",
-                        borderRightColor: isDark ? "#334155" : "#CBD5E1",
-                        borderBottom: isLastInGroup ? "2px solid" : "2px solid",
-                        borderBottomColor: isDark ? "#334155" : "#CBD5E1",
-                      }}
-                    >
-                      Absent
-                    </Box>
-                    {dates.map((d) => {
-                      const cell = cls.daily?.[d.dateKey];
-                      const value = cell?.absent;
-                      return (
-                        <Box
-                          component="td"
-                          key={d.dateKey}
-                          sx={{
-                            ...cellBase,
-                            width: dateColWidth,
-                            minWidth: dateColWidth,
-                            bgcolor: d.isBlocked ? blockedBg : "transparent",
-                            fontSize: "0.78rem",
-                            fontWeight: 700,
-                            fontFamily: "monospace",
-                            color: d.isBlocked
-                              ? "transparent"
-                              : cls.hasStudents && value > 0
-                                ? "#DC2626"
-                                : "text.disabled",
-                            borderBottom: "2px solid",
-                            borderBottomColor: isDark ? "#334155" : "#CBD5E1",
-                          }}
-                        >
-                          {d.isBlocked ? "" : value > 0 ? value : "—"}
-                        </Box>
-                      );
-                    })}
+                  <Box
+                    component="td"
+                    sx={{
+                      ...cellBase,
+                      position: "sticky",
+                      left: classColWidth,
+                      zIndex: 2,
+                      bgcolor: stickyBg,
+                      width: labelColWidth,
+                      minWidth: labelColWidth,
+                      fontSize: "0.75rem",
+                      fontWeight: 900,
+                      color: "#16A34A",
+                      borderRight: "2px solid",
+                      borderRightColor: isDark ? "#334155" : "#CBD5E1",
+                      px: 0,
+                    }}
+                  >
+                    P
                   </Box>
-                </React.Fragment>
-              );
-            })}
+                  {dates.map((d) => {
+                    const cell = cls.daily?.[d.dateKey];
+                    const value = cell?.present;
+                    return (
+                      <Box
+                        component="td"
+                        key={d.dateKey}
+                        sx={{
+                          ...cellBase,
+                          width: dateColWidth,
+                          minWidth: dateColWidth,
+                          bgcolor: d.isBlocked ? blockedBg : "transparent",
+                          fontSize: "0.78rem",
+                          fontWeight: 700,
+                          fontFamily: "monospace",
+                          color: d.isBlocked
+                            ? "transparent"
+                            : cls.hasStudents && value > 0
+                              ? "#16A34A"
+                              : "text.disabled",
+                        }}
+                      >
+                        {d.isBlocked ? "" : value > 0 ? value : "—"}
+                      </Box>
+                    );
+                  })}
+                </Box>
 
-            {/* ═══ GRAND TOTAL ═══ */}
+                {/* ABSENT row */}
+                <Box component="tr">
+                  <Box
+                    component="td"
+                    sx={{
+                      ...cellBase,
+                      position: "sticky",
+                      left: classColWidth,
+                      zIndex: 2,
+                      bgcolor: stickyBg,
+                      width: labelColWidth,
+                      minWidth: labelColWidth,
+                      fontSize: "0.75rem",
+                      fontWeight: 900,
+                      color: "#DC2626",
+                      borderRight: "2px solid",
+                      borderRightColor: isDark ? "#334155" : "#CBD5E1",
+                      borderBottom: "2px solid",
+                      borderBottomColor: isDark ? "#334155" : "#CBD5E1",
+                      px: 0,
+                    }}
+                  >
+                    A
+                  </Box>
+                  {dates.map((d) => {
+                    const cell = cls.daily?.[d.dateKey];
+                    const value = cell?.absent;
+                    return (
+                      <Box
+                        component="td"
+                        key={d.dateKey}
+                        sx={{
+                          ...cellBase,
+                          width: dateColWidth,
+                          minWidth: dateColWidth,
+                          bgcolor: d.isBlocked ? blockedBg : "transparent",
+                          fontSize: "0.78rem",
+                          fontWeight: 700,
+                          fontFamily: "monospace",
+                          color: d.isBlocked
+                            ? "transparent"
+                            : cls.hasStudents && value > 0
+                              ? "#DC2626"
+                              : "text.disabled",
+                          borderBottom: "2px solid",
+                          borderBottomColor: isDark ? "#334155" : "#CBD5E1",
+                        }}
+                      >
+                        {d.isBlocked ? "" : value > 0 ? value : "—"}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </React.Fragment>
+            ))}
+
+            {/* ═══ GRAND TOTAL (NOT sticky vertically — only horizontal left) ═══ */}
             <Box component="tr">
               <Box
                 component="td"
@@ -526,15 +545,14 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                   ...cellBase,
                   position: "sticky",
                   left: 0,
-                  bottom: 0,
-                  zIndex: 4,
+                  zIndex: 3,
                   bgcolor: totalRowBg,
                   width: classColWidth,
                   minWidth: classColWidth,
                   textAlign: "left",
-                  pl: 1.5,
+                  pl: 1,
                   fontWeight: 900,
-                  fontSize: "0.82rem",
+                  fontSize: "0.78rem",
                   color: isDark ? "#FCD34D" : "#B45309",
                   borderTop: "3px double",
                   borderTopColor: isDark ? "#F5A623" : "#B45309",
@@ -549,23 +567,21 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                   ...cellBase,
                   position: "sticky",
                   left: classColWidth,
-                  bottom: rowHeight,
-                  zIndex: 4,
+                  zIndex: 2,
                   bgcolor: totalRowBg,
                   width: labelColWidth,
                   minWidth: labelColWidth,
-                  fontSize: "0.7rem",
-                  fontWeight: 800,
+                  fontSize: "0.75rem",
+                  fontWeight: 900,
                   color: "#16A34A",
-                  textAlign: "left",
-                  pl: 1,
                   borderRight: "2px solid",
                   borderRightColor: isDark ? "#334155" : "#CBD5E1",
                   borderTop: "3px double",
                   borderTopColor: isDark ? "#F5A623" : "#B45309",
+                  px: 0,
                 }}
               >
-                Present
+                P
               </Box>
               {dates.map((d) => {
                 const total = grandTotals[d.dateKey];
@@ -604,21 +620,19 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                   ...cellBase,
                   position: "sticky",
                   left: classColWidth,
-                  bottom: 0,
-                  zIndex: 4,
+                  zIndex: 2,
                   bgcolor: totalRowBg,
                   width: labelColWidth,
                   minWidth: labelColWidth,
-                  fontSize: "0.7rem",
-                  fontWeight: 800,
+                  fontSize: "0.75rem",
+                  fontWeight: 900,
                   color: "#DC2626",
-                  textAlign: "left",
-                  pl: 1,
                   borderRight: "2px solid",
                   borderRightColor: isDark ? "#334155" : "#CBD5E1",
+                  px: 0,
                 }}
               >
-                Absent
+                A
               </Box>
               {dates.map((d) => {
                 const total = grandTotals[d.dateKey];
@@ -661,12 +675,12 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
           bgcolor: isDark ? alpha("#fff", 0.02) : "#FAFBFC",
           display: "flex",
           flexWrap: "wrap",
-          gap: 2,
+          gap: 1.5,
           justifyContent: "center",
         }}
       >
-        <LegendItem color="#16A34A" label="Present" />
-        <LegendItem color="#DC2626" label="Absent" />
+        <LegendItem letter="P" color="#16A34A" label="Present" />
+        <LegendItem letter="A" color="#DC2626" label="Absent" />
         <LegendItem
           color={isDark ? "#7F1D1D" : "#FEE2E2"}
           label="Sunday / Holiday"
@@ -686,9 +700,25 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
 //  SMALL COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
 
-const LegendItem = ({ color, label, isBox, isDouble }) => (
+const LegendItem = ({ letter, color, label, isBox, isDouble }) => (
   <Stack direction="row" alignItems="center" spacing={0.5}>
-    {isBox ? (
+    {letter ? (
+      <Box
+        sx={{
+          minWidth: 16,
+          height: 16,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: color,
+          fontWeight: 900,
+          fontSize: "0.75rem",
+          fontFamily: "monospace",
+        }}
+      >
+        {letter}
+      </Box>
+    ) : isBox ? (
       <Box
         sx={{
           width: 14,
@@ -729,8 +759,8 @@ const LegendItem = ({ color, label, isBox, isDouble }) => (
 // ═══════════════════════════════════════════════════════════════════
 
 const cellBase = {
-  padding: "4px 6px",
-  height: 34,
+  padding: "4px 4px",
+  height: 32,
   boxSizing: "border-box",
   borderBottom: "1px solid",
   borderColor: "divider",
@@ -742,7 +772,7 @@ const cellBase = {
 const stickyHeadStyle = (bg) => ({
   bgcolor: bg,
   fontWeight: 800,
-  fontSize: "0.68rem",
+  fontSize: "0.65rem",
   textTransform: "uppercase",
   letterSpacing: "0.03em",
   color: "text.secondary",
