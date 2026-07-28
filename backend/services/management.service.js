@@ -1552,6 +1552,238 @@ class ManagementService {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  //  MONTHLY MATRIX — Class × Date grid (Present/Absent per day)
+  //  For management monthly page tabular view
+  // ═══════════════════════════════════════════════════════════════
+  async getMonthlyMatrix({ year, month }) {
+    const activeSessionId = await this._getActiveSessionId();
+    if (!activeSessionId) return this._emptyMonthlyMatrix(year, month);
+
+    const settings = await Settings.getSettings();
+
+    const startDate = new Date(year, month - 1, 1);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+    // ─── Get all classes ───
+    const classes = await Class.find({
+      session: activeSessionId,
+      isArchived: false,
+    })
+      .select("_id name section")
+      .lean();
+
+    if (classes.length === 0) return this._emptyMonthlyMatrix(year, month);
+
+    const classIds = classes.map((c) => c._id);
+
+    // ─── Get holidays ───
+    const holidays = await Holiday.find({
+      session: activeSessionId,
+      $or: [
+        { date: { $gte: startDate, $lte: endDate }, endDate: null },
+        { date: { $lte: endDate }, endDate: { $gte: startDate } },
+      ],
+    }).lean();
+
+    // Holiday map (date → holiday info)
+    const holidayMap = {};
+    holidays.forEach((h) => {
+      const hStart = new Date(h.date);
+      hStart.setHours(0, 0, 0, 0);
+      const hEnd = h.endDate ? new Date(h.endDate) : new Date(h.date);
+      hEnd.setHours(23, 59, 59, 999);
+      const cur = new Date(hStart);
+      while (cur <= hEnd) {
+        const key = this._dateKey(cur);
+        holidayMap[key] = {
+          name: h.name,
+          allowAttendance: h.allowAttendance,
+        };
+        cur.setDate(cur.getDate() + 1);
+      }
+    });
+
+    // Working days config
+    const workingDayNames = new Set(
+      (settings?.workingDays || [])
+        .filter((d) => d.isWorking)
+        .map((d) => d.day),
+    );
+
+    // ─── Build date array with metadata ───
+    const dateArray = [];
+    const cur = new Date(startDate);
+    while (cur <= endDate) {
+      const key = this._dateKey(cur);
+      const dayName = cur.toLocaleDateString("en-US", { weekday: "long" });
+      const dayShort = cur.toLocaleDateString("en-US", { weekday: "short" });
+      const isSunday = dayName === "Sunday";
+      const isWorkingDay = workingDayNames.has(dayName);
+      const holiday = holidayMap[key];
+      const isHoliday = !!holiday && !holiday.allowAttendance;
+      const isBlocked = isHoliday || !isWorkingDay;
+
+      dateArray.push({
+        day: cur.getDate(),
+        dateKey: key,
+        dayShort,
+        isSunday,
+        isHoliday,
+        isBlocked,
+        holidayName: holiday?.name || null,
+      });
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    // ─── Get active students per class ───
+    const activeStudents = await Student.find({
+      class: { $in: classIds },
+      status: "Active",
+      isActive: true,
+    })
+      .select("_id class")
+      .lean();
+
+    const activeStudentIds = new Set(
+      activeStudents.map((s) => s._id.toString()),
+    );
+
+    const classHasStudents = new Set();
+    activeStudents.forEach((s) => {
+      classHasStudents.add(s.class.toString());
+    });
+
+    // ─── Get all attendance records for month ───
+    const records = await Attendance.find({
+      class: { $in: classIds },
+      date: { $gte: startDate, $lte: endDate },
+    })
+      .select("class student status date")
+      .lean();
+
+    // Build matrix: { classId: { dateKey: { present, absent } } }
+    const matrix = {};
+    const seenPerDay = new Set();
+
+    records.forEach((r) => {
+      const sid = r.student.toString();
+      if (!activeStudentIds.has(sid)) return;
+
+      const cid = r.class.toString();
+      const dateKey = this._dateKey(r.date);
+
+      // Dedupe: one student can only count once per day per class
+      const key = `${cid}-${sid}-${dateKey}`;
+      if (seenPerDay.has(key)) return;
+      seenPerDay.add(key);
+
+      if (!matrix[cid]) matrix[cid] = {};
+      if (!matrix[cid][dateKey]) {
+        matrix[cid][dateKey] = { present: 0, absent: 0 };
+      }
+
+      if (r.status === "Present") matrix[cid][dateKey].present++;
+      else if (r.status === "Absent") matrix[cid][dateKey].absent++;
+    });
+
+    // ─── Build class rows (sorted) ───
+    const classRows = classes.map((cls) => {
+      const cid = cls._id.toString();
+      const daily = matrix[cid] || {};
+      const hasStudents = classHasStudents.has(cid);
+
+      return {
+        _id: cls._id,
+        name: cls.name,
+        section: cls.section,
+        label: `${cls.name}-${cls.section}`,
+        sortRank: this._getClassSortRank(cls.name),
+        hasStudents,
+        daily, // { dateKey: { present, absent } }
+      };
+    });
+
+    // Sort classes: Nursery → LKG → UKG → 1st → ... → 12th
+    classRows.sort((a, b) => {
+      if (a.sortRank !== b.sortRank) return a.sortRank - b.sortRank;
+      return (a.section || "").localeCompare(b.section || "");
+    });
+
+    // ─── Grand totals per date ───
+    const grandTotals = {};
+    dateArray.forEach((d) => {
+      grandTotals[d.dateKey] = { present: 0, absent: 0 };
+    });
+
+    classRows.forEach((cls) => {
+      dateArray.forEach((d) => {
+        const cell = cls.daily[d.dateKey];
+        if (cell) {
+          grandTotals[d.dateKey].present += cell.present || 0;
+          grandTotals[d.dateKey].absent += cell.absent || 0;
+        }
+      });
+    });
+
+    // ─── Overall percentage ───
+    let totalPresent = 0;
+    let totalAbsent = 0;
+    Object.values(grandTotals).forEach((g) => {
+      totalPresent += g.present;
+      totalAbsent += g.absent;
+    });
+    const totalMarked = totalPresent + totalAbsent;
+    const overallPercentage =
+      totalMarked > 0 ? Math.round((totalPresent / totalMarked) * 100) : 0;
+
+    return {
+      year,
+      month,
+      monthName: new Date(year, month - 1).toLocaleString("en-IN", {
+        month: "long",
+      }),
+      dates: dateArray,
+      classes: classRows,
+      grandTotals,
+      summary: {
+        totalPresent,
+        totalAbsent,
+        totalMarked,
+        overallPercentage,
+        totalClasses: classes.length,
+        workingDays: dateArray.filter((d) => !d.isBlocked).length,
+        holidays: holidays.length,
+      },
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  HELPER: Empty monthly matrix
+  // ═══════════════════════════════════════════════════════════════
+  _emptyMonthlyMatrix(year, month) {
+    return {
+      year,
+      month,
+      monthName: new Date(year, month - 1).toLocaleString("en-IN", {
+        month: "long",
+      }),
+      dates: [],
+      classes: [],
+      grandTotals: {},
+      summary: {
+        totalPresent: 0,
+        totalAbsent: 0,
+        totalMarked: 0,
+        overallPercentage: 0,
+        totalClasses: 0,
+        workingDays: 0,
+        holidays: 0,
+      },
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   //  HELPER: Format date as YYYY-MM-DD
   // ═══════════════════════════════════════════════════════════════
   _dateKey(date) {

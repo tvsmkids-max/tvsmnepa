@@ -10,7 +10,7 @@ const {
 } = require("../middlewares/managementAuth.middleware");
 
 // ═══════════════════════════════════════════════════════════════════
-//  ADMIN ROUTES — Manage access URLs
+//  ADMIN ROUTES
 // ═══════════════════════════════════════════════════════════════════
 router.get(
   "/admin/access-urls",
@@ -38,7 +38,7 @@ router.delete(
 );
 
 // ═══════════════════════════════════════════════════════════════════
-//  PUBLIC ROUTES — Accessed via secret key
+//  PUBLIC ROUTES (via secret key)
 // ═══════════════════════════════════════════════════════════════════
 router.get("/:secretKey/validate", managementController.validateAccess);
 
@@ -72,25 +72,29 @@ router.get(
   managementController.getRankings,
 );
 
-// ─── Class Detail (Today dialog) ───
 router.get(
   "/:secretKey/class/:classId",
   validateManagementKey,
   managementController.getClassDetail,
 );
 
-// ─── NEW: Monthly Report (all classes) ───
 router.get(
   "/:secretKey/monthly-report",
   validateManagementKey,
   managementController.getMonthlyReport,
 );
 
-// ─── NEW: Monthly Class Detail (calendar view) ───
 router.get(
   "/:secretKey/monthly-class/:classId",
   validateManagementKey,
   managementController.getMonthlyClassDetail,
+);
+
+// ─── NEW: Monthly Matrix ───
+router.get(
+  "/:secretKey/monthly-matrix",
+  validateManagementKey,
+  managementController.getMonthlyMatrix,
 );
 
 module.exports = router;

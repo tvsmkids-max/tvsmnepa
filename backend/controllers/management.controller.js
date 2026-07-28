@@ -6,7 +6,7 @@ const { sendResponse } = require("../utils/apiResponse");
 const asyncHandler = require("../utils/asyncHandler");
 
 // ═══════════════════════════════════════════════════════════════════
-//  PUBLIC ENDPOINTS (access via secret key)
+//  PUBLIC ENDPOINTS
 // ═══════════════════════════════════════════════════════════════════
 
 const getTodayOverview = asyncHandler(async (req, res) => {
@@ -55,7 +55,6 @@ const getRankings = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── Class Detail (Today dialog) ───
 const getClassDetail = asyncHandler(async (req, res) => {
   const { classId } = req.params;
   const { date } = req.query;
@@ -66,7 +65,6 @@ const getClassDetail = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── NEW: Monthly Report (class cards) ───
 const getMonthlyReport = asyncHandler(async (req, res) => {
   const now = new Date();
   const year = parseInt(req.query.year) || now.getFullYear();
@@ -78,7 +76,6 @@ const getMonthlyReport = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── NEW: Monthly Class Detail (calendar dialog) ───
 const getMonthlyClassDetail = asyncHandler(async (req, res) => {
   const { classId } = req.params;
   const now = new Date();
@@ -91,6 +88,18 @@ const getMonthlyClassDetail = asyncHandler(async (req, res) => {
   });
   return sendResponse(res).success({
     message: "Monthly class detail fetched",
+    data,
+  });
+});
+
+// ─── NEW: Monthly Matrix (class × dates grid) ───
+const getMonthlyMatrix = asyncHandler(async (req, res) => {
+  const now = new Date();
+  const year = parseInt(req.query.year) || now.getFullYear();
+  const month = parseInt(req.query.month) || now.getMonth() + 1;
+  const data = await managementService.getMonthlyMatrix({ year, month });
+  return sendResponse(res).success({
+    message: "Monthly matrix fetched",
     data,
   });
 });
@@ -118,7 +127,7 @@ const validateAccess = asyncHandler(async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-//  ADMIN ENDPOINTS — Manage access URLs
+//  ADMIN ENDPOINTS
 // ═══════════════════════════════════════════════════════════════════
 const listAccessUrls = asyncHandler(async (req, res) => {
   const urls = await managementService.listAccessUrls();
@@ -176,6 +185,7 @@ module.exports = {
   getClassDetail,
   getMonthlyReport,
   getMonthlyClassDetail,
+  getMonthlyMatrix,
   validateAccess,
   // Admin endpoints
   listAccessUrls,

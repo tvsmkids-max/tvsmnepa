@@ -4,7 +4,6 @@ import {
   BottomNavigation,
   BottomNavigationAction,
   useTheme,
-  alpha,
 } from "@mui/material";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
@@ -23,16 +22,17 @@ const NAV_ITEMS = [
     label: "Monthly",
     icon: <TrendingUpOutlinedIcon />,
   },
-  {
-    value: "yearly",
-    label: "Yearly",
-    icon: <CalendarMonthOutlinedIcon />,
-  },
-  {
-    value: "alerts",
-    label: "Alerts",
-    icon: <WarningAmberOutlinedIcon />,
-  },
+  // ─── TEMPORARILY DISABLED ───
+  // {
+  //   value: "yearly",
+  //   label: "Yearly",
+  //   icon: <CalendarMonthOutlinedIcon />,
+  // },
+  // {
+  //   value: "alerts",
+  //   label: "Alerts",
+  //   icon: <WarningAmberOutlinedIcon />,
+  // },
   {
     value: "ranking",
     label: "Ranking",
@@ -117,7 +117,7 @@ const BottomNav = ({ activePage, onChange, alertCount = 0 }) => {
   );
 };
 
-// ─── Small Badge helper for Alerts icon ───
+// ─── Small Badge helper for Alerts icon (kept for future) ───
 const BadgeIcon = ({ children, count }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";

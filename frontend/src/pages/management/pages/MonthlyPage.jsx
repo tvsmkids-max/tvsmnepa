@@ -1,33 +1,24 @@
-import React, { useState, useMemo, memo } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Paper,
-  Grid,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   Typography,
   Stack,
-  Card,
-  CardContent,
-  Divider,
-  LinearProgress,
   IconButton,
   Tooltip,
-  InputAdornment,
-  TextField,
   useMediaQuery,
   useTheme,
+  alpha,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
-import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
-import ClearIcon from "@mui/icons-material/Clear";
-import MonthlyClassDialog from "../../reports/MonthlyClassDialog";
+
 import {
-  useMonthlyReport,
+  useMonthlyMatrix,
   useRefreshManagement,
 } from "../../../hooks/useManagement";
 
@@ -50,14 +41,8 @@ const MONTHS = [
   "December",
 ];
 
-const SORT_OPTIONS = [
-  { value: "class", label: "Class (Nursery → 10th)" },
-  { value: "percentage-desc", label: "Attendance % (High → Low)" },
-  { value: "percentage-asc", label: "Attendance % (Low → High)" },
-];
-
 // ═══════════════════════════════════════════════════════════════════
-//  LOADING COMPONENT
+//  LOADING
 // ═══════════════════════════════════════════════════════════════════
 
 const AppLoader = ({ label = "Loading..." }) => (
@@ -101,59 +86,20 @@ const MonthlyPage = ({ secretKey }) => {
 
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("class");
-  const [hideEmpty, setHideEmpty] = useState(true);
 
-  // Dialog state
-  const [selectedClass, setSelectedClass] = useState(null);
-
-  const { data: monthlyReport, isLoading } = useMonthlyReport(
-    secretKey,
-    year,
-    month,
-  );
+  const { data, isLoading } = useMonthlyMatrix(secretKey, year, month);
   const refreshAll = useRefreshManagement();
 
   const handleRefresh = () => refreshAll(secretKey);
 
-  // ─── Filtered + Sorted ───
-  const filteredClasses = useMemo(() => {
-    if (!monthlyReport?.classes) return [];
-    let list = [...monthlyReport.classes];
+  const summary = data?.summary || {};
+  const dates = data?.dates || [];
+  const classes = data?.classes || [];
+  const grandTotals = data?.grandTotals || {};
 
-    if (hideEmpty) list = list.filter((c) => !c.isEmpty);
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (c) =>
-          c.name?.toLowerCase().includes(q) ||
-          c.section?.toLowerCase().includes(q) ||
-          `${c.name}-${c.section}`.toLowerCase().includes(q) ||
-          c.classTeacher?.toLowerCase().includes(q),
-      );
-    }
-
-    list.sort((a, b) => {
-      switch (sortBy) {
-        case "class":
-          if ((a.sortRank || 999) !== (b.sortRank || 999))
-            return (a.sortRank || 999) - (b.sortRank || 999);
-          return (a.section || "").localeCompare(b.section || "");
-        case "percentage-desc":
-          return (b.percentage || 0) - (a.percentage || 0);
-        case "percentage-asc":
-          return (a.percentage || 0) - (b.percentage || 0);
-        default:
-          return 0;
-      }
-    });
-
-    return list;
-  }, [monthlyReport, search, sortBy, hideEmpty]);
-
-  const summary = monthlyReport?.summary || {};
+  const overallPct = summary.overallPercentage || 0;
+  const pctColor =
+    overallPct >= 90 ? "#16A34A" : overallPct >= 75 ? "#F59E0B" : "#DC2626";
 
   return (
     <Box>
@@ -167,114 +113,58 @@ const MonthlyPage = ({ secretKey }) => {
           borderColor: "divider",
         }}
       >
-        <Stack spacing={1.2}>
-          {/* Row 1: Month + Year */}
-          <Stack direction="row" spacing={1.2}>
-            <FormControl size="small" sx={{ flex: 1 }}>
-              <InputLabel>Month</InputLabel>
-              <Select
-                value={month}
-                label="Month"
-                onChange={(e) => setMonth(e.target.value)}
-              >
-                {MONTHS.map((m, i) => (
-                  <MenuItem key={m} value={i + 1}>
-                    {isXs ? m.slice(0, 3) : m}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ flex: 1 }}>
-              <InputLabel>Year</InputLabel>
-              <Select
-                value={year}
-                label="Year"
-                onChange={(e) => setYear(e.target.value)}
-              >
-                {[2024, 2025, 2026, 2027, 2028].map((y) => (
-                  <MenuItem key={y} value={y}>
-                    {y}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Stack>
-
-          {/* Row 2: Search + Sort + Refresh */}
-          <Stack direction="row" spacing={0.75} alignItems="center">
-            <TextField
-              placeholder="Search class..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+        <Stack direction="row" spacing={1.2} alignItems="center">
+          <FormControl size="small" sx={{ flex: 1 }}>
+            <InputLabel>Month</InputLabel>
+            <Select
+              value={month}
+              label="Month"
+              onChange={(e) => setMonth(e.target.value)}
+            >
+              {MONTHS.map((m, i) => (
+                <MenuItem key={m} value={i + 1}>
+                  {isXs ? m.slice(0, 3) : m}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ flex: 1 }}>
+            <InputLabel>Year</InputLabel>
+            <Select
+              value={year}
+              label="Year"
+              onChange={(e) => setYear(e.target.value)}
+            >
+              {[2024, 2025, 2026, 2027, 2028].map((y) => (
+                <MenuItem key={y} value={y}>
+                  {y}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Tooltip title="Refresh">
+            <IconButton
+              onClick={handleRefresh}
+              disabled={isLoading}
               size="small"
               sx={{
-                flex: 1,
-                "& .MuiInputBase-root": { height: 36, fontSize: "0.82rem" },
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchOutlinedIcon
-                      sx={{ fontSize: 16, color: "text.disabled" }}
-                    />
-                  </InputAdornment>
-                ),
-                endAdornment: search && (
-                  <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      onClick={() => setSearch("")}
-                      sx={{ p: 0.25 }}
-                    >
-                      <ClearIcon sx={{ fontSize: 14 }} />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <FormControl
-              size="small"
-              sx={{
-                minWidth: { xs: 90, sm: 220 },
-                display: { xs: "none", sm: "flex" },
+                width: 40,
+                height: 40,
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 1.5,
               }}
             >
-              <Select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                sx={{ height: 36, fontSize: "0.78rem", fontWeight: 700 }}
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <MenuItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Tooltip title="Refresh">
-              <IconButton
-                onClick={handleRefresh}
-                disabled={isLoading}
-                size="small"
-                sx={{
-                  width: 36,
-                  height: 36,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  borderRadius: 1.5,
-                }}
-              >
-                <RefreshOutlinedIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Tooltip>
-          </Stack>
+              <RefreshOutlinedIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
         </Stack>
       </Paper>
 
       {/* ── CONTENT ── */}
       {isLoading ? (
-        <AppLoader label="Loading monthly report..." />
-      ) : !monthlyReport ? (
+        <AppLoader label="Loading monthly data..." />
+      ) : !data ? (
         <Paper sx={{ p: 4, textAlign: "center", borderRadius: 2 }}>
           <Typography variant="body2" color="text.secondary">
             No monthly data available
@@ -282,7 +172,7 @@ const MonthlyPage = ({ secretKey }) => {
         </Paper>
       ) : (
         <>
-          {/* ── MONTH HEADER ── */}
+          {/* ── MONTH HEADER: Only Overall % ── */}
           <Paper
             sx={{
               p: { xs: 1.5, sm: 2 },
@@ -296,64 +186,37 @@ const MonthlyPage = ({ secretKey }) => {
             }}
           >
             <Stack
-              direction={{ xs: "column", sm: "row" }}
+              direction="row"
               justifyContent="space-between"
-              alignItems={{ xs: "flex-start", sm: "center" }}
-              spacing={1.2}
+              alignItems="center"
             >
-              <Box>
-                <Typography
-                  variant="h6"
-                  fontWeight={900}
-                  sx={{
-                    fontSize: { xs: "1.05rem", sm: "1.2rem" },
-                    color: "primary.main",
-                  }}
-                >
-                  {monthlyReport.monthName} {monthlyReport.year}
-                </Typography>
-                <Stack
-                  direction="row"
-                  spacing={1.5}
-                  sx={{ mt: 0.5 }}
-                  flexWrap="wrap"
-                >
-                  <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
-                    🗓️ Working: <strong>{summary.workingDays}</strong>
-                  </Typography>
-                  <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
-                    🏖️ Holidays: <strong>{summary.holidays}</strong>
-                  </Typography>
-                  <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
-                    👥 Students: <strong>{summary.totalStudents}</strong>
-                  </Typography>
-                  <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
-                    📚 Classes: <strong>{summary.totalClasses}</strong>
-                  </Typography>
-                </Stack>
-              </Box>
-              <Stack alignItems={{ xs: "flex-start", sm: "flex-end" }}>
+              <Typography
+                variant="h6"
+                fontWeight={900}
+                sx={{
+                  fontSize: { xs: "1.1rem", sm: "1.3rem" },
+                  color: "primary.main",
+                }}
+              >
+                {data.monthName} {data.year}
+              </Typography>
+              <Stack alignItems="flex-end">
                 <Typography
                   variant="h4"
                   fontWeight={900}
                   sx={{
                     fontSize: { xs: "1.8rem", sm: "2rem" },
                     lineHeight: 1,
-                    color:
-                      summary.overallPercentage >= 75
-                        ? "success.main"
-                        : summary.overallPercentage >= 50
-                          ? "warning.main"
-                          : "error.main",
+                    color: pctColor,
                   }}
                 >
-                  {summary.overallPercentage}%
+                  {overallPct}%
                 </Typography>
                 <Typography
                   variant="caption"
                   color="text.secondary"
                   sx={{
-                    fontSize: "0.7rem",
+                    fontSize: "0.65rem",
                     fontWeight: 700,
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
@@ -365,219 +228,525 @@ const MonthlyPage = ({ secretKey }) => {
             </Stack>
           </Paper>
 
-          {/* ── CLASS CARDS ── */}
-          {filteredClasses.length === 0 ? (
+          {/* ── MATRIX TABLE ── */}
+          {classes.length === 0 ? (
             <Paper sx={{ p: 4, textAlign: "center", borderRadius: 3 }}>
               <CalendarMonthOutlinedIcon
                 sx={{ fontSize: 48, color: "text.disabled", mb: 1 }}
               />
               <Typography variant="body2" color="text.secondary">
-                {search
-                  ? "No classes match your search"
-                  : "No data for this month"}
+                No classes found for this month
               </Typography>
             </Paper>
           ) : (
-            <>
-              <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-                {filteredClasses.map((cls) => (
-                  <Grid item xs={12} sm={6} lg={4} key={cls._id}>
-                    <MonthlyClassCard
-                      cls={cls}
-                      isDark={isDark}
-                      onClick={() => setSelectedClass(cls)}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-
-              <Box sx={{ textAlign: "center", mt: 3 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Showing <strong>{filteredClasses.length}</strong> of{" "}
-                  <strong>{monthlyReport.classes?.length || 0}</strong> classes
-                  {hideEmpty && summary.emptyClasses > 0 && (
-                    <> · {summary.emptyClasses} empty hidden</>
-                  )}
-                </Typography>
-              </Box>
-            </>
+            <MatrixTable
+              classes={classes}
+              dates={dates}
+              grandTotals={grandTotals}
+              isDark={isDark}
+            />
           )}
         </>
       )}
-
-      {/* ── MONTHLY CLASS DIALOG (management mode) ── */}
-      <MonthlyClassDialog
-        open={!!selectedClass}
-        onClose={() => setSelectedClass(null)}
-        classData={selectedClass}
-        year={year}
-        month={month}
-        mode="management"
-        secretKey={secretKey}
-      />
     </Box>
   );
 };
 
 // ═══════════════════════════════════════════════════════════════════
-//  MONTHLY CLASS CARD (same as admin)
+//  MATRIX TABLE (Class × Date grid)
+//  Sticky: Class column + P/A label column
+//  Scroll: dates horizontally
 // ═══════════════════════════════════════════════════════════════════
 
-const MonthlyClassCard = memo(({ cls, isDark, onClick }) => {
-  const pctColor =
-    cls.percentage >= 90
-      ? "#16A34A"
-      : cls.percentage >= 75
-        ? "#F59E0B"
-        : cls.percentage >= 50
-          ? "#F97316"
-          : "#DC2626";
+const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
+  const stickyBg = isDark ? "#1E293B" : "#FFFFFF";
+  const headerBg = isDark ? "#0F172A" : "#F1F5F9";
+  const blockedBg = isDark ? alpha("#DC2626", 0.15) : "#FEE2E2";
+  const totalRowBg = isDark ? alpha("#F5A623", 0.12) : "#FEF3C7";
+
+  // Cell dimensions
+  const classColWidth = 78;
+  const labelColWidth = 60;
+  const dateColWidth = 44;
+  const rowHeight = 34;
 
   return (
-    <Card
-      onClick={onClick}
+    <Paper
       sx={{
-        borderRadius: 2.5,
-        border: "1.5px solid",
+        borderRadius: 2,
+        border: "1px solid",
         borderColor: "divider",
-        boxShadow: "none",
-        cursor: "pointer",
-        transition: "all 0.2s",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        opacity: cls.isEmpty ? 0.5 : 1,
-        "&:hover": {
-          borderColor: "primary.main",
-          transform: "translateY(-2px)",
-          boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
-        },
+        overflow: "hidden",
       }}
     >
-      <CardContent
+      <Box
         sx={{
-          p: { xs: 2, sm: 2.5 },
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
+          overflow: "auto",
+          maxHeight: "calc(100vh - 280px)",
+          WebkitOverflowScrolling: "touch",
         }}
       >
-        {/* Class name + Teacher */}
-        <Box sx={{ mb: 1.5 }}>
-          <Typography
-            variant="h6"
-            fontWeight={900}
-            sx={{ fontSize: "1.1rem", lineHeight: 1.2 }}
-            noWrap
-          >
-            {cls.name}-{cls.section}
-          </Typography>
-          {cls.classTeacher && (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontSize: "0.75rem", display: "block", mt: 0.3 }}
-            >
-              👨‍🏫 {cls.classTeacher}
-            </Typography>
-          )}
-        </Box>
-
-        {/* Big percentage + marks */}
-        <Box sx={{ textAlign: "center", my: 1.5 }}>
-          {cls.totalStudents === 0 ? (
-            <Typography
-              variant="body2"
-              color="text.disabled"
-              sx={{ fontStyle: "italic", py: 2 }}
-            >
-              No Students Enrolled
-            </Typography>
-          ) : (
-            <>
-              <Typography
-                variant="h3"
-                fontWeight={900}
-                sx={{
-                  fontSize: { xs: "2.4rem", sm: "2.6rem" },
-                  color: pctColor,
-                  lineHeight: 1,
-                }}
-              >
-                {cls.percentage}%
-              </Typography>
-
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  fontSize: "0.75rem",
-                  display: "block",
-                  mt: 0.5,
-                  fontWeight: 600,
-                }}
-              >
-                {cls.present}/{cls.totalMarks} marks
-              </Typography>
-
-              <LinearProgress
-                variant="determinate"
-                value={cls.percentage}
-                sx={{
-                  mt: 1.5,
-                  height: 8,
-                  borderRadius: 4,
-                  bgcolor: isDark ? alpha("#fff", 0.06) : alpha("#000", 0.06),
-                  "& .MuiLinearProgress-bar": {
-                    bgcolor: pctColor,
-                    borderRadius: 4,
-                    transition: "transform 0.8s ease-in-out",
-                  },
-                }}
-              />
-            </>
-          )}
-        </Box>
-
-        {/* Footer */}
-        {cls.totalStudents > 0 && (
-          <Box
-            sx={{
-              mt: "auto",
-              pt: 1.5,
-              borderTop: "1px solid",
-              borderColor: "divider",
-              textAlign: "center",
-            }}
-          >
-            <Typography
-              variant="caption"
-              sx={{
-                fontSize: "0.75rem",
-                color: "text.secondary",
-                fontWeight: 700,
-              }}
-            >
+        <Box
+          component="table"
+          sx={{
+            borderCollapse: "separate",
+            borderSpacing: 0,
+            width: "auto",
+            minWidth: "100%",
+          }}
+        >
+          {/* ═══ HEADER ROW ═══ */}
+          <Box component="thead">
+            <Box component="tr">
+              {/* Class header */}
               <Box
-                component="span"
-                sx={{ color: "text.primary", fontWeight: 800 }}
+                component="th"
+                sx={{
+                  ...cellBase,
+                  ...stickyHeadStyle(headerBg),
+                  position: "sticky",
+                  left: 0,
+                  top: 0,
+                  zIndex: 5,
+                  width: classColWidth,
+                  minWidth: classColWidth,
+                  textAlign: "left",
+                  pl: 1.5,
+                }}
               >
-                {cls.totalStudents}
-              </Box>{" "}
-              Students ·{" "}
-              <Box component="span" sx={{ fontWeight: 800 }}>
-                {cls.workingDays}
-              </Box>{" "}
-              Working Days
-            </Typography>
+                Class
+              </Box>
+              {/* Empty label header */}
+              <Box
+                component="th"
+                sx={{
+                  ...cellBase,
+                  ...stickyHeadStyle(headerBg),
+                  position: "sticky",
+                  left: classColWidth,
+                  top: 0,
+                  zIndex: 5,
+                  width: labelColWidth,
+                  minWidth: labelColWidth,
+                  borderRight: "2px solid",
+                  borderRightColor: isDark ? "#334155" : "#CBD5E1",
+                }}
+              >
+                &nbsp;
+              </Box>
+              {/* Date headers */}
+              {dates.map((d) => (
+                <Box
+                  component="th"
+                  key={d.dateKey}
+                  sx={{
+                    ...cellBase,
+                    ...stickyHeadStyle(headerBg),
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 4,
+                    width: dateColWidth,
+                    minWidth: dateColWidth,
+                    bgcolor: d.isBlocked ? blockedBg : headerBg,
+                    color: d.isBlocked
+                      ? isDark
+                        ? "#FCA5A5"
+                        : "#B91C1C"
+                      : "text.secondary",
+                  }}
+                >
+                  <Box sx={{ lineHeight: 1.1 }}>
+                    <Typography
+                      sx={{
+                        fontSize: "0.58rem",
+                        fontWeight: 700,
+                        opacity: 0.75,
+                      }}
+                    >
+                      {d.dayShort.charAt(0)}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: "0.78rem",
+                        fontWeight: 900,
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      {d.day}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
           </Box>
-        )}
-      </CardContent>
-    </Card>
-  );
-});
-MonthlyClassCard.displayName = "MonthlyClassCard";
 
-  
+          {/* ═══ BODY ROWS ═══ */}
+          <Box component="tbody">
+            {classes.map((cls, idx) => {
+              const isLastInGroup = idx === classes.length - 1;
+              return (
+                <React.Fragment key={cls._id}>
+                  {/* PRESENT row */}
+                  <Box component="tr">
+                    <Box
+                      component="td"
+                      rowSpan={2}
+                      sx={{
+                        ...cellBase,
+                        position: "sticky",
+                        left: 0,
+                        zIndex: 3,
+                        bgcolor: stickyBg,
+                        width: classColWidth,
+                        minWidth: classColWidth,
+                        textAlign: "left",
+                        pl: 1.5,
+                        fontWeight: 800,
+                        fontSize: "0.8rem",
+                        borderBottom: "2px solid",
+                        borderBottomColor: isDark ? "#334155" : "#CBD5E1",
+                        verticalAlign: "middle",
+                      }}
+                    >
+                      {cls.label}
+                    </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        ...cellBase,
+                        position: "sticky",
+                        left: classColWidth,
+                        zIndex: 2,
+                        bgcolor: stickyBg,
+                        width: labelColWidth,
+                        minWidth: labelColWidth,
+                        fontSize: "0.7rem",
+                        fontWeight: 700,
+                        color: "#16A34A",
+                        textAlign: "left",
+                        pl: 1,
+                        borderRight: "2px solid",
+                        borderRightColor: isDark ? "#334155" : "#CBD5E1",
+                      }}
+                    >
+                      Present
+                    </Box>
+                    {dates.map((d) => {
+                      const cell = cls.daily?.[d.dateKey];
+                      const value = cell?.present;
+                      return (
+                        <Box
+                          component="td"
+                          key={d.dateKey}
+                          sx={{
+                            ...cellBase,
+                            width: dateColWidth,
+                            minWidth: dateColWidth,
+                            bgcolor: d.isBlocked ? blockedBg : "transparent",
+                            fontSize: "0.78rem",
+                            fontWeight: 700,
+                            fontFamily: "monospace",
+                            color: d.isBlocked
+                              ? "transparent"
+                              : cls.hasStudents && value > 0
+                                ? "#16A34A"
+                                : "text.disabled",
+                          }}
+                        >
+                          {d.isBlocked ? "" : value > 0 ? value : "—"}
+                        </Box>
+                      );
+                    })}
+                  </Box>
+
+                  {/* ABSENT row */}
+                  <Box component="tr">
+                    <Box
+                      component="td"
+                      sx={{
+                        ...cellBase,
+                        position: "sticky",
+                        left: classColWidth,
+                        zIndex: 2,
+                        bgcolor: stickyBg,
+                        width: labelColWidth,
+                        minWidth: labelColWidth,
+                        fontSize: "0.7rem",
+                        fontWeight: 700,
+                        color: "#DC2626",
+                        textAlign: "left",
+                        pl: 1,
+                        borderRight: "2px solid",
+                        borderRightColor: isDark ? "#334155" : "#CBD5E1",
+                        borderBottom: isLastInGroup ? "2px solid" : "2px solid",
+                        borderBottomColor: isDark ? "#334155" : "#CBD5E1",
+                      }}
+                    >
+                      Absent
+                    </Box>
+                    {dates.map((d) => {
+                      const cell = cls.daily?.[d.dateKey];
+                      const value = cell?.absent;
+                      return (
+                        <Box
+                          component="td"
+                          key={d.dateKey}
+                          sx={{
+                            ...cellBase,
+                            width: dateColWidth,
+                            minWidth: dateColWidth,
+                            bgcolor: d.isBlocked ? blockedBg : "transparent",
+                            fontSize: "0.78rem",
+                            fontWeight: 700,
+                            fontFamily: "monospace",
+                            color: d.isBlocked
+                              ? "transparent"
+                              : cls.hasStudents && value > 0
+                                ? "#DC2626"
+                                : "text.disabled",
+                            borderBottom: "2px solid",
+                            borderBottomColor: isDark ? "#334155" : "#CBD5E1",
+                          }}
+                        >
+                          {d.isBlocked ? "" : value > 0 ? value : "—"}
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </React.Fragment>
+              );
+            })}
+
+            {/* ═══ GRAND TOTAL ═══ */}
+            <Box component="tr">
+              <Box
+                component="td"
+                rowSpan={2}
+                sx={{
+                  ...cellBase,
+                  position: "sticky",
+                  left: 0,
+                  bottom: 0,
+                  zIndex: 4,
+                  bgcolor: totalRowBg,
+                  width: classColWidth,
+                  minWidth: classColWidth,
+                  textAlign: "left",
+                  pl: 1.5,
+                  fontWeight: 900,
+                  fontSize: "0.82rem",
+                  color: isDark ? "#FCD34D" : "#B45309",
+                  borderTop: "3px double",
+                  borderTopColor: isDark ? "#F5A623" : "#B45309",
+                  verticalAlign: "middle",
+                }}
+              >
+                TOTAL
+              </Box>
+              <Box
+                component="td"
+                sx={{
+                  ...cellBase,
+                  position: "sticky",
+                  left: classColWidth,
+                  bottom: rowHeight,
+                  zIndex: 4,
+                  bgcolor: totalRowBg,
+                  width: labelColWidth,
+                  minWidth: labelColWidth,
+                  fontSize: "0.7rem",
+                  fontWeight: 800,
+                  color: "#16A34A",
+                  textAlign: "left",
+                  pl: 1,
+                  borderRight: "2px solid",
+                  borderRightColor: isDark ? "#334155" : "#CBD5E1",
+                  borderTop: "3px double",
+                  borderTopColor: isDark ? "#F5A623" : "#B45309",
+                }}
+              >
+                Present
+              </Box>
+              {dates.map((d) => {
+                const total = grandTotals[d.dateKey];
+                const value = total?.present || 0;
+                return (
+                  <Box
+                    component="td"
+                    key={d.dateKey}
+                    sx={{
+                      ...cellBase,
+                      width: dateColWidth,
+                      minWidth: dateColWidth,
+                      bgcolor: d.isBlocked ? blockedBg : totalRowBg,
+                      fontSize: "0.82rem",
+                      fontWeight: 900,
+                      fontFamily: "monospace",
+                      color: d.isBlocked
+                        ? "transparent"
+                        : value > 0
+                          ? "#16A34A"
+                          : "text.disabled",
+                      borderTop: "3px double",
+                      borderTopColor: isDark ? "#F5A623" : "#B45309",
+                    }}
+                  >
+                    {d.isBlocked ? "" : value > 0 ? value : "—"}
+                  </Box>
+                );
+              })}
+            </Box>
+
+            <Box component="tr">
+              <Box
+                component="td"
+                sx={{
+                  ...cellBase,
+                  position: "sticky",
+                  left: classColWidth,
+                  bottom: 0,
+                  zIndex: 4,
+                  bgcolor: totalRowBg,
+                  width: labelColWidth,
+                  minWidth: labelColWidth,
+                  fontSize: "0.7rem",
+                  fontWeight: 800,
+                  color: "#DC2626",
+                  textAlign: "left",
+                  pl: 1,
+                  borderRight: "2px solid",
+                  borderRightColor: isDark ? "#334155" : "#CBD5E1",
+                }}
+              >
+                Absent
+              </Box>
+              {dates.map((d) => {
+                const total = grandTotals[d.dateKey];
+                const value = total?.absent || 0;
+                return (
+                  <Box
+                    component="td"
+                    key={d.dateKey}
+                    sx={{
+                      ...cellBase,
+                      width: dateColWidth,
+                      minWidth: dateColWidth,
+                      bgcolor: d.isBlocked ? blockedBg : totalRowBg,
+                      fontSize: "0.82rem",
+                      fontWeight: 900,
+                      fontFamily: "monospace",
+                      color: d.isBlocked
+                        ? "transparent"
+                        : value > 0
+                          ? "#DC2626"
+                          : "text.disabled",
+                    }}
+                  >
+                    {d.isBlocked ? "" : value > 0 ? value : "—"}
+                  </Box>
+                );
+              })}
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Legend */}
+      <Box
+        sx={{
+          px: 2,
+          py: 1,
+          borderTop: "1px solid",
+          borderColor: "divider",
+          bgcolor: isDark ? alpha("#fff", 0.02) : "#FAFBFC",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          justifyContent: "center",
+        }}
+      >
+        <LegendItem color="#16A34A" label="Present" />
+        <LegendItem color="#DC2626" label="Absent" />
+        <LegendItem
+          color={isDark ? "#7F1D1D" : "#FEE2E2"}
+          label="Sunday / Holiday"
+          isBox
+        />
+        <LegendItem
+          color={isDark ? "#B45309" : "#B45309"}
+          label="Grand Total"
+          isDouble
+        />
+      </Box>
+    </Paper>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════
+//  SMALL COMPONENTS
+// ═══════════════════════════════════════════════════════════════════
+
+const LegendItem = ({ color, label, isBox, isDouble }) => (
+  <Stack direction="row" alignItems="center" spacing={0.5}>
+    {isBox ? (
+      <Box
+        sx={{
+          width: 14,
+          height: 14,
+          bgcolor: color,
+          borderRadius: 0.5,
+        }}
+      />
+    ) : isDouble ? (
+      <Box
+        sx={{
+          width: 14,
+          height: 4,
+          borderTop: `3px double ${color}`,
+        }}
+      />
+    ) : (
+      <Box
+        sx={{
+          width: 10,
+          height: 10,
+          bgcolor: color,
+          borderRadius: "50%",
+        }}
+      />
+    )}
+    <Typography
+      variant="caption"
+      sx={{ fontSize: "0.68rem", fontWeight: 700, color: "text.secondary" }}
+    >
+      {label}
+    </Typography>
+  </Stack>
+);
+
+// ═══════════════════════════════════════════════════════════════════
+//  SHARED CELL STYLES
+// ═══════════════════════════════════════════════════════════════════
+
+const cellBase = {
+  padding: "4px 6px",
+  height: 34,
+  boxSizing: "border-box",
+  borderBottom: "1px solid",
+  borderColor: "divider",
+  textAlign: "center",
+  verticalAlign: "middle",
+  whiteSpace: "nowrap",
+};
+
+const stickyHeadStyle = (bg) => ({
+  bgcolor: bg,
+  fontWeight: 800,
+  fontSize: "0.68rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.03em",
+  color: "text.secondary",
+  py: 1,
+});
 
 export default MonthlyPage;

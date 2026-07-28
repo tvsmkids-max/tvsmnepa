@@ -4,9 +4,7 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
 
 // ═══════════════════════════════════════════════════════════════════
-//  IMPORTANT: Management API does NOT use axiosInstance
-//  Because axiosInstance has auth interceptors that redirect on 401
-//  Management uses secret key in URL — no login required
+//  Management API uses secret key in URL — no login required
 // ═══════════════════════════════════════════════════════════════════
 
 const publicClient = axios.create({
@@ -24,7 +22,7 @@ const publicClient = axios.create({
 
 const managementApi = {
   /**
-   * Validate access key (used on first load)
+   * Validate access key
    */
   validateAccess: (secretKey) =>
     publicClient.get(`/management/${secretKey}/validate`),
@@ -36,7 +34,7 @@ const managementApi = {
     publicClient.get(`/management/${secretKey}/today`),
 
   /**
-   * Page 2: Monthly Trends (OLD — kept for backward compatibility)
+   * Page 2 (OLD): Monthly Trends
    */
   getMonthlyTrends: (secretKey) =>
     publicClient.get(`/management/${secretKey}/monthly`),
@@ -54,7 +52,6 @@ const managementApi = {
 
   /**
    * Page 5: Rankings
-   * period: "today" | "month" | "year"
    */
   getRankings: (secretKey, period = "month") =>
     publicClient.get(`/management/${secretKey}/rankings`, {
@@ -62,7 +59,7 @@ const managementApi = {
     }),
 
   /**
-   * Get class detail for TODAY dialog
+   * Class detail for TODAY dialog
    */
   getClassDetail: (secretKey, classId, date) =>
     publicClient.get(`/management/${secretKey}/class/${classId}`, {
@@ -70,7 +67,7 @@ const managementApi = {
     }),
 
   /**
-   * ✅ NEW: Monthly Report — all class cards
+   * Monthly Report — class cards summary
    */
   getMonthlyReport: (secretKey, year, month) =>
     publicClient.get(`/management/${secretKey}/monthly-report`, {
@@ -78,41 +75,34 @@ const managementApi = {
     }),
 
   /**
-   * ✅ NEW: Monthly Class Detail — calendar view for one class
+   * Monthly Class Detail — calendar view for one class
    */
   getMonthlyClassDetail: (secretKey, classId, year, month) =>
     publicClient.get(`/management/${secretKey}/monthly-class/${classId}`, {
       params: { year, month },
     }),
+
+  /**
+   * ✅ NEW: Monthly Matrix — Class × Date grid (Present/Absent per day)
+   */
+  getMonthlyMatrix: (secretKey, year, month) =>
+    publicClient.get(`/management/${secretKey}/monthly-matrix`, {
+      params: { year, month },
+    }),
 };
 
 // ═══════════════════════════════════════════════════════════════════
-//  ADMIN ENDPOINTS (require auth) — uses axiosInstance
+//  ADMIN ENDPOINTS
 // ═══════════════════════════════════════════════════════════════════
 
 import axiosInstance from "./axiosInstance";
 
 export const managementAdminApi = {
-  /**
-   * List all access URLs
-   */
   listAccessUrls: () => axiosInstance.get("/management/admin/access-urls"),
-
-  /**
-   * Create new access URL
-   */
   createAccessUrl: (data) =>
     axiosInstance.post("/management/admin/access-urls", data),
-
-  /**
-   * Revoke access URL (soft disable)
-   */
   revokeAccessUrl: (id) =>
     axiosInstance.patch(`/management/admin/access-urls/${id}/revoke`),
-
-  /**
-   * Delete access URL permanently
-   */
   deleteAccessUrl: (id) =>
     axiosInstance.delete(`/management/admin/access-urls/${id}`),
 };

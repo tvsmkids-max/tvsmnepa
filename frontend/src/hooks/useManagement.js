@@ -8,7 +8,6 @@ import managementApi, { managementAdminApi } from "../api/managementApi";
 
 export const managementKeys = {
   all: ["management"],
-  // Public (per secret key)
   validate: (key) => [...managementKeys.all, "validate", key],
   today: (key) => [...managementKeys.all, "today", key],
   monthly: (key) => [...managementKeys.all, "monthly", key],
@@ -37,7 +36,13 @@ export const managementKeys = {
     year,
     month,
   ],
-  // Admin
+  monthlyMatrix: (key, year, month) => [
+    ...managementKeys.all,
+    "monthlyMatrix",
+    key,
+    year,
+    month,
+  ],
   accessUrls: () => [...managementKeys.all, "admin", "access-urls"],
 };
 
@@ -49,12 +54,9 @@ const AUTO_REFRESH_MS = 60 * 60 * 1000; // 1 hour
 const STALE_TIME_MS = 5 * 60 * 1000; // 5 minutes
 
 // ═══════════════════════════════════════════════════════════════════
-//  PUBLIC HOOKS (Management Dashboard Pages)
+//  PUBLIC HOOKS
 // ═══════════════════════════════════════════════════════════════════
 
-/**
- * Validate secret key (called once on dashboard load)
- */
 export const useValidateAccess = (secretKey, options = {}) => {
   return useQuery({
     queryKey: managementKeys.validate(secretKey),
@@ -64,14 +66,11 @@ export const useValidateAccess = (secretKey, options = {}) => {
     },
     enabled: !!secretKey,
     retry: false,
-    staleTime: 30 * 60 * 1000, // 30 min
+    staleTime: 30 * 60 * 1000,
     ...options,
   });
 };
 
-/**
- * Page 1: Today Overview
- */
 export const useTodayOverview = (secretKey, options = {}) => {
   return useQuery({
     queryKey: managementKeys.today(secretKey),
@@ -87,9 +86,6 @@ export const useTodayOverview = (secretKey, options = {}) => {
   });
 };
 
-/**
- * Page 2 (OLD): Monthly Trends — kept for backward compatibility
- */
 export const useMonthlyTrends = (secretKey, options = {}) => {
   return useQuery({
     queryKey: managementKeys.monthly(secretKey),
@@ -105,9 +101,6 @@ export const useMonthlyTrends = (secretKey, options = {}) => {
   });
 };
 
-/**
- * Page 3: Yearly Performance
- */
 export const useYearlyPerformance = (secretKey, options = {}) => {
   return useQuery({
     queryKey: managementKeys.yearly(secretKey),
@@ -123,9 +116,6 @@ export const useYearlyPerformance = (secretKey, options = {}) => {
   });
 };
 
-/**
- * Page 4: Alerts
- */
 export const useAlerts = (secretKey, options = {}) => {
   return useQuery({
     queryKey: managementKeys.alerts(secretKey),
@@ -141,9 +131,6 @@ export const useAlerts = (secretKey, options = {}) => {
   });
 };
 
-/**
- * Page 5: Rankings
- */
 export const useRankings = (secretKey, period = "month", options = {}) => {
   return useQuery({
     queryKey: managementKeys.rankings(secretKey, period),
@@ -160,9 +147,6 @@ export const useRankings = (secretKey, period = "month", options = {}) => {
   });
 };
 
-/**
- * Class Detail (for TODAY click-through dialog)
- */
 export const useClassDetail = (secretKey, classId, date, enabled = true) => {
   return useQuery({
     queryKey: managementKeys.classDetail(secretKey, classId, date),
@@ -176,9 +160,6 @@ export const useClassDetail = (secretKey, classId, date, enabled = true) => {
   });
 };
 
-/**
- * ✅ NEW: Monthly Report — class cards for management
- */
 export const useMonthlyReport = (secretKey, year, month, options = {}) => {
   return useQuery({
     queryKey: managementKeys.monthlyReport(secretKey, year, month),
@@ -194,9 +175,6 @@ export const useMonthlyReport = (secretKey, year, month, options = {}) => {
   });
 };
 
-/**
- * ✅ NEW: Monthly Class Detail — calendar view for one class
- */
 export const useMonthlyClassDetail = (
   secretKey,
   classId,
@@ -227,7 +205,25 @@ export const useMonthlyClassDetail = (
 };
 
 /**
- * Manual refresh helper — invalidates all data for a secret key
+ * ✅ NEW: Monthly Matrix (Class × Date grid)
+ */
+export const useMonthlyMatrix = (secretKey, year, month, options = {}) => {
+  return useQuery({
+    queryKey: managementKeys.monthlyMatrix(secretKey, year, month),
+    queryFn: async () => {
+      const res = await managementApi.getMonthlyMatrix(secretKey, year, month);
+      return res.data?.data || null;
+    },
+    enabled: !!secretKey && !!year && !!month,
+    staleTime: STALE_TIME_MS,
+    refetchOnWindowFocus: false,
+    keepPreviousData: true,
+    ...options,
+  });
+};
+
+/**
+ * Manual refresh helper
  */
 export const useRefreshManagement = () => {
   const queryClient = useQueryClient();
@@ -256,6 +252,9 @@ export const useRefreshManagement = () => {
     });
     queryClient.invalidateQueries({
       queryKey: [...managementKeys.all, "monthlyClassDetail", secretKey],
+    });
+    queryClient.invalidateQueries({
+      queryKey: [...managementKeys.all, "monthlyMatrix", secretKey],
     });
   };
 };
