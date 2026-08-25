@@ -36,63 +36,67 @@ class DashboardService {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  TIMEZONE-AWARE DATE RANGE GENERATOR (Forced to Asia/Kolkata)
+  //  TIMEZONE-LOCKED DATE RANGE GENERATOR (Forced to Asia/Kolkata)
   // ═══════════════════════════════════════════════════════════════
   _getDateRange(period) {
     const tzOffset = 5.5 * 60 * 60 * 1000; // IST offset in milliseconds
     const now = new Date();
     const istTime = new Date(now.getTime() + tzOffset);
     const y = istTime.getUTCFullYear();
-    const m = istTime.getUTCMonth();
-    const d = istTime.getUTCDate();
+    const m = String(istTime.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(istTime.getUTCDate()).padStart(2, "0");
+    const dateStr = `${y}-${m}-${d}`;
 
     if (period === "today") {
-      const start = new Date(Date.UTC(y, m, d, 0, 0, 0, 0) - tzOffset);
-      const end = new Date(Date.UTC(y, m, d, 23, 59, 59, 999) - tzOffset);
+      const start = new Date(`${dateStr}T00:00:00.000Z`);
+      const end = new Date(`${dateStr}T23:59:59.999Z`);
       return { start, end, label: "Today" };
     }
 
     if (period === "week") {
-      const day = istTime.getUTCDay(); // Sunday = 0, Monday = 1
+      const day = istTime.getUTCDay();
       const diffToMonday = day === 0 ? -6 : 1 - day;
 
       const mondayIST = new Date(
         istTime.getTime() + diffToMonday * 24 * 60 * 60 * 1000,
       );
       const my = mondayIST.getUTCFullYear();
-      const mm = mondayIST.getUTCMonth();
-      const md = mondayIST.getUTCDate();
+      const mm = String(mondayIST.getUTCMonth() + 1).padStart(2, "0");
+      const md = String(mondayIST.getUTCDate()).padStart(2, "0");
+      const mondayStr = `${my}-${mm}-${md}`;
 
-      const start = new Date(Date.UTC(my, mm, md, 0, 0, 0, 0) - tzOffset);
+      const start = new Date(`${mondayStr}T00:00:00.000Z`);
       const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
       return { start, end, label: "This Week" };
     }
 
     if (period === "month") {
-      const start = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0) - tzOffset);
-      const end = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59, 999) - tzOffset);
+      const start = new Date(`${y}-${m}-01T00:00:00.000Z`);
+      const lastDay = new Date(y, parseInt(m), 0).getDate();
+      const lastDayStr = String(lastDay).padStart(2, "0");
+      const end = new Date(`${y}-${m}-${lastDayStr}T23:59:59.999Z`);
       return { start, end, label: "This Month" };
     }
 
-    const start = new Date(Date.UTC(y, m, d, 0, 0, 0, 0) - tzOffset);
-    const end = new Date(Date.UTC(y, m, d, 23, 59, 59, 999) - tzOffset);
+    const start = new Date(`${dateStr}T00:00:00.000Z`);
+    const end = new Date(`${dateStr}T23:59:59.999Z`);
     return { start, end, label: "Today" };
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  GET COMPREHENSIVE TODAY STATUS — Forces Indian Standard Time
+  //  TIMEZONE-LOCKED TODAY STATUS
   // ═══════════════════════════════════════════════════════════════
   async _getTodayStatus(sessionId) {
     const tzOffset = 5.5 * 60 * 60 * 1000;
     const now = new Date();
     const istTime = new Date(now.getTime() + tzOffset);
     const y = istTime.getUTCFullYear();
-    const m = istTime.getUTCMonth();
-    const d = istTime.getUTCDate();
+    const m = String(istTime.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(istTime.getUTCDate()).padStart(2, "0");
+    const dateStr = `${y}-${m}-${d}`;
 
-    const today = new Date(Date.UTC(y, m, d, 0, 0, 0, 0) - tzOffset);
+    const today = new Date(`${dateStr}T00:00:00.000Z`);
 
-    // Forces formatting according to Indian Standard Time zone safely
     const formatter = new Intl.DateTimeFormat("en-US", {
       weekday: "long",
       timeZone: "Asia/Kolkata",
@@ -101,15 +105,12 @@ class DashboardService {
 
     const settings = await Settings.getSettings();
 
-    // Check working day status
     const workingDay = settings?.workingDays?.find((d) => d.day === dayName);
     const isWorkingDay = !workingDay || workingDay.isWorking;
 
-    // Check holiday status
     const holiday = await Holiday.isHoliday(today, sessionId);
     const isHoliday = holiday && !holiday.allowAttendance;
 
-    // Compute next working day (skips holidays and non-working days)
     const nextWorkingDay = await this._findNextWorkingDay(sessionId, today);
 
     return {
@@ -125,9 +126,6 @@ class DashboardService {
     };
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  //  FIND NEXT WORKING DAY (Forced to Asia/Kolkata)
-  // ═══════════════════════════════════════════════════════════════
   async _findNextWorkingDay(sessionId, fromDate = new Date()) {
     const settings = await Settings.getSettings();
     const workingDaysMap = {};
@@ -247,15 +245,15 @@ class DashboardService {
 
     const classObjIds = classes.map((c) => c._id);
 
-    // Forces date objects to represent Indian Standard Time boundaries
     const tzOffset = 5.5 * 60 * 60 * 1000;
     const now = new Date();
     const istTime = new Date(now.getTime() + tzOffset);
     const y = istTime.getUTCFullYear();
-    const m = istTime.getUTCMonth();
-    const d = istTime.getUTCDate();
+    const m = String(istTime.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(istTime.getUTCDate()).padStart(2, "0");
+    const dateStr = `${y}-${m}-${d}`;
 
-    const today = new Date(Date.UTC(y, m, d, 0, 0, 0, 0) - tzOffset);
+    const today = new Date(`${dateStr}T00:00:00.000Z`);
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
     const students = await Student.find({
@@ -401,7 +399,6 @@ class DashboardService {
       Date.UTC(y, m + 1, 0, 23, 59, 59, 999) - tzOffset,
     );
 
-    // Completely removed rollNumber selection query
     const students = await Student.find({
       class: { $in: classIds },
       status: "Active",
