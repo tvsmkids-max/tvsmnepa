@@ -235,7 +235,7 @@ const LoginPage = () => {
             fontWeight={900}
             sx={{ mb: 0.5, letterSpacing: "-0.03em" }}
           >
-            Welcome To
+            Welcome
           </Typography>
           <Typography
             variant="body2"
