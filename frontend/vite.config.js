@@ -11,9 +11,9 @@ export default defineConfig({
   plugins: [
     react(),
 
-    // ─── PWA PLUGIN ───
+    // ─── PWA PLUGIN (Interactive Prompt Mode) ───
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       injectRegister: "auto",
       includeAssets: ["favicon.svg", "logo.png", "loader.svg"],
       manifest: {
@@ -176,15 +176,12 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: false,
-    // ✅ Vite 8 — do NOT set minify: 'esbuild' (handled internally)
     target: "esnext",
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        // ✅ manualChunks MUST be a function in Vite 8
         manualChunks(id) {
           if (id.includes("node_modules")) {
-            // ── React core ──
             if (
               id.includes("react-dom") ||
               id.includes("react/") ||
@@ -193,18 +190,12 @@ export default defineConfig({
             ) {
               return "vendor-react";
             }
-
-            // ── Router ──
             if (id.includes("react-router")) {
               return "vendor-router";
             }
-
-            // ── MUI Icons (separate — very large) ──
             if (id.includes("@mui/icons-material")) {
               return "vendor-mui-icons";
             }
-
-            // ── MUI Core + Emotion ──
             if (
               id.includes("@mui/material") ||
               id.includes("@mui/system") ||
@@ -218,8 +209,6 @@ export default defineConfig({
             ) {
               return "vendor-mui-core";
             }
-
-            // ── Charts (recharts is large) ──
             if (
               id.includes("recharts") ||
               id.includes("d3-") ||
@@ -228,18 +217,12 @@ export default defineConfig({
             ) {
               return "vendor-charts";
             }
-
-            // ── Excel ──
             if (id.includes("xlsx") || id.includes("file-saver")) {
               return "vendor-excel";
             }
-
-            // ── PDF ──
             if (id.includes("jspdf")) {
               return "vendor-pdf";
             }
-
-            // ── Forms ──
             if (
               id.includes("react-hook-form") ||
               id.includes("yup") ||
@@ -247,28 +230,18 @@ export default defineConfig({
             ) {
               return "vendor-forms";
             }
-
-            // ── HTTP ──
             if (id.includes("axios")) {
               return "vendor-axios";
             }
-
-            // ── Notifications ──
             if (id.includes("notistack")) {
               return "vendor-notistack";
             }
-
-            // ── TanStack Query ──
             if (id.includes("@tanstack")) {
               return "vendor-tanstack";
             }
-
-            // ── PWA / Workbox ──
             if (id.includes("workbox") || id.includes("vite-plugin-pwa")) {
               return "vendor-pwa";
             }
-
-            // ── Date utilities ──
             if (
               id.includes("date-fns") ||
               id.includes("dayjs") ||
@@ -276,13 +249,9 @@ export default defineConfig({
             ) {
               return "vendor-utils";
             }
-
-            // ── Dropzone ──
             if (id.includes("react-dropzone")) {
               return "vendor-dropzone";
             }
-
-            // ── Everything else in node_modules ──
             return "vendor";
           }
         },
