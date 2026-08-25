@@ -1,17 +1,26 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/logo.png" type="image/png" />
     <link rel="apple-touch-icon" href="/logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-    <meta name="description" content="TVSM School — Attendance Management System" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"
+    />
+    <meta
+      name="description"
+      content="TVSM School — Attendance Management System"
+    />
     <meta name="author" content="Abhishek" />
 
     <meta name="theme-color" content="#0D1B3E" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
     <meta name="apple-mobile-web-app-title" content="TVSM School" />
     <meta name="application-name" content="TVSM School" />
 
@@ -24,18 +33,24 @@
     <title>TVSM- Attendance Management</title>
 
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { background-color: #F5F6FA; }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background-color: #f5f6fa;
+      }
 
       #root-loader {
         display: flex;
         align-items: center;
         justify-content: center;
         height: 100vh;
-        background: #F5F6FA;
+        background: #f5f6fa;
         position: fixed;
         top: 0;
-        left: 00;
+        left: 0;
         right: 0;
         bottom: 0;
         z-index: 9999;
@@ -60,23 +75,31 @@
     <div id="root"></div>
 
     <div id="root-loader">
-      <img src="/loader.svg" alt="" width="120" height="120" style="object-fit: contain;" />
+      <img
+        src="/loader.svg"
+        alt=""
+        width="120"
+        height="120"
+        style="object-fit: contain"
+      />
     </div>
 
     <script type="module" src="/src/main.jsx"></script>
 
     <script>
-      var ci = setInterval(function() {
-        var r = document.getElementById('root');
-        var l = document.getElementById('root-loader');
+      var ci = setInterval(function () {
+        var r = document.getElementById("root");
+        var l = document.getElementById("root-loader");
         if (r && r.children.length > 0 && l) {
-          l.classList.add('hidden');
-          setTimeout(function() { if (l.parentNode) l.parentNode.removeChild(l); }, 300);
+          l.classList.add("hidden");
+          setTimeout(function () {
+            if (l.parentNode) l.parentNode.removeChild(l);
+          }, 300);
           clearInterval(ci);
         }
       }, 100);
-      setTimeout(function() {
-        var l = document.getElementById('root-loader');
+      setTimeout(function () {
+        var l = document.getElementById("root-loader");
         if (l && l.parentNode) l.parentNode.removeChild(l);
         clearInterval(ci);
       }, 10000);
