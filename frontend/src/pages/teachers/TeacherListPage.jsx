@@ -1,10 +1,19 @@
 import React, { useState, useCallback, useMemo } from "react";
-import { Box, Paper, Grid, CircularProgress, Typography } from "@mui/material";
+import {
+  Box,
+  Paper,
+  CircularProgress,
+  Typography,
+  useMediaQuery,
+  useTheme,
+  Stack,
+} from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 
 import TeacherHeader from "./components/TeacherHeader";
 import TeacherFilterBar from "./components/TeacherFilterBar";
 import TeacherCard from "./components/TeacherCard";
+import TeacherTable from "./components/TeacherTable";
 
 import TeacherFormDialog from "./TeacherFormDialog";
 import TeacherResetPasswordDialog from "./TeacherResetPasswordDialog";
@@ -13,6 +22,7 @@ import EmptyState from "../../components/common/EmptyState";
 
 import useDebounce from "../../hooks/useDebounce";
 import { useTeacherList, useDeleteTeacher } from "../../hooks/useTeachers";
+import { getClassSortRank } from "../../utils/classSort";
 
 const DEFAULT_FILTERS = {
   search: "",
@@ -20,12 +30,30 @@ const DEFAULT_FILTERS = {
   gender: "",
 };
 
+const DEFAULT_SORT = { sortBy: "class", sortOrder: "asc" };
+
+// ═══════════════════════════════════════════════════════════════════
+//  PRIMARY CLASS SORTING FOR TEACHERS (Nursery -> 12th)
+// ═══════════════════════════════════════════════════════════════════
+const getTeacherPrimaryClassRank = (teacher) => {
+  const classes = teacher.assignedClasses || [];
+  if (classes.length === 0) return 9999; // Push unassigned to the bottom
+
+  // Maps ranks and finds the highest priority class level
+  const ranks = classes.map((c) => getClassSortRank(c.name));
+  return Math.min(...ranks);
+};
+
 const TeacherListPage = () => {
-  // ─── FILTERS ───
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  // ─── SORT & FILTERS ───
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [sortBy, setSortBy] = useState(DEFAULT_SORT.sortBy);
+  const [sortOrder, setSortOrder] = useState(DEFAULT_SORT.sortOrder);
   const debouncedSearch = useDebounce(filters.search, 400);
 
-  // Build query params
   const queryParams = useMemo(
     () => ({
       search: debouncedSearch,
@@ -34,7 +62,6 @@ const TeacherListPage = () => {
     [debouncedSearch],
   );
 
-  // ─── TANSTACK QUERY ───
   const {
     data: teachersData,
     isLoading,
@@ -44,21 +71,62 @@ const TeacherListPage = () => {
 
   const allTeachers = teachersData?.data || [];
 
-  // ─── CLIENT-SIDE FILTERING (status + gender) ───
-  const filteredTeachers = useMemo(() => {
-    return allTeachers.filter((t) => {
-      // Status filter
+  // ─── ADVANCED MULTI-COLUMN SORTING & FILTERING ───
+  const sortedAndFilteredTeachers = useMemo(() => {
+    let list = [...allTeachers];
+
+    // Filter status & gender
+    list = list.filter((t) => {
       if (filters.status === "active" && !t.isActive) return false;
       if (filters.status === "inactive" && t.isActive) return false;
-
-      // Gender filter
       if (filters.gender && t.gender !== filters.gender) return false;
-
       return true;
     });
-  }, [allTeachers, filters.status, filters.gender]);
 
-  // ─── MUTATIONS ───
+    // Custom client-side sorting
+    list.sort((a, b) => {
+      if (sortBy === "class") {
+        const rankA = getTeacherPrimaryClassRank(a);
+        const rankB = getTeacherPrimaryClassRank(b);
+        if (rankA !== rankB) {
+          return sortOrder === "asc" ? rankA - rankB : rankB - rankA;
+        }
+        return (a.name || "").localeCompare(b.name || "");
+      }
+
+      if (sortBy === "name") {
+        const nameA = (a.name || "").toLowerCase();
+        const nameB = (b.name || "").toLowerCase();
+        return sortOrder === "asc"
+          ? nameA.localeCompare(nameB)
+          : nameB.localeCompare(nameA);
+      }
+
+      if (sortBy === "employeeId") {
+        const idA = (a.employeeId || "").toLowerCase();
+        const idB = (b.employeeId || "").toLowerCase();
+        return sortOrder === "asc"
+          ? idA.localeCompare(idB)
+          : idB.localeCompare(idA);
+      }
+
+      return 0;
+    });
+
+    return list;
+  }, [allTeachers, filters.status, filters.gender, sortBy, sortOrder]);
+
+  const handleSort = useCallback((field) => {
+    setSortBy((prev) => {
+      if (prev === field) {
+        setSortOrder((order) => (order === "asc" ? "desc" : "asc"));
+        return prev;
+      }
+      setSortOrder("asc");
+      return field;
+    });
+  }, []);
+
   const deleteMutation = useDeleteTeacher();
 
   // ─── DIALOG STATES ───
@@ -68,7 +136,6 @@ const TeacherListPage = () => {
   const [resetTeacher, setResetTeacher] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  // ─── HANDLERS ───
   const handleFilterChange = useCallback((newFilters) => {
     setFilters(newFilters);
   }, []);
@@ -89,7 +156,7 @@ const TeacherListPage = () => {
       await deleteMutation.mutateAsync(confirmDelete._id);
       setConfirmDelete(null);
     } catch {
-      // Error already handled
+      // Caught silents
     }
   }, [confirmDelete, deleteMutation]);
 
@@ -97,7 +164,6 @@ const TeacherListPage = () => {
     refetch();
   }, [refetch]);
 
-  // Card actions
   const handleEdit = useCallback((teacher) => {
     setEditingTeacher(teacher);
     setFormOpen(true);
@@ -114,23 +180,20 @@ const TeacherListPage = () => {
 
   return (
     <Box sx={{ pb: { xs: 10, md: 4 } }}>
-      {/* HEADER */}
       <TeacherHeader
-        total={filteredTeachers.length}
+        total={sortedAndFilteredTeachers.length}
         onAdd={() => {
           setEditingTeacher(null);
           setFormOpen(true);
         }}
       />
 
-      {/* FILTERS */}
       <TeacherFilterBar
         filters={filters}
         onChange={handleFilterChange}
         onReset={handleResetFilters}
       />
 
-      {/* BODY */}
       {isLoading ? (
         <Paper sx={{ p: 8, textAlign: "center", borderRadius: 3 }}>
           <CircularProgress />
@@ -138,7 +201,7 @@ const TeacherListPage = () => {
             Loading teachers...
           </Typography>
         </Paper>
-      ) : filteredTeachers.length === 0 ? (
+      ) : sortedAndFilteredTeachers.length === 0 ? (
         <Paper sx={{ borderRadius: 3 }}>
           <EmptyState
             icon={<PersonIcon sx={{ fontSize: 64 }} />}
@@ -169,7 +232,6 @@ const TeacherListPage = () => {
         </Paper>
       ) : (
         <>
-          {/* Background loading indicator */}
           {isFetching && !isLoading && (
             <Box
               sx={{
@@ -202,25 +264,37 @@ const TeacherListPage = () => {
             </Box>
           )}
 
-          {/* TEACHER GRID */}
-          <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-            {filteredTeachers.map((teacher) => (
-              <Grid item xs={12} sm={6} lg={4} xl={3} key={teacher._id}>
-                <TeacherCard
-                  teacher={teacher}
-                  onEdit={handleEdit}
-                  onResetPassword={handleResetPassword}
-                  onDelete={handleDelete}
-                />
-              </Grid>
-            ))}
-          </Grid>
+          {/* DUAL RESPONSIVE VIEW GRID */}
+          {!isMobile ? (
+            <TeacherTable
+              teachers={sortedAndFilteredTeachers}
+              onEdit={handleEdit}
+              onResetPassword={handleResetPassword}
+              onDelete={handleDelete}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSort={handleSort}
+            />
+          ) : (
+            <Grid container spacing={1.5}>
+              {sortedAndFilteredTeachers.map((teacher) => (
+                <Grid item xs={12} sm={6} key={teacher._id}>
+                  <TeacherCard
+                    teacher={teacher}
+                    onEdit={handleEdit}
+                    onResetPassword={handleResetPassword}
+                    onDelete={handleDelete}
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          )}
 
-          {/* Count footer */}
           <Box sx={{ textAlign: "center", mt: 3 }}>
             <Typography variant="caption" color="text.secondary">
-              Showing <strong>{filteredTeachers.length}</strong> teacher
-              {filteredTeachers.length !== 1 ? "s" : ""}
+              Showing <strong>{sortedAndFilteredTeachers.length}</strong>{" "}
+              teacher
+              {sortedAndFilteredTeachers.length !== 1 ? "s" : ""}
               {debouncedSearch && (
                 <>
                   {" "}
