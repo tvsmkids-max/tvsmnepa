@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 /**
- * PWA Hook - manages install prompt and update detection
+ * PWA Hook - Manages install prompt and lightning-fast update detection
  */
 const usePWA = () => {
   const [installPrompt, setInstallPrompt] = useState(null);
@@ -10,7 +10,7 @@ const usePWA = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [registration, setRegistration] = useState(null);
 
-  // Detect if already installed/running as standalone
+  // Detect if already installed / running as standalone PWA
   useEffect(() => {
     const checkStandalone = () => {
       const isStandaloneMode =
@@ -32,7 +32,7 @@ const usePWA = () => {
     };
   }, []);
 
-  // Listen for install prompt
+  // Listen for native install prompt
   useEffect(() => {
     const handleBeforeInstall = (e) => {
       e.preventDefault();
@@ -53,7 +53,7 @@ const usePWA = () => {
     };
   }, []);
 
-  // Listen for service worker updates
+  // Listen for background Service Worker updates
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
 
@@ -66,12 +66,12 @@ const usePWA = () => {
 
         setRegistration(reg);
 
-        // Check if there's a waiting worker
+        // Check if there's already a waiting worker ready
         if (reg.waiting) {
           setUpdateAvailable(true);
         }
 
-        // Listen for new updates
+        // Listen for newly installed background workers
         reg.addEventListener("updatefound", () => {
           const newWorker = reg.installing;
           if (!newWorker) return;
@@ -86,7 +86,7 @@ const usePWA = () => {
           });
         });
       } catch (err) {
-        // Service worker not available
+        // Silent fail for non-PWA environments
       }
     };
 
@@ -97,7 +97,7 @@ const usePWA = () => {
     };
   }, []);
 
-  // Show install prompt
+  // Show native install prompt
   const promptInstall = useCallback(async () => {
     if (!installPrompt) return { outcome: "dismissed" };
 
@@ -114,30 +114,45 @@ const usePWA = () => {
     }
   }, [installPrompt]);
 
-  // Apply update + reload
+  // ═════════════════════════════════════════════════════════════════
+  //  LIGHTNING-FAST UPDATE HANDLER (With Guarded 400ms Failsafe)
+  // ═════════════════════════════════════════════════════════════════
   const applyUpdate = useCallback(() => {
-    if (!registration?.waiting) {
-      window.location.reload();
-      return;
+    let hasReloaded = false;
+
+    const executeReload = () => {
+      if (!hasReloaded) {
+        hasReloaded = true;
+        window.location.reload();
+      }
+    };
+
+    if (registration?.waiting) {
+      // 1. Tell waiting service worker to skip waiting immediately
+      registration.waiting.postMessage({ type: "SKIP_WAITING" });
+
+      // 2. Reload when controller changes
+      navigator.serviceWorker.addEventListener(
+        "controllerchange",
+        executeReload,
+        {
+          once: true,
+        },
+      );
+
+      // 3. FAILSAFE: If controllerchange event takes longer than 400ms, force reload
+      setTimeout(executeReload, 400);
+    } else {
+      // No waiting worker -> reload directly
+      executeReload();
     }
-
-    // Tell waiting SW to take control
-    registration.waiting.postMessage({ type: "SKIP_WAITING" });
-
-    // Reload once new SW is active
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      window.location.reload();
-    });
   }, [registration]);
 
   return {
-    // Install
     canInstall: !!installPrompt && !isInstalled,
     isInstalled,
     isStandalone,
     promptInstall,
-
-    // Update
     updateAvailable,
     applyUpdate,
   };
