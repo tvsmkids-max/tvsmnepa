@@ -95,7 +95,7 @@ const STATUS_CONFIG = {
 };
 
 const SORT_OPTIONS = [
-  { value: "class", label: "Class (Nursery → 10th)" },
+  { value: "class", label: "Class (Nursery → 12th)" },
   { value: "percentage-desc", label: "Attendance % (High → Low)" },
   { value: "percentage-asc", label: "Attendance % (Low → High)" },
   { value: "absent-desc", label: "Most Absentees" },
@@ -208,7 +208,7 @@ const DailyReportPage = () => {
   // ─── Teacher's class data ───
   const teacherClassData = useMemo(() => {
     if (!isTeacher || !dailyReport?.classes?.length) return null;
-    return dailyReport.classes[0]; // Teacher has only 1 class
+    return dailyReport.classes[0];
   }, [isTeacher, dailyReport]);
 
   // ─── Teacher: filtered students ───
@@ -270,12 +270,15 @@ const DailyReportPage = () => {
     const data = [];
     const exportClasses =
       isTeacher && teacherClassData ? [teacherClassData] : dailyReport.classes;
+
     exportClasses.forEach((cls) => {
-      cls.students.forEach((s) => {
+      // Clean senior-developer sequential serial number mapping
+      cls.students.forEach((s, idx) => {
         data.push({
           Date: new Date(dailyReport.date).toLocaleDateString("en-IN"),
           Class: `${cls.name}-${cls.section}`,
-          "Roll No": s.rollNumber,
+          "S.No": idx + 1,
+          Scholar: s.scholarNumber || "—",
           Name: s.name,
           "Father Name": s.fatherName || "—",
           Status: s.status,
@@ -283,7 +286,7 @@ const DailyReportPage = () => {
       });
     });
     exportToExcel(data, `daily-report-${date}`, "Daily Attendance");
-    enqueueSnackbar("Excel exported", { variant: "success" });
+    enqueueSnackbar("Excel exported successfully", { variant: "success" });
     setExportAnchor(null);
   };
 
@@ -291,16 +294,12 @@ const DailyReportPage = () => {
     if (!dailyReport) return;
     const doc = generateDailyAttendancePdf(dailyReport, settings, user?.name);
     downloadPdf(doc, `daily-attendance-${date}`);
-    enqueueSnackbar("PDF downloaded", { variant: "success" });
+    enqueueSnackbar("PDF downloaded successfully", { variant: "success" });
     setExportAnchor(null);
   };
 
   const summary = dailyReport?.summary || {};
   const isNonWorking = dailyReport?.isHoliday || dailyReport?.isNonWorkingDay;
-
-  // ═══════════════════════════════════════════════════════════════════
-  //  RENDER
-  // ═══════════════════════════════════════════════════════════════════
 
   return (
     <Box sx={{ pb: { xs: 10, md: 3 } }}>
@@ -322,11 +321,11 @@ const DailyReportPage = () => {
       />
 
       {/* ══════════════════════════════════════════════════════════════
-          TEACHER VIEW — Student list directly
+          TEACHER VIEW
       ══════════════════════════════════════════════════════════════ */}
       {isTeacher ? (
         <>
-          {/* ── Teacher Toolbar ── */}
+          {/* Teacher Toolbar */}
           <Paper
             sx={{
               p: { xs: 1.5, sm: 2 },
@@ -419,14 +418,22 @@ const DailyReportPage = () => {
             </Stack>
           </Paper>
 
-          {/* ── Teacher Content ── */}
+          {/* Teacher Content */}
           {loading ? (
             <Box sx={{ textAlign: "center", py: 8 }}>
               <Box
                 component="img"
-                src="/loader.svg"
+                src="/loading.png"
                 alt="Loading"
-                sx={{ width: 140, height: 140, mb: 2 }}
+                sx={{
+                  width: 72,
+                  height: 72,
+                  animation: "spin 1.5s linear infinite",
+                  "@keyframes spin": {
+                    "0%": { transform: "rotate(0deg)" },
+                    "100%": { transform: "rotate(360deg)" },
+                  },
+                }}
                 onError={(e) => {
                   e.target.style.display = "none";
                 }}
@@ -435,6 +442,7 @@ const DailyReportPage = () => {
                 variant="body2"
                 color="text.secondary"
                 fontWeight={600}
+                sx={{ mt: 2 }}
               >
                 Loading report...
               </Typography>
@@ -564,7 +572,7 @@ const DailyReportPage = () => {
                   />
                 </Paper>
               ) : isMobile ? (
-                // ── MOBILE: Cards ──
+                // ── MOBILE: Cards (Purged Roll reference, replaced with idx) ──
                 <Paper
                   sx={{
                     borderRadius: 2,
@@ -574,7 +582,7 @@ const DailyReportPage = () => {
                   }}
                 >
                   <Stack divider={<Divider />}>
-                    {filteredStudents.map((s) => {
+                    {filteredStudents.map((s, idx) => {
                       const statusConfig =
                         STUDENT_STATUS_COLORS[s.status] ||
                         STUDENT_STATUS_COLORS.Unmarked;
@@ -606,7 +614,7 @@ const DailyReportPage = () => {
                                 flexShrink: 0,
                               }}
                             >
-                              {String(s.rollNumber || "").padStart(2, "0")}
+                              {String(idx + 1).padStart(2, "0")}
                             </Typography>
                             <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Typography
@@ -650,7 +658,7 @@ const DailyReportPage = () => {
                   </Stack>
                 </Paper>
               ) : (
-                // ── DESKTOP: Table ──
+                // ── DESKTOP: Table (Replaced Roll with S.NO.) ──
                 <Paper
                   sx={{
                     borderRadius: 2,
@@ -669,11 +677,11 @@ const DailyReportPage = () => {
                               fontSize: "0.68rem",
                               textTransform: "uppercase",
                               bgcolor: isDark ? "#1E293B" : "#F1F5F9",
-                              width: 55,
+                              width: 65,
                               py: 1,
                             }}
                           >
-                            Roll
+                            S.NO.
                           </TableCell>
                           <TableCell
                             sx={{
@@ -725,7 +733,7 @@ const DailyReportPage = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {filteredStudents.map((s) => {
+                        {filteredStudents.map((s, idx) => {
                           const statusConfig =
                             STUDENT_STATUS_COLORS[s.status] ||
                             STUDENT_STATUS_COLORS.Unmarked;
@@ -749,7 +757,7 @@ const DailyReportPage = () => {
                                     color: isDark ? "#93C5FD" : "#1E4D98",
                                   }}
                                 >
-                                  {String(s.rollNumber || "").padStart(2, "0")}
+                                  {String(idx + 1).padStart(2, "0")}
                                 </Typography>
                               </TableCell>
                               <TableCell sx={{ py: 0.9 }}>
@@ -827,7 +835,7 @@ const DailyReportPage = () => {
         </>
       ) : (
         /* ══════════════════════════════════════════════════════════════
-            ADMIN VIEW — Class cards (unchanged from before)
+            ADMIN VIEW — Class cards
         ══════════════════════════════════════════════════════════════ */
         <>
           {/* Admin Sticky filter bar */}
@@ -1026,9 +1034,17 @@ const DailyReportPage = () => {
             <Box sx={{ textAlign: "center", py: 8 }}>
               <Box
                 component="img"
-                src="/loader.svg"
+                src="/loading.png"
                 alt="Loading"
-                sx={{ width: 140, height: 140, mb: 2 }}
+                sx={{
+                  width: 72,
+                  height: 72,
+                  animation: "spin 1.5s linear infinite",
+                  "@keyframes spin": {
+                    "0%": { transform: "rotate(0deg)" },
+                    "100%": { transform: "rotate(360deg)" },
+                  },
+                }}
                 onError={(e) => {
                   e.target.style.display = "none";
                 }}
@@ -1037,6 +1053,7 @@ const DailyReportPage = () => {
                 variant="body2"
                 color="text.secondary"
                 fontWeight={600}
+                sx={{ mt: 2 }}
               >
                 Loading daily report...
               </Typography>

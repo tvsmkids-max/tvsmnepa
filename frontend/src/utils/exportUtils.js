@@ -1,5 +1,9 @@
 import * as XLSX from "xlsx";
 
+// ═══════════════════════════════════════════════════════════════════
+//  GENERIC EXPORT HELPERS
+// ═══════════════════════════════════════════════════════════════════
+
 export const exportToExcel = (data, filename, sheetName = "Sheet1") => {
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
@@ -16,14 +20,14 @@ export const exportMultiSheet = (sheets, filename) => {
   XLSX.writeFile(wb, `${filename}.xlsx`);
 };
 
-/**
- * Export students with proper formatting & column widths
- */
+// ═══════════════════════════════════════════════════════════════════
+//  STUDENT LIST EXPORT
+// ═══════════════════════════════════════════════════════════════════
+
 export const exportStudentsToExcel = (students, filename = "students") => {
   const data = students.map((s, idx) => ({
     "S.No": idx + 1,
     "Scholar No": s.scholarNumber || "",
-    "Roll No": s.rollNumber || "",
     Name: s.name || "",
     "Father's Name": s.fatherName || "",
     "Mother's Name": s.motherName || "",
@@ -47,25 +51,24 @@ export const exportStudentsToExcel = (students, filename = "students") => {
   const ws = XLSX.utils.json_to_sheet(data);
 
   ws["!cols"] = [
-    { wch: 6 },
-    { wch: 14 },
-    { wch: 10 },
-    { wch: 25 },
-    { wch: 25 },
-    { wch: 25 },
-    { wch: 10 },
-    { wch: 14 },
-    { wch: 14 },
-    { wch: 14 },
-    { wch: 12 },
-    { wch: 10 },
-    { wch: 40 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 16 },
-    { wch: 14 },
-    { wch: 12 },
+    { wch: 6 }, // S.No
+    { wch: 14 }, // Scholar
+    { wch: 25 }, // Name
+    { wch: 25 }, // Father
+    { wch: 25 }, // Mother
+    { wch: 10 }, // Gender
+    { wch: 14 }, // DOB
+    { wch: 14 }, // Mobile
+    { wch: 14 }, // Alt Mobile
+    { wch: 12 }, // Class
+    { wch: 10 }, // Section
+    { wch: 40 }, // Address
+    { wch: 12 }, // Blood
+    { wch: 12 }, // Category
+    { wch: 12 }, // Religion
+    { wch: 16 }, // Aadhar
+    { wch: 14 }, // Admission
+    { wch: 12 }, // Status
   ];
 
   ws["!freeze"] = { xSplit: 0, ySplit: 1 };
@@ -75,37 +78,36 @@ export const exportStudentsToExcel = (students, filename = "students") => {
   XLSX.writeFile(wb, `${filename}.xlsx`);
 };
 
-/**
- * Export attendance register (Excel-style with merged headers + colors)
- */
+// ═══════════════════════════════════════════════════════════════════
+//  ATTENDANCE REGISTER EXPORT (Excel-style with merged headers)
+// ═══════════════════════════════════════════════════════════════════
+
 export const exportRegisterToExcel = (register, filename = "register") => {
   if (!register || !register.students?.length) {
     throw new Error("No data to export");
   }
 
   const { students, dates, monthGroups, class: classInfo, summary } = register;
-
-  // ─── Build aoa (array of arrays) ───
   const rows = [];
 
-  // ─── Row 1: Title ───
-  const titleRow = [
+  // Row 1: Title
+  rows.push([
     `Attendance Register — Class ${classInfo.name}-${classInfo.section}`,
-  ];
-  rows.push(titleRow);
+  ]);
 
-  // ─── Row 2: Date range info ───
+  // Row 2: Date range info
   const fromStr = new Date(summary.dateFrom).toLocaleDateString("en-IN");
   const toStr = new Date(summary.dateTo).toLocaleDateString("en-IN");
   rows.push([
     `Period: ${fromStr} to ${toStr} | Students: ${summary.totalStudents} | Working Days: ${summary.workingDays} | Holidays: ${summary.holidays}`,
   ]);
 
-  // ─── Row 3: Empty ───
+  // Row 3: Empty spacer
   rows.push([]);
 
-  // ─── Row 4: Month groups header ───
-  const monthHeaderRow = ["", "", "", "", ""]; // Skip first 5 cols (S.No, Scholar, Roll, Name, Father)
+  // Row 4: Month groups header (skip first 4 cols: S.No, Scholar, Name, Father)
+  const FIXED_COLS = 4;
+  const monthHeaderRow = Array(FIXED_COLS).fill("");
   monthGroups.forEach((g) => {
     monthHeaderRow.push(g.label);
     for (let i = 1; i < g.count; i++) monthHeaderRow.push("");
@@ -113,68 +115,64 @@ export const exportRegisterToExcel = (register, filename = "register") => {
   monthHeaderRow.push("TOTALS", "", "");
   rows.push(monthHeaderRow);
 
-  // ─── Row 5: Day names ───
-  const dayNameRow = ["S.No", "Scholar No", "Roll", "Name", "Father"];
+  // Row 5: Day short names
+  const dayNameRow = ["S.No", "Scholar No", "Name", "Father"];
   dates.forEach((d) => dayNameRow.push(d.dayShort));
   dayNameRow.push("P", "A", "%");
   rows.push(dayNameRow);
 
-  // ─── Row 6: Day numbers ───
-  const dayNumRow = ["", "", "", "", ""];
+  // Row 6: Day numbers
+  const dayNumRow = Array(FIXED_COLS).fill("");
   dates.forEach((d) => dayNumRow.push(d.day));
   dayNumRow.push("", "", "");
   rows.push(dayNumRow);
 
-  // ─── Body rows ───
-  const bodyStartRow = rows.length; // 0-indexed
+  // Body rows
   students.forEach((s, idx) => {
-    const row = [idx + 1, s.scholarNumber, s.rollNumber, s.name, s.fatherName];
+    const row = [idx + 1, s.scholarNumber, s.name, s.fatherName];
     dates.forEach((d) => {
       const status = s.attendance[d.dateKey];
-      // Convert internal status to display label
       if (status === "P") row.push("P");
       else if (status === "A") row.push("A");
       else if (status === "H") row.push("H");
-      else if (status === "-") row.push("");
       else row.push("");
     });
     row.push(s.totals.present, s.totals.absent, `${s.totals.percentage}%`);
     rows.push(row);
   });
 
-  // ─── Build worksheet ───
+  // Build worksheet
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
-  // ─── Column widths ───
+  // Column widths
   const colWidths = [
     { wch: 5 }, // S.No
     { wch: 12 }, // Scholar
-    { wch: 6 }, // Roll
     { wch: 20 }, // Name
     { wch: 20 }, // Father
   ];
-  dates.forEach(() => colWidths.push({ wch: 4 })); // Date columns
+  dates.forEach(() => colWidths.push({ wch: 4 }));
   colWidths.push({ wch: 5 }, { wch: 5 }, { wch: 7 }); // P, A, %
   ws["!cols"] = colWidths;
 
-  // ─── Merge cells for title ───
-  const totalCols = 5 + dates.length + 3;
+  // Merge cells
+  const totalCols = FIXED_COLS + dates.length + 3;
   ws["!merges"] = ws["!merges"] || [];
 
-  // Merge title row (Row 1: index 0)
+  // Merge title row
   ws["!merges"].push({
     s: { r: 0, c: 0 },
     e: { r: 0, c: totalCols - 1 },
   });
 
-  // Merge info row (Row 2: index 1)
+  // Merge info row
   ws["!merges"].push({
     s: { r: 1, c: 0 },
     e: { r: 1, c: totalCols - 1 },
   });
 
-  // Merge month groups (Row 4: index 3)
-  let monthCol = 5;
+  // Merge month groups
+  let monthCol = FIXED_COLS;
   monthGroups.forEach((g) => {
     if (g.count > 1) {
       ws["!merges"].push({
@@ -185,26 +183,20 @@ export const exportRegisterToExcel = (register, filename = "register") => {
     monthCol += g.count;
   });
 
-  // Merge "TOTALS" header (Row 4)
+  // Merge "TOTALS" header
   ws["!merges"].push({
     s: { r: 3, c: totalCols - 3 },
     e: { r: 3, c: totalCols - 1 },
   });
 
-  // ─── Freeze first 5 cols + first 6 rows ───
-  ws["!freeze"] = { xSplit: 5, ySplit: 6 };
+  // Freeze first 4 cols + first 6 rows
+  ws["!freeze"] = { xSplit: FIXED_COLS, ySplit: 6 };
 
-  // ─── Cell styles (basic XLSX doesn't support full styling; use SheetJS pro for colors) ───
-  // We add basic widths + merges. For colored cells, user can apply conditional formatting in Excel.
-
-  // ─── Apply alignment to data cells (centered) ───
-  // Note: SheetJS community edition has limited styling. The structure is correct.
-
-  // ─── Create workbook ───
+  // Create workbook
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Register");
 
-  // ─── Add a second sheet with summary ───
+  // Summary sheet
   const summaryData = [
     { Metric: "Class", Value: `${classInfo.name}-${classInfo.section}` },
     { Metric: "Class Teacher", Value: classInfo.classTeacher || "—" },
@@ -227,14 +219,13 @@ export const exportRegisterToExcel = (register, filename = "register") => {
   summaryWs["!cols"] = [{ wch: 20 }, { wch: 40 }];
   XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
 
-  // ─── Write file ───
   XLSX.writeFile(wb, `${filename}.xlsx`);
 };
 
-/**
- * Export monthly class attendance (calendar-style table)
- * Includes P/A/H per date + totals per student
- */
+// ═══════════════════════════════════════════════════════════════════
+//  MONTHLY CLASS ATTENDANCE EXPORT (Calendar-style)
+// ═══════════════════════════════════════════════════════════════════
+
 export const exportMonthlyClassToExcel = (
   detail,
   filename = "monthly-class",
@@ -253,7 +244,6 @@ export const exportMonthlyClassToExcel = (
     summary,
   } = detail;
 
-  // ─── Build rows ───
   const rows = [];
 
   // Title row
@@ -266,7 +256,7 @@ export const exportMonthlyClassToExcel = (
     `Teacher: ${classInfo.classTeacher || "—"} | Students: ${summary.totalStudents} | Working Days: ${workingDays} | Overall: ${summary.overallPercentage}%`,
   ]);
 
-  rows.push([]); // empty spacer
+  rows.push([]); // spacer
 
   // Header row 1: day short names
   const dayNameRow = ["S.No", "Scholar", "Name", "Father"];
@@ -293,14 +283,13 @@ export const exportMonthlyClassToExcel = (
       if (status === "P") row.push("P");
       else if (status === "A") row.push("A");
       else if (status === "H") row.push("H");
-      else if (status === "-") row.push("");
       else row.push("");
     });
     row.push(s.present, s.absent, `${s.percentage}%`);
     rows.push(row);
   });
 
-  // ─── Build worksheet ───
+  // Build worksheet
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
   // Column widths
@@ -310,8 +299,8 @@ export const exportMonthlyClassToExcel = (
     { wch: 25 }, // Name
     { wch: 22 }, // Father
   ];
-  dates.forEach(() => colWidths.push({ wch: 4 })); // Date columns
-  colWidths.push({ wch: 5 }, { wch: 5 }, { wch: 7 }); // P, A, %
+  dates.forEach(() => colWidths.push({ wch: 4 }));
+  colWidths.push({ wch: 5 }, { wch: 5 }, { wch: 7 });
   ws["!cols"] = colWidths;
 
   // Merge title + info rows
@@ -324,7 +313,7 @@ export const exportMonthlyClassToExcel = (
   // Freeze first 4 cols + first 5 rows
   ws["!freeze"] = { xSplit: 4, ySplit: 5 };
 
-  // ─── Workbook ───
+  // Workbook
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Attendance");
 

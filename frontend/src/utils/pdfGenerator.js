@@ -5,20 +5,21 @@ const SCHOOL_NAME =
   import.meta.env.VITE_SCHOOL_NAME || "Thakur Virendra Singh Memorial School";
 
 const COLORS = {
-  primary: [13, 27, 62], // #0D1B3E
-  secondary: [30, 77, 152], // #1E4D98
-  success: [46, 125, 50], // #2E7D32
-  error: [198, 40, 40], // #C62828
-  warning: [245, 127, 23], // #F57F17
-  gray: [107, 123, 153], // #6B7B99
-  lightGray: [248, 249, 252], // #F8F9FC
+  primary: [13, 27, 62],
+  secondary: [30, 77, 152],
+  success: [46, 125, 50],
+  error: [198, 40, 40],
+  warning: [245, 127, 23],
+  gray: [107, 123, 153],
+  lightGray: [248, 249, 252],
   white: [255, 255, 255],
-  black: [26, 26, 46], // #1A1A2E
+  black: [26, 26, 46],
 };
 
-/**
- * Create base PDF document with school header
- */
+// ═══════════════════════════════════════════════════════════════════
+//  BASE PDF CREATOR
+// ═══════════════════════════════════════════════════════════════════
+
 const createPdf = (options = {}) => {
   const {
     orientation = "portrait",
@@ -39,18 +40,15 @@ const createPdf = (options = {}) => {
   const phone = schoolPhone || "";
   const email = schoolEmail || "";
 
-  // ─── HEADER ────────────────────────────────────────
-  // Blue header bar
+  // Header bar
   doc.setFillColor(...COLORS.primary);
   doc.rect(0, 0, pageWidth, 28, "F");
 
-  // School name
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
   doc.setTextColor(...COLORS.white);
   doc.text(name, pageWidth / 2, 12, { align: "center" });
 
-  // Address line
   if (address || phone) {
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
@@ -58,12 +56,11 @@ const createPdf = (options = {}) => {
     doc.text(addressLine, pageWidth / 2, 19, { align: "center" });
   }
 
-  // Gold accent line
   doc.setDrawColor(245, 166, 35);
   doc.setLineWidth(1);
   doc.line(pageWidth / 2 - 30, 23, pageWidth / 2 + 30, 23);
 
-  // ─── TITLE ─────────────────────────────────────────
+  // Title
   doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.primary);
@@ -79,9 +76,10 @@ const createPdf = (options = {}) => {
   return { doc, startY: subtitle ? 48 : 42, pageWidth, pageHeight };
 };
 
-/**
- * Add footer to all pages
- */
+// ═══════════════════════════════════════════════════════════════════
+//  FOOTER
+// ═══════════════════════════════════════════════════════════════════
+
 const addFooter = (doc, generatedBy = "Admin") => {
   const pageCount = doc.internal.getNumberOfPages();
   const pageWidth = doc.internal.pageSize.width;
@@ -99,25 +97,21 @@ const addFooter = (doc, generatedBy = "Admin") => {
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
 
-    // Footer line
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.3);
     doc.line(14, pageHeight - 14, pageWidth - 14, pageHeight - 14);
 
-    // Left: Generated info
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...COLORS.gray);
     doc.text(`Generated: ${now} | By: ${generatedBy}`, 14, pageHeight - 10);
 
-    // Center: Credit
     doc.setFontSize(6);
     doc.setTextColor(180, 180, 180);
     doc.text("Developed by Abhishek", pageWidth / 2, pageHeight - 10, {
       align: "center",
     });
 
-    // Right: Page number
     doc.setFontSize(7);
     doc.setTextColor(...COLORS.gray);
     doc.text(`Page ${i} of ${pageCount}`, pageWidth - 14, pageHeight - 10, {
@@ -126,9 +120,10 @@ const addFooter = (doc, generatedBy = "Admin") => {
   }
 };
 
-/**
- * Generate Daily Attendance Report PDF
- */
+// ═══════════════════════════════════════════════════════════════════
+//  DAILY ATTENDANCE REPORT PDF
+// ═══════════════════════════════════════════════════════════════════
+
 export const generateDailyAttendancePdf = (reportData, settings, userName) => {
   const dateStr = new Date(reportData.date).toLocaleDateString("en-IN", {
     weekday: "long",
@@ -173,7 +168,6 @@ export const generateDailyAttendancePdf = (reportData, settings, userName) => {
 
   // Per class tables
   reportData.classes.forEach((cls) => {
-    // Check page break
     if (currentY > doc.internal.pageSize.height - 50) {
       doc.addPage();
       currentY = 20;
@@ -192,11 +186,9 @@ export const generateDailyAttendancePdf = (reportData, settings, userName) => {
     );
     currentY += 12;
 
-    // Student table
     if (cls.students && cls.students.length > 0) {
       const tableData = cls.students.map((s, idx) => [
         idx + 1,
-        s.rollNumber || "—",
         s.scholarNumber || "—",
         s.name,
         s.status,
@@ -204,7 +196,7 @@ export const generateDailyAttendancePdf = (reportData, settings, userName) => {
 
       doc.autoTable({
         startY: currentY,
-        head: [["#", "Roll", "Scholar", "Student Name", "Status"]],
+        head: [["S.No", "Scholar", "Student Name", "Status"]],
         body: tableData,
         margin: { left: 14, right: 14 },
         styles: {
@@ -226,18 +218,17 @@ export const generateDailyAttendancePdf = (reportData, settings, userName) => {
           fillColor: [245, 247, 250],
         },
         columnStyles: {
-          0: { cellWidth: 10, halign: "center" },
-          1: { cellWidth: 18, halign: "center" },
-          2: { cellWidth: 25 },
-          3: { cellWidth: "auto" },
-          4: {
+          0: { cellWidth: 12, halign: "center" },
+          1: { cellWidth: 25 },
+          2: { cellWidth: "auto" },
+          3: {
             cellWidth: 22,
             halign: "center",
             fontStyle: "bold",
           },
         },
         didParseCell: (data) => {
-          if (data.column.index === 4 && data.section === "body") {
+          if (data.column.index === 3 && data.section === "body") {
             if (data.cell.raw === "Present") {
               data.cell.styles.textColor = COLORS.success;
             } else if (data.cell.raw === "Absent") {
@@ -254,13 +245,13 @@ export const generateDailyAttendancePdf = (reportData, settings, userName) => {
   });
 
   addFooter(doc, userName);
-
   return doc;
 };
 
-/**
- * Generate Monthly Attendance Report PDF
- */
+// ═══════════════════════════════════════════════════════════════════
+//  MONTHLY ATTENDANCE REPORT PDF
+// ═══════════════════════════════════════════════════════════════════
+
 export const generateMonthlyReportPdf = (reportData, settings, userName) => {
   const { doc, startY, pageWidth } = createPdf({
     title: "Monthly Attendance Summary",
@@ -391,13 +382,13 @@ export const generateMonthlyReportPdf = (reportData, settings, userName) => {
   }
 
   addFooter(doc, userName);
-
   return doc;
 };
 
-/**
- * Generate Defaulter List PDF
- */
+// ═══════════════════════════════════════════════════════════════════
+//  DEFAULTER LIST PDF
+// ═══════════════════════════════════════════════════════════════════
+
 export const generateDefaulterPdf = (reportData, settings, userName) => {
   const { doc, startY, pageWidth } = createPdf({
     title: "Defaulter List — Below Attendance Threshold",
@@ -425,7 +416,6 @@ export const generateDefaulterPdf = (reportData, settings, userName) => {
   const tableData = reportData.defaulters.map((s, idx) => [
     idx + 1,
     s.scholarNumber,
-    s.rollNumber,
     s.name,
     s.fatherName,
     s.class ? `${s.class.name}-${s.class.section}` : "—",
@@ -440,9 +430,8 @@ export const generateDefaulterPdf = (reportData, settings, userName) => {
     startY,
     head: [
       [
-        "#",
+        "S.No",
         "Scholar",
-        "Roll",
         "Student Name",
         "Father Name",
         "Class",
@@ -472,37 +461,36 @@ export const generateDefaulterPdf = (reportData, settings, userName) => {
       textColor: COLORS.black,
     },
     columnStyles: {
-      0: { cellWidth: 8, halign: "center" },
+      0: { cellWidth: 10, halign: "center" },
       1: { cellWidth: 18 },
-      2: { cellWidth: 12, halign: "center" },
+      2: { cellWidth: "auto" },
       3: { cellWidth: "auto" },
-      4: { cellWidth: "auto" },
-      5: { cellWidth: 18, halign: "center" },
-      6: { cellWidth: 22 },
+      4: { cellWidth: 18, halign: "center" },
+      5: { cellWidth: 22 },
+      6: { cellWidth: 10, halign: "center" },
       7: { cellWidth: 10, halign: "center" },
-      8: { cellWidth: 10, halign: "center" },
-      9: { cellWidth: 12, halign: "center" },
-      10: {
+      8: { cellWidth: 12, halign: "center" },
+      9: {
         cellWidth: 12,
         halign: "center",
         fontStyle: "bold",
       },
     },
     didParseCell: (data) => {
-      if (data.column.index === 10 && data.section === "body") {
+      if (data.column.index === 9 && data.section === "body") {
         data.cell.styles.textColor = COLORS.error;
       }
     },
   });
 
   addFooter(doc, userName);
-
   return doc;
 };
 
-/**
- * Generate Student Attendance Certificate PDF
- */
+// ═══════════════════════════════════════════════════════════════════
+//  STUDENT ATTENDANCE CERTIFICATE PDF
+// ═══════════════════════════════════════════════════════════════════
+
 export const generateStudentCertificatePdf = (
   student,
   stats,
@@ -540,7 +528,7 @@ export const generateStudentCertificatePdf = (
   const leftInfo = [
     `Name: ${student.name}`,
     `Scholar Number: ${student.scholarNumber}`,
-    `Roll Number: ${student.rollNumber}`,
+    `Gender: ${student.gender || "—"}`,
   ];
 
   const rightInfo = [
@@ -667,13 +655,13 @@ export const generateStudentCertificatePdf = (
   }
 
   addFooter(doc, userName);
-
   return doc;
 };
 
-/**
- * Generate Attendance Register PDF (landscape, Excel-style)
- */
+// ═══════════════════════════════════════════════════════════════════
+//  ATTENDANCE REGISTER PDF (Landscape, Excel-style)
+// ═══════════════════════════════════════════════════════════════════
+
 export const generateRegisterPdf = (register, settings, userName) => {
   if (!register || !register.students?.length) {
     throw new Error("No data to generate PDF");
@@ -694,7 +682,7 @@ export const generateRegisterPdf = (register, settings, userName) => {
 
   const subtitle = `Class ${classInfo.name}-${classInfo.section} | ${fromStr} to ${toStr}`;
 
-  const { doc, startY, pageWidth, pageHeight } = createPdf({
+  const { doc, startY, pageWidth } = createPdf({
     orientation: "landscape",
     title: "Attendance Register",
     subtitle,
@@ -706,7 +694,7 @@ export const generateRegisterPdf = (register, settings, userName) => {
 
   let currentY = startY;
 
-  // ─── Summary box ───
+  // Summary box
   doc.setFillColor(...COLORS.lightGray);
   doc.roundedRect(10, currentY, pageWidth - 20, 12, 2, 2, "F");
 
@@ -729,19 +717,22 @@ export const generateRegisterPdf = (register, settings, userName) => {
 
   currentY += 16;
 
-  // ─── Split dates into chunks per page (max 25 days per page) ───
+  // Split dates into chunks per page
   const MAX_DATES_PER_PAGE = 25;
   const dateChunks = [];
   for (let i = 0; i < dates.length; i += MAX_DATES_PER_PAGE) {
     dateChunks.push(dates.slice(i, i + MAX_DATES_PER_PAGE));
   }
 
+  // Fixed column count: Scholar + Name + Father = 3
+  const FIXED_COLS = 3;
+  const TOTALS_COLS = 3; // P + A + %
+
   dateChunks.forEach((chunk, chunkIdx) => {
     if (chunkIdx > 0) {
       doc.addPage();
       currentY = 38;
 
-      // Page-level title
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(...COLORS.primary);
@@ -757,21 +748,16 @@ export const generateRegisterPdf = (register, settings, userName) => {
       currentY += 6;
     }
 
-    // Build header: Scholar | Roll | Name | Father | dates... | P | A | %
-    const headerRow = ["Scholar", "Roll", "Name", "Father"];
+    // Header: Scholar | Name | Father | dates... | P | A | %
+    const headerRow = ["Scholar", "Name", "Father"];
     chunk.forEach((d) => {
       headerRow.push(`${d.dayShort}\n${d.day}`);
     });
     headerRow.push("P", "A", "%");
 
-    // Build body
+    // Body rows
     const bodyRows = students.map((s) => {
-      const row = [
-        s.scholarNumber || "—",
-        s.rollNumber || "—",
-        s.name || "—",
-        s.fatherName || "—",
-      ];
+      const row = [s.scholarNumber || "—", s.name || "—", s.fatherName || "—"];
 
       chunk.forEach((d) => {
         const status = s.attendance[d.dateKey];
@@ -790,8 +776,8 @@ export const generateRegisterPdf = (register, settings, userName) => {
       return row;
     });
 
-    // Calculate column widths
-    const fixedColsWidth = 18 + 10 + 35 + 30; // Scholar + Roll + Name + Father
+    // Column widths calculation
+    const fixedColsWidth = 18 + 35 + 30; // Scholar + Name + Father
     const totalsColsWidth = 10 + 10 + 14; // P + A + %
     const availableWidth = pageWidth - 20 - fixedColsWidth - totalsColsWidth;
     const dateColWidth = Math.max(
@@ -800,23 +786,20 @@ export const generateRegisterPdf = (register, settings, userName) => {
     );
 
     const columnStyles = {
-      0: { cellWidth: 18, halign: "left", fontStyle: "bold", fontSize: 6.5 }, // Scholar
-      1: { cellWidth: 10, halign: "center", fontSize: 6.5 }, // Roll
-      2: { cellWidth: 35, halign: "left", fontStyle: "bold", fontSize: 6.5 }, // Name
-      3: { cellWidth: 30, halign: "left", fontSize: 6 }, // Father
+      0: { cellWidth: 18, halign: "left", fontStyle: "bold", fontSize: 6.5 },
+      1: { cellWidth: 35, halign: "left", fontStyle: "bold", fontSize: 6.5 },
+      2: { cellWidth: 30, halign: "left", fontSize: 6 },
     };
 
-    // Set width for each date column
     for (let i = 0; i < chunk.length; i++) {
-      columnStyles[4 + i] = {
+      columnStyles[FIXED_COLS + i] = {
         cellWidth: dateColWidth,
         halign: "center",
         fontSize: 6,
       };
     }
 
-    // Totals columns
-    const totalsStart = 4 + chunk.length;
+    const totalsStart = FIXED_COLS + chunk.length;
     columnStyles[totalsStart] = {
       cellWidth: 10,
       halign: "center",
@@ -836,7 +819,6 @@ export const generateRegisterPdf = (register, settings, userName) => {
       fontSize: 7,
     };
 
-    // ─── Generate table ───
     doc.autoTable({
       startY: currentY,
       head: [headerRow],
@@ -870,12 +852,11 @@ export const generateRegisterPdf = (register, settings, userName) => {
         const numDateCols = chunk.length;
         const colIdx = data.column.index;
 
-        // ─── BODY CELL STYLING ───
-        if (data.section === "body" && colIdx >= 4) {
-          // Date cells: 4 to 4+numDateCols-1
-          if (colIdx >= 4 && colIdx < 4 + numDateCols) {
+        // Body cell styling
+        if (data.section === "body" && colIdx >= FIXED_COLS) {
+          if (colIdx >= FIXED_COLS && colIdx < FIXED_COLS + numDateCols) {
             const cellValue = String(data.cell.raw || "");
-            const dateIdx = colIdx - 4;
+            const dateIdx = colIdx - FIXED_COLS;
             const d = chunk[dateIdx];
 
             if (cellValue === "P") {
@@ -897,16 +878,13 @@ export const generateRegisterPdf = (register, settings, userName) => {
           }
 
           // Totals columns
-          if (colIdx === 4 + numDateCols) {
-            // P column
+          if (colIdx === totalsStart) {
             data.cell.styles.fillColor = [209, 250, 229];
             data.cell.styles.textColor = COLORS.success;
-          } else if (colIdx === 4 + numDateCols + 1) {
-            // A column
+          } else if (colIdx === totalsStart + 1) {
             data.cell.styles.fillColor = [254, 226, 226];
             data.cell.styles.textColor = COLORS.error;
-          } else if (colIdx === 4 + numDateCols + 2) {
-            // % column
+          } else if (colIdx === totalsStart + 2) {
             const pctStr = String(data.cell.raw).replace("%", "");
             const pct = parseInt(pctStr, 10);
             if (!isNaN(pct)) {
@@ -924,17 +902,16 @@ export const generateRegisterPdf = (register, settings, userName) => {
           }
         }
 
-        // ─── HEADER CELL STYLING ───
-        if (data.section === "head" && colIdx >= 4) {
-          const numDateCols = chunk.length;
-          if (colIdx >= 4 && colIdx < 4 + numDateCols) {
-            const dateIdx = colIdx - 4;
+        // Header cell styling
+        if (data.section === "head" && colIdx >= FIXED_COLS) {
+          if (colIdx >= FIXED_COLS && colIdx < FIXED_COLS + numDateCols) {
+            const dateIdx = colIdx - FIXED_COLS;
             const d = chunk[dateIdx];
             if (d?.isSunday) {
-              data.cell.styles.fillColor = [127, 29, 29]; // Dark red
+              data.cell.styles.fillColor = [127, 29, 29];
               data.cell.styles.textColor = COLORS.white;
             } else if (d?.isHoliday) {
-              data.cell.styles.fillColor = [180, 83, 9]; // Dark amber
+              data.cell.styles.fillColor = [180, 83, 9];
               data.cell.styles.textColor = COLORS.white;
             }
           }
@@ -945,7 +922,7 @@ export const generateRegisterPdf = (register, settings, userName) => {
     currentY = doc.lastAutoTable.finalY + 5;
   });
 
-  // ─── LEGEND PAGE ───
+  // Legend page
   doc.addPage();
   currentY = 38;
 
@@ -955,7 +932,6 @@ export const generateRegisterPdf = (register, settings, userName) => {
   doc.text("Legend & Summary", pageWidth / 2, currentY, { align: "center" });
   currentY += 10;
 
-  // Legend table
   doc.autoTable({
     startY: currentY,
     head: [["Symbol", "Meaning", "Color"]],
@@ -1007,7 +983,6 @@ export const generateRegisterPdf = (register, settings, userName) => {
 
   currentY = doc.lastAutoTable.finalY + 12;
 
-  // Summary table
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.primary);
@@ -1046,15 +1021,14 @@ export const generateRegisterPdf = (register, settings, userName) => {
     },
   });
 
-  // ─── Apply footer to ALL pages ───
   addFooter(doc, userName);
-
   return doc;
 };
 
-/**
- * Helper: Download the PDF
- */
+// ═══════════════════════════════════════════════════════════════════
+//  DOWNLOAD / PRINT HELPERS
+// ═══════════════════════════════════════════════════════════════════
+
 export const downloadPdf = (doc, filename) => {
   doc.save(`${filename}.pdf`);
 };

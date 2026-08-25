@@ -85,7 +85,10 @@ const updateStudentStatusSchema = Joi.object({
 });
 
 // ═══════════════════════════════════════════════════════════════════
-//  QUERY / LIST STUDENTS (default sort changed to "name")
+//  QUERY / LIST STUDENTS (Failsafe Senior Updates)
+//  - Increased limit boundary to 10000 for exports
+//  - Added .unknown(true) to completely bypass auxiliary query keys
+//  - Set default sort to "name"
 // ═══════════════════════════════════════════════════════════════════
 const queryStudentSchema = Joi.object({
   session: objectId,
@@ -106,9 +109,9 @@ const queryStudentSchema = Joi.object({
     "AB-",
   ),
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(2000).default(24),
-  sort: Joi.string().default("name"),
-});
+  limit: Joi.number().integer().min(1).max(10000).default(24), // Max increased for exports
+  sort: Joi.string().default("name"), // Sorting default to name
+}).unknown(true); // Failsafe pass for frontend tracking parameters
 
 // ═══════════════════════════════════════════════════════════════════
 //  BULK DELETE (unchanged)
