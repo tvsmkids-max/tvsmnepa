@@ -24,7 +24,7 @@ class AnalyticsService {
    * Apply teacher filter to class IDs
    */
   async _getAccessibleClassIds(user, sessionId) {
-    if (user?.role !== "teacher") return null; // null = all classes
+    if (user?.role !== "teacher") return null;
 
     const Teacher = require("../models/Teacher.model");
     const teacher = await Teacher.findOne({ user: user._id }).lean();
@@ -32,8 +32,22 @@ class AnalyticsService {
     return teacher.assignedClasses;
   }
 
+  // Helper to generate strict, timezone-locked date boundary ranges
+  _getISTBounds(dateObj) {
+    const tzOffset = 5.5 * 60 * 60 * 1000;
+    const istTime = new Date(dateObj.getTime() + tzOffset);
+    const y = istTime.getUTCFullYear();
+    const m = String(istTime.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(istTime.getUTCDate()).padStart(2, "0");
+    const dateStr = `${y}-${m}-${d}`;
+
+    const start = new Date(`${dateStr}T00:00:00.000Z`);
+    const end = new Date(`${dateStr}T23:59:59.999Z`);
+    return { start, end };
+  }
+
   /**
-   * QUICK STATS — Today, Week, Month, Year overview
+   * QUICK STATS — Today, Week, Month, Year overview (Timezone Locked)
    */
   async getQuickStats(user) {
     const sessionId = await this._getActiveSessionId();
@@ -47,26 +61,27 @@ class AnalyticsService {
       baseMatch.class = { $in: classFilter };
     }
 
-    // Date ranges
+    // Timezone-locked bounds calculations
+    const tzOffset = 5.5 * 60 * 60 * 1000;
     const now = new Date();
-    const today = new Date(now);
-    today.setHours(0, 0, 0, 0);
+    const istTime = new Date(now.getTime() + tzOffset);
+    const y = istTime.getUTCFullYear();
+    const m = String(istTime.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(istTime.getUTCDate()).padStart(2, "0");
+    const todayStr = `${y}-${m}-${d}`;
 
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - 7);
+    const todayStart = new Date(`${todayStr}T00:00:00.000Z`);
+    const tomorrowStart = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const yearStart = new Date(now.getFullYear(), 0, 1);
+    const weekStart = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthStart = new Date(`${y}-${m}-01T00:00:00.000Z`);
+    const yearStart = new Date(`${y}-01-01T00:00:00.000Z`);
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    // Run all 4 aggregations in parallel
     const [todayStats, weekStats, monthStats, yearStats] = await Promise.all([
-      this._calcStats(baseMatch, today, tomorrow),
-      this._calcStats(baseMatch, weekStart, tomorrow),
-      this._calcStats(baseMatch, monthStart, tomorrow),
-      this._calcStats(baseMatch, yearStart, tomorrow),
+      this._calcStats(baseMatch, todayStart, tomorrowStart),
+      this._calcStats(baseMatch, weekStart, tomorrowStart),
+      this._calcStats(baseMatch, monthStart, tomorrowStart),
+      this._calcStats(baseMatch, yearStart, tomorrowStart),
     ]);
 
     return {
@@ -110,7 +125,7 @@ class AnalyticsService {
   }
 
   /**
-   * ATTENDANCE TREND — Last N days line chart data
+   * ATTENDANCE TREND — Last N days line chart data (Timezone Locked)
    */
   async getTrend(user, days = 30) {
     const sessionId = await this._getActiveSessionId();
@@ -124,11 +139,19 @@ class AnalyticsService {
       baseMatch.class = { $in: classFilter };
     }
 
-    const endDate = new Date();
-    endDate.setHours(23, 59, 59, 999);
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    startDate.setHours(0, 0, 0, 0);
+    const tzOffset = 5.5 * 60 * 60 * 1000;
+    const now = new Date();
+    const istTime = new Date(now.getTime() + tzOffset);
+    const y = istTime.getUTCFullYear();
+    const m = String(istTime.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(istTime.getUTCDate()).padStart(2, "0");
+    const todayStr = `${y}-${m}-${d}`;
+
+    const endDate = new Date(`${todayStr}T23:59:59.999Z`);
+    const startDate = new Date(
+      new Date(`${todayStr}T00:00:00.000Z`).getTime() -
+        days * 24 * 60 * 60 * 1000,
+    );
 
     const trend = await Attendance.aggregate([
       {
@@ -151,7 +174,6 @@ class AnalyticsService {
       { $sort: { "_id.date": 1 } },
     ]);
 
-    // Build daily map
     const dailyMap = {};
     trend.forEach((t) => {
       const date = t._id.date;
@@ -159,7 +181,6 @@ class AnalyticsService {
       dailyMap[date][t._id.status] = t.count;
     });
 
-    // Build complete array (fill missing dates)
     const data = [];
     const cur = new Date(startDate);
     while (cur <= endDate) {
@@ -185,7 +206,7 @@ class AnalyticsService {
   }
 
   /**
-   * CLASS COMPARISON — All classes with their attendance %
+   * CLASS COMPARISON — All classes with their attendance % (Timezone Locked)
    */
   async getClassComparison(user) {
     const sessionId = await this._getActiveSessionId();
@@ -193,7 +214,6 @@ class AnalyticsService {
 
     const classFilter = await this._getAccessibleClassIds(user, sessionId);
 
-    // Get classes
     const classQuery = { session: sessionId, isArchived: false };
     if (classFilter !== null) {
       if (classFilter.length === 0) return [];
@@ -205,11 +225,16 @@ class AnalyticsService {
 
     const classIds = classes.map((c) => c._id);
 
-    // Current month aggregation
+    const tzOffset = 5.5 * 60 * 60 * 1000;
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date();
-    monthEnd.setHours(23, 59, 59, 999);
+    const istTime = new Date(now.getTime() + tzOffset);
+    const y = istTime.getUTCFullYear();
+    const m = String(istTime.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(istTime.getUTCDate()).padStart(2, "0");
+    const todayStr = `${y}-${m}-${d}`;
+
+    const monthStart = new Date(`${y}-${m}-01T00:00:00.000Z`);
+    const monthEnd = new Date(`${todayStr}T23:59:59.999Z`);
 
     const stats = await Attendance.aggregate([
       {
@@ -226,7 +251,6 @@ class AnalyticsService {
       },
     ]);
 
-    // Get student count per class
     const studentCounts = await Student.aggregate([
       {
         $match: {
@@ -243,7 +267,6 @@ class AnalyticsService {
       studentMap[s._id.toString()] = s.count;
     });
 
-    // Build per-class data
     const classStats = {};
     stats.forEach((s) => {
       const cid = s._id.class.toString();
@@ -273,7 +296,7 @@ class AnalyticsService {
   }
 
   /**
-   * DISTRIBUTION — Pie chart data (Present vs Absent)
+   * DISTRIBUTION — Pie chart data (Timezone Locked)
    */
   async getDistribution(user) {
     const sessionId = await this._getActiveSessionId();
@@ -291,11 +314,16 @@ class AnalyticsService {
       baseMatch.class = { $in: classFilter };
     }
 
-    // Current month
+    const tzOffset = 5.5 * 60 * 60 * 1000;
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date();
-    monthEnd.setHours(23, 59, 59, 999);
+    const istTime = new Date(now.getTime() + tzOffset);
+    const y = istTime.getUTCFullYear();
+    const m = String(istTime.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(istTime.getUTCDate()).padStart(2, "0");
+    const todayStr = `${y}-${m}-${d}`;
+
+    const monthStart = new Date(`${y}-${m}-01T00:00:00.000Z`);
+    const monthEnd = new Date(`${todayStr}T23:59:59.999Z`);
 
     const stats = await Attendance.aggregate([
       {
@@ -318,7 +346,7 @@ class AnalyticsService {
   }
 
   /**
-   * TOP DEFAULTERS — Top N students with lowest attendance
+   * TOP DEFAULTERS — Lowest attendance (Timezone Locked & Cleaned of Roll references)
    */
   async getTopDefaulters(user, limit = 10) {
     const sessionId = await this._getActiveSessionId();
@@ -341,11 +369,16 @@ class AnalyticsService {
       .populate("class", "name section")
       .lean();
 
-    // Current month attendance for each
+    const tzOffset = 5.5 * 60 * 60 * 1000;
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date();
-    monthEnd.setHours(23, 59, 59, 999);
+    const istTime = new Date(now.getTime() + tzOffset);
+    const y = istTime.getUTCFullYear();
+    const m = String(istTime.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(istTime.getUTCDate()).padStart(2, "0");
+    const todayStr = `${y}-${m}-${d}`;
+
+    const monthStart = new Date(`${y}-${m}-01T00:00:00.000Z`);
+    const monthEnd = new Date(`${todayStr}T23:59:59.999Z`);
 
     const defaulters = [];
 
@@ -368,7 +401,7 @@ class AnalyticsService {
       });
 
       const total = present + absent;
-      if (total === 0) continue; // Skip if no attendance marked
+      if (total === 0) continue;
 
       const percentage = Math.round((present / total) * 100);
 
@@ -376,7 +409,6 @@ class AnalyticsService {
         _id: s._id,
         name: s.name,
         scholarNumber: s.scholarNumber,
-        rollNumber: s.rollNumber,
         class: s.class,
         mobile: s.mobile,
         present,
@@ -421,7 +453,6 @@ class AnalyticsService {
           )
         : 0;
 
-    // Compare to last month
     const lastMonthAvg = await this._getLastMonthAverage(user);
     const currentMonthAvg = avgPercentage;
     const trend = currentMonthAvg - lastMonthAvg;
@@ -453,16 +484,17 @@ class AnalyticsService {
       baseMatch.class = { $in: classFilter };
     }
 
+    const tzOffset = 5.5 * 60 * 60 * 1000;
     const now = new Date();
-    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const istTime = new Date(now.getTime() + tzOffset);
+    const y = istTime.getUTCFullYear();
+    const m = istTime.getUTCMonth(); // Previous month calculations
+
+    const lastMonthStart = new Date(
+      Date.UTC(y, m - 1, 1, 0, 0, 0, 0) - tzOffset,
+    );
     const lastMonthEnd = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      0,
-      23,
-      59,
-      59,
-      999,
+      Date.UTC(y, m, 0, 23, 59, 59, 999) - tzOffset,
     );
 
     const stats = await Attendance.aggregate([

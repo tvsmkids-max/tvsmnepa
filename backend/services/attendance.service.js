@@ -13,8 +13,32 @@ const throwError = (message, statusCode = 400) => {
 };
 
 class AttendanceService {
+  // ═══════════════════════════════════════════════════════════════
+  //  TIMEZONE-AWARE DATE PARSER (Forced to Asia/Kolkata UTC Midnights)
+  // ═══════════════════════════════════════════════════════════════
+  _parseDateRange(dateInput) {
+    let dateStr;
+    if (
+      typeof dateInput === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(dateInput)
+    ) {
+      dateStr = dateInput;
+    } else {
+      const dObj = dateInput ? new Date(dateInput) : new Date();
+      const tzOffset = 5.5 * 60 * 60 * 1000; // IST offset
+      const istTime = new Date(dObj.getTime() + tzOffset);
+      const y = istTime.getUTCFullYear();
+      const m = String(istTime.getUTCMonth() + 1).padStart(2, "0");
+      const d = String(istTime.getUTCDate()).padStart(2, "0");
+      dateStr = `${y}-${m}-${d}`;
+    }
+    const start = new Date(`${dateStr}T00:00:00.000Z`);
+    const end = new Date(`${dateStr}T23:59:59.999Z`);
+    return { start, end };
+  }
+
   /**
-   * Get attendance sheet for a class on a specific date
+   * Get attendance sheet for a class on a specific date (A-Z Name Sorted)
    */
   async getSheet({ classId, date, user }) {
     const cls = await classRepository.findById(classId);
@@ -23,7 +47,9 @@ class AttendanceService {
     const settings = await Settings.getSettings();
     const sessionId = cls.session;
 
-    const holiday = await holidayRepository.isHoliday(date, sessionId);
+    const { start: dayStart, end: dayEnd } = this._parseDateRange(date);
+
+    const holiday = await holidayRepository.isHoliday(dayStart, sessionId);
     if (holiday && !holiday.allowAttendance) {
       return {
         students: [],
@@ -41,13 +67,8 @@ class AttendanceService {
       status: { $nin: STATUSES_BLOCKING_ATTENDANCE },
       isActive: true,
     })
-      .sort("rollNumber")
+      .sort("name") // Sorted alphabetically by student name by default
       .lean();
-
-    const dayStart = new Date(date);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(date);
-    dayEnd.setHours(23, 59, 59, 999);
 
     const Attendance = require("../models/Attendance.model");
     const records = await Attendance.find({
@@ -103,13 +124,18 @@ class AttendanceService {
   }
 
   /**
-   * Mark or update attendance for entire class
+   * Mark or update attendance for entire class (Timezone Locked)
    */
   async markAttendance({ classId, date, records, user, req }) {
     const cls = await classRepository.findById(classId);
     if (!cls) throwError("Class not found", 404);
 
-    const holiday = await holidayRepository.isHoliday(date, cls.session);
+    const { start: normalizedDate } = this._parseDateRange(date);
+
+    const holiday = await holidayRepository.isHoliday(
+      normalizedDate,
+      cls.session,
+    );
     if (holiday && !holiday.allowAttendance) {
       throwError(
         `Cannot mark attendance on holiday: ${holiday.name}. Admin must enable override.`,
@@ -117,7 +143,10 @@ class AttendanceService {
       );
     }
 
-    const isLocked = await attendanceRepository.isLocked(classId, date);
+    const isLocked = await attendanceRepository.isLocked(
+      classId,
+      normalizedDate,
+    );
     if (isLocked && user.role !== "admin") {
       throwError(
         "Attendance is locked for this date. Contact admin to unlock.",
@@ -145,7 +174,7 @@ class AttendanceService {
       student: r.student,
       class: classId,
       session: cls.session,
-      date,
+      date: normalizedDate,
       status: r.status,
       markedBy: user._id,
     }));
@@ -156,7 +185,7 @@ class AttendanceService {
       user,
       action: "MARK_ATTENDANCE",
       module: "Attendance",
-      description: `Marked attendance for Class ${cls.name}-${cls.section} on ${new Date(date).toDateString()}`,
+      description: `Marked attendance for Class ${cls.name}-${cls.section} on ${normalizedDate.toDateString()}`,
       resourceId: classId,
       resourceType: "Class",
       req,
@@ -204,7 +233,7 @@ class AttendanceService {
   }
 
   /**
-   * Lock attendance for a class on a date
+   * Lock attendance for a class on a date (Timezone Locked)
    */
   async lock({ classId, date, user, req }) {
     if (user.role !== "admin") {
@@ -214,7 +243,11 @@ class AttendanceService {
     const cls = await classRepository.findById(classId);
     if (!cls) throwError("Class not found", 404);
 
-    const result = await attendanceRepository.lockByClassAndDate(classId, date);
+    const { start: normalizedDate } = this._parseDateRange(date);
+    const result = await attendanceRepository.lockByClassAndDate(
+      classId,
+      normalizedDate,
+    );
 
     if (result.matchedCount === 0) {
       throwError("No attendance records found to lock", 404);
@@ -224,7 +257,7 @@ class AttendanceService {
       user,
       action: "LOCK",
       module: "Attendance",
-      description: `Locked attendance for ${cls.name}-${cls.section} on ${new Date(date).toDateString()}`,
+      description: `Locked attendance for ${cls.name}-${cls.section} on ${normalizedDate.toDateString()}`,
       resourceId: classId,
       resourceType: "Class",
       req,
@@ -234,7 +267,7 @@ class AttendanceService {
   }
 
   /**
-   * Unlock attendance for a class on a date
+   * Unlock attendance for a class on a date (Timezone Locked)
    */
   async unlock({ classId, date, user, req }) {
     if (user.role !== "admin") {
@@ -244,16 +277,17 @@ class AttendanceService {
     const cls = await classRepository.findById(classId);
     if (!cls) throwError("Class not found", 404);
 
+    const { start: normalizedDate } = this._parseDateRange(date);
     const result = await attendanceRepository.unlockByClassAndDate(
       classId,
-      date,
+      normalizedDate,
     );
 
     await createAuditLog({
       user,
       action: "UNLOCK",
       module: "Attendance",
-      description: `Unlocked attendance for ${cls.name}-${cls.section} on ${new Date(date).toDateString()}`,
+      description: `Unlocked attendance for ${cls.name}-${cls.section} on ${normalizedDate.toDateString()}`,
       resourceId: classId,
       resourceType: "Class",
       req,
@@ -294,14 +328,13 @@ class AttendanceService {
   }
 
   /**
-   * Get pending attendance classes for today
+   * Get pending attendance classes for today (Timezone Locked)
    */
   async getPendingToday() {
     const settings = await Settings.getSettings();
     if (!settings?.activeSession) return [];
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const { start: today } = this._parseDateRange();
 
     const holiday = await holidayRepository.isHoliday(
       today,
@@ -309,7 +342,10 @@ class AttendanceService {
     );
     if (holiday && !holiday.allowAttendance) return [];
 
-    const dayName = today.toLocaleDateString("en-US", { weekday: "long" });
+    const dayName = today.toLocaleDateString("en-US", {
+      weekday: "long",
+      timeZone: "Asia/Kolkata",
+    });
     const workingDay = settings.workingDays?.find((d) => d.day === dayName);
     if (workingDay && !workingDay.isWorking) return [];
 
@@ -319,14 +355,15 @@ class AttendanceService {
     );
   }
 
+  /**
+   * Get today's stats - Fully Timezone Aligned to IST
+   */
   async getTodayStats() {
     const Class = require("../models/Class.model");
     const Student = require("../models/Student.model");
     const Attendance = require("../models/Attendance.model");
     const AcademicSession = require("../models/AcademicSession.model");
-    const Holiday = require("../models/Holiday.model");
 
-    // ─── Get active session ───
     let activeSessionId = null;
     const settings = await Settings.findOne().populate("activeSession").lean();
     if (settings?.activeSession) {
@@ -341,17 +378,17 @@ class AttendanceService {
       return this._emptyTodayStats();
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    // Unify timezone dates strictly to Asia/Kolkata (IST) UTC Boundaries
+    const { start: today, end: todayEnd } = this._parseDateRange();
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
 
-    // ═══════════════════════════════════════════════════════════════
-    //  NEW: Check both holiday AND non-working day
-    // ═══════════════════════════════════════════════════════════════
-    const dayName = today.toLocaleDateString("en-US", { weekday: "long" });
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+      timeZone: "Asia/Kolkata",
+    });
+    const dayName = formatter.format(new Date());
+
     const settingsFull = await Settings.getSettings();
     const workingDay = settingsFull?.workingDays?.find(
       (d) => d.day === dayName,
@@ -362,9 +399,7 @@ class AttendanceService {
     const isHoliday = holiday && !holiday.allowAttendance;
     const isNonWorkingDay = !isWorkingDay && !isHoliday;
 
-    // ✅ If holiday OR non-working day, return early with rich info
     if (isHoliday || isNonWorkingDay) {
-      // Find next working day
       const nextWorkingDay = await this._findNextWorkingDayForAttendance(
         activeSessionId,
         today,
@@ -384,7 +419,6 @@ class AttendanceService {
       };
     }
 
-    // ─── Get classes ───
     let classes = await Class.find({
       session: activeSessionId,
       isArchived: false,
@@ -519,6 +553,25 @@ class AttendanceService {
         }
       : null;
 
+    // Smart Sort Class breakdown helper
+    const getClassRank = (className) => {
+      if (!className) return 999;
+      const name = className.toString().trim().toUpperCase();
+      if (/^PRE/.test(name) || name === "PLAYGROUP" || name === "PLAY")
+        return 0;
+      if (/^NUR/.test(name) || name === "NURSERY") return 1;
+      if (/^L\.?K\.?G/.test(name) || name === "LKG" || name === "LOWER KG")
+        return 2;
+      if (/^U\.?K\.?G/.test(name) || name === "UKG" || name === "UPPER KG")
+        return 3;
+      const numMatch = name.match(/^(?:CLASS\s*)?(\d{1,2})(?:ST|ND|RD|TH)?/);
+      if (numMatch) {
+        const num = parseInt(numMatch[1], 10);
+        if (num >= 1 && num <= 12) return 10 + num;
+      }
+      return 999;
+    };
+
     return {
       isHoliday: false,
       isNonWorkingDay: false,
@@ -534,16 +587,19 @@ class AttendanceService {
       absent,
       unmarked,
       percentage,
-      classBreakdown: classBreakdown.sort((a, b) =>
-        a.name.localeCompare(b.name),
-      ),
+      classBreakdown: classBreakdown.sort((a, b) => {
+        const rA = getClassRank(a.name);
+        const rB = getClassRank(b.name);
+        if (rA !== rB) return rA - rB;
+        return (a.section || "").localeCompare(b.section || "");
+      }),
       yesterday: yesterdayStats,
       trends,
     };
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  NEW HELPER: Find next working day
+  //  FIND NEXT WORKING DAY (Forced to Asia/Kolkata)
   // ═══════════════════════════════════════════════════════════════
   async _findNextWorkingDayForAttendance(sessionId, fromDate) {
     const Holiday = require("../models/Holiday.model");
@@ -587,6 +643,7 @@ class AttendanceService {
 
       const candidateDayName = candidate.toLocaleDateString("en-US", {
         weekday: "long",
+        timeZone: "Asia/Kolkata",
       });
 
       const isWorking =
@@ -604,6 +661,7 @@ class AttendanceService {
           weekday: "long",
           day: "numeric",
           month: "short",
+          timeZone: "Asia/Kolkata",
         }),
       };
     }
@@ -611,9 +669,6 @@ class AttendanceService {
     return null;
   }
 
-  /**
-   * Empty stats object (for fallback)
-   */
   _emptyTodayStats() {
     return {
       isHoliday: false,
@@ -637,12 +692,9 @@ class AttendanceService {
   }
 
   // ═══════════════════════════════════════════════════════════
-  //  NEW DASHBOARD METHODS
+  //  NEW DASHBOARD METHODS (Cleansed of Roll references)
   // ═══════════════════════════════════════════════════════════
 
-  /**
-   * Dashboard KPIs — today's actionable metrics with trends
-   */
   async getDashboardKPIs() {
     const Student = require("../models/Student.model");
 
@@ -696,9 +748,6 @@ class AttendanceService {
     };
   }
 
-  /**
-   * Dashboard Alerts — actionable items needing attention
-   */
   async getDashboardAlerts() {
     const Class = require("../models/Class.model");
     const Student = require("../models/Student.model");
@@ -728,17 +777,18 @@ class AttendanceService {
     }
 
     const alerts = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { start: today, end: todayEnd } = this._parseDateRange();
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
     // ─── ALERT 1: Pending Classes ───
     try {
       const holiday = await Holiday.isHoliday(today, activeSessionId);
       const isHoliday = holiday && !holiday.allowAttendance;
 
-      const dayName = today.toLocaleDateString("en-US", { weekday: "long" });
+      const dayName = today.toLocaleDateString("en-US", {
+        weekday: "long",
+        timeZone: "Asia/Kolkata",
+      });
       const workingDay = settings?.workingDays?.find((d) => d.day === dayName);
       const isWorkingDay = !workingDay || workingDay.isWorking;
 
@@ -791,7 +841,7 @@ class AttendanceService {
       // Silent fail
     }
 
-    // ─── ALERT 2: Defaulters (below threshold this month) ───
+    // ─── ALERT 2: Defaulters (Cleansed of Roll references) ───
     try {
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
       const threshold = settings?.warningPercentage || 75;
@@ -801,7 +851,8 @@ class AttendanceService {
         status: "Active",
         isActive: true,
       })
-        .limit(500)
+        .select("_id name scholarNumber class") // Removed rollNumber
+        .limit(1000)
         .lean();
 
       let defaulterCount = 0;
@@ -850,7 +901,7 @@ class AttendanceService {
           message: defaulterNames.join(", ") + moreText,
           count: defaulterCount,
           actionLabel: "View List",
-          actionLink: "/reports",
+          actionLink: "/reports/defaulters", // Cleaned redirect link
           metadata: { threshold },
         });
       }
@@ -858,7 +909,7 @@ class AttendanceService {
       // Silent fail
     }
 
-    // ─── ALERT 3: Upcoming Holidays (next 7 days) ───
+    // ─── ALERT 3: Upcoming Holidays ───
     try {
       const next7Days = new Date(today);
       next7Days.setDate(next7Days.getDate() + 7);
@@ -907,7 +958,7 @@ class AttendanceService {
       // Silent fail
     }
 
-    // ─── ALERT 4: System Configuration Issues ───
+    // ─── ALERT 4: Configuration Issues ───
     try {
       if (!settings?.attendanceOpenTime || !settings?.attendanceLockTime) {
         alerts.push({
@@ -922,7 +973,6 @@ class AttendanceService {
         });
       }
 
-      // Check last backup
       const lastBackup = settings?.lastBackupAt;
       if (!lastBackup) {
         alerts.push({
@@ -956,7 +1006,6 @@ class AttendanceService {
       // Silent fail
     }
 
-    // Sort by priority
     const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
     alerts.sort(
       (a, b) =>
@@ -969,9 +1018,6 @@ class AttendanceService {
     };
   }
 
-  /**
-   * Recent Activity Feed for Dashboard
-   */
   async getRecentActivity(limit = 10) {
     const ActivityLog = require("../models/ActivityLog.model");
 
@@ -1010,9 +1056,6 @@ class AttendanceService {
     }));
   }
 
-  /**
-   * Helper: Determine icon type for activity feed
-   */
   _getActivityIconType(action, module) {
     if (action === "MARK_ATTENDANCE") return "attendance";
     if (action === "LOGIN") return "login";

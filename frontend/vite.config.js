@@ -11,7 +11,7 @@ export default defineConfig({
   plugins: [
     react(),
 
-    // ─── PWA PLUGIN (Guarded Prompt Mode) ───
+    // ─── PWA PLUGIN (Interactive Prompt Mode) ───
     VitePWA({
       registerType: "prompt",
       injectRegister: "auto",
@@ -85,8 +85,8 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api/],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
-        // Enabled skipWaiting to prevent the SW from hanging in waiting status
-        skipWaiting: true,
+        // ✅ MUST be false in prompt mode to prevent loop triggers!
+        skipWaiting: false,
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {
