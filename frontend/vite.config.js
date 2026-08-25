@@ -11,9 +11,9 @@ export default defineConfig({
   plugins: [
     react(),
 
-    // ─── PWA PLUGIN (Interactive Prompt Mode) ───
+    // ─── PWA PLUGIN (Silent Automatic Updates) ───
     VitePWA({
-      registerType: "prompt",
+      registerType: "autoUpdate",
       injectRegister: "auto",
       includeAssets: ["favicon.svg", "logo.png", "loader.svg"],
       manifest: {
@@ -85,8 +85,7 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api/],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
-        // ✅ MUST be false in prompt mode to prevent loop triggers!
-        skipWaiting: false,
+        skipWaiting: true, // ✅ Immediately take over without asking
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {

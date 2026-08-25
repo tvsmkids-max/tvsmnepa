@@ -38,7 +38,6 @@ import SaveIcon from "@mui/icons-material/Save";
 import BeachAccessIcon from "@mui/icons-material/BeachAccess";
 import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
-import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
 import PageHeader from "../../components/common/PageHeader";
 import EmptyState from "../../components/common/EmptyState";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
@@ -480,7 +479,7 @@ const MarkAttendancePage = () => {
           bgcolor: "background.paper",
         }}
       >
-        {/* Row 1: Class + Date */}
+        {/* Row 1: Class + Date (UX OPTIMIZED FOR MOBILE) */}
         <Stack
           direction="row"
           spacing={1}
@@ -488,62 +487,23 @@ const MarkAttendancePage = () => {
           alignItems="center"
         >
           {showClassAsBadge ? (
-            <Box
-              sx={{
-                flex: 2,
-                minWidth: 0,
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                px: 1.5,
-                py: 1,
-                borderRadius: 1.5,
-                border: "1px solid",
-                borderColor: isDark
-                  ? alpha("#1E4D98", 0.4)
-                  : alpha("#1E4D98", 0.2),
-                bgcolor: isDark
-                  ? alpha("#1E4D98", 0.12)
-                  : alpha("#1E4D98", 0.06),
-                minHeight: 40,
-              }}
-            >
-              <ClassOutlinedIcon
+            // ═══ TEACHER WITH 1 CLASS — Ultra-compact badge ═══
+            <Box sx={{ flex: 1, display: "flex", alignItems: "center" }}>
+              <Chip
+                label={`${singleClass.name}-${singleClass.section} • ${singleClass.studentCount ?? sheet?.students?.length ?? 0}`}
                 sx={{
-                  fontSize: 20,
+                  bgcolor: isDark ? alpha("#3B82F6", 0.15) : "#E0EBFF",
                   color: isDark ? "#93C5FD" : "#1E4D98",
-                  flexShrink: 0,
+                  fontWeight: 800,
+                  fontSize: { xs: "0.85rem", sm: "0.9rem" },
+                  height: 36, // Perfectly aligns with the textfield height
+                  borderRadius: 1.5,
+                  "& .MuiChip-label": { px: 1.5 },
                 }}
               />
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography
-                  variant="body2"
-                  fontWeight={800}
-                  sx={{
-                    fontSize: "0.9rem",
-                    color: isDark ? "#93C5FD" : "#1E4D98",
-                    lineHeight: 1.1,
-                  }}
-                  noWrap
-                >
-                  Class {singleClass.name} - {singleClass.section}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    fontSize: "0.68rem",
-                    color: isDark
-                      ? alpha("#93C5FD", 0.7)
-                      : alpha("#1E4D98", 0.7),
-                    fontWeight: 600,
-                  }}
-                >
-                  {singleClass.studentCount ?? sheet?.students?.length ?? 0}{" "}
-                  students · Your assigned class
-                </Typography>
-              </Box>
             </Box>
           ) : (
+            // ═══ ADMIN/PRINCIPAL/MULTI-CLASS TEACHER — Dropdown ═══
             <FormControl size="small" sx={{ flex: 2, minWidth: 0 }}>
               <InputLabel>Class</InputLabel>
               <Select
@@ -583,8 +543,8 @@ const MarkAttendancePage = () => {
             InputLabelProps={{ shrink: true }}
             inputProps={{ max: formatDate(new Date()) }}
             sx={{
-              flex: 1,
-              minWidth: 130,
+              width: 130, // Fixed width prevents squeezing on mobile
+              flexShrink: 0,
               "& input": { fontWeight: 700, fontSize: "0.82rem" },
             }}
           />
@@ -1064,7 +1024,6 @@ const MarkAttendancePage = () => {
                 <Table stickyHeader size="small">
                   <TableHead>
                     <TableRow>
-                      {/* Static column heading replacing "ROLL" with "S. NO." */}
                       <TableCell
                         sx={{
                           fontWeight: 800,
@@ -1095,7 +1054,6 @@ const MarkAttendancePage = () => {
                         </TableSortLabel>
                       </TableCell>
 
-                      {/* Header label "SCHOLAR" forced on a single line */}
                       <TableCell
                         sx={{
                           fontWeight: 800,
@@ -1156,7 +1114,6 @@ const MarkAttendancePage = () => {
                             "& td": { py: 1, borderColor: "divider" },
                           }}
                         >
-                          {/* S. No. dynamic column */}
                           <TableCell>
                             <Typography
                               variant="body2"
@@ -1230,7 +1187,7 @@ const MarkAttendancePage = () => {
             </Paper>
           )}
 
-          {/* Sticky Save Bar */}
+          {/* ═══ STICKY SAVE BAR ═══ */}
           {stats.total > 0 && (
             <Paper
               sx={{
@@ -1290,7 +1247,7 @@ const MarkAttendancePage = () => {
         </>
       )}
 
-      {/* LOCK DIALOG */}
+      {/* ═══ LOCK DIALOG ═══ */}
       <ConfirmDialog
         open={!!confirmLock}
         title={
