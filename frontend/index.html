@@ -3,7 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/logo.png" type="image/png" />
-    <!-- <link rel="apple-touch-icon" href="/logo.png" /> -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"
@@ -13,8 +12,7 @@
       content="TVSM School — Attendance Management System"
     />
     <meta name="author" content="Abhishek" />
-
-    <meta name="theme-color" content="#0D1B3E" />
+    <meta name="theme-color" content="#0F172A" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
@@ -30,7 +28,15 @@
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/logo.png" />
 
-    <title>TVSM- Attendance Management</title>
+    <!-- 🌟 NEW: Premium SaaS Font (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>TVSM - Attendance Management</title>
 
     <style>
       * {
@@ -39,7 +45,9 @@
         box-sizing: border-box;
       }
       body {
-        background-color: #f5f6fa;
+        background-color: #f8fafc; /* Modern slate-50 background */
+        font-family: "Inter", sans-serif;
+        -webkit-font-smoothing: antialiased;
       }
 
       #root-loader {
@@ -47,14 +55,14 @@
         align-items: center;
         justify-content: center;
         height: 100vh;
-        background: #f5f6fa;
+        background: #f8fafc;
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
         z-index: 9999;
-        transition: opacity 0.3s ease;
+        transition: opacity 0.4s ease;
       }
 
       #root-loader.hidden {
@@ -62,7 +70,6 @@
         pointer-events: none;
       }
 
-      /* iOS safe area support */
       @supports (padding: max(0px)) {
         body {
           padding-left: env(safe-area-inset-left);
@@ -78,8 +85,8 @@
       <img
         src="/loader.svg"
         alt=""
-        width="120"
-        height="120"
+        width="90"
+        height="90"
         style="object-fit: contain"
       />
     </div>
@@ -94,7 +101,7 @@
           l.classList.add("hidden");
           setTimeout(function () {
             if (l.parentNode) l.parentNode.removeChild(l);
-          }, 300);
+          }, 400);
           clearInterval(ci);
         }
       }, 100);

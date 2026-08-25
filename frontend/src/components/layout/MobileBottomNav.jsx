@@ -15,7 +15,9 @@ import {
   Divider,
   Stack,
   IconButton,
+  useTheme,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
@@ -42,6 +44,8 @@ const MobileBottomNav = () => {
   const location = useLocation();
   const { user, isAdmin, logout } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
 
   const getCurrentValue = () => {
     const path = location.pathname;
@@ -85,7 +89,7 @@ const MobileBottomNav = () => {
     navigate("/login", { replace: true });
   };
 
-  // ─── ADMIN MORE ITEMS (Cleaned of legacy History) ───
+  // ─── ADMIN MORE ITEMS ───
   const adminMoreItems = [
     { divider: true, label: "Personal" },
     { label: "My Profile", icon: <PersonOutlinedIcon />, path: "/profile" },
@@ -136,7 +140,7 @@ const MobileBottomNav = () => {
     { label: "Settings", icon: <SettingsOutlinedIcon />, path: "/settings" },
   ];
 
-  // ─── TEACHER MORE ITEMS (Cleaned of legacy History) ───
+  // ─── TEACHER MORE ITEMS ───
   const teacherMoreItems = [
     { divider: true, label: "Personal" },
     { label: "My Profile", icon: <PersonOutlinedIcon />, path: "/profile" },
@@ -168,6 +172,8 @@ const MobileBottomNav = () => {
           borderColor: "divider",
           borderRadius: 0,
           bgcolor: "background.paper",
+          // iOS Safe Area support
+          paddingBottom: "env(safe-area-inset-bottom)",
         }}
         elevation={0}
       >
@@ -182,13 +188,28 @@ const MobileBottomNav = () => {
               minWidth: "auto",
               padding: "6px 4px",
               color: "text.secondary",
-              "&.Mui-selected": { color: "primary.main" },
+              transition: "all 0.2s",
+              // Premium Active Tab Indicator (Top Accent Line)
+              "&.Mui-selected": {
+                color: "primary.main",
+                position: "relative",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  left: "25%",
+                  right: "25%",
+                  height: 3,
+                  borderRadius: "0 0 4px 4px",
+                  bgcolor: "primary.main",
+                },
+              },
             },
             "& .MuiBottomNavigationAction-label": {
               fontSize: "0.65rem",
               fontWeight: 600,
               marginTop: "2px",
-              "&.Mui-selected": { fontSize: "0.67rem", fontWeight: 700 },
+              "&.Mui-selected": { fontSize: "0.68rem", fontWeight: 800 },
             },
           }}
         >
@@ -235,7 +256,7 @@ const MobileBottomNav = () => {
         PaperProps={{
           sx: {
             borderRadius: "16px 16px 0 0",
-            maxHeight: "75vh",
+            maxHeight: "80vh",
             bgcolor: "background.paper",
             backgroundImage: "none",
           },
@@ -264,7 +285,7 @@ const MobileBottomNav = () => {
                 sx={{
                   width: 40,
                   height: 40,
-                  bgcolor: "primary.main",
+                  bgcolor: isAdmin ? "primary.main" : "secondary.main",
                   fontSize: "0.95rem",
                   fontWeight: 800,
                 }}
@@ -274,8 +295,8 @@ const MobileBottomNav = () => {
               <Box>
                 <Typography
                   variant="body2"
-                  fontWeight={700}
-                  sx={{ color: "text.primary" }}
+                  fontWeight={800}
+                  sx={{ color: "text.primary", letterSpacing: "-0.01em" }}
                 >
                   {user?.name}
                 </Typography>
@@ -284,16 +305,22 @@ const MobileBottomNav = () => {
                   sx={{
                     color: "text.secondary",
                     fontSize: "0.7rem",
-                    textTransform: "capitalize",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    fontWeight: 700,
                   }}
                 >
                   {user?.role}
                 </Typography>
               </Box>
             </Stack>
-            <IconButton onClick={() => setDrawerOpen(false)} size="small">
+            <IconButton
+              onClick={() => setDrawerOpen(false)}
+              size="small"
+              sx={{ bgcolor: "action.hover" }}
+            >
               <CloseOutlinedIcon
-                sx={{ fontSize: 20, color: "text.secondary" }}
+                sx={{ fontSize: 18, color: "text.secondary" }}
               />
             </IconButton>
           </Stack>
@@ -301,7 +328,7 @@ const MobileBottomNav = () => {
 
         <Divider />
 
-        <List sx={{ px: 1, py: 1 }}>
+        <List sx={{ px: 1.5, py: 1 }}>
           {moreItems.map((item, idx) => {
             if (item.divider) {
               return (
@@ -310,11 +337,11 @@ const MobileBottomNav = () => {
                   variant="caption"
                   sx={{
                     display: "block",
-                    px: 2,
+                    px: 1.5,
                     pt: idx === 0 ? 1 : 2,
                     pb: 0.5,
-                    color: "text.secondary",
-                    fontWeight: 700,
+                    color: "text.disabled",
+                    fontWeight: 800,
                     fontSize: "0.65rem",
                     textTransform: "uppercase",
                     letterSpacing: "0.08em",
@@ -335,7 +362,11 @@ const MobileBottomNav = () => {
                   borderRadius: 2,
                   mb: 0.3,
                   py: 1.2,
-                  bgcolor: active ? "action.selected" : "transparent",
+                  bgcolor: active
+                    ? isDark
+                      ? alpha(theme.palette.primary.main, 0.12)
+                      : "#F0F4FF"
+                    : "transparent",
                   "&:hover": { bgcolor: "action.hover" },
                 }}
               >
@@ -353,6 +384,7 @@ const MobileBottomNav = () => {
                     fontSize: "0.88rem",
                     fontWeight: active ? 700 : 500,
                     color: active ? "primary.main" : "text.primary",
+                    letterSpacing: "-0.01em",
                   }}
                 />
                 {active && (
@@ -389,19 +421,23 @@ const MobileBottomNav = () => {
               primary="Sign Out"
               primaryTypographyProps={{
                 fontSize: "0.88rem",
-                fontWeight: 600,
+                fontWeight: 700,
                 color: "error.main",
               }}
             />
           </ListItemButton>
         </Box>
 
-        <Box sx={{ textAlign: "center", pb: 2 }}>
+        <Box sx={{ textAlign: "center", pb: 3 }}>
           <Typography
             variant="caption"
-            sx={{ color: "text.disabled", fontSize: "0.62rem" }}
+            sx={{
+              color: "text.disabled",
+              fontSize: "0.62rem",
+              fontWeight: 600,
+            }}
           >
-            v{import.meta.env.VITE_APP_VERSION || "1.0.0"} • by Abhishek
+            v{import.meta.env.VITE_APP_VERSION || "1.0.0"} • TVSM
           </Typography>
         </Box>
       </Drawer>

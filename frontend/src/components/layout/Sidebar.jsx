@@ -10,6 +10,7 @@ import {
   Typography,
   Divider,
   Tooltip,
+  alpha,
 } from "@mui/material";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
@@ -30,20 +31,13 @@ import ListAltOutlinedIcon from "@mui/icons-material/ListAltOutlined";
 import useAuth from "../../hooks/useAuth";
 import useThemeMode from "../../hooks/useThemeMode";
 
-// ═══════════════════════════════════════════════════════════════════
-//  NAV STRUCTURE — Flat sections (History Page Removed Completely)
-// ═══════════════════════════════════════════════════════════════════
-
 const adminNav = [
-  // Dashboard — standalone
   {
     type: "item",
     label: "Dashboard",
     icon: <DashboardOutlinedIcon />,
     path: "/dashboard",
   },
-
-  // Management section
   { type: "section", label: "Management" },
   { label: "Students", icon: <PeopleOutlinedIcon />, path: "/students" },
   {
@@ -53,22 +47,14 @@ const adminNav = [
   },
   { label: "Classes", icon: <ClassOutlinedIcon />, path: "/classes" },
   { label: "Teachers", icon: <PersonOutlinedIcon />, path: "/teachers" },
-
-  // Attendance section
   { type: "section", label: "Attendance" },
   {
     label: "Mark",
     icon: <EventNoteOutlinedIcon />,
     path: "/attendance/mark",
   },
-
-  // Reports section
   { type: "section", label: "Reports" },
-  {
-    label: "Daily",
-    icon: <TodayOutlinedIcon />,
-    path: "/reports/daily",
-  },
+  { label: "Daily", icon: <TodayOutlinedIcon />, path: "/reports/daily" },
   {
     label: "Monthly",
     icon: <CalendarMonthOutlinedIcon />,
@@ -84,69 +70,38 @@ const adminNav = [
     icon: <ListAltOutlinedIcon />,
     path: "/reports/register",
   },
-  {
-    label: "Analytics",
-    icon: <AnalyticsOutlinedIcon />,
-    path: "/analytics",
-  },
-
-  // Admin section
+  { label: "Analytics", icon: <AnalyticsOutlinedIcon />, path: "/analytics" },
   { type: "section", label: "Admin" },
-  {
-    label: "Holidays",
-    icon: <BeachAccessOutlinedIcon />,
-    path: "/holidays",
-  },
+  { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
   { label: "Sessions", icon: <SchoolOutlinedIcon />, path: "/sessions" },
-  {
-    label: "Promotions",
-    icon: <SchoolOutlinedIcon />,
-    path: "/promotion",
-  },
+  { label: "Promotions", icon: <SchoolOutlinedIcon />, path: "/promotion" },
   {
     label: "Activity Logs",
     icon: <TimelineOutlinedIcon />,
     path: "/activity-logs",
   },
-
-  // System section
   { type: "section", label: "System" },
   { label: "Backup", icon: <StorageOutlinedIcon />, path: "/backup" },
-  {
-    label: "Settings",
-    icon: <SettingsOutlinedIcon />,
-    path: "/settings",
-  },
+  { label: "Settings", icon: <SettingsOutlinedIcon />, path: "/settings" },
 ];
 
 const teacherNav = [
-  // Dashboard — standalone
   {
     type: "item",
     label: "Dashboard",
     icon: <DashboardOutlinedIcon />,
     path: "/teacher/dashboard",
   },
-
-  // Attendance section
   { type: "section", label: "Attendance" },
   {
     label: "Mark",
     icon: <EventNoteOutlinedIcon />,
     path: "/attendance/mark",
   },
-
-  // Students section
   { type: "section", label: "Students" },
   { label: "Students", icon: <PeopleOutlinedIcon />, path: "/students" },
-
-  // Reports section
   { type: "section", label: "Reports" },
-  {
-    label: "Daily",
-    icon: <TodayOutlinedIcon />,
-    path: "/reports/daily",
-  },
+  { label: "Daily", icon: <TodayOutlinedIcon />, path: "/reports/daily" },
   {
     label: "Monthly",
     icon: <CalendarMonthOutlinedIcon />,
@@ -165,41 +120,34 @@ const SidebarContent = ({ collapsed }) => {
     return teacherNav;
   }, [user?.role]);
 
-  const allPaths = useMemo(() => {
-    return navItems.filter((item) => item.path).map((item) => item.path);
-  }, [navItems]);
+  const allPaths = useMemo(
+    () => navItems.filter((item) => item.path).map((item) => item.path),
+    [navItems],
+  );
 
   const isActive = (path) => {
     if (path === "/dashboard" || path === "/teacher/dashboard") {
       return location.pathname === path;
     }
-
     const current = location.pathname;
     if (current === path) return true;
-
     if (current.startsWith(path + "/")) {
       const moreSpecificExists = allPaths.some(
         (p) => p !== path && p.startsWith(path + "/") && current.startsWith(p),
       );
       return !moreSpecificExists;
     }
-
     return false;
   };
 
-  const sidebarBg = isDark ? "#111827" : "#FFFFFF";
-  const borderColor = isDark ? "#1F2937" : "#E5E7EB";
-  const scrollbarThumb = isDark ? "#374151" : "#D1D5DB";
-
-  const mainColor = isDark ? "#F1F5F9" : "#1F2937";
-  const headingColor = isDark ? "#9CA3AF" : "#6B7280";
-  const iconColor = mainColor;
-  const itemColor = isDark ? "#D1D5DB" : "#4B5563";
-  const itemActiveColor = isDark ? "#FFFFFF" : "#000000";
-
-  const hoverBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
-  const activeBg = isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.06)";
-  const activeIndicator = isDark ? "#FFFFFF" : "#000000";
+  const sidebarBg = isDark ? "#0B0F19" : "#FFFFFF";
+  const borderColor = isDark ? "#1E293B" : "#E2E8F0";
+  const headingColor = isDark ? "#64748B" : "#94A3B8";
+  const itemColor = isDark ? "#94A3B8" : "#64748B";
+  const itemActiveColor = isDark ? "#F8FAFC" : "#0F172A";
+  const hoverBg = isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9";
+  const activeBg = isDark ? alpha("#3B82F6", 0.12) : alpha("#0F172A", 0.06);
+  const activeBar = isDark ? "#3B82F6" : "#0F172A";
 
   return (
     <Box
@@ -209,7 +157,6 @@ const SidebarContent = ({ collapsed }) => {
         flexDirection: "column",
         bgcolor: sidebarBg,
         overflow: "hidden",
-        transition: "background-color 0.3s ease",
         borderRight: `1px solid ${borderColor}`,
       }}
     >
@@ -218,11 +165,11 @@ const SidebarContent = ({ collapsed }) => {
           flex: 1,
           overflowY: "auto",
           overflowX: "hidden",
-          pt: 1,
-          pb: 1,
+          pt: 1.5,
+          pb: 2,
           "&::-webkit-scrollbar": { width: 4 },
           "&::-webkit-scrollbar-thumb": {
-            bgcolor: scrollbarThumb,
+            bgcolor: isDark ? "#334155" : "#CBD5E1",
             borderRadius: 2,
           },
         }}
@@ -231,16 +178,16 @@ const SidebarContent = ({ collapsed }) => {
           {navItems.map((item, idx) => {
             if (item.type === "section") {
               return (
-                <Box key={`section-${idx}`} sx={{ mt: 1.5, mb: 0.3 }}>
+                <Box key={`section-${idx}`} sx={{ mt: 2, mb: 0.5 }}>
                   {!collapsed ? (
                     <Typography
                       sx={{
-                        px: 2.3,
-                        py: 0.4,
-                        fontSize: "0.68rem",
-                        fontWeight: 800,
+                        px: 2.5,
+                        py: 0.5,
+                        fontSize: "0.62rem",
+                        fontWeight: 700,
                         textTransform: "uppercase",
-                        letterSpacing: "0.1em",
+                        letterSpacing: "0.12em",
                         color: headingColor,
                         userSelect: "none",
                       }}
@@ -248,7 +195,7 @@ const SidebarContent = ({ collapsed }) => {
                       {item.label}
                     </Typography>
                   ) : (
-                    <Divider sx={{ borderColor, mx: 1 }} />
+                    <Divider sx={{ borderColor, mx: 1.5 }} />
                   )}
                 </Box>
               );
@@ -267,23 +214,18 @@ const SidebarContent = ({ collapsed }) => {
                 <ListItemButton
                   onClick={() => navigate(item.path)}
                   sx={{
-                    mx: 0.8,
-                    mb: 0.15,
-                    borderRadius: 1.5,
-                    py: isDashboard ? 0.8 : 0.6,
-                    pl: collapsed ? 1.2 : isDashboard ? 1.5 : 2.5,
-                    pr: collapsed ? 1.2 : 1.5,
+                    mx: 1,
+                    mb: 0.25,
+                    borderRadius: 2,
+                    py: isDashboard ? 1 : 0.75,
+                    pl: collapsed ? 1.25 : isDashboard ? 1.5 : 2.25,
+                    pr: 1.5,
                     justifyContent: collapsed ? "center" : "flex-start",
-                    minHeight: isDashboard ? 38 : 34,
-                    color: active
-                      ? itemActiveColor
-                      : isDashboard
-                        ? mainColor
-                        : itemColor,
+                    minHeight: isDashboard ? 42 : 38,
+                    color: active ? itemActiveColor : itemColor,
                     bgcolor: active ? activeBg : "transparent",
-                    borderLeft: active
-                      ? `3px solid ${activeIndicator}`
-                      : "3px solid transparent",
+                    borderLeft: "3px solid",
+                    borderLeftColor: active ? activeBar : "transparent",
                     "&:hover": {
                       bgcolor: hoverBg,
                       color: itemActiveColor,
@@ -293,22 +235,22 @@ const SidebarContent = ({ collapsed }) => {
                 >
                   <ListItemIcon
                     sx={{
-                      color: active ? itemActiveColor : iconColor,
-                      minWidth: collapsed ? "unset" : isDashboard ? 32 : 28,
+                      color: active ? itemActiveColor : itemColor,
+                      minWidth: collapsed ? "unset" : 34,
                       "& svg": {
-                        fontSize: isDashboard ? "1.2rem" : "1.1rem",
+                        fontSize: isDashboard ? "1.25rem" : "1.15rem",
                       },
                     }}
                   >
                     {item.icon}
                   </ListItemIcon>
-
                   {!collapsed && (
                     <ListItemText
                       primary={item.label}
                       primaryTypographyProps={{
-                        fontSize: isDashboard ? "0.85rem" : "0.82rem",
-                        fontWeight: active ? 700 : isDashboard ? 600 : 500,
+                        fontSize: isDashboard ? "0.88rem" : "0.84rem",
+                        fontWeight: active ? 700 : 500,
+                        letterSpacing: "-0.01em",
                         noWrap: true,
                         color: "inherit",
                       }}
@@ -337,8 +279,8 @@ const Sidebar = ({ drawerWidth, collapsed }) => (
         border: "none",
         transition: "width 0.2s ease",
         overflow: "hidden",
-        top: 55,
-        height: "calc(100vh - 55px)",
+        top: 64,
+        height: "calc(100vh - 64px)",
       },
     }}
   >
