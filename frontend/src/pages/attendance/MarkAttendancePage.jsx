@@ -14,7 +14,6 @@ import {
   CircularProgress,
   IconButton,
   InputAdornment,
-  LinearProgress,
   Table,
   TableHead,
   TableBody,
@@ -46,6 +45,7 @@ import classApi from "../../api/classApi";
 import useAuth from "../../hooks/useAuth";
 import useSettings from "../../hooks/useSettings";
 import useThemeMode from "../../hooks/useThemeMode";
+import { formatScholarNo } from "../../utils/formatters";
 
 // ═══════════════════════════════════════════════════════════════════
 //  HELPERS
@@ -214,7 +214,6 @@ const MarkAttendancePage = () => {
         if (!cancelled) {
           const list = res.data?.data || [];
           setClasses(list);
-          // AUTO-SELECT if teacher has only 1 class
           if (list.length === 1 && !selectedClass) {
             setSelectedClass(list[0]._id);
           }
@@ -329,9 +328,6 @@ const MarkAttendancePage = () => {
     };
   }, [sheet, attendance]);
 
-  const progressPercent =
-    stats.total > 0 ? Math.round((stats.marked / stats.total) * 100) : 0;
-
   // ─── Filtered + Sorted students ───────────────────────────────
   const displayStudents = useMemo(() => {
     if (!sheet?.students) return [];
@@ -362,7 +358,6 @@ const MarkAttendancePage = () => {
         aVal = a.student.scholarNumber?.toLowerCase() || "";
         bVal = b.student.scholarNumber?.toLowerCase() || "";
       } else {
-        // Fallback or default is student name
         aVal = a.student.name?.toLowerCase() || "";
         bVal = b.student.name?.toLowerCase() || "";
       }
@@ -378,7 +373,7 @@ const MarkAttendancePage = () => {
   }, [sheet, attendance, filter, search, sortBy, sortOrder]);
 
   const handleSort = (field) => {
-    if (field === "serialNumber") return; // S. No. does not require manual column sorting
+    if (field === "serialNumber") return;
     if (sortBy === field) {
       setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
@@ -421,7 +416,6 @@ const MarkAttendancePage = () => {
     }
   };
 
-  // ─── Lock/Unlock ──────────────────────────────────────────────
   const handleLockToggle = async () => {
     if (!confirmLock) return;
     try {
@@ -437,13 +431,24 @@ const MarkAttendancePage = () => {
     }
   };
 
-  // ─── Computed flags ───────────────────────────────────────────
   const isLockedForMe = sheet?.isLocked && !isAdmin;
   const hasRows = displayStudents.length > 0;
+  const singleClass = isTeacher && classes.length === 1 ? classes[0] : null;
 
-  // SMART: Determine if we should show dropdown or fixed badge
-  const showClassAsBadge = isTeacher && classes.length === 1;
-  const singleClass = showClassAsBadge ? classes[0] : null;
+  // ✅ DYNAMIC HEADER TITLE
+  const headerTitle = useMemo(() => {
+    if (isTeacher && singleClass) {
+      return `Mark Attendance — ${singleClass.name}-${singleClass.section}`;
+    }
+    if (sheet && sheet.class) {
+      return `Mark Attendance — ${sheet.class.name}-${sheet.class.section}`;
+    }
+    return "Mark Attendance";
+  }, [isTeacher, singleClass, sheet]);
+
+  // ═══════════════════════════════════════════════════════════════
+  //  RENDER
+  // ═══════════════════════════════════════════════════════════════
 
   return (
     <Box
@@ -453,7 +458,7 @@ const MarkAttendancePage = () => {
       }}
     >
       <PageHeader
-        title="Mark Attendance"
+        title={headerTitle}
         breadcrumbs={[
           {
             label: "Dashboard",
@@ -464,7 +469,7 @@ const MarkAttendancePage = () => {
       />
 
       {/* ═══════════════════════════════════════════════════════════
-          CONTROL STRIP — Class, Date, Stats, Progress, Actions
+          ULTRA-COMPACT CONTROL STRIP 
       ═══════════════════════════════════════════════════════════ */}
       <Paper
         sx={{
@@ -479,31 +484,14 @@ const MarkAttendancePage = () => {
           bgcolor: "background.paper",
         }}
       >
-        {/* Row 1: Class + Date (UX OPTIMIZED FOR MOBILE) */}
+        {/* Row 1: Admin Select + Date */}
         <Stack
           direction="row"
           spacing={1}
           sx={{ mb: sheet && !sheet.isHoliday && stats.total > 0 ? 1 : 0 }}
           alignItems="center"
         >
-          {showClassAsBadge ? (
-            // ═══ TEACHER WITH 1 CLASS — Ultra-compact badge ═══
-            <Box sx={{ flex: 1, display: "flex", alignItems: "center" }}>
-              <Chip
-                label={`${singleClass.name}-${singleClass.section} • ${singleClass.studentCount ?? sheet?.students?.length ?? 0}`}
-                sx={{
-                  bgcolor: isDark ? alpha("#3B82F6", 0.15) : "#E0EBFF",
-                  color: isDark ? "#93C5FD" : "#1E4D98",
-                  fontWeight: 800,
-                  fontSize: { xs: "0.85rem", sm: "0.9rem" },
-                  height: 36, // Perfectly aligns with the textfield height
-                  borderRadius: 1.5,
-                  "& .MuiChip-label": { px: 1.5 },
-                }}
-              />
-            </Box>
-          ) : (
-            // ═══ ADMIN/PRINCIPAL/MULTI-CLASS TEACHER — Dropdown ═══
+          {!isTeacher && (
             <FormControl size="small" sx={{ flex: 2, minWidth: 0 }}>
               <InputLabel>Class</InputLabel>
               <Select
@@ -526,7 +514,6 @@ const MarkAttendancePage = () => {
                   classes.map((c) => (
                     <MenuItem key={c._id} value={c._id}>
                       {c.name} - {c.section}
-                      {c.studentCount !== undefined && ` (${c.studentCount})`}
                     </MenuItem>
                   ))
                 )}
@@ -536,148 +523,29 @@ const MarkAttendancePage = () => {
 
           <TextField
             type="date"
-            label="Date"
+            label={isTeacher ? "Attendance Date" : "Date"}
             size="small"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             InputLabelProps={{ shrink: true }}
             inputProps={{ max: formatDate(new Date()) }}
             sx={{
-              width: 130, // Fixed width prevents squeezing on mobile
-              flexShrink: 0,
+              flex: isTeacher ? 1 : "none",
+              width: isTeacher ? "auto" : 130,
               "& input": { fontWeight: 700, fontSize: "0.82rem" },
             }}
           />
         </Stack>
 
-        {/* Row 2: Stats pills */}
+        {/* Row 2: Search + Bulk Actions */}
         {sheet && !sheet.isHoliday && stats.total > 0 && (
           <>
             <Stack
               direction="row"
               spacing={0.75}
               alignItems="center"
-              flexWrap="wrap"
-              useFlexGap
               sx={{ mb: 1 }}
             >
-              <Chip
-                size="small"
-                label={`Total ${stats.total}`}
-                sx={{
-                  fontWeight: 800,
-                  fontSize: "0.7rem",
-                  height: 24,
-                  bgcolor: isDark ? alpha("#fff", 0.06) : "#F1F5F9",
-                  color: "text.primary",
-                }}
-              />
-              <Chip
-                size="small"
-                label={`✓ ${stats.Present}`}
-                sx={{
-                  fontWeight: 800,
-                  fontSize: "0.7rem",
-                  height: 24,
-                  bgcolor: isDark ? alpha("#16A34A", 0.18) : "#DCFCE7",
-                  color: isDark ? "#86EFAC" : "#15803D",
-                }}
-              />
-              <Chip
-                size="small"
-                label={`✗ ${stats.Absent}`}
-                sx={{
-                  fontWeight: 800,
-                  fontSize: "0.7rem",
-                  height: 24,
-                  bgcolor: isDark ? alpha("#DC2626", 0.18) : "#FEE2E2",
-                  color: isDark ? "#FCA5A5" : "#B91C1C",
-                }}
-              />
-              <Chip
-                size="small"
-                label={`⏸ ${stats.unmarked}`}
-                sx={{
-                  fontWeight: 800,
-                  fontSize: "0.7rem",
-                  height: 24,
-                  bgcolor: isDark ? alpha("#F59E0B", 0.18) : "#FEF3C7",
-                  color: isDark ? "#FCD34D" : "#B45309",
-                }}
-              />
-
-              <Box sx={{ flex: 1 }} />
-
-              {sheet.isLocked && (
-                <Chip
-                  icon={<LockIcon sx={{ fontSize: 12 }} />}
-                  label="Locked"
-                  size="small"
-                  color="error"
-                  sx={{ fontWeight: 700, fontSize: "0.65rem", height: 22 }}
-                />
-              )}
-              {isAdmin && sheet.isMarked && (
-                <Tooltip title={sheet.isLocked ? "Unlock" : "Lock"}>
-                  <IconButton
-                    size="small"
-                    onClick={() =>
-                      setConfirmLock(sheet.isLocked ? "unlock" : "lock")
-                    }
-                    sx={{ width: 24, height: 24 }}
-                  >
-                    {sheet.isLocked ? (
-                      <LockOpenIcon sx={{ fontSize: 14 }} />
-                    ) : (
-                      <LockIcon sx={{ fontSize: 14 }} />
-                    )}
-                  </IconButton>
-                </Tooltip>
-              )}
-            </Stack>
-
-            {/* Row 3: Progress Bar */}
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                mb: 1,
-              }}
-            >
-              <LinearProgress
-                variant="determinate"
-                value={progressPercent}
-                color={
-                  progressPercent === 100
-                    ? "success"
-                    : progressPercent > 50
-                      ? "primary"
-                      : "warning"
-                }
-                sx={{
-                  flex: 1,
-                  height: 4,
-                  borderRadius: 2,
-                  bgcolor: isDark ? alpha("#fff", 0.08) : alpha("#000", 0.06),
-                }}
-              />
-              <Typography
-                variant="caption"
-                fontWeight={800}
-                sx={{
-                  fontSize: "0.68rem",
-                  color: "text.secondary",
-                  minWidth: 38,
-                  textAlign: "right",
-                }}
-              >
-                {stats.marked}/{stats.total}
-              </Typography>
-            </Box>
-
-            {/* Row 4: Search + Bulk Actions */}
-            <Stack direction="row" spacing={0.75} alignItems="center">
               <TextField
                 placeholder="Search name, scholar, father..."
                 value={search}
@@ -779,12 +647,12 @@ const MarkAttendancePage = () => {
               </Tooltip>
             </Stack>
 
-            {/* Row 5: Filter chips */}
+            {/* Row 3: Filter Chips & Lock Status */}
             <Stack
               direction="row"
               spacing={0.5}
+              alignItems="center"
               sx={{
-                mt: 1,
                 overflowX: "auto",
                 pb: 0.25,
                 "&::-webkit-scrollbar": { display: "none" },
@@ -825,6 +693,40 @@ const MarkAttendancePage = () => {
                   }}
                 />
               ))}
+
+              <Box sx={{ flex: 1, minWidth: 16 }} />
+
+              {sheet.isLocked && (
+                <Chip
+                  icon={<LockIcon sx={{ fontSize: 12 }} />}
+                  label="Locked"
+                  size="small"
+                  color="error"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: "0.65rem",
+                    height: 22,
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+              {isAdmin && sheet.isMarked && (
+                <Tooltip title={sheet.isLocked ? "Unlock" : "Lock"}>
+                  <IconButton
+                    size="small"
+                    onClick={() =>
+                      setConfirmLock(sheet.isLocked ? "unlock" : "lock")
+                    }
+                    sx={{ width: 24, height: 24, flexShrink: 0, ml: 0.5 }}
+                  >
+                    {sheet.isLocked ? (
+                      <LockOpenIcon sx={{ fontSize: 14 }} />
+                    ) : (
+                      <LockIcon sx={{ fontSize: 14 }} />
+                    )}
+                  </IconButton>
+                </Tooltip>
+              )}
             </Stack>
           </>
         )}
@@ -947,7 +849,6 @@ const MarkAttendancePage = () => {
                       transition: "background-color 0.15s",
                     }}
                   >
-                    {/* Generates serialNumber automatically: 01, 02, 03... */}
                     <Typography
                       sx={{
                         minWidth: 26,
@@ -992,7 +893,7 @@ const MarkAttendancePage = () => {
                           ·
                         </Box>
                         <Box component="span" sx={{ fontFamily: "monospace" }}>
-                          {item.student.scholarNumber}
+                          {formatScholarNo(item.student)}
                         </Box>
                       </Typography>
                     </Box>
@@ -1157,7 +1058,7 @@ const MarkAttendancePage = () => {
                                 color: "text.secondary",
                               }}
                             >
-                              {item.student.scholarNumber}
+                              {formatScholarNo(item.student)}
                             </Typography>
                           </TableCell>
                           <TableCell align="center">
