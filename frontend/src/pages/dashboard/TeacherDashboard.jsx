@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   Box,
   Paper,
@@ -14,7 +14,6 @@ import {
   Divider,
   ToggleButton,
   ToggleButtonGroup,
-  Tooltip,
   useTheme,
   alpha,
 } from "@mui/material";
@@ -26,7 +25,6 @@ import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
-import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 import TrendingDownOutlinedIcon from "@mui/icons-material/TrendingDownOutlined";
@@ -55,29 +53,35 @@ const greetingText = () => {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-//  COMPONENT: Stat Pill
+//  PREMIUM STAT PILL
 // ═══════════════════════════════════════════════════════════════════
-
 const StatPill = ({ label, value, color, bg, borderColor, isDark }) => (
   <Paper
+    elevation={0}
     sx={{
-      p: { xs: 1, sm: 1.25 },
-      borderRadius: 2,
+      p: { xs: 1.5, sm: 2 },
+      borderRadius: "16px",
       border: "1px solid",
       borderColor: borderColor || "divider",
       bgcolor: bg || "background.paper",
       textAlign: "center",
-      transition: "transform 0.15s",
-      "&:hover": { transform: "translateY(-2px)" },
+      transition: "all 0.2s ease",
+      "&:hover": {
+        transform: "translateY(-2px)",
+        boxShadow: isDark
+          ? "0 8px 16px rgba(0,0,0,0.4)"
+          : "0 8px 16px rgba(15,23,42,0.06)",
+      },
     }}
   >
     <Typography
-      variant="h5"
+      variant="h4"
       fontWeight={900}
       sx={{
         color: color || "text.primary",
-        fontSize: { xs: "1.15rem", sm: "1.4rem" },
-        lineHeight: 1,
+        fontSize: { xs: "1.5rem", sm: "1.75rem" },
+        lineHeight: 1.1,
+        letterSpacing: "-0.03em",
       }}
     >
       {value}
@@ -85,13 +89,13 @@ const StatPill = ({ label, value, color, bg, borderColor, isDark }) => (
     <Typography
       variant="caption"
       sx={{
-        fontSize: "0.6rem",
+        fontSize: "0.68rem",
         fontWeight: 800,
         textTransform: "uppercase",
-        letterSpacing: "0.05em",
+        letterSpacing: "0.06em",
         color: color || "text.secondary",
         display: "block",
-        mt: 0.3,
+        mt: 0.5,
       }}
     >
       {label}
@@ -111,13 +115,11 @@ const TeacherDashboard = () => {
   const queryClient = useQueryClient();
 
   const [period, setPeriod] = useState("today");
+  const [refreshing, setRefreshing] = useState(false);
 
   // ─── Data ─────────────────────────────────────────────────
-  const {
-    data: summary,
-    isLoading: summaryLoading,
-    isFetching: summaryFetching,
-  } = useTeacherSummary(period);
+  const { data: summary, isLoading: summaryLoading } =
+    useTeacherSummary(period);
   const { data: defaulters = [], isLoading: defaultersLoading } =
     useTeacherDefaulters(5, 75);
   const { data: holidays = [], isLoading: holidaysLoading } =
@@ -126,15 +128,15 @@ const TeacherDashboard = () => {
   const loading = summaryLoading;
 
   // ─── Refresh handler ──────────────────────────────────────
-  const handleRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
-  };
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+    setTimeout(() => setRefreshing(false), 600);
+  }, [queryClient]);
 
   // ─── Computed values ──────────────────────────────────────
   const attendanceStatus = summary?.attendanceStatus;
   const hasClasses = (summary?.totalClasses || 0) > 0;
-
-  // ✅ NEW: Check if today is holiday or non-working day
   const isNonWorking = summary?.isHoliday || summary?.isNonWorkingDay;
 
   // Progress marking status
@@ -142,106 +144,109 @@ const TeacherDashboard = () => {
   const totalClasses = summary?.totalClasses || 0;
   const pendingToday = summary?.pendingClassesToday || 0;
 
-  // ─── Colors ───────────────────────────────────────────────
+  // ─── Premium Colors ───────────────────────────────────────
   const colors = {
-    success: isDark ? "#4ADE80" : "#15803D",
-    successBg: isDark ? alpha("#16A34A", 0.12) : "#DCFCE7",
-    successBorder: isDark ? alpha("#16A34A", 0.3) : "#BBF7D0",
+    success: isDark ? "#4ADE80" : "#10B981",
+    successBg: isDark ? alpha("#10B981", 0.12) : "#D1FAE5",
+    successBorder: isDark ? alpha("#10B981", 0.3) : "#A7F3D0",
 
-    error: isDark ? "#FCA5A5" : "#B91C1C",
-    errorBg: isDark ? alpha("#DC2626", 0.12) : "#FEE2E2",
-    errorBorder: isDark ? alpha("#DC2626", 0.3) : "#FECACA",
+    error: isDark ? "#F87171" : "#EF4444",
+    errorBg: isDark ? alpha("#EF4444", 0.12) : "#FEE2E2",
+    errorBorder: isDark ? alpha("#EF4444", 0.3) : "#FECACA",
 
-    warning: isDark ? "#FCD34D" : "#B45309",
+    warning: isDark ? "#FBBF24" : "#F59E0B",
     warningBg: isDark ? alpha("#F59E0B", 0.12) : "#FEF3C7",
     warningBorder: isDark ? alpha("#F59E0B", 0.3) : "#FDE68A",
 
-    info: isDark ? "#93C5FD" : "#1E4D98",
+    info: isDark ? "#60A5FA" : "#3B82F6",
     infoBg: isDark ? alpha("#3B82F6", 0.12) : "#DBEAFE",
     infoBorder: isDark ? alpha("#3B82F6", 0.3) : "#BFDBFE",
   };
 
-  // ═══════════════════════════════════════════════════════════
-  //  RENDER
-  // ═══════════════════════════════════════════════════════════
   return (
     <Box sx={{ pb: { xs: 8, md: 3 } }}>
-      {/* ══════════════════════════════════════════════════════
-          COMPACT GREETING HEADER
-      ══════════════════════════════════════════════════════ */}
+      {/* HEADER */}
       <Stack
         direction="row"
         justifyContent="space-between"
         alignItems="center"
-        sx={{ mb: 1.5 }}
+        sx={{ mb: 2 }}
       >
-        <Stack direction="row" alignItems="center" spacing={0.75}>
+        <Stack direction="row" alignItems="center" spacing={1}>
           <Typography
             variant="body1"
             fontWeight={800}
-            sx={{ fontSize: { xs: "0.9rem", sm: "1rem" } }}
+            sx={{
+              fontSize: { xs: "1rem", sm: "1.1rem" },
+              letterSpacing: "-0.02em",
+            }}
           >
             {greetingText()}, {user?.name?.split(" ")[0] || "Teacher"}
           </Typography>
           <WavingHandOutlinedIcon
             sx={{
-              fontSize: 16,
-              color: "#F5A623",
+              fontSize: 18,
+              color: "#F59E0B",
               transform: "rotate(-15deg)",
             }}
           />
         </Stack>
-        <IconButton
+        <Button
           size="small"
+          startIcon={
+            <RefreshOutlinedIcon
+              sx={{
+                fontSize: 16,
+                animation: refreshing ? "spin 0.8s linear infinite" : "none",
+                "@keyframes spin": {
+                  from: { transform: "rotate(0deg)" },
+                  to: { transform: "rotate(360deg)" },
+                },
+              }}
+            />
+          }
           onClick={handleRefresh}
-          disabled={summaryFetching}
+          disabled={refreshing}
+          sx={{
+            fontWeight: 700,
+            fontSize: "0.75rem",
+            textTransform: "none",
+            color: "text.secondary",
+          }}
         >
-          <RefreshOutlinedIcon
-            sx={{
-              fontSize: 18,
-              animation: summaryFetching ? "spin 1s linear infinite" : "none",
-              "@keyframes spin": {
-                from: { transform: "rotate(0deg)" },
-                to: { transform: "rotate(360deg)" },
-              },
-            }}
-          />
-        </IconButton>
+          Refresh
+        </Button>
       </Stack>
 
-      {/* ══════════════════════════════════════════════════════
-          LOADING STATE
-      ══════════════════════════════════════════════════════ */}
+      {/* LOADING STATE */}
       {loading ? (
-        <Stack spacing={1.5}>
+        <Stack spacing={2}>
           <Skeleton
             variant="rectangular"
-            height={54}
-            sx={{ borderRadius: 2 }}
+            height={60}
+            sx={{ borderRadius: 3 }}
           />
-          <Grid container spacing={1}>
+          <Grid container spacing={1.5}>
             {[1, 2, 3, 4].map((i) => (
-              <Grid item xs={3} key={i}>
+              <Grid item xs={6} sm={3} key={i}>
                 <Skeleton
                   variant="rectangular"
-                  height={62}
-                  sx={{ borderRadius: 2 }}
+                  height={80}
+                  sx={{ borderRadius: 3 }}
                 />
               </Grid>
             ))}
           </Grid>
           <Skeleton
             variant="rectangular"
-            height={200}
-            sx={{ borderRadius: 2 }}
+            height={240}
+            sx={{ borderRadius: 3 }}
           />
         </Stack>
       ) : !hasClasses ? (
-        /* ══════════════════════════════════════════════════════
-            NO CLASSES ASSIGNED
-        ══════════════════════════════════════════════════════ */
-        <Alert severity="warning" sx={{ mb: 1.5, borderRadius: 2 }}>
-          <Typography variant="body2" fontWeight={700}>
+        /* NO CLASSES ASSIGNED */
+        <Alert severity="warning" sx={{ mb: 2, borderRadius: 3 }}>
+          <Typography variant="body2" fontWeight={800}>
             No classes assigned to you
           </Typography>
           <Typography variant="caption">
@@ -249,11 +254,9 @@ const TeacherDashboard = () => {
           </Typography>
         </Alert>
       ) : isNonWorking ? (
-        /* ══════════════════════════════════════════════════════
-            ✅ HOLIDAY / NON-WORKING DAY — Beautiful Banner
-        ══════════════════════════════════════════════════════ */
+        /* HOLIDAY / NON-WORKING DAY */
         <>
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 2.5 }}>
             <HolidayBanner
               isHoliday={summary.isHoliday}
               holiday={summary.holiday}
@@ -261,17 +264,16 @@ const TeacherDashboard = () => {
               nextWorkingDay={summary.nextWorkingDay}
             />
           </Box>
-
-          {/* Quick Actions (still useful on holidays) */}
           <Paper
+            elevation={0}
             sx={{
-              p: 1.5,
-              borderRadius: 2,
+              p: 2,
+              borderRadius: 3,
               border: "1px solid",
               borderColor: "divider",
             }}
           >
-            <Grid container spacing={1}>
+            <Grid container spacing={1.5}>
               {[
                 {
                   icon: <EventNoteOutlinedIcon />,
@@ -279,9 +281,9 @@ const TeacherDashboard = () => {
                   path: "/attendance/mark",
                 },
                 {
-                  icon: <TodayOutlinedIcon />,
-                  label: "Reports",
-                  path: "/reports/daily",
+                  icon: <CalendarMonthOutlinedIcon />,
+                  label: "Monthly",
+                  path: "/reports/monthly",
                 },
                 {
                   icon: <PeopleOutlinedIcon />,
@@ -301,9 +303,9 @@ const TeacherDashboard = () => {
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
-                      gap: 0.4,
-                      py: 1,
-                      borderRadius: 1.5,
+                      gap: 0.5,
+                      py: 1.5,
+                      borderRadius: 2,
                       cursor: "pointer",
                       transition: "all 0.15s",
                       "&:hover": {
@@ -314,14 +316,14 @@ const TeacherDashboard = () => {
                   >
                     {React.cloneElement(a.icon, {
                       sx: {
-                        fontSize: 22,
-                        color: isDark ? "#F1F5F9" : "#334155",
+                        fontSize: 24,
+                        color: isDark ? "#F8FAFC" : "#0F172A",
                       },
                     })}
                     <Typography
                       variant="caption"
-                      fontWeight={700}
-                      sx={{ fontSize: "0.7rem" }}
+                      fontWeight={800}
+                      sx={{ fontSize: "0.7rem", mt: 0.5 }}
                     >
                       {a.label}
                     </Typography>
@@ -332,20 +334,14 @@ const TeacherDashboard = () => {
           </Paper>
         </>
       ) : (
-        /* ══════════════════════════════════════════════════════
-            ✅ NORMAL WORKING DAY — Show all stats
-        ══════════════════════════════════════════════════════ */
+        /* NORMAL WORKING DAY */
         <>
-          {/* ── Alert Bar ── */}
+          {/* Alert Bar */}
           {attendanceStatus === "marked" ? (
             <Alert
               severity="success"
-              icon={<CheckCircleOutlineIcon />}
-              sx={{
-                mb: 1.5,
-                borderRadius: 2,
-                "& .MuiAlert-icon": { alignItems: "center" },
-              }}
+              icon={<CheckCircleOutlineIcon sx={{ mt: 0.5 }} />}
+              sx={{ mb: 2, borderRadius: 3, alignItems: "center" }}
             >
               <Stack
                 direction="row"
@@ -354,33 +350,20 @@ const TeacherDashboard = () => {
                 sx={{ width: "100%" }}
               >
                 <Box>
-                  <Typography variant="body2" fontWeight={700}>
+                  <Typography variant="body2" fontWeight={800}>
                     All done for today! ✅
                   </Typography>
                   <Typography variant="caption">
                     {markedToday}/{totalClasses} classes marked
                   </Typography>
                 </Box>
-                <Button
-                  size="small"
-                  variant="text"
-                  endIcon={<ArrowForwardOutlinedIcon sx={{ fontSize: 14 }} />}
-                  onClick={() => navigate("/reports/daily")}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 700,
-                    fontSize: "0.75rem",
-                  }}
-                >
-                  View
-                </Button>
               </Stack>
             </Alert>
           ) : attendanceStatus === "partial" ? (
             <Alert
               severity="warning"
-              icon={<ErrorOutlineIcon />}
-              sx={{ mb: 1.5, borderRadius: 2 }}
+              icon={<ErrorOutlineIcon sx={{ mt: 0.5 }} />}
+              sx={{ mb: 2, borderRadius: 3, alignItems: "center" }}
             >
               <Stack
                 direction="row"
@@ -389,9 +372,8 @@ const TeacherDashboard = () => {
                 sx={{ width: "100%" }}
               >
                 <Box>
-                  <Typography variant="body2" fontWeight={700}>
-                    {pendingToday} class{pendingToday !== 1 ? "es" : ""} still
-                    pending
+                  <Typography variant="body2" fontWeight={800}>
+                    {pendingToday} classes pending
                   </Typography>
                   <Typography variant="caption">
                     {markedToday} of {totalClasses} marked
@@ -403,10 +385,9 @@ const TeacherDashboard = () => {
                   onClick={() => navigate("/attendance/mark")}
                   sx={{
                     textTransform: "none",
-                    fontWeight: 700,
+                    fontWeight: 800,
                     fontSize: "0.75rem",
-                    background:
-                      "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                    borderRadius: 2,
                   }}
                 >
                   Mark Now
@@ -416,8 +397,8 @@ const TeacherDashboard = () => {
           ) : (
             <Alert
               severity="error"
-              icon={<ErrorOutlineIcon />}
-              sx={{ mb: 1.5, borderRadius: 2 }}
+              icon={<ErrorOutlineIcon sx={{ mt: 0.5 }} />}
+              sx={{ mb: 2, borderRadius: 3, alignItems: "center" }}
             >
               <Stack
                 direction="row"
@@ -426,12 +407,11 @@ const TeacherDashboard = () => {
                 sx={{ width: "100%" }}
               >
                 <Box>
-                  <Typography variant="body2" fontWeight={700}>
+                  <Typography variant="body2" fontWeight={800}>
                     Attendance pending for today
                   </Typography>
                   <Typography variant="caption">
-                    {totalClasses} class{totalClasses !== 1 ? "es" : ""} not
-                    marked
+                    {totalClasses} classes not marked
                   </Typography>
                 </Box>
                 <Button
@@ -441,8 +421,9 @@ const TeacherDashboard = () => {
                   onClick={() => navigate("/attendance/mark")}
                   sx={{
                     textTransform: "none",
-                    fontWeight: 700,
+                    fontWeight: 800,
                     fontSize: "0.75rem",
+                    borderRadius: 2,
                   }}
                 >
                   Mark Now
@@ -451,7 +432,7 @@ const TeacherDashboard = () => {
             </Alert>
           )}
 
-          {/* ── Period Toggle ── */}
+          {/* Period Toggle */}
           <Stack
             direction="row"
             justifyContent="space-between"
@@ -478,12 +459,11 @@ const TeacherDashboard = () => {
               sx={{
                 "& .MuiToggleButton-root": {
                   px: 1.5,
-                  py: 0.3,
-                  fontWeight: 700,
+                  py: 0.4,
+                  fontWeight: 800,
                   fontSize: "0.7rem",
                   textTransform: "none",
-                  border: "1px solid",
-                  borderColor: "divider",
+                  borderRadius: 2,
                 },
               }}
             >
@@ -493,17 +473,16 @@ const TeacherDashboard = () => {
             </ToggleButtonGroup>
           </Stack>
 
-          {/* ── Stats 4-Column ── */}
-          <Grid container spacing={1} sx={{ mb: 2 }}>
-            <Grid item xs={3}>
+          {/* Stats 4-Column */}
+          <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
+            <Grid item xs={6} sm={3}>
               <StatPill
                 label="Total"
                 value={summary?.totalStudents || 0}
-                color="text.primary"
                 isDark={isDark}
               />
             </Grid>
-            <Grid item xs={3}>
+            <Grid item xs={6} sm={3}>
               <StatPill
                 label="Present"
                 value={summary?.present || 0}
@@ -513,7 +492,7 @@ const TeacherDashboard = () => {
                 isDark={isDark}
               />
             </Grid>
-            <Grid item xs={3}>
+            <Grid item xs={6} sm={3}>
               <StatPill
                 label="Absent"
                 value={summary?.absent || 0}
@@ -523,7 +502,7 @@ const TeacherDashboard = () => {
                 isDark={isDark}
               />
             </Grid>
-            <Grid item xs={3}>
+            <Grid item xs={6} sm={3}>
               <StatPill
                 label="Att. %"
                 value={`${summary?.percentage || 0}%`}
@@ -547,12 +526,13 @@ const TeacherDashboard = () => {
             </Grid>
           </Grid>
 
-          {/* ── My Classes ── */}
+          {/* My Classes (Card-Row Pattern) */}
           {hasClasses && (
             <Paper
+              elevation={0}
               sx={{
-                mb: 2,
-                borderRadius: 2,
+                mb: 3,
+                borderRadius: 4,
                 border: "1px solid",
                 borderColor: "divider",
                 overflow: "hidden",
@@ -560,11 +540,11 @@ const TeacherDashboard = () => {
             >
               <Box
                 sx={{
-                  px: 2,
-                  py: 1,
+                  px: 2.5,
+                  py: 1.5,
                   borderBottom: "1px solid",
                   borderColor: "divider",
-                  bgcolor: isDark ? alpha("#fff", 0.02) : "#FAFBFC",
+                  bgcolor: isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
@@ -573,7 +553,7 @@ const TeacherDashboard = () => {
                 <Typography
                   variant="body2"
                   fontWeight={800}
-                  sx={{ fontSize: "0.85rem" }}
+                  sx={{ fontSize: "0.9rem" }}
                 >
                   My Classes ({summary?.totalClasses || 0})
                 </Typography>
@@ -581,9 +561,9 @@ const TeacherDashboard = () => {
                   label={`${markedToday}/${totalClasses} marked today`}
                   size="small"
                   sx={{
-                    height: 20,
-                    fontSize: "0.65rem",
-                    fontWeight: 700,
+                    height: 22,
+                    fontSize: "0.68rem",
+                    fontWeight: 800,
                     bgcolor:
                       markedToday === totalClasses
                         ? colors.successBg
@@ -601,8 +581,9 @@ const TeacherDashboard = () => {
                   <Box
                     key={cls._id}
                     sx={{
-                      px: 2,
-                      py: 1.25,
+                      px: 2.5,
+                      py: 2,
+                      transition: "background-color 0.2s",
                       "&:hover": { bgcolor: "action.hover" },
                     }}
                   >
@@ -610,30 +591,35 @@ const TeacherDashboard = () => {
                       direction="row"
                       justifyContent="space-between"
                       alignItems="center"
-                      sx={{ mb: cls.isMarkedToday ? 1 : 0.5 }}
+                      sx={{ mb: cls.isMarkedToday ? 1.5 : 0.5 }}
                     >
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography
-                          variant="body2"
+                          variant="body1"
                           fontWeight={800}
-                          sx={{ fontSize: "0.9rem" }}
+                          sx={{ fontSize: "1rem", letterSpacing: "-0.01em" }}
                         >
-                          Class {cls.name} - {cls.section}
+                          {cls.name} - {cls.section}
                         </Typography>
-                        <Stack direction="row" spacing={1} alignItems="center">
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          alignItems="center"
+                          sx={{ mt: 0.3 }}
+                        >
                           <Typography
                             variant="caption"
                             color="text.secondary"
-                            sx={{ fontSize: "0.68rem" }}
+                            sx={{ fontSize: "0.75rem", fontWeight: 600 }}
                           >
-                            {cls.studentCount} students
+                            {cls.studentCount} Students
                           </Typography>
                           {cls.isMarkedToday && (
                             <>
                               <Box
                                 sx={{
-                                  width: 3,
-                                  height: 3,
+                                  width: 4,
+                                  height: 4,
                                   borderRadius: "50%",
                                   bgcolor: "text.disabled",
                                 }}
@@ -641,48 +627,41 @@ const TeacherDashboard = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  fontSize: "0.68rem",
+                                  fontSize: "0.75rem",
                                   color: colors.success,
                                   fontWeight: 700,
                                 }}
                               >
-                                ✓ Marked today
+                                ✓ Marked
                               </Typography>
                             </>
                           )}
                         </Stack>
                       </Box>
                       {cls.isMarkedToday ? (
-                        <Chip
-                          label={`${cls.percentage}%`}
-                          size="small"
+                        <Typography
+                          variant="h5"
+                          fontWeight={900}
                           sx={{
-                            fontWeight: 800,
-                            height: 24,
-                            fontSize: "0.75rem",
-                            bgcolor:
-                              cls.percentage >= 75
-                                ? colors.successBg
-                                : colors.warningBg,
                             color:
                               cls.percentage >= 75
                                 ? colors.success
                                 : colors.warning,
                           }}
-                        />
+                        >
+                          {cls.percentage}%
+                        </Typography>
                       ) : (
                         <Button
                           size="small"
                           variant="contained"
                           onClick={() => navigate("/attendance/mark")}
                           sx={{
-                            fontWeight: 700,
-                            fontSize: "0.7rem",
+                            fontWeight: 800,
+                            fontSize: "0.75rem",
+                            borderRadius: 2,
                             textTransform: "none",
-                            py: 0.4,
-                            px: 1.5,
-                            background:
-                              "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                            px: 2,
                           }}
                         >
                           Mark
@@ -691,31 +670,37 @@ const TeacherDashboard = () => {
                     </Stack>
 
                     {cls.isMarkedToday && (
-                      <Stack direction="row" spacing={1} alignItems="center">
+                      <Stack direction="row" spacing={1.5} alignItems="center">
                         <LinearProgress
                           variant="determinate"
                           value={cls.percentage}
                           color={cls.percentage >= 75 ? "success" : "warning"}
                           sx={{
                             flex: 1,
-                            height: 4,
-                            borderRadius: 2,
+                            height: 6,
+                            borderRadius: 3,
                             bgcolor: isDark
-                              ? alpha("#fff", 0.06)
-                              : alpha("#000", 0.05),
+                              ? alpha("#fff", 0.08)
+                              : alpha("#000", 0.06),
                           }}
                         />
                         <Typography
                           variant="caption"
                           sx={{
-                            fontSize: "0.65rem",
+                            fontSize: "0.7rem",
                             color: "text.secondary",
-                            fontWeight: 700,
+                            fontWeight: 800,
                             minWidth: 60,
                             textAlign: "right",
                           }}
                         >
-                          {cls.present}P · {cls.absent}A
+                          <Box component="span" sx={{ color: colors.success }}>
+                            {cls.present}P
+                          </Box>{" "}
+                          ·{" "}
+                          <Box component="span" sx={{ color: colors.error }}>
+                            {cls.absent}A
+                          </Box>
                         </Typography>
                       </Stack>
                     )}
@@ -725,12 +710,13 @@ const TeacherDashboard = () => {
             </Paper>
           )}
 
-          {/* ── Top Defaulters + Upcoming Holidays ── */}
-          <Grid container spacing={1.5}>
+          {/* Top Defaulters + Upcoming Holidays */}
+          <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
               <Paper
+                elevation={0}
                 sx={{
-                  borderRadius: 2,
+                  borderRadius: 4,
                   border: "1px solid",
                   borderColor: "divider",
                   overflow: "hidden",
@@ -740,22 +726,22 @@ const TeacherDashboard = () => {
                 <Box
                   sx={{
                     px: 2,
-                    py: 1,
+                    py: 1.5,
                     borderBottom: "1px solid",
                     borderColor: "divider",
-                    bgcolor: isDark ? alpha("#fff", 0.02) : "#FAFBFC",
+                    bgcolor: isDark ? alpha("#fff", 0.02) : "#F8FAFC",
                     display: "flex",
                     alignItems: "center",
                     gap: 1,
                   }}
                 >
                   <TrendingDownOutlinedIcon
-                    sx={{ fontSize: 16, color: colors.error }}
+                    sx={{ fontSize: 18, color: colors.error }}
                   />
                   <Typography
                     variant="body2"
                     fontWeight={800}
-                    sx={{ fontSize: "0.82rem", flex: 1 }}
+                    sx={{ fontSize: "0.85rem", flex: 1 }}
                   >
                     Top Defaulters
                   </Typography>
@@ -763,9 +749,9 @@ const TeacherDashboard = () => {
                     label="< 75%"
                     size="small"
                     sx={{
-                      height: 18,
-                      fontSize: "0.62rem",
-                      fontWeight: 700,
+                      height: 20,
+                      fontSize: "0.65rem",
+                      fontWeight: 800,
                       bgcolor: colors.errorBg,
                       color: colors.error,
                     }}
@@ -778,17 +764,21 @@ const TeacherDashboard = () => {
                       <Skeleton
                         key={i}
                         variant="rectangular"
-                        height={36}
-                        sx={{ mb: 0.75, borderRadius: 1 }}
+                        height={44}
+                        sx={{ mb: 1, borderRadius: 2 }}
                       />
                     ))}
                   </Box>
                 ) : defaulters.length === 0 ? (
-                  <Box sx={{ p: 3, textAlign: "center" }}>
+                  <Box sx={{ p: 4, textAlign: "center" }}>
                     <CheckCircleOutlineIcon
-                      sx={{ fontSize: 32, color: colors.success, mb: 0.5 }}
+                      sx={{ fontSize: 40, color: colors.success, mb: 1 }}
                     />
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      variant="body2"
+                      fontWeight={600}
+                      color="text.secondary"
+                    >
                       No defaulters — great work! 🎉
                     </Typography>
                   </Box>
@@ -799,25 +789,25 @@ const TeacherDashboard = () => {
                         key={s._id}
                         direction="row"
                         alignItems="center"
-                        spacing={1}
+                        spacing={1.5}
                         sx={{
                           px: 2,
-                          py: 1,
+                          py: 1.5,
                           "&:hover": { bgcolor: "action.hover" },
                         }}
                       >
                         <Box
                           sx={{
-                            width: 20,
-                            height: 20,
+                            width: 24,
+                            height: 24,
                             borderRadius: "50%",
                             bgcolor: colors.errorBg,
                             color: colors.error,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            fontSize: "0.65rem",
-                            fontWeight: 800,
+                            fontSize: "0.7rem",
+                            fontWeight: 900,
                             flexShrink: 0,
                           }}
                         >
@@ -826,12 +816,9 @@ const TeacherDashboard = () => {
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Typography
                             variant="body2"
-                            fontWeight={700}
+                            fontWeight={800}
                             noWrap
-                            sx={{
-                              fontSize: "0.8rem",
-                              textTransform: "uppercase",
-                            }}
+                            sx={{ fontSize: "0.85rem" }}
                           >
                             {s.name}
                           </Typography>
@@ -839,9 +826,9 @@ const TeacherDashboard = () => {
                             variant="caption"
                             color="text.secondary"
                             noWrap
-                            sx={{ fontSize: "0.65rem" }}
+                            sx={{ fontSize: "0.7rem", fontWeight: 600 }}
                           >
-                            Class {s.className}-{s.section} · Scholar:{" "}
+                            Class {s.className}-{s.section} · Scholar{" "}
                             {s.scholarNumber}
                           </Typography>
                         </Box>
@@ -849,9 +836,9 @@ const TeacherDashboard = () => {
                           label={`${s.percentage}%`}
                           size="small"
                           sx={{
-                            height: 22,
-                            fontSize: "0.7rem",
-                            fontWeight: 800,
+                            height: 24,
+                            fontSize: "0.75rem",
+                            fontWeight: 900,
                             bgcolor: colors.errorBg,
                             color: colors.error,
                           }}
@@ -865,8 +852,9 @@ const TeacherDashboard = () => {
 
             <Grid item xs={12} md={6}>
               <Paper
+                elevation={0}
                 sx={{
-                  borderRadius: 2,
+                  borderRadius: 4,
                   border: "1px solid",
                   borderColor: "divider",
                   overflow: "hidden",
@@ -876,55 +864,48 @@ const TeacherDashboard = () => {
                 <Box
                   sx={{
                     px: 2,
-                    py: 1,
+                    py: 1.5,
                     borderBottom: "1px solid",
                     borderColor: "divider",
-                    bgcolor: isDark ? alpha("#fff", 0.02) : "#FAFBFC",
+                    bgcolor: isDark ? alpha("#fff", 0.02) : "#F8FAFC",
                     display: "flex",
                     alignItems: "center",
                     gap: 1,
                   }}
                 >
                   <BeachAccessOutlinedIcon
-                    sx={{ fontSize: 16, color: colors.info }}
+                    sx={{ fontSize: 18, color: colors.info }}
                   />
                   <Typography
                     variant="body2"
                     fontWeight={800}
-                    sx={{ fontSize: "0.82rem", flex: 1 }}
+                    sx={{ fontSize: "0.85rem", flex: 1 }}
                   >
                     Upcoming Holidays
                   </Typography>
-                  <Chip
-                    label={`Next ${holidays.length}`}
-                    size="small"
-                    sx={{
-                      height: 18,
-                      fontSize: "0.62rem",
-                      fontWeight: 700,
-                      bgcolor: colors.infoBg,
-                      color: colors.info,
-                    }}
-                  />
                 </Box>
 
                 {holidaysLoading ? (
                   <Box sx={{ p: 2 }}>
-                    {[1, 2, 3].map((i) => (
+                    {[1, 2].map((i) => (
                       <Skeleton
                         key={i}
                         variant="rectangular"
-                        height={36}
-                        sx={{ mb: 0.75, borderRadius: 1 }}
+                        height={48}
+                        sx={{ mb: 1, borderRadius: 2 }}
                       />
                     ))}
                   </Box>
                 ) : holidays.length === 0 ? (
-                  <Box sx={{ p: 3, textAlign: "center" }}>
+                  <Box sx={{ p: 4, textAlign: "center" }}>
                     <CalendarMonthOutlinedIcon
-                      sx={{ fontSize: 32, color: "text.disabled", mb: 0.5 }}
+                      sx={{ fontSize: 40, color: "text.disabled", mb: 1 }}
                     />
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      variant="body2"
+                      fontWeight={600}
+                      color="text.secondary"
+                    >
                       No holidays in next 60 days
                     </Typography>
                   </Box>
@@ -938,15 +919,15 @@ const TeacherDashboard = () => {
                         spacing={1.5}
                         sx={{
                           px: 2,
-                          py: 1.2,
+                          py: 1.5,
                           "&:hover": { bgcolor: "action.hover" },
                         }}
                       >
                         <Box
                           sx={{
-                            width: 42,
-                            height: 42,
-                            borderRadius: 1.5,
+                            width: 46,
+                            height: 46,
+                            borderRadius: 2,
                             bgcolor: colors.infoBg,
                             color: colors.info,
                             display: "flex",
@@ -958,8 +939,8 @@ const TeacherDashboard = () => {
                         >
                           <Typography
                             sx={{
-                              fontSize: "0.62rem",
-                              fontWeight: 700,
+                              fontSize: "0.65rem",
+                              fontWeight: 800,
                               lineHeight: 1,
                             }}
                           >
@@ -967,7 +948,7 @@ const TeacherDashboard = () => {
                           </Typography>
                           <Typography
                             sx={{
-                              fontSize: "1rem",
+                              fontSize: "1.1rem",
                               fontWeight: 900,
                               lineHeight: 1.1,
                             }}
@@ -978,16 +959,16 @@ const TeacherDashboard = () => {
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Typography
                             variant="body2"
-                            fontWeight={700}
+                            fontWeight={800}
                             noWrap
-                            sx={{ fontSize: "0.82rem" }}
+                            sx={{ fontSize: "0.85rem" }}
                           >
                             {h.name}
                           </Typography>
                           <Typography
                             variant="caption"
                             color="text.secondary"
-                            sx={{ fontSize: "0.68rem" }}
+                            sx={{ fontSize: "0.7rem", fontWeight: 600 }}
                           >
                             {h.type} ·{" "}
                             {h.daysUntil === 0
@@ -1004,76 +985,6 @@ const TeacherDashboard = () => {
               </Paper>
             </Grid>
           </Grid>
-
-          {/* ── Quick Actions ── */}
-          <Paper
-            sx={{
-              p: 1.5,
-              mt: 2,
-              borderRadius: 2,
-              border: "1px solid",
-              borderColor: "divider",
-            }}
-          >
-            <Grid container spacing={1}>
-              {[
-                {
-                  icon: <EventNoteOutlinedIcon />,
-                  label: "Mark",
-                  path: "/attendance/mark",
-                },
-                {
-                  icon: <TodayOutlinedIcon />,
-                  label: "Reports",
-                  path: "/reports/daily",
-                },
-                {
-                  icon: <PeopleOutlinedIcon />,
-                  label: "Students",
-                  path: "/students",
-                },
-                {
-                  icon: <PersonOutlineIcon />,
-                  label: "Profile",
-                  path: "/profile",
-                },
-              ].map((a) => (
-                <Grid item xs={3} key={a.path}>
-                  <Box
-                    onClick={() => navigate(a.path)}
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 0.4,
-                      py: 1,
-                      borderRadius: 1.5,
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                      "&:hover": {
-                        bgcolor: "action.hover",
-                        transform: "translateY(-2px)",
-                      },
-                    }}
-                  >
-                    {React.cloneElement(a.icon, {
-                      sx: {
-                        fontSize: 22,
-                        color: isDark ? "#F1F5F9" : "#334155",
-                      },
-                    })}
-                    <Typography
-                      variant="caption"
-                      fontWeight={700}
-                      sx={{ fontSize: "0.7rem" }}
-                    >
-                      {a.label}
-                    </Typography>
-                  </Box>
-                </Grid>
-              ))}
-            </Grid>
-          </Paper>
         </>
       )}
     </Box>

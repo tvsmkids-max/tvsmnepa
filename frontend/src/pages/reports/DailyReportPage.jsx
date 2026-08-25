@@ -16,6 +16,7 @@ import {
   CardContent,
   Divider,
   LinearProgress,
+  CircularProgress,
   IconButton,
   Tooltip,
   InputAdornment,
@@ -58,10 +59,6 @@ import {
 import useSettings from "../../hooks/useSettings";
 import useAuth from "../../hooks/useAuth";
 
-// ═══════════════════════════════════════════════════════════════════
-//  CONSTANTS
-// ═══════════════════════════════════════════════════════════════════
-
 const formatDate = (d) => {
   const date = new Date(d);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -69,7 +66,7 @@ const formatDate = (d) => {
 
 const STATUS_CONFIG = {
   completed: {
-    label: "Completed",
+    label: "Marked", // Cleaner label
     color: "#16A34A",
     bg: "#DCFCE7",
     darkBg: "rgba(22,163,74,0.15)",
@@ -127,10 +124,6 @@ const STUDENT_STATUS_COLORS = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════════
-//  MAIN PAGE
-// ═══════════════════════════════════════════════════════════════════
-
 const DailyReportPage = () => {
   const { enqueueSnackbar } = useSnackbar();
   const theme = useTheme();
@@ -148,7 +141,6 @@ const DailyReportPage = () => {
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Admin-only filters
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("class");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -157,10 +149,8 @@ const DailyReportPage = () => {
   const exportOpen = Boolean(exportAnchor);
   const [selectedClassDetail, setSelectedClassDetail] = useState(null);
 
-  // Teacher-only filter
   const [studentStatusFilter, setStudentStatusFilter] = useState("all");
 
-  // ─── Load classes ───
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -177,7 +167,6 @@ const DailyReportPage = () => {
     };
   }, []);
 
-  // ─── Load daily report ───
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -205,13 +194,11 @@ const DailyReportPage = () => {
 
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  // ─── Teacher's class data ───
   const teacherClassData = useMemo(() => {
     if (!isTeacher || !dailyReport?.classes?.length) return null;
     return dailyReport.classes[0];
   }, [isTeacher, dailyReport]);
 
-  // ─── Teacher: filtered students ───
   const filteredStudents = useMemo(() => {
     if (!teacherClassData?.students) return [];
     if (studentStatusFilter === "all") return teacherClassData.students;
@@ -220,7 +207,6 @@ const DailyReportPage = () => {
     );
   }, [teacherClassData, studentStatusFilter]);
 
-  // ─── Admin: filtered classes ───
   const filteredClasses = useMemo(() => {
     if (!dailyReport?.classes) return [];
     let list = [...dailyReport.classes];
@@ -264,7 +250,6 @@ const DailyReportPage = () => {
     return list;
   }, [dailyReport, search, sortBy, statusFilter, hideEmpty]);
 
-  // ─── Export ───
   const handleExportExcel = () => {
     if (!dailyReport) return;
     const data = [];
@@ -272,7 +257,6 @@ const DailyReportPage = () => {
       isTeacher && teacherClassData ? [teacherClassData] : dailyReport.classes;
 
     exportClasses.forEach((cls) => {
-      // Clean senior-developer sequential serial number mapping
       cls.students.forEach((s, idx) => {
         data.push({
           Date: new Date(dailyReport.date).toLocaleDateString("en-IN"),
@@ -320,13 +304,11 @@ const DailyReportPage = () => {
         ]}
       />
 
-      {/* ══════════════════════════════════════════════════════════════
-          TEACHER VIEW
-      ══════════════════════════════════════════════════════════════ */}
       {isTeacher ? (
+        // ── TEACHER VIEW ──
         <>
-          {/* Teacher Toolbar */}
           <Paper
+            elevation={0}
             sx={{
               p: { xs: 1.5, sm: 2 },
               mb: 2,
@@ -334,7 +316,7 @@ const DailyReportPage = () => {
               border: "1px solid",
               borderColor: "divider",
               position: "sticky",
-              top: { xs: 50, md: 55 },
+              top: { xs: 50, md: 64 },
               zIndex: 5,
               bgcolor: "background.paper",
             }}
@@ -359,7 +341,7 @@ const DailyReportPage = () => {
                     height: 36,
                     border: "1px solid",
                     borderColor: "divider",
-                    borderRadius: 1.5,
+                    borderRadius: 2,
                   }}
                 >
                   <RefreshOutlinedIcon sx={{ fontSize: 18 }} />
@@ -373,11 +355,8 @@ const DailyReportPage = () => {
                 startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 16 }} />}
                 sx={{
                   height: 36,
-                  fontWeight: 700,
+                  fontWeight: 800,
                   fontSize: "0.78rem",
-                  textTransform: "none",
-                  background:
-                    "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
                   px: 2,
                 }}
               >
@@ -387,28 +366,17 @@ const DailyReportPage = () => {
                 anchorEl={exportAnchor}
                 open={exportOpen}
                 onClose={() => setExportAnchor(null)}
-                PaperProps={{
-                  sx: {
-                    borderRadius: 2,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    minWidth: 180,
-                  },
+                slotProps={{
+                  paper: { sx: { borderRadius: 2, minWidth: 180, mt: 1 } },
                 }}
               >
-                <MenuItem
-                  onClick={handleExportExcel}
-                  sx={{ fontSize: "0.85rem", fontWeight: 600 }}
-                >
+                <MenuItem onClick={handleExportExcel} sx={{ fontWeight: 600 }}>
                   <FileDownloadOutlinedIcon
                     sx={{ mr: 1.5, fontSize: 18, color: "success.main" }}
                   />
                   Excel
                 </MenuItem>
-                <MenuItem
-                  onClick={handleExportPdf}
-                  sx={{ fontSize: "0.85rem", fontWeight: 600 }}
-                >
+                <MenuItem onClick={handleExportPdf} sx={{ fontWeight: 600 }}>
                   <PictureAsPdfOutlinedIcon
                     sx={{ mr: 1.5, fontSize: 18, color: "error.main" }}
                   />
@@ -418,34 +386,9 @@ const DailyReportPage = () => {
             </Stack>
           </Paper>
 
-          {/* Teacher Content */}
           {loading ? (
             <Box sx={{ textAlign: "center", py: 8 }}>
-              <Box
-                component="img"
-                src="/loading.png"
-                alt="Loading"
-                sx={{
-                  width: 72,
-                  height: 72,
-                  animation: "spin 1.5s linear infinite",
-                  "@keyframes spin": {
-                    "0%": { transform: "rotate(0deg)" },
-                    "100%": { transform: "rotate(360deg)" },
-                  },
-                }}
-                onError={(e) => {
-                  e.target.style.display = "none";
-                }}
-              />
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                fontWeight={600}
-                sx={{ mt: 2 }}
-              >
-                Loading report...
-              </Typography>
+              <CircularProgress />
             </Box>
           ) : !dailyReport ? null : isNonWorking ? (
             <HolidayBanner
@@ -464,19 +407,19 @@ const DailyReportPage = () => {
             </Paper>
           ) : (
             <>
-              {/* Stats pills */}
               <Paper
+                elevation={0}
                 sx={{
-                  p: { xs: 1.25, sm: 1.5 },
-                  mb: 1.5,
-                  borderRadius: 2,
+                  p: { xs: 1.5, sm: 2 },
+                  mb: 2,
+                  borderRadius: 3,
                   border: "1px solid",
                   borderColor: "divider",
                 }}
               >
                 <Stack
                   direction="row"
-                  spacing={{ xs: 1, sm: 2 }}
+                  spacing={2}
                   justifyContent="space-around"
                   alignItems="center"
                   divider={<Divider orientation="vertical" flexItem />}
@@ -514,7 +457,6 @@ const DailyReportPage = () => {
                 </Stack>
               </Paper>
 
-              {/* Status filter chips */}
               <Stack
                 direction="row"
                 spacing={0.75}
@@ -557,12 +499,12 @@ const DailyReportPage = () => {
                       fontWeight: 700,
                       fontSize: "0.7rem",
                       cursor: "pointer",
+                      height: 26,
                     }}
                   />
                 ))}
               </Stack>
 
-              {/* Student list */}
               {filteredStudents.length === 0 ? (
                 <Paper sx={{ borderRadius: 3 }}>
                   <EmptyState
@@ -572,10 +514,10 @@ const DailyReportPage = () => {
                   />
                 </Paper>
               ) : isMobile ? (
-                // ── MOBILE: Cards (Purged Roll reference, replaced with idx) ──
                 <Paper
+                  elevation={0}
                   sx={{
-                    borderRadius: 2,
+                    borderRadius: 3,
                     overflow: "hidden",
                     border: "1px solid",
                     borderColor: "divider",
@@ -590,8 +532,8 @@ const DailyReportPage = () => {
                         <Box
                           key={s._id}
                           sx={{
-                            px: 1.5,
-                            py: 1.1,
+                            px: 2,
+                            py: 1.25,
                             bgcolor: isDark
                               ? statusConfig.darkBg
                               : alpha(statusConfig.color, 0.03),
@@ -601,13 +543,13 @@ const DailyReportPage = () => {
                           <Stack
                             direction="row"
                             alignItems="center"
-                            spacing={1.25}
+                            spacing={1.5}
                           >
                             <Typography
                               sx={{
                                 minWidth: 26,
                                 fontWeight: 800,
-                                fontSize: "0.78rem",
+                                fontSize: "0.8rem",
                                 color: isDark ? "#93C5FD" : "#1E4D98",
                                 fontFamily: "monospace",
                                 textAlign: "center",
@@ -619,10 +561,10 @@ const DailyReportPage = () => {
                             <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Typography
                                 variant="body2"
-                                fontWeight={700}
+                                fontWeight={800}
                                 noWrap
                                 sx={{
-                                  fontSize: "0.85rem",
+                                  fontSize: "0.9rem",
                                   textTransform: "uppercase",
                                 }}
                               >
@@ -632,7 +574,7 @@ const DailyReportPage = () => {
                                 variant="caption"
                                 color="text.secondary"
                                 noWrap
-                                sx={{ fontSize: "0.68rem" }}
+                                sx={{ fontSize: "0.7rem" }}
                               >
                                 F: {s.fatherName || "—"}
                               </Typography>
@@ -642,8 +584,8 @@ const DailyReportPage = () => {
                               size="small"
                               sx={{
                                 fontWeight: 800,
-                                height: 22,
-                                fontSize: "0.68rem",
+                                height: 24,
+                                fontSize: "0.7rem",
                                 bgcolor: isDark
                                   ? statusConfig.darkBg
                                   : statusConfig.bg,
@@ -658,10 +600,10 @@ const DailyReportPage = () => {
                   </Stack>
                 </Paper>
               ) : (
-                // ── DESKTOP: Table (Replaced Roll with S.NO.) ──
                 <Paper
+                  elevation={0}
                   sx={{
-                    borderRadius: 2,
+                    borderRadius: 3,
                     overflow: "hidden",
                     border: "1px solid",
                     borderColor: "divider",
@@ -674,11 +616,11 @@ const DailyReportPage = () => {
                           <TableCell
                             sx={{
                               fontWeight: 800,
-                              fontSize: "0.68rem",
+                              fontSize: "0.7rem",
                               textTransform: "uppercase",
-                              bgcolor: isDark ? "#1E293B" : "#F1F5F9",
+                              bgcolor: isDark ? "#1E293B" : "#F8FAFC",
                               width: 65,
-                              py: 1,
+                              py: 1.2,
                             }}
                           >
                             S.NO.
@@ -686,10 +628,10 @@ const DailyReportPage = () => {
                           <TableCell
                             sx={{
                               fontWeight: 800,
-                              fontSize: "0.68rem",
+                              fontSize: "0.7rem",
                               textTransform: "uppercase",
-                              bgcolor: isDark ? "#1E293B" : "#F1F5F9",
-                              py: 1,
+                              bgcolor: isDark ? "#1E293B" : "#F8FAFC",
+                              py: 1.2,
                             }}
                           >
                             Name
@@ -697,34 +639,22 @@ const DailyReportPage = () => {
                           <TableCell
                             sx={{
                               fontWeight: 800,
-                              fontSize: "0.68rem",
+                              fontSize: "0.7rem",
                               textTransform: "uppercase",
-                              bgcolor: isDark ? "#1E293B" : "#F1F5F9",
-                              py: 1,
+                              bgcolor: isDark ? "#1E293B" : "#F8FAFC",
+                              py: 1.2,
                             }}
                           >
                             Father
                           </TableCell>
                           <TableCell
-                            sx={{
-                              fontWeight: 800,
-                              fontSize: "0.68rem",
-                              textTransform: "uppercase",
-                              bgcolor: isDark ? "#1E293B" : "#F1F5F9",
-                              py: 1,
-                              width: 100,
-                            }}
-                          >
-                            Mobile
-                          </TableCell>
-                          <TableCell
                             align="center"
                             sx={{
                               fontWeight: 800,
-                              fontSize: "0.68rem",
+                              fontSize: "0.7rem",
                               textTransform: "uppercase",
-                              bgcolor: isDark ? "#1E293B" : "#F1F5F9",
-                              py: 1,
+                              bgcolor: isDark ? "#1E293B" : "#F8FAFC",
+                              py: 1.2,
                               width: 100,
                             }}
                           >
@@ -747,65 +677,50 @@ const DailyReportPage = () => {
                                   : alpha(statusConfig.color, 0.02),
                               }}
                             >
-                              <TableCell sx={{ py: 0.9 }}>
+                              <TableCell sx={{ py: 1 }}>
                                 <Typography
                                   variant="body2"
                                   fontWeight={800}
                                   sx={{
                                     fontFamily: "monospace",
-                                    fontSize: "0.8rem",
+                                    fontSize: "0.85rem",
                                     color: isDark ? "#93C5FD" : "#1E4D98",
                                   }}
                                 >
                                   {String(idx + 1).padStart(2, "0")}
                                 </Typography>
                               </TableCell>
-                              <TableCell sx={{ py: 0.9 }}>
+                              <TableCell sx={{ py: 1 }}>
                                 <Typography
                                   variant="body2"
-                                  fontWeight={700}
+                                  fontWeight={800}
                                   sx={{
-                                    fontSize: "0.82rem",
+                                    fontSize: "0.88rem",
                                     textTransform: "uppercase",
                                   }}
                                 >
                                   {s.name}
                                 </Typography>
                               </TableCell>
-                              <TableCell sx={{ py: 0.9 }}>
+                              <TableCell sx={{ py: 1 }}>
                                 <Typography
                                   variant="body2"
                                   sx={{
-                                    fontSize: "0.78rem",
+                                    fontSize: "0.8rem",
                                     color: "text.secondary",
                                   }}
                                 >
                                   {s.fatherName || "—"}
                                 </Typography>
                               </TableCell>
-                              <TableCell sx={{ py: 0.9 }}>
-                                <Typography
-                                  variant="caption"
-                                  sx={{
-                                    fontFamily: "monospace",
-                                    fontSize: "0.75rem",
-                                    color:
-                                      s.mobile === "0000000000"
-                                        ? "text.disabled"
-                                        : "text.primary",
-                                  }}
-                                >
-                                  {s.mobile || "—"}
-                                </Typography>
-                              </TableCell>
-                              <TableCell align="center" sx={{ py: 0.9 }}>
+                              <TableCell align="center" sx={{ py: 1 }}>
                                 <Chip
                                   label={statusConfig.label}
                                   size="small"
                                   sx={{
                                     fontWeight: 800,
-                                    height: 24,
-                                    fontSize: "0.72rem",
+                                    height: 26,
+                                    fontSize: "0.75rem",
                                     bgcolor: isDark
                                       ? statusConfig.darkBg
                                       : statusConfig.bg,
@@ -822,24 +737,16 @@ const DailyReportPage = () => {
                   </TableContainer>
                 </Paper>
               )}
-
-              {/* Footer */}
-              <Box sx={{ textAlign: "center", mt: 2 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Showing <strong>{filteredStudents.length}</strong> of{" "}
-                  <strong>{teacherClassData.total}</strong> students
-                </Typography>
-              </Box>
             </>
           )}
         </>
       ) : (
         /* ══════════════════════════════════════════════════════════════
-            ADMIN VIEW — Class cards
+            ADMIN VIEW
         ══════════════════════════════════════════════════════════════ */
         <>
-          {/* Admin Sticky filter bar */}
           <Paper
+            elevation={0}
             sx={{
               p: { xs: 1.5, sm: 2 },
               mb: 2,
@@ -847,13 +754,13 @@ const DailyReportPage = () => {
               border: "1px solid",
               borderColor: "divider",
               position: "sticky",
-              top: { xs: 50, md: 55 },
+              top: { xs: 50, md: 64 },
               zIndex: 5,
               bgcolor: "background.paper",
             }}
           >
-            <Stack spacing={1.2}>
-              <Stack direction="row" spacing={1.2}>
+            <Stack spacing={1.5}>
+              <Stack direction="row" spacing={1.5}>
                 <FormControl size="small" sx={{ flex: 1, minWidth: 0 }}>
                   <InputLabel>Class</InputLabel>
                   <Select
@@ -879,32 +786,25 @@ const DailyReportPage = () => {
                   sx={{ flex: 1, minWidth: 0 }}
                 />
               </Stack>
-              <Stack direction="row" spacing={0.75} alignItems="center">
+              <Stack direction="row" spacing={1} alignItems="center">
                 <TextField
                   placeholder="Search class..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   size="small"
-                  sx={{
-                    flex: 1,
-                    "& .MuiInputBase-root": { height: 36, fontSize: "0.82rem" },
-                  }}
+                  sx={{ flex: 1, "& .MuiInputBase-root": { height: 38 } }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
                         <SearchOutlinedIcon
-                          sx={{ fontSize: 16, color: "text.disabled" }}
+                          sx={{ fontSize: 18, color: "text.disabled" }}
                         />
                       </InputAdornment>
                     ),
                     endAdornment: search && (
                       <InputAdornment position="end">
-                        <IconButton
-                          size="small"
-                          onClick={() => setSearch("")}
-                          sx={{ p: 0.25 }}
-                        >
-                          <ClearIcon sx={{ fontSize: 14 }} />
+                        <IconButton size="small" onClick={() => setSearch("")}>
+                          <ClearIcon sx={{ fontSize: 16 }} />
                         </IconButton>
                       </InputAdornment>
                     ),
@@ -912,37 +812,18 @@ const DailyReportPage = () => {
                 />
                 <FormControl
                   size="small"
-                  sx={{ minWidth: { xs: 90, sm: 120 } }}
+                  sx={{ minWidth: { xs: 100, sm: 130 } }}
                 >
                   <Select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                     displayEmpty
-                    sx={{ height: 36, fontSize: "0.78rem", fontWeight: 700 }}
+                    sx={{ height: 38, fontWeight: 700 }}
                   >
                     <MenuItem value="all">All Status</MenuItem>
-                    <MenuItem value="completed">🟢 Completed</MenuItem>
+                    <MenuItem value="completed">🟢 Marked</MenuItem>
                     <MenuItem value="partial">🟡 Partial</MenuItem>
                     <MenuItem value="pending">🔴 Pending</MenuItem>
-                  </Select>
-                </FormControl>
-                <FormControl
-                  size="small"
-                  sx={{
-                    minWidth: { xs: 90, sm: 140 },
-                    display: { xs: "none", sm: "flex" },
-                  }}
-                >
-                  <Select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    sx={{ height: 36, fontSize: "0.78rem", fontWeight: 700 }}
-                  >
-                    {SORT_OPTIONS.map((opt) => (
-                      <MenuItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </MenuItem>
-                    ))}
                   </Select>
                 </FormControl>
                 <Tooltip title="Refresh">
@@ -951,11 +832,11 @@ const DailyReportPage = () => {
                     disabled={loading}
                     size="small"
                     sx={{
-                      width: 36,
-                      height: 36,
+                      width: 38,
+                      height: 38,
                       border: "1px solid",
                       borderColor: "divider",
-                      borderRadius: 1.5,
+                      borderRadius: 2,
                     }}
                   >
                     <RefreshOutlinedIcon sx={{ fontSize: 18 }} />
@@ -966,17 +847,8 @@ const DailyReportPage = () => {
                   size="small"
                   onClick={(e) => setExportAnchor(e.currentTarget)}
                   disabled={loading || !dailyReport}
-                  startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 16 }} />}
-                  sx={{
-                    height: 36,
-                    fontWeight: 700,
-                    fontSize: "0.78rem",
-                    textTransform: "none",
-                    background:
-                      "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
-                    minWidth: { xs: 36, sm: "auto" },
-                    px: { xs: 1, sm: 2 },
-                  }}
+                  startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
+                  sx={{ height: 38, fontWeight: 800, px: { xs: 1, sm: 2 } }}
                 >
                   {!isXs && "Export"}
                 </Button>
@@ -984,79 +856,33 @@ const DailyReportPage = () => {
                   anchorEl={exportAnchor}
                   open={exportOpen}
                   onClose={() => setExportAnchor(null)}
-                  PaperProps={{
-                    sx: {
-                      borderRadius: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      minWidth: 180,
-                    },
+                  slotProps={{
+                    paper: { sx: { borderRadius: 2, mt: 1, minWidth: 180 } },
                   }}
                 >
                   <MenuItem
                     onClick={handleExportExcel}
-                    sx={{ fontSize: "0.85rem", fontWeight: 600 }}
+                    sx={{ fontWeight: 700 }}
                   >
                     <FileDownloadOutlinedIcon
                       sx={{ mr: 1.5, fontSize: 18, color: "success.main" }}
-                    />
+                    />{" "}
                     Excel
                   </MenuItem>
-                  <MenuItem
-                    onClick={handleExportPdf}
-                    sx={{ fontSize: "0.85rem", fontWeight: 600 }}
-                  >
+                  <MenuItem onClick={handleExportPdf} sx={{ fontWeight: 700 }}>
                     <PictureAsPdfOutlinedIcon
                       sx={{ mr: 1.5, fontSize: 18, color: "error.main" }}
-                    />
+                    />{" "}
                     PDF
-                  </MenuItem>
-                  <Divider />
-                  <MenuItem
-                    onClick={() => {
-                      window.print();
-                      setExportAnchor(null);
-                    }}
-                    sx={{ fontSize: "0.85rem", fontWeight: 600 }}
-                  >
-                    <PrintOutlinedIcon
-                      sx={{ mr: 1.5, fontSize: 18, color: "text.secondary" }}
-                    />
-                    Print
                   </MenuItem>
                 </Menu>
               </Stack>
             </Stack>
           </Paper>
 
-          {/* Admin Content */}
           {loading ? (
             <Box sx={{ textAlign: "center", py: 8 }}>
-              <Box
-                component="img"
-                src="/loading.png"
-                alt="Loading"
-                sx={{
-                  width: 72,
-                  height: 72,
-                  animation: "spin 1.5s linear infinite",
-                  "@keyframes spin": {
-                    "0%": { transform: "rotate(0deg)" },
-                    "100%": { transform: "rotate(360deg)" },
-                  },
-                }}
-                onError={(e) => {
-                  e.target.style.display = "none";
-                }}
-              />
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                fontWeight={600}
-                sx={{ mt: 2 }}
-              >
-                Loading daily report...
-              </Typography>
+              <CircularProgress />
             </Box>
           ) : !dailyReport ? null : isNonWorking ? (
             <HolidayBanner
@@ -1068,17 +894,18 @@ const DailyReportPage = () => {
           ) : (
             <>
               <Paper
+                elevation={0}
                 sx={{
-                  p: { xs: 1.25, sm: 1.5 },
-                  mb: 2,
-                  borderRadius: 2,
+                  p: { xs: 1.5, sm: 2 },
+                  mb: 2.5,
+                  borderRadius: 3,
                   border: "1px solid",
                   borderColor: "divider",
                 }}
               >
                 <Stack
                   direction="row"
-                  spacing={{ xs: 1, sm: 2 }}
+                  spacing={2}
                   justifyContent="space-around"
                   alignItems="center"
                   divider={<Divider orientation="vertical" flexItem />}
@@ -1116,82 +943,12 @@ const DailyReportPage = () => {
                 </Stack>
               </Paper>
 
-              <Stack
-                direction="row"
-                spacing={0.75}
-                sx={{ mb: 2 }}
-                flexWrap="wrap"
-                useFlexGap
-              >
-                <Chip
-                  label={`🟢 ${summary.markedClasses || 0} Completed`}
-                  size="small"
-                  onClick={() =>
-                    setStatusFilter(
-                      statusFilter === "completed" ? "all" : "completed",
-                    )
-                  }
-                  variant={statusFilter === "completed" ? "filled" : "outlined"}
-                  color={statusFilter === "completed" ? "success" : "default"}
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: "0.7rem",
-                    cursor: "pointer",
-                  }}
-                />
-                <Chip
-                  label={`🟡 ${summary.partialClasses || 0} Partial`}
-                  size="small"
-                  onClick={() =>
-                    setStatusFilter(
-                      statusFilter === "partial" ? "all" : "partial",
-                    )
-                  }
-                  variant={statusFilter === "partial" ? "filled" : "outlined"}
-                  color={statusFilter === "partial" ? "warning" : "default"}
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: "0.7rem",
-                    cursor: "pointer",
-                  }}
-                />
-                <Chip
-                  label={`🔴 ${summary.pendingClasses || 0} Pending`}
-                  size="small"
-                  onClick={() =>
-                    setStatusFilter(
-                      statusFilter === "pending" ? "all" : "pending",
-                    )
-                  }
-                  variant={statusFilter === "pending" ? "filled" : "outlined"}
-                  color={statusFilter === "pending" ? "error" : "default"}
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: "0.7rem",
-                    cursor: "pointer",
-                  }}
-                />
-                {summary.lowAttendanceClasses > 0 && (
-                  <Chip
-                    icon={<WarningAmberOutlinedIcon sx={{ fontSize: 14 }} />}
-                    label={`${summary.lowAttendanceClasses} Low (<80%)`}
-                    size="small"
-                    color="warning"
-                    sx={{ fontWeight: 700, fontSize: "0.7rem" }}
-                  />
-                )}
-              </Stack>
-
               {filteredClasses.length === 0 ? (
                 <Paper sx={{ borderRadius: 3 }}>
                   <EmptyState
                     icon={<TodayOutlinedIcon sx={{ fontSize: 64 }} />}
                     title="No classes match"
-                    message={
-                      search || statusFilter !== "all"
-                        ? "Try adjusting your search or filter"
-                        : "No attendance data for this date"
-                    }
+                    message="Try adjusting your search or filter"
                   />
                 </Paper>
               ) : (
@@ -1207,16 +964,6 @@ const DailyReportPage = () => {
                   ))}
                 </Grid>
               )}
-
-              <Box sx={{ textAlign: "center", mt: 3 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Showing <strong>{filteredClasses.length}</strong> of{" "}
-                  <strong>{dailyReport.classes?.length || 0}</strong> classes
-                  {hideEmpty && summary.emptyClasses > 0 && (
-                    <> · {summary.emptyClasses} empty hidden</>
-                  )}
-                </Typography>
-              </Box>
             </>
           )}
 
@@ -1233,7 +980,7 @@ const DailyReportPage = () => {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-//  CLASS CARD (Admin only)
+//  PREMIUM CLASS CARD (Admin only)
 // ═══════════════════════════════════════════════════════════════════
 
 const ClassCard = memo(({ cls, isDark, onClick }) => {
@@ -1249,27 +996,29 @@ const ClassCard = memo(({ cls, isDark, onClick }) => {
 
   return (
     <Card
+      elevation={0}
       onClick={onClick}
       sx={{
-        borderRadius: 2.5,
-        border: "1.5px solid",
+        borderRadius: 4,
+        border: "1px solid",
         borderColor: cls.isLowAttendance ? alpha("#DC2626", 0.4) : "divider",
-        boxShadow: "none",
         cursor: "pointer",
-        transition: "all 0.2s",
+        transition: "all 0.2s ease",
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        opacity: cls.isEmpty ? 0.5 : 1,
+        opacity: cls.isEmpty ? 0.6 : 1,
         "&:hover": {
           borderColor: cls.isLowAttendance ? "#DC2626" : "primary.main",
-          transform: "translateY(-2px)",
-          boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
+          transform: "translateY(-4px)",
+          boxShadow: isDark
+            ? "0 12px 24px rgba(0,0,0,0.4)"
+            : "0 12px 24px rgba(15,23,42,0.06)",
         },
       }}
     >
       {cls.isLowAttendance && (
-        <Box sx={{ height: 3, bgcolor: "#DC2626", width: "100%" }} />
+        <Box sx={{ height: 4, bgcolor: "#DC2626", width: "100%" }} />
       )}
       <CardContent
         sx={{
@@ -1283,51 +1032,59 @@ const ClassCard = memo(({ cls, isDark, onClick }) => {
           direction="row"
           justifyContent="space-between"
           alignItems="flex-start"
-          sx={{ mb: 1.5 }}
+          sx={{ mb: 2 }}
         >
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               variant="h6"
               fontWeight={900}
-              sx={{ fontSize: "1.05rem", lineHeight: 1.2 }}
+              sx={{
+                fontSize: "1.1rem",
+                lineHeight: 1.2,
+                letterSpacing: "-0.01em",
+              }}
               noWrap
             >
               {cls.name}-{cls.section}
             </Typography>
-            {cls.classTeacher && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontSize: "0.72rem", display: "block", mt: 0.2 }}
-              >
-                {cls.classTeacher}
-              </Typography>
-            )}
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                fontSize: "0.75rem",
+                display: "block",
+                mt: 0.2,
+                fontWeight: 600,
+              }}
+            >
+              {cls.classTeacher || "No Teacher"}
+            </Typography>
           </Box>
           <Chip
             label={statusConfig.label}
             size="small"
             sx={{
               fontWeight: 800,
-              height: 22,
+              height: 24,
               fontSize: "0.68rem",
               bgcolor: isDark ? statusConfig.darkBg : statusConfig.bg,
               color: statusConfig.color,
-              flexShrink: 0,
               ml: 1,
             }}
           />
         </Stack>
-        <Box sx={{ textAlign: "center", my: 1.5 }}>
+
+        <Box sx={{ textAlign: "center", my: 2 }}>
           {cls.isMarked ? (
             <>
               <Typography
                 variant="h3"
                 fontWeight={900}
                 sx={{
-                  fontSize: { xs: "2.2rem", sm: "2.5rem" },
+                  fontSize: "2.5rem",
                   color: pctColor,
                   lineHeight: 1,
+                  letterSpacing: "-0.04em",
                 }}
               >
                 {cls.percentage}%
@@ -1336,10 +1093,10 @@ const ClassCard = memo(({ cls, isDark, onClick }) => {
                 variant="determinate"
                 value={cls.percentage}
                 sx={{
-                  mt: 1,
-                  height: 5,
+                  mt: 1.5,
+                  height: 6,
                   borderRadius: 3,
-                  bgcolor: isDark ? alpha("#fff", 0.06) : alpha("#000", 0.06),
+                  bgcolor: isDark ? alpha("#fff", 0.08) : alpha("#000", 0.05),
                   "& .MuiLinearProgress-bar": {
                     bgcolor: pctColor,
                     borderRadius: 3,
@@ -1348,106 +1105,67 @@ const ClassCard = memo(({ cls, isDark, onClick }) => {
               />
             </>
           ) : (
-            <Stack alignItems="center" spacing={0.5} sx={{ py: 1 }}>
+            <Stack alignItems="center" spacing={0.5} sx={{ py: 2 }}>
               <HourglassBottomOutlinedIcon
                 sx={{ fontSize: 32, color: statusConfig.color, opacity: 0.6 }}
               />
               <Typography
                 variant="body2"
-                fontWeight={700}
+                fontWeight={800}
                 sx={{ color: statusConfig.color, fontSize: "0.85rem" }}
               >
-                Not Marked
+                Not Marked Yet
               </Typography>
             </Stack>
           )}
         </Box>
-        <Typography
-          variant="caption"
-          sx={{
-            fontSize: "0.75rem",
-            color: "text.secondary",
-            fontWeight: 700,
-            textAlign: "center",
-            display: "block",
-            mb: 1,
-          }}
-        >
-          <Box component="span" sx={{ color: "text.primary", fontWeight: 800 }}>
-            {cls.total}
-          </Box>{" "}
-          Students
-          {cls.isMarked && (
-            <>
-              {" "}
-              ·{" "}
-              <Box component="span" sx={{ color: "#16A34A", fontWeight: 800 }}>
-                {cls.present}
-              </Box>{" "}
-              P ·{" "}
-              <Box component="span" sx={{ color: "#DC2626", fontWeight: 800 }}>
-                {cls.absent}
-              </Box>{" "}
-              A
-              {cls.unmarked > 0 && (
-                <>
-                  {" "}
-                  ·{" "}
-                  <Box
-                    component="span"
-                    sx={{ color: "#F59E0B", fontWeight: 800 }}
-                  >
-                    {cls.unmarked}
-                  </Box>{" "}
-                  U
-                </>
-              )}
-            </>
-          )}
-        </Typography>
+
         <Box
           sx={{
             mt: "auto",
-            pt: 1.5,
+            pt: 2,
             borderTop: "1px solid",
             borderColor: "divider",
           }}
         >
-          {cls.markedBy ? (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontSize: "0.68rem" }}
+          <Typography
+            variant="caption"
+            sx={{
+              fontSize: "0.75rem",
+              color: "text.secondary",
+              fontWeight: 700,
+              textAlign: "center",
+              display: "block",
+            }}
+          >
+            <Box
+              component="span"
+              sx={{ color: "text.primary", fontWeight: 900 }}
             >
-              ✏️ Marked by:{" "}
-              <Box
-                component="span"
-                sx={{ fontWeight: 700, color: "text.primary" }}
-              >
-                {cls.markedBy}
-              </Box>
-              {cls.hasEdits && cls.editedBy && (
-                <>
-                  {" "}
-                  · Edited:{" "}
-                  <Box
-                    component="span"
-                    sx={{ fontWeight: 700, color: "warning.main" }}
-                  >
-                    {cls.editedBy}
-                  </Box>
-                </>
-              )}
-            </Typography>
-          ) : (
-            <Typography
-              variant="caption"
-              color="text.disabled"
-              sx={{ fontSize: "0.68rem", fontStyle: "italic" }}
-            >
-              Not yet marked
-            </Typography>
-          )}
+              {cls.total}
+            </Box>{" "}
+            Students
+            {cls.isMarked && (
+              <>
+                {" "}
+                ·{" "}
+                <Box
+                  component="span"
+                  sx={{ color: "#16A34A", fontWeight: 900 }}
+                >
+                  {cls.present}
+                </Box>{" "}
+                P ·{" "}
+                <Box
+                  component="span"
+                  sx={{ color: "#DC2626", fontWeight: 900 }}
+                >
+                  {cls.absent}
+                </Box>{" "}
+                A
+              </>
+            )}
+          </Typography>
         </Box>
       </CardContent>
     </Card>
@@ -1457,22 +1175,23 @@ ClassCard.displayName = "ClassCard";
 
 const SummaryPill = ({ icon: Icon, value, label, color }) => (
   <Stack alignItems="center" sx={{ flex: 1, py: 0.5 }}>
-    <Icon sx={{ fontSize: 16, color, mb: 0.3 }} />
+    <Icon sx={{ fontSize: 18, color, mb: 0.5 }} />
     <Typography
       variant="body2"
       fontWeight={900}
-      sx={{ fontSize: "1.1rem", color, lineHeight: 1 }}
+      sx={{ fontSize: "1.2rem", color, lineHeight: 1 }}
     >
       {value}
     </Typography>
     <Typography
       variant="caption"
       sx={{
-        fontSize: "0.6rem",
+        fontSize: "0.65rem",
         fontWeight: 800,
         color: "text.secondary",
         textTransform: "uppercase",
-        letterSpacing: "0.03em",
+        letterSpacing: "0.05em",
+        mt: 0.3,
       }}
     >
       {label}
