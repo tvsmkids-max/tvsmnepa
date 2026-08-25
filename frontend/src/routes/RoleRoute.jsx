@@ -1,14 +1,13 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { Box, CircularProgress } from "@mui/material";
+import { Box } from "@mui/material";
 import useAuth from "../hooks/useAuth";
 
 const RoleRoute = ({ children, roles }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
-  // ─── FIX #1: Wait for auth to finish loading ───
-  // Prevents redirect flash when app is initializing
+  // Branded loader replacing raw CircularProgress during initialization checks
   if (isLoading) {
     return (
       <Box
@@ -16,20 +15,37 @@ const RoleRoute = ({ children, roles }) => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          height: "60vh",
+          height: "100vh",
+          bgcolor: "background.default",
         }}
       >
-        <CircularProgress size={40} />
+        <Box
+          component="img"
+          src="/loading.png"
+          alt="Loading"
+          sx={{
+            width: 72,
+            height: 72,
+            animation: "spin 1.5s linear infinite",
+            "@keyframes spin": {
+              "0%": { transform: "rotate(0deg)" },
+              "100%": { transform: "rotate(360deg)" },
+            },
+          }}
+          onError={(e) => {
+            e.target.style.display = "none";
+          }}
+        />
       </Box>
     );
   }
 
-  // ─── FIX #2: Not authenticated → login (with return URL) ───
+  // Not authenticated -> redirect to login (saving requested path)
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // ─── FIX #3: Authenticated but wrong role → unauthorized ───
+  // Authenticated but wrong role -> redirect to access restriction screen
   if (!roles.includes(user.role)) {
     return (
       <Navigate

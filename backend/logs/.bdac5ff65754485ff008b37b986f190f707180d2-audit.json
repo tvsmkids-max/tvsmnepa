@@ -6,14 +6,9 @@
     "auditLog": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\.bdac5ff65754485ff008b37b986f190f707180d2-audit.json",
     "files": [
         {
-            "date": 1785241177150,
-            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\combined-2026-07-28.log",
-            "hash": "5b98478aad5a933bf8975599f5d9cff7339daf8cd80f4a007ab44780a92f3d52"
-        },
-        {
-            "date": 1785266127860,
-            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\combined-2026-07-29.log",
-            "hash": "abc23bee7f3cfc548ccc4dda69cf728098093de894705bd6cf42199a3a7e917f"
+            "date": 1787662214497,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\combined-2026-08-25.log",
+            "hash": "ea05299d93d0e2b5c95dcf513b127ae4f49e99cf6350b94b0cb3542e746d514d"
         }
     ],
     "hashType": "sha256"
