@@ -5,9 +5,11 @@ const { STUDENT_STATUS_LIST } = require("../constants/studentStatus");
 
 const objectId = Joi.string().pattern(/^[0-9a-fA-F]{24}$/);
 
+// ═══════════════════════════════════════════════════════════════════
+//  CREATE STUDENT (rollNumber removed)
+// ═══════════════════════════════════════════════════════════════════
 const createStudentSchema = Joi.object({
   scholarNumber: Joi.string().trim().uppercase().min(1).max(30).required(),
-  rollNumber: Joi.string().trim().min(1).max(20).required(),
   name: Joi.string().trim().min(2).max(100).required(),
   fatherName: Joi.string().trim().min(2).max(100).required(),
   motherName: Joi.string().trim().min(2).max(100).required(),
@@ -37,8 +39,11 @@ const createStudentSchema = Joi.object({
   aadharNumber: Joi.string().trim().allow(""),
 });
 
+// ═══════════════════════════════════════════════════════════════════
+//  UPDATE STUDENT (rollNumber removed, scholarNumber now editable)
+// ═══════════════════════════════════════════════════════════════════
 const updateStudentSchema = Joi.object({
-  rollNumber: Joi.string().trim().min(1).max(20),
+  scholarNumber: Joi.string().trim().uppercase().min(1).max(30),
   name: Joi.string().trim().min(2).max(100),
   fatherName: Joi.string().trim().min(2).max(100),
   motherName: Joi.string().trim().min(2).max(100),
@@ -59,6 +64,9 @@ const updateStudentSchema = Joi.object({
   aadharNumber: Joi.string().trim().allow(""),
 }).min(1);
 
+// ═══════════════════════════════════════════════════════════════════
+//  UPDATE STATUS (unchanged)
+// ═══════════════════════════════════════════════════════════════════
 const updateStudentStatusSchema = Joi.object({
   status: Joi.string()
     .valid(...STUDENT_STATUS_LIST)
@@ -76,6 +84,9 @@ const updateStudentStatusSchema = Joi.object({
   statusDate: Joi.date().default(() => new Date()),
 });
 
+// ═══════════════════════════════════════════════════════════════════
+//  QUERY / LIST STUDENTS (default sort changed to "name")
+// ═══════════════════════════════════════════════════════════════════
 const queryStudentSchema = Joi.object({
   session: objectId,
   class: objectId,
@@ -96,9 +107,12 @@ const queryStudentSchema = Joi.object({
   ),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(2000).default(24),
-  sort: Joi.string().default("rollNumber"),
+  sort: Joi.string().default("name"),
 });
 
+// ═══════════════════════════════════════════════════════════════════
+//  BULK DELETE (unchanged)
+// ═══════════════════════════════════════════════════════════════════
 const bulkDeleteSchema = Joi.object({
   ids: Joi.array().items(objectId).min(1).max(100).required().messages({
     "array.min": "At least 1 student must be selected",

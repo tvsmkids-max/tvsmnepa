@@ -82,7 +82,7 @@ class StudentService {
         { fatherName: new RegExp(trimmed, "i") },
         { motherName: new RegExp(trimmed, "i") },
         { scholarNumber: new RegExp(trimmed, "i") },
-        { rollNumber: new RegExp(trimmed, "i") },
+        // ✅ Legacy rollNumber regex search option completely purged
         { mobile: new RegExp(trimmed, "i") },
         { alternateMobile: new RegExp(trimmed, "i") },
       ];
@@ -121,7 +121,7 @@ class StudentService {
   async getById(id) {
     const student = await studentRepository.findById(id, [
       { path: "class", select: "name section" },
-      { path: "session", select: "name startDate endDate" },
+      { path: "session", select: "name" },
       { path: "createdBy", select: "name" },
     ]);
     if (!student) throwError("Student not found", 404);
@@ -163,6 +163,25 @@ class StudentService {
   async update(id, data, user, req) {
     const existing = await studentRepository.findById(id);
     if (!existing) throwError("Student not found", 404);
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  SCHOLAR NUMBER UNIQUE VALIDATION ON UPDATE (Strict Engineering)
+    // ═══════════════════════════════════════════════════════════════════
+    if (
+      data.scholarNumber &&
+      data.scholarNumber.trim().toUpperCase() !== existing.scholarNumber
+    ) {
+      const formattedScholar = data.scholarNumber.trim().toUpperCase();
+      const duplicate =
+        await studentRepository.findByScholarNumber(formattedScholar);
+      if (duplicate && duplicate._id.toString() !== id) {
+        throwError(
+          `Scholar number "${formattedScholar}" is already assigned to another student`,
+          409,
+        );
+      }
+      data.scholarNumber = formattedScholar;
+    }
 
     if (user && user.role === ROLES.TEACHER) {
       const Teacher = require("../models/Teacher.model");
