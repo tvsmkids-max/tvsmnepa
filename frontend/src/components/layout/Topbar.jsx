@@ -18,6 +18,7 @@ import {
   useTheme,
   ButtonBase,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import ExitToAppOutlinedIcon from "@mui/icons-material/ExitToAppOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
@@ -80,11 +81,10 @@ const Topbar = ({ onMenuClick }) => {
 
   const displayName = isMobile ? getShortName(fullSchoolName) : fullSchoolName;
 
-  // ─── THEME-AWARE COLORS (Minimalist SaaS Look) ───
+  // ─── PREMIUM UX COLORS & EFFECTS ───
   const topbarBg = theme.palette.background.paper;
   const topbarText = theme.palette.text.primary;
   const borderColor = theme.palette.divider;
-  const hoverBg = theme.palette.action.hover;
   const subtleText = theme.palette.text.secondary;
 
   const roleStyle = isAdmin
@@ -97,93 +97,90 @@ const Topbar = ({ onMenuClick }) => {
         position="fixed"
         elevation={0}
         sx={{
-          bgcolor: topbarBg,
+          // Apple-style frosted glass effect
+          bgcolor: alpha(topbarBg, 0.85),
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
           color: topbarText,
           zIndex: (theme) => theme.zIndex.drawer + 1,
           width: "100%",
-          borderBottom: `1px solid ${borderColor}`,
-          transition: "all 0.3s ease",
+          borderBottom: `1px solid ${alpha(borderColor, 0.8)}`,
+          transition: "background-color 0.3s ease",
         }}
       >
         <Toolbar
           sx={{
-            gap: { xs: 0.8, sm: 1.5 },
-            minHeight: { xs: "56px !important", md: "64px !important" },
-            px: { xs: 1.2, sm: 2, md: 3 },
+            gap: { xs: 1, sm: 2 },
+            minHeight: "60px !important", // Modern fixed height
+            px: { xs: 1.5, sm: 2.5, md: 3 },
           }}
         >
-          {/* Menu Toggle (Desktop) */}
+          {/* Hamburger Menu (Clean, Circular, Subtle) */}
           {!isMobile && (
             <IconButton
               edge="start"
               onClick={onMenuClick}
               sx={{
-                color: topbarText,
-                bgcolor: hoverBg,
-                borderRadius: 1.5,
-                width: 38,
-                height: 38,
+                color: subtleText,
+                transition: "all 0.2s",
+                "&:hover": { color: topbarText, bgcolor: "action.hover" },
+                mr: 0.5,
               }}
             >
-              <MenuOutlinedIcon sx={{ fontSize: 20 }} />
+              <MenuOutlinedIcon sx={{ fontSize: 22 }} />
             </IconButton>
           )}
 
-          {/* Logo + School Name */}
-          <ButtonBase
+          {/* School Brand (No weird backgrounds, crisp typography) */}
+          <Box
             onClick={() => isMobile && setSchoolSheetOpen(true)}
-            disabled={!isMobile}
             sx={{
               flex: 1,
-              minWidth: 0,
               display: "flex",
               alignItems: "center",
-              justifyContent: "flex-start",
-              gap: { xs: 1, sm: 1.5 },
-              borderRadius: 1.5,
-              p: 0.5,
+              gap: 1.5,
               cursor: isMobile ? "pointer" : "default",
-              "&:hover": isMobile ? { bgcolor: hoverBg } : {},
+              userSelect: "none",
             }}
           >
             <Avatar
               src={SCHOOL_LOGO}
+              alt="Logo"
+              variant="square"
               sx={{
-                width: { xs: 32, sm: 38 },
-                height: { xs: 32, sm: 38 },
+                width: { xs: 28, sm: 32 },
+                height: { xs: 28, sm: 32 },
                 bgcolor: "transparent",
                 "& img": { objectFit: "contain" },
-                flexShrink: 0,
               }}
             >
-              <SchoolOutlinedIcon sx={{ color: subtleText, fontSize: 20 }} />
+              <SchoolOutlinedIcon sx={{ color: subtleText, fontSize: 24 }} />
             </Avatar>
 
             <Typography
               sx={{
                 color: topbarText,
                 fontWeight: 800,
-                fontSize: { xs: "0.85rem", sm: "0.95rem", md: "1rem" },
+                fontSize: { xs: "0.9rem", sm: "1.05rem" },
                 letterSpacing: "-0.02em",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
               }}
-              title={fullSchoolName}
             >
               {displayName}
             </Typography>
 
             {isMobile && (
               <ExpandMoreOutlinedIcon
-                sx={{ fontSize: 16, color: subtleText, flexShrink: 0 }}
+                sx={{ fontSize: 16, color: subtleText, ml: -0.5 }}
               />
             )}
-          </ButtonBase>
+          </Box>
 
           {/* Right Controls */}
-          <Stack direction="row" alignItems="center" spacing={1}>
-            {/* Session Badge (Sleek pill) */}
+          <Stack direction="row" alignItems="center" spacing={1.5}>
+            {/* Session Pill */}
             {!isMobile && sessionName && (
               <Chip
                 label={sessionName}
@@ -201,43 +198,47 @@ const Topbar = ({ onMenuClick }) => {
               />
             )}
 
+            {/* Dark Mode Toggle */}
             <Tooltip title={isDark ? "Light Mode" : "Dark Mode"}>
               <IconButton
                 onClick={toggleTheme}
                 sx={{
                   color: subtleText,
-                  bgcolor: hoverBg,
-                  borderRadius: 2,
-                  width: { xs: 36, sm: 40 },
-                  height: { xs: 36, sm: 40 },
+                  transition: "all 0.2s",
+                  "&:hover": { color: topbarText, bgcolor: "action.hover" },
                 }}
               >
                 {isDark ? (
-                  <LightModeOutlinedIcon sx={{ fontSize: 18 }} />
+                  <LightModeOutlinedIcon sx={{ fontSize: 20 }} />
                 ) : (
-                  <DarkModeOutlinedIcon sx={{ fontSize: 18 }} />
+                  <DarkModeOutlinedIcon sx={{ fontSize: 20 }} />
                 )}
               </IconButton>
             </Tooltip>
 
-            {/* User Dropdown Button */}
+            {/* User Dropdown Button (Sleek Outline) */}
             <Tooltip title="Account menu">
               <ButtonBase
                 onClick={handleMenuOpen}
                 sx={{
-                  borderRadius: 2,
-                  p: 0.5,
-                  pr: { xs: 0.5, md: 1.2 },
-                  bgcolor: hoverBg,
+                  borderRadius: "30px", // Fully rounded pill
+                  pl: 0.5,
+                  pr: { xs: 0.5, md: 1.5 },
+                  py: 0.5,
                   border: `1px solid ${borderColor}`,
+                  bgcolor: isDark ? "rgba(255,255,255,0.02)" : "#FAFBFC",
                   transition: "all 0.2s ease",
+                  "&:hover": {
+                    bgcolor: "action.hover",
+                    borderColor: subtleText,
+                  },
                 }}
               >
                 <Avatar
                   sx={{
-                    width: { xs: 28, sm: 32 },
-                    height: { xs: 28, sm: 32 },
-                    fontSize: "0.85rem",
+                    width: 28,
+                    height: 28,
+                    fontSize: "0.8rem",
                     fontWeight: 800,
                     bgcolor: roleStyle.bg,
                     color: roleStyle.text,
@@ -274,7 +275,7 @@ const Topbar = ({ onMenuClick }) => {
             </Tooltip>
           </Stack>
 
-          {/* Proper Dropdown Menu */}
+          {/* Dropdown Menu */}
           <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
@@ -283,7 +284,7 @@ const Topbar = ({ onMenuClick }) => {
             anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
             slotProps={{
               paper: {
-                sx: { mt: 1, minWidth: 220 },
+                sx: { mt: 1.5, minWidth: 220, borderRadius: 3 },
               },
             }}
           >
