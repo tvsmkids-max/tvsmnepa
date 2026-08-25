@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import {
   Box,
   Grid,
@@ -7,8 +7,6 @@ import {
   Paper,
   Stack,
   Button,
-  Divider,
-  Alert,
   Table,
   TableHead,
   TableBody,
@@ -17,11 +15,9 @@ import {
   TableContainer,
   LinearProgress,
   CircularProgress,
-  Avatar,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import SchoolIcon from "@mui/icons-material/School";
 import WavingHandIcon from "@mui/icons-material/WavingHand";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
 import EventBusyOutlinedIcon from "@mui/icons-material/EventBusyOutlined";
@@ -30,13 +26,11 @@ import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
 import PercentOutlinedIcon from "@mui/icons-material/PercentOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
-import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
-import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
-import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import TrendingDownOutlinedIcon from "@mui/icons-material/TrendingDownOutlined";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
+import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
 import useAuth from "../../hooks/useAuth";
 import useSettings from "../../hooks/useSettings";
 import useThemeMode from "../../hooks/useThemeMode";
@@ -51,8 +45,8 @@ import WeeklyBackupBanner from "../../components/common/WeeklyBackupBanner";
 import HolidayBanner from "../../components/common/HolidayBanner";
 import AlertsCard from "./components/AlertsCard";
 import ActivityTimeline from "./components/ActivityTimeline";
+import { sortClasses } from "../../utils/classSort";
 
-// ─── COMPACT KPI CARD ───
 const KpiCard = ({
   label,
   value,
@@ -60,7 +54,6 @@ const KpiCard = ({
   trend,
   trendInverse,
   icon,
-  color,
   isDark,
   onClick,
 }) => {
@@ -176,7 +169,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: kpis, isLoading: kpisLoading } = useDashboardKPIs();
+  const { data: kpis } = useDashboardKPIs();
   const { data: alertsData, isLoading: alertsLoading } = useDashboardAlerts();
   const { data: activityData, isLoading: activityLoading } =
     useRecentActivity(8);
@@ -199,16 +192,46 @@ const AdminDashboard = () => {
       ? settings.activeSession?.name
       : null);
 
-  const classBreakdown = todayStats?.classBreakdown || [];
+  // Smart Sort: Nursery -> LKG -> UKG -> 1st -> ... -> 10th -> 12th
+  const classBreakdown = useMemo(() => {
+    const raw = todayStats?.classBreakdown || [];
+    return sortClasses(raw);
+  }, [todayStats?.classBreakdown]);
 
-  // ✅ NEW: Check if today is a holiday or non-working day
   const isNonWorking = todayStats?.isHoliday || todayStats?.isNonWorkingDay;
+
+  const quickActions = [
+    {
+      icon: <EventNoteOutlinedIcon />,
+      label: "Mark",
+      path: "/attendance/mark",
+      color: isDark ? "#60A5FA" : "#1E4D98",
+    },
+    {
+      icon: <TodayOutlinedIcon />,
+      label: "Reports",
+      path: "/reports/daily",
+      color: isDark ? "#38BDF8" : "#0369A1",
+    },
+    {
+      icon: <PeopleOutlinedIcon />,
+      label: "Students",
+      path: "/students",
+      color: isDark ? "#4ADE80" : "#15803D",
+    },
+    {
+      icon: <ClassOutlinedIcon />,
+      label: "Classes",
+      path: "/classes",
+      color: isDark ? "#FBBF24" : "#92400E",
+    },
+  ];
 
   return (
     <Box sx={{ pb: { xs: 10, md: 3 } }}>
       <WeeklyBackupBanner />
 
-      {/* ═══ 1-LINE GREETING ═══ */}
+      {/* Greeting Header */}
       <Stack
         direction="row"
         justifyContent="space-between"
@@ -259,16 +282,12 @@ const AdminDashboard = () => {
         </Button>
       </Stack>
 
-      {/* ═══════════════════════════════════════════════════════════
-          HOLIDAY / NON-WORKING DAY → Show banner, hide stats
-      ═══════════════════════════════════════════════════════════ */}
       {todayLoading ? (
         <Box sx={{ p: 3, textAlign: "center" }}>
           <CircularProgress size={28} />
         </Box>
       ) : isNonWorking ? (
         <>
-          {/* Beautiful Holiday/Sunday Banner */}
           <Box sx={{ mb: 2 }}>
             <HolidayBanner
               isHoliday={todayStats.isHoliday}
@@ -278,7 +297,6 @@ const AdminDashboard = () => {
             />
           </Box>
 
-          {/* Quick Actions (still useful on holidays) */}
           <Paper
             sx={{
               p: 1.5,
@@ -288,32 +306,7 @@ const AdminDashboard = () => {
             }}
           >
             <Grid container spacing={1}>
-              {[
-                {
-                  icon: <EventNoteOutlinedIcon />,
-                  label: "Mark Attendance",
-                  path: "/attendance/mark",
-                  color: isDark ? "#60A5FA" : "#1E4D98",
-                },
-                {
-                  icon: <HistoryOutlinedIcon />,
-                  label: "History",
-                  path: "/attendance/history",
-                  color: isDark ? "#38BDF8" : "#0369A1",
-                },
-                {
-                  icon: <PeopleOutlinedIcon />,
-                  label: "Students",
-                  path: "/students",
-                  color: isDark ? "#4ADE80" : "#15803D",
-                },
-                {
-                  icon: <ClassOutlinedIcon />,
-                  label: "Classes",
-                  path: "/classes",
-                  color: isDark ? "#FBBF24" : "#92400E",
-                },
-              ].map((action) => (
+              {quickActions.map((action) => (
                 <Grid item xs={3} key={action.path}>
                   <Box
                     onClick={() => navigate(action.path)}
@@ -354,11 +347,7 @@ const AdminDashboard = () => {
         </>
       ) : (
         <>
-          {/* ═══════════════════════════════════════════════════════
-              NORMAL WORKING DAY — Show all stats
-          ═══════════════════════════════════════════════════════ */}
-
-          {/* ═══ KPI CARDS ═══ */}
+          {/* KPI Cards */}
           <Grid container spacing={1.5} sx={{ mb: 2 }}>
             <Grid item xs={6} sm={3}>
               <KpiCard
@@ -368,7 +357,7 @@ const AdminDashboard = () => {
                 trend={kpis?.attendanceTrend}
                 icon={<PercentOutlinedIcon />}
                 isDark={isDark}
-                onClick={() => navigate("/reports")}
+                onClick={() => navigate("/reports/daily")}
               />
             </Grid>
             <Grid item xs={6} sm={3}>
@@ -379,7 +368,7 @@ const AdminDashboard = () => {
                 trendInverse
                 icon={<EventBusyOutlinedIcon />}
                 isDark={isDark}
-                onClick={() => navigate("/reports")}
+                onClick={() => navigate("/reports/daily")}
               />
             </Grid>
             <Grid item xs={6} sm={3}>
@@ -402,7 +391,7 @@ const AdminDashboard = () => {
             </Grid>
           </Grid>
 
-          {/* ═══ CLASS-WISE TABLE ═══ */}
+          {/* Class-wise Table (Sorted Nursery -> 10th/12th) */}
           <Paper
             sx={{
               borderRadius: 2,
@@ -651,7 +640,8 @@ const AdminDashboard = () => {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {/* Total Row */}
+
+                    {/* Grand Total Row */}
                     <TableRow
                       sx={{
                         bgcolor: isDark ? "rgba(59,130,246,0.08)" : "#F0F4FF",
@@ -719,7 +709,7 @@ const AdminDashboard = () => {
             )}
           </Paper>
 
-          {/* ═══ ALERTS + ACTIVITY ═══ */}
+          {/* Alerts + Activity */}
           <Grid container spacing={1.5} sx={{ mb: 2 }}>
             <Grid item xs={12} md={5}>
               <AlertsCard data={alertsData} isLoading={alertsLoading} />
@@ -732,7 +722,7 @@ const AdminDashboard = () => {
             </Grid>
           </Grid>
 
-          {/* ═══ QUICK ACTIONS ═══ */}
+          {/* Quick Actions */}
           <Paper
             sx={{
               p: 1.5,
@@ -742,32 +732,7 @@ const AdminDashboard = () => {
             }}
           >
             <Grid container spacing={1}>
-              {[
-                {
-                  icon: <EventNoteOutlinedIcon />,
-                  label: "Mark Attendance",
-                  path: "/attendance/mark",
-                  color: isDark ? "#60A5FA" : "#1E4D98",
-                },
-                {
-                  icon: <HistoryOutlinedIcon />,
-                  label: "History",
-                  path: "/attendance/history",
-                  color: isDark ? "#38BDF8" : "#0369A1",
-                },
-                {
-                  icon: <PeopleOutlinedIcon />,
-                  label: "Students",
-                  path: "/students",
-                  color: isDark ? "#4ADE80" : "#15803D",
-                },
-                {
-                  icon: <ClassOutlinedIcon />,
-                  label: "Classes",
-                  path: "/classes",
-                  color: isDark ? "#FBBF24" : "#92400E",
-                },
-              ].map((action) => (
+              {quickActions.map((action) => (
                 <Grid item xs={3} key={action.path}>
                   <Box
                     onClick={() => navigate(action.path)}

@@ -19,7 +19,6 @@ import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
-import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import AnalyticsOutlinedIcon from "@mui/icons-material/AnalyticsOutlined";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
@@ -32,7 +31,7 @@ import useAuth from "../../hooks/useAuth";
 import useThemeMode from "../../hooks/useThemeMode";
 
 // ═══════════════════════════════════════════════════════════════════
-//  NAV STRUCTURE — Flat sections (NO dropdown, always visible)
+//  NAV STRUCTURE — Flat sections (History Page Removed Completely)
 // ═══════════════════════════════════════════════════════════════════
 
 const adminNav = [
@@ -61,11 +60,6 @@ const adminNav = [
     label: "Mark",
     icon: <EventNoteOutlinedIcon />,
     path: "/attendance/mark",
-  },
-  {
-    label: "History",
-    icon: <HistoryOutlinedIcon />,
-    path: "/attendance/history",
   },
 
   // Reports section
@@ -141,11 +135,6 @@ const teacherNav = [
     icon: <EventNoteOutlinedIcon />,
     path: "/attendance/mark",
   },
-  {
-    label: "History",
-    icon: <HistoryOutlinedIcon />,
-    path: "/attendance/history",
-  },
 
   // Students section
   { type: "section", label: "Students" },
@@ -165,10 +154,6 @@ const teacherNav = [
   },
 ];
 
-// ═══════════════════════════════════════════════════════════════════
-//  SIDEBAR CONTENT
-// ═══════════════════════════════════════════════════════════════════
-
 const SidebarContent = ({ collapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -179,10 +164,6 @@ const SidebarContent = ({ collapsed }) => {
     if (user?.role === "admin") return adminNav;
     return teacherNav;
   }, [user?.role]);
-
-  // ═══════════════════════════════════════════════════════
-  //  Flatten all paths for active matching
-  // ═══════════════════════════════════════════════════════
 
   const allPaths = useMemo(() => {
     return navItems.filter((item) => item.path).map((item) => item.path);
@@ -205,10 +186,6 @@ const SidebarContent = ({ collapsed }) => {
 
     return false;
   };
-
-  // ═══════════════════════════════════════════════════════
-  //  COLORS
-  // ═══════════════════════════════════════════════════════
 
   const sidebarBg = isDark ? "#111827" : "#FFFFFF";
   const borderColor = isDark ? "#1F2937" : "#E5E7EB";
@@ -252,7 +229,6 @@ const SidebarContent = ({ collapsed }) => {
       >
         <List dense disablePadding>
           {navItems.map((item, idx) => {
-            // ── SECTION LABEL (flat, not clickable) ──
             if (item.type === "section") {
               return (
                 <Box key={`section-${idx}`} sx={{ mt: 1.5, mb: 0.3 }}>
@@ -278,7 +254,6 @@ const SidebarContent = ({ collapsed }) => {
               );
             }
 
-            // ── NAV ITEM ──
             const active = isActive(item.path);
             const isDashboard = item.type === "item";
 
@@ -348,10 +323,6 @@ const SidebarContent = ({ collapsed }) => {
     </Box>
   );
 };
-
-// ═══════════════════════════════════════════════════════════════════
-//  SIDEBAR WRAPPER
-// ═══════════════════════════════════════════════════════════════════
 
 const Sidebar = ({ drawerWidth, collapsed }) => (
   <Drawer

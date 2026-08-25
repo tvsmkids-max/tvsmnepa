@@ -3,12 +3,12 @@ export const getClassSortRank = (className) => {
   const name = className.toString().trim().toUpperCase();
 
   // Pre-primary
+  if (/^PRE/.test(name) || name === "PLAYGROUP" || name === "PLAY") return 0;
   if (/^NUR/.test(name) || name === "NURSERY") return 1;
   if (/^L\.?K\.?G/.test(name) || name === "LKG" || name === "LOWER KG")
     return 2;
   if (/^U\.?K\.?G/.test(name) || name === "UKG" || name === "UPPER KG")
     return 3;
-  if (/^PRE/.test(name) || name === "PLAYGROUP" || name === "PLAY") return 0;
 
   // Numeric (1st to 12th)
   const numericMatch = name.match(/^(?:CLASS\s*)?(\d{1,2})(?:ST|ND|RD|TH)?/);

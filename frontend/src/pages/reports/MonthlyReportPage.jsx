@@ -37,10 +37,6 @@ import classApi from "../../api/classApi";
 import { exportToExcel } from "../../utils/exportUtils";
 import useAuth from "../../hooks/useAuth";
 
-// ═══════════════════════════════════════════════════════════════════
-//  CONSTANTS
-// ═══════════════════════════════════════════════════════════════════
-
 const MONTHS = [
   "January",
   "February",
@@ -57,14 +53,10 @@ const MONTHS = [
 ];
 
 const SORT_OPTIONS = [
-  { value: "class", label: "Class (Nursery → 10th)" },
+  { value: "class", label: "Class (Nursery → 12th)" },
   { value: "percentage-desc", label: "Attendance % (High → Low)" },
   { value: "percentage-asc", label: "Attendance % (Low → High)" },
 ];
-
-// ═══════════════════════════════════════════════════════════════════
-//  LOADING COMPONENT
-// ═══════════════════════════════════════════════════════════════════
 
 const AppLoader = ({ label = "Loading..." }) => (
   <Box sx={{ textAlign: "center", py: 8 }}>
@@ -96,10 +88,6 @@ const AppLoader = ({ label = "Loading..." }) => (
   </Box>
 );
 
-// ═══════════════════════════════════════════════════════════════════
-//  MAIN PAGE
-// ═══════════════════════════════════════════════════════════════════
-
 const MonthlyReportPage = () => {
   const { enqueueSnackbar } = useSnackbar();
   const theme = useTheme();
@@ -123,7 +111,6 @@ const MonthlyReportPage = () => {
 
   const [selectedClassDetail, setSelectedClassDetail] = useState(null);
 
-  // ─── Load classes ───
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -140,16 +127,14 @@ const MonthlyReportPage = () => {
     };
   }, []);
 
-  // ✅ Detect if teacher has only 1 class → direct calendar view
   const teacherSingleClass = useMemo(() => {
     if (!isTeacher) return null;
     if (classes.length === 1) return classes[0];
     return null;
   }, [isTeacher, classes]);
 
-  // ─── Load report (only when NOT teacher-single-class mode) ───
   useEffect(() => {
-    if (teacherSingleClass) return; // skip for teacher single class
+    if (teacherSingleClass) return;
 
     let cancelled = false;
     const load = async () => {
@@ -188,7 +173,6 @@ const MonthlyReportPage = () => {
 
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  // ─── Filtered + Sorted ───
   const filteredClasses = useMemo(() => {
     if (!monthlyReport?.classes) return [];
     let list = [...monthlyReport.classes];
@@ -224,7 +208,6 @@ const MonthlyReportPage = () => {
     return list;
   }, [monthlyReport, search, sortBy, hideEmpty]);
 
-  // ─── Export ───
   const handleExportExcel = () => {
     if (!monthlyReport) return;
     const data = monthlyReport.classes.map((c) => ({
@@ -241,14 +224,11 @@ const MonthlyReportPage = () => {
       `monthly-summary-${monthlyReport.monthName}-${year}`,
       "Monthly Summary",
     );
-    enqueueSnackbar("Excel exported", { variant: "success" });
+    enqueueSnackbar("Excel exported successfully", { variant: "success" });
   };
 
   const summary = monthlyReport?.summary || {};
 
-  // ═══════════════════════════════════════════════════════════════
-  //  ✅ TEACHER WITH SINGLE CLASS → DIRECT CALENDAR VIEW
-  // ═══════════════════════════════════════════════════════════════
   if (teacherSingleClass) {
     return (
       <Box sx={{ pb: { xs: 10, md: 3 } }}>
@@ -273,9 +253,6 @@ const MonthlyReportPage = () => {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  //  ADMIN / TEACHER WITH MULTIPLE CLASSES → CARDS + DIALOG
-  // ═══════════════════════════════════════════════════════════════
   return (
     <Box sx={{ pb: { xs: 10, md: 3 } }}>
       <PageHeader
@@ -291,7 +268,7 @@ const MonthlyReportPage = () => {
         ]}
       />
 
-      {/* ── STICKY FILTER BAR ── */}
+      {/* STICKY FILTER BAR */}
       <Paper
         sx={{
           p: { xs: 1.5, sm: 2 },
@@ -306,9 +283,7 @@ const MonthlyReportPage = () => {
         }}
       >
         <Stack spacing={1.2}>
-          {/* Row 1: Class + Month + Year */}
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.2}>
-            {/* Class filter — hide for teacher (auto-filtered by backend) */}
             {!isTeacher && (
               <FormControl size="small" sx={{ flex: { sm: 1 } }}>
                 <InputLabel>Class</InputLabel>
@@ -358,7 +333,6 @@ const MonthlyReportPage = () => {
             </Stack>
           </Stack>
 
-          {/* Row 2: Search + Sort + Actions */}
           <Stack direction="row" spacing={0.75} alignItems="center">
             <TextField
               placeholder="Search class..."
@@ -447,12 +421,11 @@ const MonthlyReportPage = () => {
         </Stack>
       </Paper>
 
-      {/* ── CONTENT ── */}
       {loading ? (
         <AppLoader label="Loading monthly report..." />
       ) : !monthlyReport ? null : (
         <>
-          {/* ── MONTH HEADER ── */}
+          {/* MONTH HEADER */}
           <Paper
             sx={{
               p: { xs: 1.5, sm: 2 },
@@ -535,7 +508,7 @@ const MonthlyReportPage = () => {
             </Stack>
           </Paper>
 
-          {/* ── CLASS CARDS ── */}
+          {/* CLASS CARDS */}
           {filteredClasses.length === 0 ? (
             <Paper sx={{ borderRadius: 3 }}>
               <EmptyState
@@ -576,7 +549,6 @@ const MonthlyReportPage = () => {
         </>
       )}
 
-      {/* ── DIALOG ── */}
       <MonthlyClassDialog
         open={!!selectedClassDetail}
         onClose={() => setSelectedClassDetail(null)}
@@ -587,10 +559,6 @@ const MonthlyReportPage = () => {
     </Box>
   );
 };
-
-// ═══════════════════════════════════════════════════════════════════
-//  MONTHLY CLASS CARD
-// ═══════════════════════════════════════════════════════════════════
 
 const MonthlyClassCard = memo(({ cls, isDark, onClick }) => {
   const pctColor =
@@ -698,7 +666,6 @@ const MonthlyClassCard = memo(({ cls, isDark, onClick }) => {
                   "& .MuiLinearProgress-bar": {
                     bgcolor: pctColor,
                     borderRadius: 4,
-                    transition: "transform 0.8s ease-in-out",
                   },
                 }}
               />

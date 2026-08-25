@@ -127,11 +127,7 @@ class ReportService {
       let hasEdits = false;
 
       const studentDetails = classStudents
-        .sort((a, b) => {
-          const rollA = parseInt(a.rollNumber, 10) || 0;
-          const rollB = parseInt(b.rollNumber, 10) || 0;
-          return rollA - rollB;
-        })
+        .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
         .map((s) => {
           const rec = classRecords[s._id.toString()];
           if (rec?.status === "Present") present++;
@@ -153,7 +149,6 @@ class ReportService {
           return {
             _id: s._id,
             name: s.name,
-            rollNumber: s.rollNumber,
             scholarNumber: s.scholarNumber,
             fatherName: s.fatherName,
             motherName: s.motherName,
@@ -611,7 +606,7 @@ class ReportService {
       status: "Active",
       isActive: true,
     })
-      .sort({ rollNumber: 1, name: 1 })
+      .sort({ name: 1 })
       .lean();
 
     // Get holidays in the month
@@ -726,7 +721,6 @@ class ReportService {
       return {
         _id: s._id,
         name: s.name,
-        rollNumber: s.rollNumber,
         scholarNumber: s.scholarNumber,
         fatherName: s.fatherName,
         gender: s.gender,
@@ -914,7 +908,6 @@ class ReportService {
           _id: s._id,
           name: s.name,
           scholarNumber: s.scholarNumber,
-          rollNumber: s.rollNumber,
           class: s.class,
           mobile: s.mobile,
           fatherName: s.fatherName,
@@ -1218,8 +1211,8 @@ class ReportService {
 
     // ─── Limit: max 90 days range ───
     const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-    if (daysDiff > 90) {
-      throwError("Date range cannot exceed 90 days", 400);
+    if (daysDiff > 365) {
+      throwError("Date range cannot exceed 1 year (365 days)", 400);
     }
 
     // ─── Teacher RBAC ───
@@ -1249,7 +1242,7 @@ class ReportService {
       status: "Active",
       isActive: true,
     })
-      .sort({ rollNumber: 1, name: 1 })
+      .sort({ name: 1 })
       .lean();
 
     // ─── Get all attendance records for this class in the date range ───
@@ -1368,7 +1361,6 @@ class ReportService {
       return {
         _id: s._id,
         scholarNumber: s.scholarNumber,
-        rollNumber: s.rollNumber,
         name: s.name,
         fatherName: s.fatherName,
         motherName: s.motherName,

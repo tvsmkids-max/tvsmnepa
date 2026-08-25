@@ -22,6 +22,12 @@ import {
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 
+// Defensive Scholar Number formatting to guarantee undefined-safe outputs
+const formatScholarNo = (student) => {
+  if (!student || !student.scholarNumber) return "—";
+  return String(student.scholarNumber).trim();
+};
+
 const ClassAttendanceDialog = ({
   open,
   onClose,
@@ -33,7 +39,7 @@ const ClassAttendanceDialog = ({
   const isDark = theme.palette.mode === "dark";
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  // ✅ SORT ALL STUDENTS A → Z
+  // Sort students alphabetically by name (A-Z)
   const sortedStudents = useMemo(() => {
     if (!classData?.students) return [];
     return [...classData.students].sort((a, b) =>
@@ -59,7 +65,6 @@ const ClassAttendanceDialog = ({
         ? "#F59E0B"
         : "#DC2626";
 
-  // ✅ STATUS CHIP HELPER
   const getStatusChip = (status) => {
     if (status === "Present") {
       return {
@@ -85,7 +90,6 @@ const ClassAttendanceDialog = ({
     };
   };
 
-  // ✅ ROW BACKGROUND (subtle by status)
   const getRowBg = (status) => {
     if (status === "Present") {
       return isDark ? alpha("#16A34A", 0.05) : "#F0FDF4";
@@ -110,9 +114,6 @@ const ClassAttendanceDialog = ({
         },
       }}
     >
-      {/* ═══════════════════════════════════════════
-          HEADER
-      ═══════════════════════════════════════════ */}
       <DialogTitle
         component="div"
         sx={{
@@ -122,7 +123,6 @@ const ClassAttendanceDialog = ({
         }}
       >
         <Box sx={{ p: { xs: 2, sm: 2.5 }, position: "relative" }}>
-          {/* Close button */}
           <IconButton
             onClick={onClose}
             sx={{
@@ -138,7 +138,6 @@ const ClassAttendanceDialog = ({
             <CloseOutlinedIcon fontSize="small" />
           </IconButton>
 
-          {/* Header text */}
           <Typography
             variant="caption"
             sx={{
@@ -178,7 +177,6 @@ const ClassAttendanceDialog = ({
             </Typography>
           )}
 
-          {/* Stats bar */}
           <Stack
             direction="row"
             spacing={2}
@@ -212,9 +210,6 @@ const ClassAttendanceDialog = ({
         </Box>
       </DialogTitle>
 
-      {/* ═══════════════════════════════════════════
-          CONTENT — ONE TABLE (A → Z)
-      ═══════════════════════════════════════════ */}
       <DialogContent sx={{ p: 0, overflow: "auto" }}>
         {classData.total === 0 ? (
           <Box sx={{ p: 4, textAlign: "center" }}>
@@ -238,7 +233,7 @@ const ClassAttendanceDialog = ({
               />
             }
           >
-            {sortedStudents.map((s) => {
+            {sortedStudents.map((s, idx) => {
               const chip = getStatusChip(s.status);
               return (
                 <Box
@@ -251,6 +246,7 @@ const ClassAttendanceDialog = ({
                   }}
                 >
                   <Stack direction="row" alignItems="center" spacing={1.25}>
+                    {/* Replaced Roll with S.No. Badge */}
                     <Typography
                       sx={{
                         minWidth: 26,
@@ -262,7 +258,7 @@ const ClassAttendanceDialog = ({
                         flexShrink: 0,
                       }}
                     >
-                      {String(s.rollNumber || "").padStart(2, "0")}
+                      {String(idx + 1).padStart(2, "0")}
                     </Typography>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography
@@ -286,7 +282,7 @@ const ClassAttendanceDialog = ({
                         <Box component="span" sx={{ mx: 0.5, opacity: 0.5 }}>
                           ·
                         </Box>
-                        #{s.scholarNumber}
+                        Scholar: {formatScholarNo(s)}
                       </Typography>
                     </Box>
                     <Chip
@@ -314,24 +310,25 @@ const ClassAttendanceDialog = ({
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
+                  {/* Replaced "Roll" header with "S.NO." */}
                   <TableCell
                     sx={{
                       fontWeight: 800,
                       fontSize: "0.68rem",
                       textTransform: "uppercase",
-                      width: 55,
+                      width: 65,
                       py: 1,
                       bgcolor: isDark ? "#1E293B" : "#F8FAFC",
                     }}
                   >
-                    Roll
+                    S.NO.
                   </TableCell>
                   <TableCell
                     sx={{
                       fontWeight: 800,
                       fontSize: "0.68rem",
                       textTransform: "uppercase",
-                      width: 90,
+                      width: 100,
                       py: 1,
                       bgcolor: isDark ? "#1E293B" : "#F8FAFC",
                     }}
@@ -390,7 +387,7 @@ const ClassAttendanceDialog = ({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {sortedStudents.map((s) => {
+                {sortedStudents.map((s, idx) => {
                   const chip = getStatusChip(s.status);
                   return (
                     <TableRow
@@ -398,6 +395,7 @@ const ClassAttendanceDialog = ({
                       hover
                       sx={{ bgcolor: getRowBg(s.status) }}
                     >
+                      {/* S.No column */}
                       <TableCell sx={{ py: 0.9 }}>
                         <Typography
                           variant="body2"
@@ -408,7 +406,7 @@ const ClassAttendanceDialog = ({
                             color: isDark ? "#93C5FD" : "#1E4D98",
                           }}
                         >
-                          {String(s.rollNumber || "").padStart(2, "0")}
+                          {String(idx + 1).padStart(2, "0")}
                         </Typography>
                       </TableCell>
                       <TableCell sx={{ py: 0.9 }}>
@@ -421,7 +419,7 @@ const ClassAttendanceDialog = ({
                             color: "text.secondary",
                           }}
                         >
-                          {s.scholarNumber}
+                          {formatScholarNo(s)}
                         </Typography>
                       </TableCell>
                       <TableCell sx={{ py: 0.9 }}>
@@ -487,7 +485,6 @@ const ClassAttendanceDialog = ({
           </TableContainer>
         )}
 
-        {/* ── MARKED BY INFO ── */}
         {mode !== "management" && classData.markedBy && (
           <Box
             sx={{
@@ -530,10 +527,6 @@ const ClassAttendanceDialog = ({
     </Dialog>
   );
 };
-
-// ═══════════════════════════════════════════════════════════════════
-//  STAT ITEM (for dialog header) — unchanged
-// ═══════════════════════════════════════════════════════════════════
 
 const StatItem = ({ value, label, color }) => (
   <Stack alignItems="center">

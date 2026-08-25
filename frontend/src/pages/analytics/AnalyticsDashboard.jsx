@@ -50,7 +50,6 @@ import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import PageHeader from "../../components/common/PageHeader";
 import analyticsApi from "../../api/analyticsApi";
 
-// ── Constants (outside component — never recreated) ──
 const CHART_COLORS = {
   present: "#16A34A",
   absent: "#DC2626",
@@ -67,7 +66,6 @@ const getTrendIndicator = (direction) => {
   return { icon: TrendingFlatOutlinedIcon, color: "text.secondary" };
 };
 
-// ── QuickStatCard (memoized, outside component) ──
 const QuickStatCard = memo(({ icon: Icon, label, value, period, colorKey }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
@@ -123,7 +121,6 @@ const QuickStatCard = memo(({ icon: Icon, label, value, period, colorKey }) => {
 });
 QuickStatCard.displayName = "QuickStatCard";
 
-// ── CustomTooltip (memoized, outside component) ──
 const CustomTooltip = memo(({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
@@ -157,7 +154,6 @@ const CustomTooltip = memo(({ active, payload, label }) => {
 });
 CustomTooltip.displayName = "CustomTooltip";
 
-// ── Main Component ──
 const AnalyticsDashboard = () => {
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
@@ -214,11 +210,8 @@ const AnalyticsDashboard = () => {
 
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  // ── Theme-aware derived colors ──
   const gridStroke = isDark ? "#374151" : "#E2E8F0";
   const axisTickColor = isDark ? "#9CA3AF" : "#6B7B99";
-  const areaGradStart = alpha(CHART_COLORS.line, isDark ? 0.4 : 0.3);
-  const areaGradEnd = alpha(CHART_COLORS.line, 0);
   const successBg = alpha(theme.palette.success.main, isDark ? 0.15 : 0.08);
   const errorBg = alpha(theme.palette.error.main, isDark ? 0.15 : 0.08);
   const defaulterHoverBg = alpha(theme.palette.error.main, 0.06);
@@ -266,7 +259,7 @@ const AnalyticsDashboard = () => {
         }
       />
 
-      {/* ═══ QUICK STATS ═══ */}
+      {/* QUICK STATS */}
       <Grid container spacing={1.5} sx={{ mb: 3 }}>
         <Grid item xs={6} sm={3}>
           <QuickStatCard
@@ -306,16 +299,15 @@ const AnalyticsDashboard = () => {
         </Grid>
       </Grid>
 
-      {/* ═══ INSIGHTS ROW ═══ */}
+      {/* INSIGHTS ROW */}
       {insights && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          {/* vs Last Month */}
           {insights.comparedToLastMonth &&
             (() => {
-              const trend = getTrendIndicator(
+              const trendIndicator = getTrendIndicator(
                 insights.comparedToLastMonth.direction,
               );
-              const TrendIcon = trend.icon;
+              const TrendIcon = trendIndicator.icon;
               return (
                 <Grid item xs={12} sm={4}>
                   <Card sx={{ borderRadius: 2.5, height: "100%" }}>
@@ -337,12 +329,14 @@ const AnalyticsDashboard = () => {
                         spacing={1}
                         sx={{ mt: 1 }}
                       >
-                        <TrendIcon sx={{ color: trend.color, fontSize: 28 }} />
+                        <TrendIcon
+                          sx={{ color: trendIndicator.color, fontSize: 28 }}
+                        />
                         <Box>
                           <Typography
                             variant="h5"
                             fontWeight={900}
-                            sx={{ color: trend.color, lineHeight: 1 }}
+                            sx={{ color: trendIndicator.color, lineHeight: 1 }}
                           >
                             {insights.comparedToLastMonth.difference > 0
                               ? "+"
@@ -361,7 +355,6 @@ const AnalyticsDashboard = () => {
               );
             })()}
 
-          {/* Best Class */}
           {insights.bestClass && (
             <Grid item xs={6} sm={4}>
               <Card
@@ -410,7 +403,6 @@ const AnalyticsDashboard = () => {
             </Grid>
           )}
 
-          {/* Worst Class */}
           {insights.worstClass &&
             insights.worstClass._id !== insights.bestClass?._id && (
               <Grid item xs={6} sm={4}>
@@ -462,9 +454,8 @@ const AnalyticsDashboard = () => {
         </Grid>
       )}
 
-      {/* ═══ TREND + PIE ═══ */}
+      {/* TREND + PIE */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        {/* Trend Area Chart */}
         <Grid item xs={12} md={8}>
           <Paper sx={{ p: 2, borderRadius: 3, height: "100%" }}>
             <Stack
@@ -555,7 +546,6 @@ const AnalyticsDashboard = () => {
           </Paper>
         </Grid>
 
-        {/* Pie Chart */}
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 2, borderRadius: 3, height: "100%" }}>
             <Stack
@@ -643,7 +633,7 @@ const AnalyticsDashboard = () => {
         </Grid>
       </Grid>
 
-      {/* ═══ CLASS COMPARISON BAR CHART ═══ */}
+      {/* CLASS COMPARISON BAR CHART */}
       <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }}>
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
           <BarChartOutlinedIcon sx={{ color: "primary.main" }} />
@@ -755,7 +745,7 @@ const AnalyticsDashboard = () => {
         )}
       </Paper>
 
-      {/* ═══ TOP DEFAULTERS ═══ */}
+      {/* TOP DEFAULTERS */}
       <Paper sx={{ p: 2, borderRadius: 3 }}>
         <Stack
           direction="row"
@@ -772,7 +762,7 @@ const AnalyticsDashboard = () => {
           {hasDefaulters && (
             <Button
               size="small"
-              onClick={() => navigate("/reports")}
+              onClick={() => navigate("/reports/defaulters")}
               endIcon={<VisibilityOutlinedIcon />}
             >
               Full Report
@@ -832,7 +822,7 @@ const AnalyticsDashboard = () => {
                         color="text.secondary"
                         sx={{ fontFamily: "monospace", fontSize: "0.7rem" }}
                       >
-                        {s.scholarNumber}
+                        {formatScholarNo(s)}
                       </Typography>
                       {s.class && (
                         <Chip

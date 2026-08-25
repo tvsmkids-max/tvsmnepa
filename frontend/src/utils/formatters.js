@@ -1,16 +1,27 @@
 /**
- * Format roll number with padding (e.g., 2 → "02", 99 → "99", 100 → "100")
+ * Format Scholar Number — undefined-safe defensive utility
+ * Replaces all legacy roll number formatting across the system.
+ * Never interpolates a possibly-undefined field directly into JSX.
+ */
+export const formatScholarNo = (student) => {
+  if (!student) return "—";
+  const scholar = student.scholarNumber || student;
+  if (!scholar) return "—";
+  const str = String(scholar).trim();
+  return str || "—";
+};
+
+/**
+ * @deprecated Use formatScholarNo() instead.
+ * Kept only for backward compatibility with legacy imports.
  */
 export const formatRollNumber = (rollNo) => {
   if (!rollNo && rollNo !== 0) return "—";
   const str = String(rollNo).trim();
   if (!str) return "—";
-
-  // If it's purely numeric, pad to 2 digits minimum
   if (/^\d+$/.test(str)) {
     return str.padStart(2, "0");
   }
-  // Otherwise return as-is (alphanumeric rolls)
   return str;
 };
 
@@ -19,21 +30,18 @@ export const formatRollNumber = (rollNo) => {
  */
 export const formatMobile = (mobile) => {
   if (!mobile) return "—";
-  const str = String(mobile).replace(/\D/g, ""); // Remove non-digits
+  const str = String(mobile).replace(/\D/g, "");
 
   if (!str || str === "0000000000") return "—";
 
-  // Indian 10-digit: split as 5+5
   if (str.length === 10) {
     return `${str.slice(0, 5)} ${str.slice(5)}`;
   }
 
-  // 11 digits (with leading 0)
   if (str.length === 11 && str.startsWith("0")) {
     return `${str.slice(0, 1)} ${str.slice(1, 6)} ${str.slice(6)}`;
   }
 
-  // 12 digits (with country code)
   if (str.length === 12 && str.startsWith("91")) {
     return `+91 ${str.slice(2, 7)} ${str.slice(7)}`;
   }

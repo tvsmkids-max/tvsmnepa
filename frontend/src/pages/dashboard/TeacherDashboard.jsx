@@ -26,7 +26,7 @@ import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
-import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
+import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 import TrendingDownOutlinedIcon from "@mui/icons-material/TrendingDownOutlined";
@@ -279,9 +279,9 @@ const TeacherDashboard = () => {
                   path: "/attendance/mark",
                 },
                 {
-                  icon: <HistoryOutlinedIcon />,
-                  label: "History",
-                  path: "/attendance/history",
+                  icon: <TodayOutlinedIcon />,
+                  label: "Reports",
+                  path: "/reports/daily",
                 },
                 {
                   icon: <PeopleOutlinedIcon />,
@@ -365,7 +365,7 @@ const TeacherDashboard = () => {
                   size="small"
                   variant="text"
                   endIcon={<ArrowForwardOutlinedIcon sx={{ fontSize: 14 }} />}
-                  onClick={() => navigate("/attendance/history")}
+                  onClick={() => navigate("/reports/daily")}
                   sx={{
                     textTransform: "none",
                     fontWeight: 700,
@@ -841,8 +841,8 @@ const TeacherDashboard = () => {
                             noWrap
                             sx={{ fontSize: "0.65rem" }}
                           >
-                            Class {s.className}-{s.section} · Roll{" "}
-                            {s.rollNumber}
+                            Class {s.className}-{s.section} · Scholar:{" "}
+                            {s.scholarNumber}
                           </Typography>
                         </Box>
                         <Chip
@@ -1023,9 +1023,9 @@ const TeacherDashboard = () => {
                   path: "/attendance/mark",
                 },
                 {
-                  icon: <HistoryOutlinedIcon />,
-                  label: "History",
-                  path: "/attendance/history",
+                  icon: <TodayOutlinedIcon />,
+                  label: "Reports",
+                  path: "/reports/daily",
                 },
                 {
                   icon: <PeopleOutlinedIcon />,
