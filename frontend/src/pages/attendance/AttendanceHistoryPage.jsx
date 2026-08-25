@@ -17,12 +17,9 @@ import {
   Button,
   Autocomplete,
   InputAdornment,
-  Card,
-  CardContent,
   Divider,
   useMediaQuery,
   useTheme,
-  IconButton,
   Tooltip,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
@@ -38,7 +35,6 @@ import EditIcon from "@mui/icons-material/Edit";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
-import RefreshIcon from "@mui/icons-material/Refresh";
 import PageHeader from "../../components/common/PageHeader";
 import EmptyState from "../../components/common/EmptyState";
 import studentApi from "../../api/studentApi";
@@ -111,7 +107,7 @@ const AttendanceHistoryPage = () => {
     };
   }, []);
 
-  // Load students
+  // Load students (Roll queries cleaned up)
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -207,7 +203,7 @@ const AttendanceHistoryPage = () => {
         ]}
       />
 
-      {/* ═══════ FILTERS — Horizontal on desktop ═══════ */}
+      {/* ═══════ FILTERS ═══════ */}
       <Paper sx={{ p: 2, mb: 2, borderRadius: 3 }}>
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
           <FilterAltIcon sx={{ color: "primary.main", fontSize: 20 }} />
@@ -242,7 +238,7 @@ const AttendanceHistoryPage = () => {
             </FormControl>
           </Grid>
 
-          {/* Student Search */}
+          {/* Student Search (Cleaned up Roll references) */}
           <Grid item xs={12} md={4}>
             <Autocomplete
               size="small"
@@ -250,9 +246,7 @@ const AttendanceHistoryPage = () => {
               loading={studentsLoading}
               value={selectedStudent}
               onChange={(e, val) => setSelectedStudent(val)}
-              getOptionLabel={(o) =>
-                `${o.name} • ${o.scholarNumber} • Roll ${o.rollNumber}`
-              }
+              getOptionLabel={(o) => `${o.name} • Scholar: ${o.scholarNumber}`}
               isOptionEqualToValue={(opt, val) => opt._id === val?._id}
               filterOptions={(options, { inputValue }) => {
                 const q = inputValue.toLowerCase().trim();
@@ -261,7 +255,6 @@ const AttendanceHistoryPage = () => {
                   (o) =>
                     o.name?.toLowerCase().includes(q) ||
                     o.scholarNumber?.toLowerCase().includes(q) ||
-                    o.rollNumber?.toLowerCase().includes(q) ||
                     o.fatherName?.toLowerCase().includes(q) ||
                     o.mobile?.includes(q),
                 );
@@ -270,7 +263,7 @@ const AttendanceHistoryPage = () => {
                 <TextField
                   {...params}
                   label="Search Student"
-                  placeholder="Name, scholar #, mobile..."
+                  placeholder="Name, scholar no., mobile..."
                   InputProps={{
                     ...params.InputProps,
                     startAdornment: (
@@ -321,7 +314,7 @@ const AttendanceHistoryPage = () => {
                         color="text.secondary"
                         sx={{ fontFamily: "monospace" }}
                       >
-                        {option.scholarNumber} • Roll {option.rollNumber}
+                        Scholar: {option.scholarNumber}
                       </Typography>
                     </Box>
                     {option.class && (
@@ -428,7 +421,7 @@ const AttendanceHistoryPage = () => {
         )}
       </Paper>
 
-      {/* ═══════ NO STUDENTS ═══════ */}
+      {/* ═══════ NO SELECTION STATES ═══════ */}
       {!studentsLoading && students.length === 0 && (
         <Paper sx={{ borderRadius: 3 }}>
           <EmptyState
@@ -441,7 +434,6 @@ const AttendanceHistoryPage = () => {
         </Paper>
       )}
 
-      {/* ═══════ NO SELECTION ═══════ */}
       {!selectedStudent && students.length > 0 && (
         <Paper sx={{ borderRadius: 3 }}>
           <EmptyState
@@ -452,19 +444,17 @@ const AttendanceHistoryPage = () => {
         </Paper>
       )}
 
-      {/* ═══════ LOADING ═══════ */}
       {loading && (
         <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3 }}>
           <CircularProgress />
         </Paper>
       )}
 
-      {/* ═══════ HISTORY ═══════ */}
+      {/* ═══════ HISTORY VIEW ═══════ */}
       {history && !loading && selectedStudent && (
         <>
-          {/* ─── STUDENT INFO + STATS COMBINED ROW ─── */}
           <Grid container spacing={2} sx={{ mb: 2 }}>
-            {/* Student Hero Card */}
+            {/* Student Hero Card (Removed Roll reference cleanly) */}
             <Grid item xs={12} md={5}>
               <Paper
                 sx={{
@@ -527,7 +517,7 @@ const AttendanceHistoryPage = () => {
                       sx={{ mb: 0.5 }}
                     >
                       <Chip
-                        label={selectedStudent.scholarNumber}
+                        label={`Scholar: ${selectedStudent.scholarNumber}`}
                         size="small"
                         sx={{
                           bgcolor: "rgba(255,255,255,0.15)",
@@ -536,17 +526,6 @@ const AttendanceHistoryPage = () => {
                           height: 20,
                           fontSize: "0.68rem",
                           fontWeight: 700,
-                        }}
-                      />
-                      <Chip
-                        label={`Roll ${selectedStudent.rollNumber}`}
-                        size="small"
-                        sx={{
-                          bgcolor: "rgba(255,255,255,0.15)",
-                          color: "white",
-                          fontWeight: 700,
-                          height: 20,
-                          fontSize: "0.68rem",
                         }}
                       />
                       {selectedStudent.class && (
@@ -798,7 +777,7 @@ const AttendanceHistoryPage = () => {
             </Grid>
           </Grid>
 
-          {/* ─── ATTENDANCE RATE BAR ─── */}
+          {/* Attendance Rate Slider Bar */}
           {history.stats.total > 0 && (
             <Paper sx={{ p: 2, mb: 2, borderRadius: 3 }}>
               <Stack
@@ -868,7 +847,7 @@ const AttendanceHistoryPage = () => {
             </Paper>
           )}
 
-          {/* ─── DAILY RECORDS ─── */}
+          {/* Daily Records */}
           <Paper sx={{ p: 2, borderRadius: 3 }}>
             <Stack
               direction="row"
@@ -960,7 +939,7 @@ const AttendanceHistoryPage = () => {
                       }}
                     >
                       <Grid container spacing={1.5} alignItems="center">
-                        {/* Date Column */}
+                        {/* Date info Column */}
                         <Grid item xs={12} sm={3}>
                           <Stack
                             direction="row"
@@ -1010,7 +989,7 @@ const AttendanceHistoryPage = () => {
                           </Stack>
                         </Grid>
 
-                        {/* Status Column */}
+                        {/* Status Info Column */}
                         <Grid item xs={6} sm={2}>
                           <Stack
                             direction="row"
@@ -1048,7 +1027,7 @@ const AttendanceHistoryPage = () => {
                           </Stack>
                         </Grid>
 
-                        {/* Marked By Column */}
+                        {/* Created By Info Column */}
                         <Grid item xs={6} sm={4}>
                           {r.markedBy?.name ? (
                             <Stack
@@ -1093,7 +1072,7 @@ const AttendanceHistoryPage = () => {
                           )}
                         </Grid>
 
-                        {/* Time Column */}
+                        {/* Date Time Logs Column */}
                         <Grid item xs={12} sm={3}>
                           <Box sx={{ textAlign: { xs: "left", sm: "right" } }}>
                             <Typography
@@ -1121,7 +1100,7 @@ const AttendanceHistoryPage = () => {
                         </Grid>
                       </Grid>
 
-                      {/* Edited By Info — Full Width Bottom */}
+                      {/* Editing Audits */}
                       {r.editedBy?.name && (
                         <Box
                           sx={{

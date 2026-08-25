@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Paper,
@@ -14,7 +14,6 @@ import {
   Chip,
   Card,
   CardContent,
-  Divider,
   Avatar,
   Alert,
   IconButton,
@@ -64,7 +63,7 @@ const DefaultersReportPage = () => {
   const absentChipBg = alpha(theme.palette.error.main, isDark ? 0.2 : 0.1);
   const absentChipColor = theme.palette.error.main;
 
-  // ─── Load classes ───
+  // Load classes
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -81,7 +80,7 @@ const DefaultersReportPage = () => {
     };
   }, []);
 
-  // ─── Load report ───
+  // Load report
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -112,7 +111,7 @@ const DefaultersReportPage = () => {
 
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  // ─── Filtered defaulters ───
+  // Filtered defaulters (Removed Roll searches)
   const filteredDefaulters = React.useMemo(() => {
     if (!defaulterReport?.defaulters) return [];
     if (!search.trim()) return defaulterReport.defaulters;
@@ -122,34 +121,34 @@ const DefaultersReportPage = () => {
       (s) =>
         s.name?.toLowerCase().includes(q) ||
         s.scholarNumber?.toLowerCase().includes(q) ||
-        s.fatherName?.toLowerCase().includes(q) ||
-        s.rollNumber?.toString().includes(q),
+        s.fatherName?.toLowerCase().includes(q),
     );
   }, [defaulterReport, search]);
 
-  // ─── Export ───
+  // Export Mappings (S.No used in place of Roll No)
   const handleExportExcel = () => {
     if (!defaulterReport) return;
-    const data = defaulterReport.defaulters.map((s) => ({
-      "Roll No": s.rollNumber,
+    const data = defaulterReport.defaulters.map((s, idx) => ({
+      "S.No": idx + 1,
+      Scholar: s.scholarNumber || "—",
       Name: s.name,
-      Father: s.fatherName,
+      Father: s.fatherName || "—",
       Class: s.class ? `${s.class.name}-${s.class.section}` : "—",
-      Mobile: s.mobile,
+      Mobile: s.mobile === "0000000000" ? "—" : s.mobile || "—",
       Present: s.present,
       Absent: s.absent,
       "Total Marks": s.total,
       "Attendance %": `${s.percentage}%`,
     }));
     exportToExcel(data, `defaulters-below-${threshold}`, "Defaulters");
-    enqueueSnackbar("Excel exported", { variant: "success" });
+    enqueueSnackbar("Excel exported successfully", { variant: "success" });
   };
 
   const handleExportPdf = () => {
     if (!defaulterReport) return;
     const doc = generateDefaulterPdf(defaulterReport, settings, user?.name);
     downloadPdf(doc, `defaulters-below-${threshold}`);
-    enqueueSnackbar("PDF downloaded", { variant: "success" });
+    enqueueSnackbar("PDF downloaded successfully", { variant: "success" });
   };
 
   return (
@@ -164,7 +163,7 @@ const DefaultersReportPage = () => {
         ]}
       />
 
-      {/* ── STICKY FILTER BAR ── */}
+      {/* STICKY FILTER BAR */}
       <Paper
         sx={{
           p: { xs: 1.5, sm: 2 },
@@ -209,7 +208,6 @@ const DefaultersReportPage = () => {
           </Stack>
 
           <Stack direction="row" spacing={1} alignItems="center">
-            {/* Search */}
             <TextField
               placeholder="Search student..."
               value={search}
@@ -304,25 +302,37 @@ const DefaultersReportPage = () => {
         </Stack>
       </Paper>
 
-      {/* ── CONTENT ── */}
+      {/* CONTENT */}
       {loading ? (
         <Box sx={{ textAlign: "center", py: 8 }}>
           <Box
             component="img"
-            src="/loader.svg"
+            src="/loading.png"
             alt="Loading"
-            sx={{ width: 140, height: 140, mb: 2 }}
+            sx={{
+              width: 72,
+              height: 72,
+              animation: "spin 1.5s linear infinite",
+              "@keyframes spin": {
+                "0%": { transform: "rotate(0deg)" },
+                "100%": { transform: "rotate(360deg)" },
+              },
+            }}
             onError={(e) => {
               e.target.style.display = "none";
             }}
           />
-          <Typography variant="body2" color="text.secondary" fontWeight={600}>
-            Loading...
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            fontWeight={600}
+            sx={{ mt: 2 }}
+          >
+            Loading report...
           </Typography>
         </Box>
       ) : !defaulterReport ? null : (
         <>
-          {/* ── ALERT BANNER ── */}
           <Alert
             severity={defaulterReport.total === 0 ? "success" : "warning"}
             sx={{ mb: 2, borderRadius: 3 }}
@@ -355,7 +365,7 @@ const DefaultersReportPage = () => {
             </Stack>
           </Alert>
 
-          {/* ── STUDENT CARDS ── */}
+          {/* Cards (S.No Badge replaces rollNumber dynamically) */}
           {filteredDefaulters.length === 0 ? (
             <Paper sx={{ borderRadius: 3 }}>
               <EmptyState
@@ -379,7 +389,7 @@ const DefaultersReportPage = () => {
           ) : (
             <>
               <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-                {filteredDefaulters.map((s) => (
+                {filteredDefaulters.map((s, idx) => (
                   <Grid item xs={12} sm={6} lg={4} key={s._id}>
                     <Card
                       sx={{
@@ -408,7 +418,6 @@ const DefaultersReportPage = () => {
                           flexDirection: "column",
                         }}
                       >
-                        {/* Header */}
                         <Stack
                           direction="row"
                           alignItems="center"
@@ -467,7 +476,6 @@ const DefaultersReportPage = () => {
                           </Box>
                         </Stack>
 
-                        {/* Info chips */}
                         <Stack
                           direction="row"
                           spacing={0.6}
@@ -475,13 +483,18 @@ const DefaultersReportPage = () => {
                           useFlexGap
                           sx={{ mt: "auto" }}
                         >
+                          {/* S.No dynamic badge styled elegantly with brand colors */}
                           <Chip
-                            label={`Roll ${s.rollNumber}`}
+                            label={`S.No ${String(idx + 1).padStart(2, "0")}`}
                             size="small"
                             sx={{
                               height: 22,
                               fontSize: "0.7rem",
                               fontWeight: 700,
+                              bgcolor: isDark
+                                ? "rgba(59, 130, 246, 0.15)"
+                                : "#E0EBFF",
+                              color: isDark ? "#93C5FD" : "#1E4D98",
                             }}
                           />
                           {s.class && (
@@ -526,7 +539,6 @@ const DefaultersReportPage = () => {
                 ))}
               </Grid>
 
-              {/* Footer */}
               <Box sx={{ textAlign: "center", mt: 3 }}>
                 <Typography variant="caption" color="text.secondary">
                   Showing <strong>{filteredDefaulters.length}</strong> of{" "}
