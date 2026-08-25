@@ -23,7 +23,6 @@ import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
-import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
 import AnalyticsOutlinedIcon from "@mui/icons-material/AnalyticsOutlined";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
@@ -34,7 +33,6 @@ import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
-import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import ListAltOutlinedIcon from "@mui/icons-material/ListAltOutlined";
 import useAuth from "../../hooks/useAuth";
@@ -87,7 +85,7 @@ const MobileBottomNav = () => {
     navigate("/login", { replace: true });
   };
 
-  // ─── ADMIN MORE ITEMS ───
+  // ─── ADMIN MORE ITEMS (Cleaned of legacy History) ───
   const adminMoreItems = [
     { divider: true, label: "Personal" },
     { label: "My Profile", icon: <PersonOutlinedIcon />, path: "/profile" },
@@ -99,13 +97,6 @@ const MobileBottomNav = () => {
       label: "Section Shift",
       icon: <SwapHorizOutlinedIcon />,
       path: "/students/shift",
-    },
-
-    { divider: true, label: "Attendance" },
-    {
-      label: "History",
-      icon: <HistoryOutlinedIcon />,
-      path: "/attendance/history",
     },
 
     { divider: true, label: "Reports" },
@@ -145,17 +136,10 @@ const MobileBottomNav = () => {
     { label: "Settings", icon: <SettingsOutlinedIcon />, path: "/settings" },
   ];
 
-  // ─── TEACHER MORE ITEMS ───
+  // ─── TEACHER MORE ITEMS (Cleaned of legacy History) ───
   const teacherMoreItems = [
     { divider: true, label: "Personal" },
     { label: "My Profile", icon: <PersonOutlinedIcon />, path: "/profile" },
-
-    { divider: true, label: "Attendance" },
-    {
-      label: "Attendance History",
-      icon: <HistoryOutlinedIcon />,
-      path: "/attendance/history",
-    },
 
     { divider: true, label: "Reports" },
     {
@@ -218,7 +202,6 @@ const MobileBottomNav = () => {
             value="mark"
             icon={<EventNoteOutlinedIcon sx={{ fontSize: 22 }} />}
           />
-          {/* Admin → Daily · Teacher → Monthly */}
           {isAdmin ? (
             <BottomNavigationAction
               label="Daily"

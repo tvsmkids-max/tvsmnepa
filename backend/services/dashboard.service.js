@@ -35,66 +35,81 @@ class DashboardService {
     return teacher.assignedClasses.map((id) => id.toString());
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  TIMEZONE-AWARE DATE RANGE GENERATOR (Forced to Asia/Kolkata)
+  // ═══════════════════════════════════════════════════════════════
   _getDateRange(period) {
+    const tzOffset = 5.5 * 60 * 60 * 1000; // IST offset in milliseconds
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
+    const istTime = new Date(now.getTime() + tzOffset);
+    const y = istTime.getUTCFullYear();
+    const m = istTime.getUTCMonth();
+    const d = istTime.getUTCDate();
 
     if (period === "today") {
-      const end = new Date(now);
-      end.setHours(23, 59, 59, 999);
-      return { start: now, end, label: "Today" };
+      const start = new Date(Date.UTC(y, m, d, 0, 0, 0, 0) - tzOffset);
+      const end = new Date(Date.UTC(y, m, d, 23, 59, 59, 999) - tzOffset);
+      return { start, end, label: "Today" };
     }
 
     if (period === "week") {
-      const day = now.getDay();
+      const day = istTime.getUTCDay(); // Sunday = 0, Monday = 1
       const diffToMonday = day === 0 ? -6 : 1 - day;
-      const start = new Date(now);
-      start.setDate(now.getDate() + diffToMonday);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      end.setHours(23, 59, 59, 999);
+
+      const mondayIST = new Date(
+        istTime.getTime() + diffToMonday * 24 * 60 * 60 * 1000,
+      );
+      const my = mondayIST.getUTCFullYear();
+      const mm = mondayIST.getUTCMonth();
+      const md = mondayIST.getUTCDate();
+
+      const start = new Date(Date.UTC(my, mm, md, 0, 0, 0, 0) - tzOffset);
+      const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
       return { start, end, label: "This Week" };
     }
 
     if (period === "month") {
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      const end = new Date(
-        now.getFullYear(),
-        now.getMonth() + 1,
-        0,
-        23,
-        59,
-        59,
-        999,
-      );
+      const start = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0) - tzOffset);
+      const end = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59, 999) - tzOffset);
       return { start, end, label: "This Month" };
     }
 
-    const end = new Date(now);
-    end.setHours(23, 59, 59, 999);
-    return { start: now, end, label: "Today" };
+    const start = new Date(Date.UTC(y, m, d, 0, 0, 0, 0) - tzOffset);
+    const end = new Date(Date.UTC(y, m, d, 23, 59, 59, 999) - tzOffset);
+    return { start, end, label: "Today" };
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  NEW: Get comprehensive "today status" — holiday/non-working
+  //  GET COMPREHENSIVE TODAY STATUS — Forces Indian Standard Time
   // ═══════════════════════════════════════════════════════════════
   async _getTodayStatus(sessionId) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const tzOffset = 5.5 * 60 * 60 * 1000;
+    const now = new Date();
+    const istTime = new Date(now.getTime() + tzOffset);
+    const y = istTime.getUTCFullYear();
+    const m = istTime.getUTCMonth();
+    const d = istTime.getUTCDate();
 
-    const dayName = today.toLocaleDateString("en-US", { weekday: "long" });
+    const today = new Date(Date.UTC(y, m, d, 0, 0, 0, 0) - tzOffset);
+
+    // Forces formatting according to Indian Standard Time zone safely
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+      timeZone: "Asia/Kolkata",
+    });
+    const dayName = formatter.format(now);
+
     const settings = await Settings.getSettings();
 
-    // Check working day
+    // Check working day status
     const workingDay = settings?.workingDays?.find((d) => d.day === dayName);
     const isWorkingDay = !workingDay || workingDay.isWorking;
 
-    // Check holiday
+    // Check holiday status
     const holiday = await Holiday.isHoliday(today, sessionId);
     const isHoliday = holiday && !holiday.allowAttendance;
 
-    // Compute next working day (skip holidays and non-working days)
+    // Compute next working day (skips holidays and non-working days)
     const nextWorkingDay = await this._findNextWorkingDay(sessionId, today);
 
     return {
@@ -111,7 +126,7 @@ class DashboardService {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  NEW: Find next working day (skips Sundays + holidays)
+  //  FIND NEXT WORKING DAY (Forced to Asia/Kolkata)
   // ═══════════════════════════════════════════════════════════════
   async _findNextWorkingDay(sessionId, fromDate = new Date()) {
     const settings = await Settings.getSettings();
@@ -120,9 +135,7 @@ class DashboardService {
       workingDaysMap[d.day] = d.isWorking;
     });
 
-    // Get all holidays in next 30 days
     const start = new Date(fromDate);
-    start.setHours(0, 0, 0, 0);
     const end = new Date(fromDate);
     end.setDate(end.getDate() + 30);
 
@@ -138,29 +151,27 @@ class DashboardService {
       .select("date endDate")
       .lean();
 
-    // Build a quick lookup set of "not working days"
-    const isDateHoliday = (dateStr) => {
+    const isDateHoliday = (candidateDate) => {
       return holidays.some((h) => {
         const hStart = new Date(h.date);
         hStart.setHours(0, 0, 0, 0);
         const hEnd = h.endDate ? new Date(h.endDate) : hStart;
         hEnd.setHours(23, 59, 59, 999);
-        const check = new Date(dateStr);
-        return check >= hStart && check <= hEnd;
+        return candidateDate >= hStart && candidateDate <= hEnd;
       });
     };
 
-    // Look for next working day (max 14 days ahead)
     for (let i = 1; i <= 14; i++) {
       const candidate = new Date(fromDate);
       candidate.setDate(candidate.getDate() + i);
       candidate.setHours(0, 0, 0, 0);
 
-      const candidateDayName = candidate.toLocaleDateString("en-US", {
+      const formatter = new Intl.DateTimeFormat("en-US", {
         weekday: "long",
+        timeZone: "Asia/Kolkata",
       });
+      const candidateDayName = formatter.format(candidate);
 
-      // Check if working day per settings
       const isWorking =
         workingDaysMap[candidateDayName] === undefined
           ? true
@@ -169,14 +180,17 @@ class DashboardService {
       if (!isWorking) continue;
       if (isDateHoliday(candidate)) continue;
 
+      const labelFormatter = new Intl.DateTimeFormat("en-IN", {
+        weekday: "long",
+        day: "numeric",
+        month: "short",
+        timeZone: "Asia/Kolkata",
+      });
+
       return {
         date: candidate.toISOString(),
         dayName: candidateDayName,
-        label: candidate.toLocaleDateString("en-IN", {
-          weekday: "long",
-          day: "numeric",
-          month: "short",
-        }),
+        label: labelFormatter.format(candidate),
       };
     }
 
@@ -184,7 +198,7 @@ class DashboardService {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  TEACHER SUMMARY — Now with proper holiday/non-working handling
+  //  TEACHER SUMMARY
   // ═══════════════════════════════════════════════════════════════
   async getTeacherSummary({ user, period = "today" }) {
     const activeSessionId = await this._getActiveSessionId();
@@ -206,15 +220,12 @@ class DashboardService {
       return this._emptySummary();
     }
 
-    // ✅ NEW: Get comprehensive today status
     const todayStatus = await this._getTodayStatus(activeSessionId);
 
-    // ✅ NEW: If holiday or non-working day → return early with rich info
     if (todayStatus.isHoliday || todayStatus.isNonWorkingDay) {
       return {
         period,
         periodLabel: this._getDateRange(period).label,
-        // Non-working day info
         isHoliday: todayStatus.isHoliday,
         isWorkingDay: todayStatus.isWorkingDay,
         isNonWorkingDay: todayStatus.isNonWorkingDay,
@@ -222,10 +233,8 @@ class DashboardService {
         today: todayStatus.today,
         nextWorkingDay: todayStatus.nextWorkingDay,
         attendanceStatus: todayStatus.isHoliday ? "holiday" : "non_working",
-        // Basic info still needed
         totalClasses: classes.length,
         totalStudents: 0,
-        // Empty stats
         present: 0,
         absent: 0,
         marked: 0,
@@ -236,13 +245,18 @@ class DashboardService {
       };
     }
 
-    // ─── Normal working day flow ───
     const classObjIds = classes.map((c) => c._id);
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Forces date objects to represent Indian Standard Time boundaries
+    const tzOffset = 5.5 * 60 * 60 * 1000;
+    const now = new Date();
+    const istTime = new Date(now.getTime() + tzOffset);
+    const y = istTime.getUTCFullYear();
+    const m = istTime.getUTCMonth();
+    const d = istTime.getUTCDate();
+
+    const today = new Date(Date.UTC(y, m, d, 0, 0, 0, 0) - tzOffset);
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
     const students = await Student.find({
       class: { $in: classObjIds },
@@ -366,6 +380,9 @@ class DashboardService {
     };
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  TEACHER DEFAULTERS (Removed Roll References)
+  // ═══════════════════════════════════════════════════════════════
   async getTeacherDefaulters({ user, limit = 5, threshold = 75 }) {
     const activeSessionId = await this._getActiveSessionId();
     if (!activeSessionId) return [];
@@ -373,25 +390,24 @@ class DashboardService {
     const classIds = await this._getTeacherClassIds(user._id);
     if (classIds.length === 0) return [];
 
+    const tzOffset = 5.5 * 60 * 60 * 1000;
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    monthStart.setHours(0, 0, 0, 0);
+    const istTime = new Date(now.getTime() + tzOffset);
+    const y = istTime.getUTCFullYear();
+    const m = istTime.getUTCMonth();
+
+    const monthStart = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0) - tzOffset);
     const monthEnd = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999,
+      Date.UTC(y, m + 1, 0, 23, 59, 59, 999) - tzOffset,
     );
 
+    // Completely removed rollNumber selection query
     const students = await Student.find({
       class: { $in: classIds },
       status: "Active",
       isActive: true,
     })
-      .select("_id name rollNumber class fatherName")
+      .select("_id name class fatherName scholarNumber")
       .populate("class", "name section")
       .lean();
 
@@ -431,7 +447,7 @@ class DashboardService {
         return {
           _id: s._id,
           name: s.name,
-          rollNumber: s.rollNumber,
+          scholarNumber: s.scholarNumber,
           fatherName: s.fatherName,
           className: s.class?.name,
           section: s.class?.section,
@@ -448,14 +464,22 @@ class DashboardService {
     return defaulters;
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  UPCOMING HOLIDAYS
+  // ═══════════════════════════════════════════════════════════════
   async getUpcomingHolidays({ limit = 3, days = 60 }) {
     const activeSessionId = await this._getActiveSessionId();
     if (!activeSessionId) return [];
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const rangeEnd = new Date(today);
-    rangeEnd.setDate(rangeEnd.getDate() + days);
+    const tzOffset = 5.5 * 60 * 60 * 1000;
+    const now = new Date();
+    const istTime = new Date(now.getTime() + tzOffset);
+    const y = istTime.getUTCFullYear();
+    const m = istTime.getUTCMonth();
+    const d = istTime.getUTCDate();
+
+    const today = new Date(Date.UTC(y, m, d, 0, 0, 0, 0) - tzOffset);
+    const rangeEnd = new Date(today.getTime() + days * 24 * 60 * 60 * 1000);
 
     const holidays = await Holiday.find({
       session: activeSessionId,
