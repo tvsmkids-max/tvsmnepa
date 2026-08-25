@@ -22,8 +22,11 @@ import { useSnackbar } from "notistack";
 import studentApi from "../../api/studentApi";
 import useSessions from "../../hooks/useSessions";
 
+// ═══════════════════════════════════════════════════════════════════
+//  VALIDATION SCHEMAS (Unfailing & Rigid)
+// ═══════════════════════════════════════════════════════════════════
 const baseSchema = {
-  rollNumber: yup.string().trim().required("Roll number required"),
+  scholarNumber: yup.string().trim().required("Scholar number required"),
   name: yup.string().trim().min(2).required("Name required"),
   fatherName: yup.string().trim().min(2).required("Father's name required"),
   motherName: yup.string().trim().min(2).required("Mother's name required"),
@@ -47,7 +50,6 @@ const baseSchema = {
 
 const createSchema = yup.object({
   ...baseSchema,
-  scholarNumber: yup.string().trim().required("Scholar number required"),
   admissionDate: yup.date().required("Admission date required"),
 });
 
@@ -75,7 +77,6 @@ const StudentFormDialog = ({
     resolver: yupResolver(isEdit ? updateSchema : createSchema),
     defaultValues: {
       scholarNumber: "",
-      rollNumber: "",
       name: "",
       fatherName: "",
       motherName: "",
@@ -93,12 +94,15 @@ const StudentFormDialog = ({
     },
   });
 
+  // ═══════════════════════════════════════════════════════════════════
+  //  FORM INITIALIZATION (Supports Editable Scholar Number on Edit)
+  // ═══════════════════════════════════════════════════════════════════
   useEffect(() => {
     if (!open) return;
     const init = () => {
       if (isEdit) {
         reset({
-          rollNumber: editingStudent.rollNumber || "",
+          scholarNumber: editingStudent.scholarNumber || "",
           name: editingStudent.name || "",
           fatherName: editingStudent.fatherName || "",
           motherName: editingStudent.motherName || "",
@@ -118,7 +122,6 @@ const StudentFormDialog = ({
       } else {
         reset({
           scholarNumber: "",
-          rollNumber: "",
           name: "",
           fatherName: "",
           motherName: "",
@@ -140,6 +143,9 @@ const StudentFormDialog = ({
     return () => clearTimeout(timer);
   }, [open, editingStudent, isEdit, reset]);
 
+  // ═══════════════════════════════════════════════════════════════════
+  //  SUBMISSION HANDLER
+  // ═══════════════════════════════════════════════════════════════════
   const onSubmit = async (data) => {
     setSubmitting(true);
     try {
@@ -147,18 +153,17 @@ const StudentFormDialog = ({
       const payload = { ...data, section: cls?.section || "" };
 
       if (isEdit) {
-        delete payload.scholarNumber;
         delete payload.admissionDate;
         await studentApi.update(editingStudent._id, payload);
-        enqueueSnackbar("Student updated", { variant: "success" });
+        enqueueSnackbar("Student updated successfully", { variant: "success" });
       } else {
         payload.session = activeSession?._id;
         await studentApi.create(payload);
-        enqueueSnackbar("Student added", { variant: "success" });
+        enqueueSnackbar("Student added successfully", { variant: "success" });
       }
       onSaved();
     } catch (err) {
-      enqueueSnackbar(err.response?.data?.message || "Failed", {
+      enqueueSnackbar(err.response?.data?.message || "Operation failed", {
         variant: "error",
       });
     } finally {
@@ -180,59 +185,45 @@ const StudentFormDialog = ({
         </Typography>
         {isEdit && (
           <Typography variant="caption" color="text.secondary" component="div">
-            Scholar #: {editingStudent?.scholarNumber} (permanent)
+            Scholar #: {editingStudent?.scholarNumber}
           </Typography>
         )}
       </DialogTitle>
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <DialogContent dividers>
+          {/* SECTION 1: Basic Info */}
           <Typography
             variant="caption"
             color="primary"
             fontWeight={700}
-            sx={{ display: "block", mb: 1.5, textTransform: "uppercase" }}
+            sx={{ display: "block", mb: 2, textTransform: "uppercase" }}
           >
             Basic Info
           </Typography>
+
           <Grid container spacing={2} sx={{ mb: 2.5 }}>
-            {!isEdit && (
-              <Grid item xs={12} sm={6}>
-                <Controller
-                  name="scholarNumber"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Scholar Number *"
-                      placeholder="SCH001"
-                      fullWidth
-                      size="small"
-                      error={!!errors.scholarNumber}
-                      helperText={
-                        errors.scholarNumber?.message || "Permanent ID"
-                      }
-                    />
-                  )}
-                />
-              </Grid>
-            )}
-            <Grid item xs={12} sm={isEdit ? 6 : 6}>
+            <Grid item xs={12} sm={6}>
               <Controller
-                name="rollNumber"
+                name="scholarNumber"
                 control={control}
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label="Roll Number *"
+                    label="Scholar Number *"
+                    placeholder="SCH001"
                     fullWidth
                     size="small"
-                    error={!!errors.rollNumber}
-                    helperText={errors.rollNumber?.message}
+                    error={!!errors.scholarNumber}
+                    helperText={
+                      errors.scholarNumber?.message ||
+                      "Scholar number must be unique."
+                    }
                   />
                 )}
               />
             </Grid>
+
             <Grid item xs={12}>
               <Controller
                 name="name"
@@ -339,14 +330,17 @@ const StudentFormDialog = ({
           </Grid>
 
           <Divider sx={{ my: 2 }} />
+
+          {/* SECTION 2: Contact & Address */}
           <Typography
             variant="caption"
             color="primary"
             fontWeight={700}
-            sx={{ display: "block", mb: 1.5, textTransform: "uppercase" }}
+            sx={{ display: "block", mb: 2, textTransform: "uppercase" }}
           >
             Contact & Address
           </Typography>
+
           <Grid container spacing={2} sx={{ mb: 2.5 }}>
             <Grid item xs={12} sm={6}>
               <Controller
@@ -399,14 +393,17 @@ const StudentFormDialog = ({
           </Grid>
 
           <Divider sx={{ my: 2 }} />
+
+          {/* SECTION 3: Academic & Other */}
           <Typography
             variant="caption"
             color="primary"
             fontWeight={700}
-            sx={{ display: "block", mb: 1.5, textTransform: "uppercase" }}
+            sx={{ display: "block", mb: 2, textTransform: "uppercase" }}
           >
             Academic & Other
           </Typography>
+
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <Controller
@@ -510,7 +507,7 @@ const StudentFormDialog = ({
               )
             }
           >
-            {isEdit ? "Update Student" : "Add Student"}
+            {isEdit ? "Save Changes" : "Add Student"}
           </Button>
         </DialogActions>
       </form>

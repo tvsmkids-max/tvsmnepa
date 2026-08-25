@@ -39,7 +39,7 @@ const StudentFilterBar = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const isTeacher = user?.role === "teacher";
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -68,17 +68,19 @@ const StudentFilterBar = ({
   return (
     <Paper
       sx={{
-        p: { xs: 1.5, sm: 2 },
+        p: { xs: 1.2, sm: 1.5 }, // ✅ Compact padding
         mb: 2,
         borderRadius: 3,
         border: "1px solid",
         borderColor: "divider",
       }}
     >
-      <Stack spacing={1.2}>
-        {/* Search */}
+      <Stack spacing={1}>
+        {" "}
+        {/* ✅ Tight spacing */}
+        {/* Search Input */}
         <TextField
-          placeholder="Search name, scholar #, roll, mobile..."
+          placeholder="Search by name, scholar no., or mobile..." // ✅ Improved placeholder
           value={filters.search || ""}
           onChange={(e) => handleChange("search", e.target.value)}
           size="small"
@@ -107,10 +109,9 @@ const StudentFilterBar = ({
             },
           }}
         />
-
-        {/* Filter Row */}
+        {/* Filter Selection Grid */}
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-          {/* Class — hidden for teacher with 1 class */}
+          {/* Class Selector */}
           {!hideClassSection && (
             <FormControl
               size="small"
@@ -137,7 +138,7 @@ const StudentFilterBar = ({
             </FormControl>
           )}
 
-          {/* Section — hidden for teacher with 1 class */}
+          {/* Section Selector */}
           {!hideClassSection && (
             <FormControl
               size="small"
@@ -164,7 +165,7 @@ const StudentFilterBar = ({
             </FormControl>
           )}
 
-          {/* Status */}
+          {/* Status Selector */}
           <FormControl
             size="small"
             sx={{
@@ -186,7 +187,7 @@ const StudentFilterBar = ({
             </Select>
           </FormControl>
 
-          {/* More Filters Toggle */}
+          {/* Advanced Filter Button */}
           <Button
             variant={showAdvanced ? "contained" : "outlined"}
             size="small"
@@ -204,8 +205,7 @@ const StudentFilterBar = ({
               `(${activeFilterCount - (hideClassSection ? 1 : 3)})`}
           </Button>
         </Stack>
-
-        {/* ─── ADVANCED FILTERS ─── */}
+        {/* Advanced Section Dropdown */}
         <Collapse in={showAdvanced}>
           <Box>
             <Divider sx={{ my: 1 }} />
@@ -299,8 +299,7 @@ const StudentFilterBar = ({
             </Stack>
           </Box>
         </Collapse>
-
-        {/* ─── ACTIVE FILTER CHIPS + RESET ─── */}
+        {/* Filter Chips Toolbar */}
         {hasAnyFilter && (
           <>
             <Divider sx={{ mt: 0.5 }} />

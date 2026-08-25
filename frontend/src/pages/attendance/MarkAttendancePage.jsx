@@ -57,7 +57,8 @@ const formatDate = (d) => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 };
 
-const formatRoll = (n) => String(n ?? "").padStart(2, "0");
+// Auto-formats sequential numbers (e.g., 1 -> "01", 2 -> "02")
+const formatSerialNumber = (idx) => String(idx + 1).padStart(2, "0");
 
 // ═══════════════════════════════════════════════════════════════════
 //  SEGMENTED P|A TOGGLE
@@ -196,7 +197,9 @@ const MarkAttendancePage = () => {
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("rollNumber");
+
+  // Always default to alphabetical sort by student name (A-Z)
+  const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
 
   // ─── Load classes ─────────────────────────────────────────────
@@ -212,7 +215,7 @@ const MarkAttendancePage = () => {
         if (!cancelled) {
           const list = res.data?.data || [];
           setClasses(list);
-          // ✅ AUTO-SELECT if teacher has only 1 class
+          // AUTO-SELECT if teacher has only 1 class
           if (list.length === 1 && !selectedClass) {
             setSelectedClass(list[0]._id);
           }
@@ -348,26 +351,21 @@ const MarkAttendancePage = () => {
       list = list.filter(
         (item) =>
           item.student.name?.toLowerCase().includes(s) ||
-          item.student.rollNumber?.toString().includes(s) ||
           item.student.scholarNumber?.toLowerCase().includes(s) ||
           item.student.fatherName?.toLowerCase().includes(s),
       );
     }
 
+    // Default sorting alphabetically by student name
     list.sort((a, b) => {
       let aVal, bVal;
-      if (sortBy === "rollNumber") {
-        aVal = parseInt(a.student.rollNumber, 10) || 0;
-        bVal = parseInt(b.student.rollNumber, 10) || 0;
-      } else if (sortBy === "name") {
-        aVal = a.student.name?.toLowerCase() || "";
-        bVal = b.student.name?.toLowerCase() || "";
-      } else if (sortBy === "scholarNumber") {
+      if (sortBy === "scholarNumber") {
         aVal = a.student.scholarNumber?.toLowerCase() || "";
         bVal = b.student.scholarNumber?.toLowerCase() || "";
       } else {
-        aVal = parseInt(a.student.rollNumber, 10) || 0;
-        bVal = parseInt(b.student.rollNumber, 10) || 0;
+        // Fallback or default is student name
+        aVal = a.student.name?.toLowerCase() || "";
+        bVal = b.student.name?.toLowerCase() || "";
       }
       if (typeof aVal === "string") {
         return sortOrder === "asc"
@@ -381,6 +379,7 @@ const MarkAttendancePage = () => {
   }, [sheet, attendance, filter, search, sortBy, sortOrder]);
 
   const handleSort = (field) => {
+    if (field === "serialNumber") return; // S. No. does not require manual column sorting
     if (sortBy === field) {
       setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
@@ -443,16 +442,9 @@ const MarkAttendancePage = () => {
   const isLockedForMe = sheet?.isLocked && !isAdmin;
   const hasRows = displayStudents.length > 0;
 
-  // ✅ SMART: Determine if we should show dropdown or fixed badge
-  // - Teacher with 1 class → show as badge (auto-selected)
-  // - Teacher with 2+ classes → show dropdown
-  // - Admin/Principal → always show dropdown
+  // SMART: Determine if we should show dropdown or fixed badge
   const showClassAsBadge = isTeacher && classes.length === 1;
   const singleClass = showClassAsBadge ? classes[0] : null;
-
-  // ═══════════════════════════════════════════════════════════════
-  //  RENDER
-  // ═══════════════════════════════════════════════════════════════
 
   return (
     <Box
@@ -488,7 +480,7 @@ const MarkAttendancePage = () => {
           bgcolor: "background.paper",
         }}
       >
-        {/* ── Row 1: Class + Date ── */}
+        {/* Row 1: Class + Date */}
         <Stack
           direction="row"
           spacing={1}
@@ -496,7 +488,6 @@ const MarkAttendancePage = () => {
           alignItems="center"
         >
           {showClassAsBadge ? (
-            // ═══ TEACHER WITH 1 CLASS — Read-only badge ═══
             <Box
               sx={{
                 flex: 2,
@@ -553,7 +544,6 @@ const MarkAttendancePage = () => {
               </Box>
             </Box>
           ) : (
-            // ═══ ADMIN/PRINCIPAL/MULTI-CLASS TEACHER — Dropdown ═══
             <FormControl size="small" sx={{ flex: 2, minWidth: 0 }}>
               <InputLabel>Class</InputLabel>
               <Select
@@ -600,7 +590,7 @@ const MarkAttendancePage = () => {
           />
         </Stack>
 
-        {/* ── Row 2: Stats pills + Lock chip ── */}
+        {/* Row 2: Stats pills */}
         {sheet && !sheet.isHoliday && stats.total > 0 && (
           <>
             <Stack
@@ -686,7 +676,7 @@ const MarkAttendancePage = () => {
               )}
             </Stack>
 
-            {/* ── Row 3: Progress Bar ── */}
+            {/* Row 3: Progress Bar */}
             <Box
               sx={{
                 display: "flex",
@@ -726,10 +716,10 @@ const MarkAttendancePage = () => {
               </Typography>
             </Box>
 
-            {/* ── Row 4: Search + Bulk Actions ── */}
+            {/* Row 4: Search + Bulk Actions */}
             <Stack direction="row" spacing={0.75} alignItems="center">
               <TextField
-                placeholder="Search name, roll, scholar…"
+                placeholder="Search name, scholar, father..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 size="small"
@@ -829,7 +819,7 @@ const MarkAttendancePage = () => {
               </Tooltip>
             </Stack>
 
-            {/* ── Row 5: Filter chips ── */}
+            {/* Row 5: Filter chips */}
             <Stack
               direction="row"
               spacing={0.5}
@@ -997,6 +987,7 @@ const MarkAttendancePage = () => {
                       transition: "background-color 0.15s",
                     }}
                   >
+                    {/* Generates serialNumber automatically: 01, 02, 03... */}
                     <Typography
                       sx={{
                         minWidth: 26,
@@ -1008,7 +999,7 @@ const MarkAttendancePage = () => {
                         flexShrink: 0,
                       }}
                     >
-                      {formatRoll(item.student.rollNumber)}
+                      {formatSerialNumber(idx)}
                     </Typography>
 
                     <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -1041,7 +1032,7 @@ const MarkAttendancePage = () => {
                           ·
                         </Box>
                         <Box component="span" sx={{ fontFamily: "monospace" }}>
-                          #{item.student.scholarNumber}
+                          {item.student.scholarNumber}
                         </Box>
                       </Typography>
                     </Box>
@@ -1073,25 +1064,20 @@ const MarkAttendancePage = () => {
                 <Table stickyHeader size="small">
                   <TableHead>
                     <TableRow>
+                      {/* Static column heading replacing "ROLL" with "S. NO." */}
                       <TableCell
                         sx={{
                           fontWeight: 800,
                           fontSize: "0.7rem",
                           bgcolor: isDark ? alpha("#fff", 0.04) : "#F8FAFC",
-                          width: 60,
+                          width: 65,
                           textTransform: "uppercase",
+                          color: "text.secondary",
                         }}
                       >
-                        <TableSortLabel
-                          active={sortBy === "rollNumber"}
-                          direction={
-                            sortBy === "rollNumber" ? sortOrder : "asc"
-                          }
-                          onClick={() => handleSort("rollNumber")}
-                        >
-                          Roll
-                        </TableSortLabel>
+                        S. NO.
                       </TableCell>
+
                       <TableCell
                         sx={{
                           fontWeight: 800,
@@ -1108,12 +1094,16 @@ const MarkAttendancePage = () => {
                           Student
                         </TableSortLabel>
                       </TableCell>
+
+                      {/* Header label "SCHOLAR" forced on a single line */}
                       <TableCell
                         sx={{
                           fontWeight: 800,
                           fontSize: "0.7rem",
                           bgcolor: isDark ? alpha("#fff", 0.04) : "#F8FAFC",
-                          width: 110,
+                          width: 120,
+                          minWidth: 100,
+                          whiteSpace: "nowrap",
                           textTransform: "uppercase",
                         }}
                       >
@@ -1124,9 +1114,10 @@ const MarkAttendancePage = () => {
                           }
                           onClick={() => handleSort("scholarNumber")}
                         >
-                          Scholar #
+                          Scholar
                         </TableSortLabel>
                       </TableCell>
+
                       <TableCell
                         align="center"
                         sx={{
@@ -1135,6 +1126,7 @@ const MarkAttendancePage = () => {
                           bgcolor: isDark ? alpha("#fff", 0.04) : "#F8FAFC",
                           width: 110,
                           textTransform: "uppercase",
+                          color: "text.secondary",
                         }}
                       >
                         Status
@@ -1142,7 +1134,7 @@ const MarkAttendancePage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {displayStudents.map((item) => {
+                    {displayStudents.map((item, index) => {
                       const status = attendance[item.student._id];
                       const rowBg =
                         status === "Present"
@@ -1164,6 +1156,7 @@ const MarkAttendancePage = () => {
                             "& td": { py: 1, borderColor: "divider" },
                           }}
                         >
+                          {/* S. No. dynamic column */}
                           <TableCell>
                             <Typography
                               variant="body2"
@@ -1174,9 +1167,10 @@ const MarkAttendancePage = () => {
                                 fontSize: "0.82rem",
                               }}
                             >
-                              {formatRoll(item.student.rollNumber)}
+                              {formatSerialNumber(index)}
                             </Typography>
                           </TableCell>
+
                           <TableCell>
                             <Typography
                               variant="body2"
@@ -1236,7 +1230,7 @@ const MarkAttendancePage = () => {
             </Paper>
           )}
 
-          {/* ═══ STICKY SAVE BAR ═══ */}
+          {/* Sticky Save Bar */}
           {stats.total > 0 && (
             <Paper
               sx={{
@@ -1296,7 +1290,7 @@ const MarkAttendancePage = () => {
         </>
       )}
 
-      {/* ═══ LOCK DIALOG ═══ */}
+      {/* LOCK DIALOG */}
       <ConfirmDialog
         open={!!confirmLock}
         title={

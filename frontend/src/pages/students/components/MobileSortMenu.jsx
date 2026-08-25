@@ -8,7 +8,6 @@ import {
   ListItemText,
   Typography,
   Divider,
-  Chip,
   useTheme,
   alpha,
 } from "@mui/material";
@@ -19,12 +18,10 @@ import CheckIcon from "@mui/icons-material/Check";
 import useThemeMode from "../../../hooks/useThemeMode";
 
 // ═══════════════════════════════════════════════════════════════════
-//  Sort Options
+//  Sort Options (Roll Number Option Is Completely Removed)
 // ═══════════════════════════════════════════════════════════════════
-
 const SORT_OPTIONS = [
   { field: "name", label: "Name", numeric: false },
-  { field: "rollNumber", label: "Roll Number", numeric: true },
   { field: "scholarNumber", label: "Scholar #", numeric: false },
   { field: "fatherName", label: "Father Name", numeric: false },
   { field: "motherName", label: "Mother Name", numeric: false },
@@ -58,7 +55,6 @@ const MobileSortMenu = ({ sortBy, sortOrder, onSort, totalCount }) => {
   };
 
   const handleToggleDirection = () => {
-    // Re-trigger current field to flip direction
     onSort(sortBy);
     handleClose();
   };
@@ -162,7 +158,7 @@ const MobileSortMenu = ({ sortBy, sortOrder, onSort, totalCount }) => {
           </Typography>
         </Box>
 
-        {/* Toggle direction (if already sorted by this field) */}
+        {/* Toggle direction */}
         <MenuItem
           onClick={handleToggleDirection}
           sx={{

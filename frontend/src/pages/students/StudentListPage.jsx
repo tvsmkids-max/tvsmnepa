@@ -137,7 +137,7 @@ const StudentListPage = () => {
     totalPages: 0,
   };
 
-  // ✅ Sort ALL students with smart class ordering
+  // ✅ Sort ALL students with smart class ordering (Roll sorting fully removed)
   const sortedStudents = useMemo(() => {
     const list = [...allStudents];
 
@@ -170,10 +170,6 @@ const StudentListPage = () => {
       let aVal, bVal;
 
       switch (sortBy) {
-        case "rollNumber":
-          aVal = parseInt(a.rollNumber, 10) || 0;
-          bVal = parseInt(b.rollNumber, 10) || 0;
-          break;
         case "scholarNumber":
           aVal = a.scholarNumber?.toLowerCase() || "";
           bVal = b.scholarNumber?.toLowerCase() || "";
@@ -221,6 +217,8 @@ const StudentListPage = () => {
   const students = sortedStudents;
 
   const handleSort = useCallback((field) => {
+    // S. No is purely dynamic, no sort required on it
+    if (field === "serialNumber") return;
     setSortBy((prev) => {
       if (prev === field) {
         setSortOrder((order) => (order === "asc" ? "desc" : "asc"));
@@ -626,10 +624,11 @@ const StudentListPage = () => {
               />
 
               <Stack spacing={1.25}>
-                {students.map((student) => (
+                {students.map((student, index) => (
                   <StudentCard
                     key={student._id}
                     student={student}
+                    serialNumber={index + 1}
                     isSelected={selectedIds.has(student._id)}
                     selectionMode={selectionMode}
                     isAdmin={isAdmin}

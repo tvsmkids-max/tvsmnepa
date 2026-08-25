@@ -4,7 +4,6 @@ import {
   Stack,
   Typography,
   Button,
-  IconButton,
   Tooltip,
   useMediaQuery,
   useTheme,
@@ -94,6 +93,8 @@ const StudentHeader = ({
               />
             )}
           </Stack>
+
+          {/* Improved Page Subtitle */}
           <Typography
             variant="body2"
             color="text.secondary"
@@ -103,7 +104,7 @@ const StudentHeader = ({
               display: { xs: "none", sm: "block" },
             }}
           >
-            Manage student records, attendance, and class assignments
+            View and manage student records, classes, and attendance.
           </Typography>
         </Box>
 

@@ -13,12 +13,6 @@ const studentSchema = new mongoose.Schema(
       uppercase: true,
       maxlength: [30],
     },
-    rollNumber: {
-      type: String,
-      required: [true, "Roll number is required"],
-      trim: true,
-      maxlength: [20],
-    },
     name: {
       type: String,
       required: [true, "Student name is required"],
@@ -39,12 +33,11 @@ const studentSchema = new mongoose.Schema(
     },
     mobile: {
       type: String,
-      required: false, // ← Now optional
+      required: false,
       trim: true,
       default: "",
       validate: {
         validator: function (v) {
-          // Allow empty string OR valid 10-digit Indian mobile
           if (!v || v === "") return true;
           return /^[6-9]\d{9}$/.test(v);
         },
@@ -143,20 +136,16 @@ const studentSchema = new mongoose.Schema(
   { timestamps: true, versionKey: false },
 );
 
+// ═══════════════════════════════════════════════════════════════════
+//  INDEXES (rollNumber indexes completely removed)
+// ═══════════════════════════════════════════════════════════════════
 studentSchema.index({ scholarNumber: 1 });
 studentSchema.index({ class: 1, session: 1, status: 1 });
-studentSchema.index({ rollNumber: 1, class: 1, session: 1 });
 studentSchema.index({
   name: "text",
   fatherName: "text",
   scholarNumber: "text",
   mobile: "text",
 });
-
-// Unique: rollNumber per class per session
-studentSchema.index(
-  { rollNumber: 1, class: 1, session: 1 },
-  { unique: true, partialFilterExpression: { isActive: true } },
-);
 
 module.exports = mongoose.model("Student", studentSchema);

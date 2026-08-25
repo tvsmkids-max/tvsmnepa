@@ -25,11 +25,7 @@ import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import CakeOutlinedIcon from "@mui/icons-material/CakeOutlined";
 import PauseCircleOutlineIcon from "@mui/icons-material/PauseCircleOutline";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
-import {
-  formatRollNumber,
-  formatMobile,
-  formatClassLabel,
-} from "../../../utils/formatters";
+import { formatMobile, formatClassLabel } from "../../../utils/formatters";
 import StatusChip from "../../../components/common/StatusChip";
 import useThemeMode from "../../../hooks/useThemeMode";
 import { alpha } from "@mui/material/styles";
@@ -51,6 +47,7 @@ const formatDOB = (dob) => {
 
 const StudentCard = ({
   student,
+  serialNumber, // ✅ Dynamic S. No received from parent mapping context
   isSelected = false,
   selectionMode = false,
   isAdmin = false,
@@ -125,6 +122,7 @@ const StudentCard = ({
             />
           )}
 
+          {/* ✅ Displays dynamically generated, reactive serialNumber instead of static Roll */}
           <Box
             sx={{
               minWidth: 32,
@@ -141,10 +139,11 @@ const StudentCard = ({
               flexShrink: 0,
             }}
           >
-            {formatRollNumber(student.rollNumber)}
+            {String(serialNumber).padStart(2, "0")}
           </Box>
 
           <Box sx={{ flex: 1, minWidth: 0 }}>
+            {/* Bold Upper Case Student Name Focus */}
             <Typography
               variant="body2"
               fontWeight={800}

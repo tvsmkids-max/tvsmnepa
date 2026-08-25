@@ -29,11 +29,7 @@ import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import PauseCircleOutlineIcon from "@mui/icons-material/PauseCircleOutline";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
-import {
-  formatRollNumber,
-  formatMobile,
-  formatClassLabel,
-} from "../../../utils/formatters";
+import { formatMobile, formatClassLabel } from "../../../utils/formatters";
 import StatusChip from "../../../components/common/StatusChip";
 import useThemeMode from "../../../hooks/useThemeMode";
 
@@ -57,7 +53,6 @@ const formatDOB = (dob) => {
 // ═══════════════════════════════════════════════════════════════════
 //  Row Menu (unchanged)
 // ═══════════════════════════════════════════════════════════════════
-
 const RowMenu = ({
   student,
   isAdmin,
@@ -245,7 +240,6 @@ const RowMenu = ({
 // ═══════════════════════════════════════════════════════════════════
 //  MAIN TABLE
 // ═══════════════════════════════════════════════════════════════════
-
 const StudentTable = ({
   students,
   isAdmin,
@@ -268,26 +262,26 @@ const StudentTable = ({
   const { isDark } = useThemeMode();
   const headerBg = isDark ? alpha("#fff", 0.04) : "#F8FAFC";
 
-  // ✅ TIGHT CELL STYLES — smaller padding
+  // ✅ REDUCED ROW HEIGHT STYLES — py: 0.7 instead of 0.9 for tighter compact look
   const cellStyles = {
-    py: 0.9,
-    px: 1.2, // ← Reduced from default 16px
+    py: 0.7,
+    px: 1.2,
     fontSize: "0.8rem",
     borderColor: "divider",
-    whiteSpace: "nowrap", // ← Prevents wrapping
+    whiteSpace: "nowrap",
   };
 
   const headerCellStyles = {
     fontWeight: 800,
-    fontSize: "0.68rem", // ← Slightly smaller
+    fontSize: "0.68rem",
     textTransform: "uppercase",
     letterSpacing: "0.03em",
     bgcolor: headerBg,
     color: "text.secondary",
     borderBottom: "1px solid",
     borderColor: "divider",
-    py: 1,
-    px: 1.2, // ← Reduced padding
+    py: 0.9,
+    px: 1.2,
     whiteSpace: "nowrap",
   };
 
@@ -355,28 +349,31 @@ const StudentTable = ({
                 </TableCell>
               )}
 
-              {/* ✅ TIGHT COLUMN WIDTHS */}
-              <SortableHeader field="rollNumber" label="Roll" width={55} />
+              {/* ✅ S. NO. Column is first, static width, not sortable since it remains sequential */}
+              <TableCell sx={{ ...headerCellStyles, width: 60 }}>
+                S. NO.
+              </TableCell>
+
               <SortableHeader
                 field="scholarNumber"
-                label="Scholar"
+                label="SCHOLAR NO."
                 width={80}
               />
-              <SortableHeader field="name" label="Name" minWidth={140} />
+              <SortableHeader field="name" label="NAME" minWidth={140} />
               <SortableHeader
                 field="fatherName"
-                label="Father Name"
+                label="FATHER NAME"
                 minWidth={130}
               />
               <SortableHeader
                 field="motherName"
-                label="Mother Name"
+                label="MOTHER NAME"
                 minWidth={130}
               />
               <SortableHeader field="dob" label="DOB" width={80} />
-              <SortableHeader field="mobile" label="Mobile" width={100} />
-              <SortableHeader field="class" label="Class" width={70} />
-              <SortableHeader field="status" label="Status" width={75} />
+              <SortableHeader field="mobile" label="MOBILE" width={100} />
+              <SortableHeader field="class" label="CLASS" width={70} />
+              <SortableHeader field="status" label="STATUS" width={75} />
 
               <TableCell
                 sx={{
@@ -392,7 +389,7 @@ const StudentTable = ({
           </TableHead>
 
           <TableBody>
-            {students.map((student) => {
+            {students.map((student, index) => {
               const isSelected = selectedIds.has(student._id);
               return (
                 <TableRow
@@ -429,7 +426,7 @@ const StudentTable = ({
                     </TableCell>
                   )}
 
-                  {/* Roll */}
+                  {/* Dynamic S. No. based on visual list index */}
                   <TableCell sx={cellStyles}>
                     <Typography
                       component="span"
@@ -440,7 +437,7 @@ const StudentTable = ({
                         color: isDark ? "#93C5FD" : "#1E4D98",
                       }}
                     >
-                      {formatRollNumber(student.rollNumber)}
+                      {String(index + 1).padStart(2, "0")}
                     </Typography>
                   </TableCell>
 
@@ -459,7 +456,7 @@ const StudentTable = ({
                     </Typography>
                   </TableCell>
 
-                  {/* Name — allow wrap only if very long */}
+                  {/* Name — Bold Visual Focus */}
                   <TableCell
                     sx={{
                       ...cellStyles,
@@ -469,7 +466,7 @@ const StudentTable = ({
                   >
                     <Typography
                       variant="body2"
-                      fontWeight={700}
+                      fontWeight={800}
                       sx={{
                         fontSize: "0.82rem",
                         textTransform: "uppercase",
@@ -481,7 +478,7 @@ const StudentTable = ({
                     </Typography>
                   </TableCell>
 
-                  {/* Father Name — allow wrap */}
+                  {/* Father Name */}
                   <TableCell
                     sx={{
                       ...cellStyles,
@@ -501,7 +498,7 @@ const StudentTable = ({
                     </Typography>
                   </TableCell>
 
-                  {/* Mother Name — allow wrap */}
+                  {/* Mother Name */}
                   <TableCell
                     sx={{
                       ...cellStyles,
@@ -521,7 +518,7 @@ const StudentTable = ({
                     </Typography>
                   </TableCell>
 
-                  {/* DOB — compact single line */}
+                  {/* DOB */}
                   <TableCell sx={cellStyles}>
                     <Typography
                       component="span"
@@ -536,7 +533,7 @@ const StudentTable = ({
                     </Typography>
                   </TableCell>
 
-                  {/* Mobile — no wrap */}
+                  {/* Mobile */}
                   <TableCell sx={cellStyles}>
                     <Typography
                       component="span"
@@ -555,7 +552,7 @@ const StudentTable = ({
                     </Typography>
                   </TableCell>
 
-                  {/* Class chip — compact */}
+                  {/* Class chip */}
                   <TableCell sx={cellStyles}>
                     <Chip
                       label={formatClassLabel(student.class)}
