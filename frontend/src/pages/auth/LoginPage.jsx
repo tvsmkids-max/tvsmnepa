@@ -235,13 +235,13 @@ const LoginPage = () => {
             fontWeight={900}
             sx={{ mb: 0.5, letterSpacing: "-0.03em" }}
           >
-            Welcome Back
+            Welcome To
           </Typography>
           <Typography
             variant="body2"
             sx={{ color: "text.secondary", mb: 4, fontWeight: 500 }}
           >
-            Enter your credentials to access {SCHOOL_NAME}
+            {SCHOOL_NAME}
           </Typography>
 
           {error && (
