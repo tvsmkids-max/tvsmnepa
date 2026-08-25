@@ -44,9 +44,6 @@ const SettingsPage = lazy(() => import("../pages/settings/SettingsPage"));
 const MarkAttendancePage = lazy(
   () => import("../pages/attendance/MarkAttendancePage"),
 );
-const AttendanceHistoryPage = lazy(
-  () => import("../pages/attendance/AttendanceHistoryPage"),
-);
 
 // ─── Holidays ───
 const HolidayManagePage = lazy(
@@ -205,10 +202,6 @@ const AppRouter = () => (
 
           {/* ─── Attendance ─── */}
           <Route path="attendance/mark" element={<MarkAttendancePage />} />
-          <Route
-            path="attendance/history"
-            element={<AttendanceHistoryPage />}
-          />
 
           {/* ─── Holidays ─── */}
           <Route path="holidays" element={<HolidayManagePage />} />
