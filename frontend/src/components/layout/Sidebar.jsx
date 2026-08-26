@@ -99,12 +99,15 @@ const teacherNav = [
     icon: <CalendarMonthOutlinedIcon />,
     path: "/reports/monthly",
   },
-  // ✅ ADDED REGISTER TO TEACHER SIDEBAR
+
   {
     label: "Register",
     icon: <ListAltOutlinedIcon />,
     path: "/reports/register",
   },
+
+  { type: "section", label: "Info" },
+  { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
 ];
 
 const SidebarContent = ({ collapsed }) => {
