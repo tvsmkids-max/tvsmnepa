@@ -151,12 +151,13 @@ const MobileBottomNav = () => {
       icon: <TodayOutlinedIcon />,
       path: "/reports/daily",
     },
-    // ✅ ADDED REGISTER TO TEACHER MOBILE MENU
     {
       label: "Register",
       icon: <ListAltOutlinedIcon />,
       path: "/reports/register",
     },
+    { divider: true, label: "Info" },
+    { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
   ];
 
   const moreItems = isAdmin ? adminMoreItems : teacherMoreItems;
