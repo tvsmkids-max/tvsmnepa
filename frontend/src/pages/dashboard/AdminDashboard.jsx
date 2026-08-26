@@ -235,7 +235,7 @@ const ClassMobileCard = ({ cls }) => {
           <Typography
             variant="caption"
             color="text.secondary"
-            sx={{ fontSize: "0.72rem" }}
+            sx={{ fontSize: "0.72rem", textTransform: "uppercase" }}
           >
             {cls.classTeacher || "No teacher assigned"}
           </Typography>
@@ -667,6 +667,7 @@ const AdminDashboard = () => {
                         <TableCell
                           sx={{
                             fontSize: "0.8rem",
+                            textTransform: "uppercase",
                             color: "text.secondary",
                             borderColor: "divider",
                           }}

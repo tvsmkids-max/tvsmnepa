@@ -552,19 +552,23 @@ const TodayPage = ({ secretKey }) => {
                           </Box>
                         </Box>
 
-                        {/* Teacher name below class */}
+                        {/* Teacher name below class (UPPERCASE) */}
                         <Typography
                           sx={{
                             fontSize: "0.68rem",
                             color: cls.classTeacher
                               ? "text.secondary"
                               : "text.disabled",
-                            fontStyle: cls.classTeacher ? "normal" : "italic",
+                            fontWeight: 700,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.02em",
                             mt: 0.2,
                             mb: cls.isMarked ? 0.5 : 0,
                           }}
                         >
-                          {cls.classTeacher || "No teacher assigned"}
+                          {cls.classTeacher
+                            ? cls.classTeacher.toUpperCase()
+                            : "NO TEACHER ASSIGNED"}
                         </Typography>
 
                         {/* Progress bar */}
@@ -679,7 +683,7 @@ const TodayPage = ({ secretKey }) => {
                           pl: 2,
                         }}
                       >
-                        Class
+                        Class & Teacher
                       </TableCell>
                       <TableCell
                         align="center"
@@ -739,9 +743,27 @@ const TodayPage = ({ secretKey }) => {
                             <Typography
                               variant="body2"
                               fontWeight={800}
-                              sx={{ fontSize: "0.85rem" }}
+                              sx={{ fontSize: "0.85rem", lineHeight: 1.2 }}
                             >
                               {cls.label}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                fontSize: "0.68rem",
+                                fontWeight: 700,
+                                color: cls.classTeacher
+                                  ? "text.secondary"
+                                  : "text.disabled",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.03em",
+                                display: "block",
+                                mt: 0.2,
+                              }}
+                            >
+                              {cls.classTeacher
+                                ? cls.classTeacher.toUpperCase()
+                                : "NO TEACHER"}
                             </Typography>
                           </TableCell>
                           <TableCell align="center">
