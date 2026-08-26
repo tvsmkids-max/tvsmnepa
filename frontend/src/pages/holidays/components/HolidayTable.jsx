@@ -28,7 +28,7 @@ import EventBusyOutlinedIcon from "@mui/icons-material/EventBusyOutlined";
 import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
 import FlagOutlinedIcon from "@mui/icons-material/FlagOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
-import useThemeMode from "../../../../hooks/useThemeMode";
+import useThemeMode from "../../../hooks/useThemeMode";
 
 const TYPE_CONFIG = {
   National: {
