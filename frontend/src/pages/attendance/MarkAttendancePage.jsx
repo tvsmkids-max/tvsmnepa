@@ -60,105 +60,92 @@ const formatDate = (d) => {
 const formatSerialNumber = (idx) => String(idx + 1).padStart(2, "0");
 
 // ═══════════════════════════════════════════════════════════════════
-//  SEGMENTED P|A TOGGLE
+//  SEPARATED CIRCLES: Light Tint Default → Solid Active Fill
 // ═══════════════════════════════════════════════════════════════════
-
 const StatusToggle = React.memo(function StatusToggle({
   status,
   disabled,
   onChange,
   isDark,
-  size = "md",
 }) {
-  const dims =
-    size === "lg"
-      ? { width: 44, height: 38, fs: "0.85rem" }
-      : size === "sm"
-        ? { width: 36, height: 30, fs: "0.75rem" }
-        : { width: 40, height: 34, fs: "0.8rem" };
-
-  const baseBtn = {
-    width: dims.width,
-    height: dims.height,
-    border: "1.5px solid",
-    fontWeight: 800,
-    fontSize: dims.fs,
-    cursor: disabled ? "not-allowed" : "pointer",
-    transition: "all 0.15s",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    userSelect: "none",
-    "&:active": disabled ? {} : { transform: "scale(0.95)" },
-  };
-
   const presentActive = status === "Present";
   const absentActive = status === "Absent";
 
   return (
-    <Stack direction="row" sx={{ flexShrink: 0 }}>
+    <Stack
+      direction="row"
+      spacing={1}
+      sx={{ flexShrink: 0, alignItems: "center" }}
+    >
+      {/* P Button (Present) */}
       <Box
         onClick={(e) => {
           e.stopPropagation();
           if (!disabled) onChange(presentActive ? null : "Present");
         }}
         sx={{
-          ...baseBtn,
-          borderRadius: "8px 0 0 8px",
-          borderRight: 0,
-          bgcolor: presentActive
-            ? "#16A34A"
-            : isDark
-              ? alpha("#16A34A", 0.08)
-              : "#F0FDF4",
-          color: presentActive ? "#fff" : isDark ? "#86EFAC" : "#15803D",
+          width: 38,
+          height: 38,
+          borderRadius: "50%",
+          border: "1.5px solid",
           borderColor: presentActive
             ? "#16A34A"
             : isDark
               ? alpha("#16A34A", 0.3)
               : "#BBF7D0",
-          "&:hover": disabled
-            ? {}
-            : {
-                bgcolor: presentActive
-                  ? "#15803D"
-                  : isDark
-                    ? alpha("#16A34A", 0.16)
-                    : "#DCFCE7",
-              },
+          bgcolor: presentActive
+            ? "#16A34A"
+            : isDark
+              ? alpha("#16A34A", 0.1)
+              : "#F0FDF4",
+          color: presentActive ? "#FFFFFF" : isDark ? "#86EFAC" : "#15803D",
+          fontWeight: 800,
+          fontSize: "0.85rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: disabled ? "not-allowed" : "pointer",
+          userSelect: "none",
+          transition: "all 0.15s ease",
+          boxShadow: presentActive ? "0 3px 10px rgba(22,163,74,0.35)" : "none",
+          "&:active": disabled ? {} : { transform: "scale(0.92)" },
         }}
       >
         P
       </Box>
 
+      {/* A Button (Absent) */}
       <Box
         onClick={(e) => {
           e.stopPropagation();
           if (!disabled) onChange(absentActive ? null : "Absent");
         }}
         sx={{
-          ...baseBtn,
-          borderRadius: "0 8px 8px 0",
-          bgcolor: absentActive
-            ? "#DC2626"
-            : isDark
-              ? alpha("#DC2626", 0.08)
-              : "#FEF2F2",
-          color: absentActive ? "#fff" : isDark ? "#FCA5A5" : "#B91C1C",
+          width: 38,
+          height: 38,
+          borderRadius: "50%",
+          border: "1.5px solid",
           borderColor: absentActive
             ? "#DC2626"
             : isDark
               ? alpha("#DC2626", 0.3)
               : "#FECACA",
-          "&:hover": disabled
-            ? {}
-            : {
-                bgcolor: absentActive
-                  ? "#B91C1C"
-                  : isDark
-                    ? alpha("#DC2626", 0.16)
-                    : "#FEE2E2",
-              },
+          bgcolor: absentActive
+            ? "#DC2626"
+            : isDark
+              ? alpha("#DC2626", 0.1)
+              : "#FEF2F2",
+          color: absentActive ? "#FFFFFF" : isDark ? "#FCA5A5" : "#B91C1C",
+          fontWeight: 800,
+          fontSize: "0.85rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: disabled ? "not-allowed" : "pointer",
+          userSelect: "none",
+          transition: "all 0.15s ease",
+          boxShadow: absentActive ? "0 3px 10px rgba(220,38,38,0.35)" : "none",
+          "&:active": disabled ? {} : { transform: "scale(0.92)" },
         }}
       >
         A
