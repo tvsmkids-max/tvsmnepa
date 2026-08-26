@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   Box,
   Paper,
@@ -39,9 +39,10 @@ import {
   dashboardKeys,
 } from "../../hooks/useDashboard";
 import HolidayBanner from "../../components/common/HolidayBanner";
+import AppSplashScreen from "../../components/common/AppSplashScreen";
 
 // ═══════════════════════════════════════════════════════════════════
-//  HELPERS & SALUTATIONS ("Khushboo Ma'am" / "Abhishek Sir")
+//  HELPERS
 // ═══════════════════════════════════════════════════════════════════
 
 const greetingText = () => {
@@ -60,116 +61,7 @@ const getTeacherSalutation = (user) => {
   if (user?.gender === "Female") return `${capitalized} Ma'am`;
   if (user?.gender === "Male") return `${capitalized} Sir`;
 
-  // Safe Fallback: Never says "Teacher", just the name
   return capitalized;
-};
-
-// ═══════════════════════════════════════════════════════════════════
-//  INLINE SPLASH SCREEN (2.5s Timer + "Sir/Ma'am" Salutation)
-// ═══════════════════════════════════════════════════════════════════
-const InlineSplashScreen = ({ user, onComplete }) => {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
-  const [isFadingOut, setIsFadingOut] = useState(false);
-
-  useEffect(() => {
-    // 2.5 Seconds Display Timer for a smooth, premium feel
-    const timer = setTimeout(() => {
-      setIsFadingOut(true);
-      setTimeout(() => onComplete?.(), 600);
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, [onComplete]);
-
-  return (
-    <Box
-      sx={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        background: isDark
-          ? "linear-gradient(135deg, #020617 0%, #0F172A 100%)"
-          : "linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)",
-        opacity: isFadingOut ? 0 : 1,
-        transition: "opacity 0.6s ease-in-out",
-      }}
-    >
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          animation: "scaleIn 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
-          "@keyframes scaleIn": {
-            "0%": { opacity: 0, transform: "scale(0.9)" },
-            "100%": { opacity: 1, transform: "scale(1)" },
-          },
-        }}
-      >
-        <Avatar
-          src="/logo.png"
-          sx={{
-            width: 84,
-            height: 84,
-            bgcolor: isDark ? "rgba(255,255,255,0.05)" : "white",
-            boxShadow: isDark
-              ? "0 12px 32px rgba(0,0,0,0.5)"
-              : "0 12px 32px rgba(15,23,42,0.08)",
-            p: 1.5,
-            mb: 2.5,
-            "& img": { objectFit: "contain" },
-          }}
-        />
-
-        <Typography
-          variant="h5"
-          fontWeight={900}
-          sx={{
-            color: "text.primary",
-            mb: 0.5,
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {greetingText()}, {getTeacherSalutation(user)}
-        </Typography>
-
-        <Typography
-          variant="body2"
-          sx={{
-            color: "text.secondary",
-            fontWeight: 500,
-            letterSpacing: "0.02em",
-          }}
-        >
-          Preparing your dashboard...
-        </Typography>
-
-        <Box sx={{ display: "flex", gap: 1, mt: 3 }}>
-          {[0, 1, 2].map((i) => (
-            <Box
-              key={i}
-              sx={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                bgcolor: "primary.main",
-                animation: "pulse 1.2s infinite ease-in-out both",
-                animationDelay: `${i * 0.16}s`,
-                "@keyframes pulse": {
-                  "0%, 80%, 100%": { transform: "scale(0)", opacity: 0.3 },
-                  "40%": { transform: "scale(1)", opacity: 1 },
-                },
-              }}
-            />
-          ))}
-        </Box>
-      </Box>
-    </Box>
-  );
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -301,7 +193,7 @@ const TeacherDashboard = () => {
   //  SPLASH INTERCEPT
   // ═══════════════════════════════════════════════════════════
   if (showSplash) {
-    return <InlineSplashScreen user={user} onComplete={dismissSplash} />;
+    return <AppSplashScreen user={user} onComplete={dismissSplash} />;
   }
 
   return (
