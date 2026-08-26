@@ -5,6 +5,7 @@ const Class = require("../models/Class.model");
 const Teacher = require("../models/Teacher.model");
 const Attendance = require("../models/Attendance.model");
 const Holiday = require("../models/Holiday.model");
+const holidayRepository = require("../repositories/holiday.repository"); // ✅ FIXED IMPORT
 const Settings = require("../models/Settings.model");
 const AcademicSession = require("../models/AcademicSession.model");
 const { STATUSES_BLOCKING_ATTENDANCE } = require("../constants/studentStatus");
@@ -108,7 +109,8 @@ class DashboardService {
     const workingDay = settings?.workingDays?.find((d) => d.day === dayName);
     const isWorkingDay = !workingDay || workingDay.isWorking;
 
-    const holiday = await Holiday.isHoliday(today, sessionId);
+    // ✅ FIXED: Using holidayRepository instead of Holiday model!
+    const holiday = await holidayRepository.isHoliday(today, sessionId);
     const isHoliday = holiday && !holiday.allowAttendance;
 
     const nextWorkingDay = await this._findNextWorkingDay(sessionId, today);
