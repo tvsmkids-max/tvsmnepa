@@ -16,10 +16,11 @@ import {
   Tooltip,
   Alert,
   Divider,
-  Avatar,
-  useMediaQuery,
+  Grid,
   useTheme,
+  useMediaQuery,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useSnackbar } from "notistack";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
@@ -31,6 +32,7 @@ import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
+import PercentOutlinedIcon from "@mui/icons-material/PercentOutlined";
 import EmptyState from "../../components/common/EmptyState";
 import reportApi from "../../api/reportApi";
 import classApi from "../../api/classApi";
@@ -56,7 +58,8 @@ const AttendanceRegisterTab = () => {
   const { user } = useAuth();
   const { settings } = useSettings();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isDark = theme.palette.mode === "dark";
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const defaultRange = useMemo(() => getMonthRange(), []);
 
@@ -159,12 +162,8 @@ const AttendanceRegisterTab = () => {
     return Math.ceil((to - from) / (1000 * 60 * 60 * 24)) + 1;
   }, [dateFrom, dateTo]);
 
-  const rangeError =
-    dateRangeDays > 90
-      ? `Range too long (${dateRangeDays} days). Max 90 days.`
-      : dateRangeDays < 1
-        ? "End date must be after start date"
-        : null;
+  const isInvalidRange = dateRangeDays < 1;
+  const isLargeRange = dateRangeDays > 90;
 
   const handleExportExcel = () => {
     if (!register) return;
@@ -191,47 +190,34 @@ const AttendanceRegisterTab = () => {
     }
   };
 
-  const selectedClassObj = classes.find((c) => c._id === selectedClass);
-
   return (
     <Box>
-      {/* ─── INFO BANNER ─── */}
-      <Alert
-        severity="info"
-        sx={{
-          mb: 2,
-          borderRadius: 3,
-          "& .MuiAlert-icon": { alignItems: "center" },
-        }}
-        icon={<InfoOutlinedIcon />}
-      >
-        <Typography variant="body2" fontWeight={700}>
-          Date-wise Attendance Register
-        </Typography>
-        <Typography variant="caption" sx={{ display: "block", mt: 0.3 }}>
-          Select a class and date range, then download as Excel or PDF for the
-          register-style view.
-        </Typography>
-      </Alert>
-
-      {/* ─── FILTERS ─── */}
+      {/* ─── FILTERS BAR ─── */}
       <Paper
+        elevation={0}
         sx={{
           p: { xs: 1.5, sm: 2 },
-          mb: 2,
+          mb: 2.5,
           borderRadius: 3,
           border: "1px solid",
           borderColor: "divider",
+          bgcolor: "background.paper",
         }}
       >
-        <Stack spacing={1.2}>
-          <FormControl fullWidth size="small" disabled={classesLoading}>
-            <InputLabel>
-              {classesLoading ? "Loading classes..." : "Class *"}
-            </InputLabel>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={1.5}
+          alignItems={{ xs: "stretch", md: "center" }}
+        >
+          <FormControl
+            size="small"
+            sx={{ minWidth: 160 }}
+            disabled={classesLoading}
+          >
+            <InputLabel>{classesLoading ? "Loading..." : "Class"}</InputLabel>
             <Select
               value={selectedClass}
-              label={classesLoading ? "Loading classes..." : "Class *"}
+              label={classesLoading ? "Loading..." : "Class"}
               onChange={(e) => setSelectedClass(e.target.value)}
             >
               {classesLoading ? (
@@ -240,46 +226,50 @@ const AttendanceRegisterTab = () => {
                 </MenuItem>
               ) : classes.length === 0 ? (
                 <MenuItem value="" disabled>
-                  <em>No classes available</em>
+                  <em>No classes</em>
                 </MenuItem>
               ) : (
-                [
-                  <MenuItem key="empty" value="">
-                    <em>Select Class</em>
-                  </MenuItem>,
-                  ...classes.map((c) => (
-                    <MenuItem key={c._id} value={c._id}>
-                      {c.name} - {c.section}
-                    </MenuItem>
-                  )),
-                ]
+                classes.map((c) => (
+                  <MenuItem key={c._id} value={c._id}>
+                    {c.name} - {c.section}
+                  </MenuItem>
+                ))
               )}
             </Select>
           </FormControl>
 
-          <Stack direction="row" spacing={1}>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{ flex: { xs: 1, md: "none" } }}
+          >
             <TextField
               type="date"
-              label="From"
+              label="From Date"
               size="small"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
               InputLabelProps={{ shrink: true }}
-              sx={{ flex: 1, minWidth: 0 }}
+              sx={{ flex: 1, minWidth: 130 }}
             />
-
             <TextField
               type="date"
-              label="To"
+              label="To Date"
               size="small"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
               InputLabelProps={{ shrink: true }}
-              sx={{ flex: 1, minWidth: 0 }}
+              sx={{ flex: 1, minWidth: 130 }}
+              error={isInvalidRange}
             />
           </Stack>
 
-          <Stack direction="row" spacing={1}>
+          {/* Action Row (Right aligned on desktop) */}
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ ml: { md: "auto" }, pt: { xs: 0.5, md: 0 } }}
+          >
             <Tooltip title="Refresh">
               <IconButton
                 onClick={triggerRefresh}
@@ -291,7 +281,6 @@ const AttendanceRegisterTab = () => {
                   borderRadius: 2,
                   width: 40,
                   height: 40,
-                  flexShrink: 0,
                 }}
               >
                 <RefreshOutlinedIcon fontSize="small" />
@@ -303,16 +292,15 @@ const AttendanceRegisterTab = () => {
               color="success"
               startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
               onClick={handleExportExcel}
-              disabled={!register || loading || rangeError}
+              disabled={!register || loading || isInvalidRange}
+              size="small"
               sx={{
                 fontWeight: 700,
-                py: 1,
-                flex: 1,
-                minWidth: 0,
-                fontSize: { xs: "0.78rem", sm: "0.85rem" },
+                px: 2,
+                boxShadow: "none",
                 textTransform: "none",
+                "&:hover": { boxShadow: "none", filter: "brightness(0.95)" },
               }}
-              size="small"
             >
               Excel
             </Button>
@@ -322,69 +310,94 @@ const AttendanceRegisterTab = () => {
               color="error"
               startIcon={<PictureAsPdfOutlinedIcon sx={{ fontSize: 18 }} />}
               onClick={handleExportPdf}
-              disabled={!register || loading || rangeError}
+              disabled={!register || loading || isInvalidRange}
+              size="small"
               sx={{
                 fontWeight: 700,
-                py: 1,
-                flex: 1,
-                minWidth: 0,
-                fontSize: { xs: "0.78rem", sm: "0.85rem" },
+                px: 2,
+                boxShadow: "none",
                 textTransform: "none",
+                "&:hover": { boxShadow: "none", filter: "brightness(0.95)" },
               }}
-              size="small"
             >
               PDF
             </Button>
           </Stack>
+        </Stack>
 
-          {/* Info chips */}
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="center"
-            flexWrap="wrap"
-            useFlexGap
-          >
+        {/* Info Feedback Row */}
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          flexWrap="wrap"
+          useFlexGap
+          sx={{ mt: 1.5 }}
+        >
+          <Chip
+            icon={<CalendarTodayOutlinedIcon sx={{ fontSize: 14 }} />}
+            label={`${dateRangeDays} day${dateRangeDays !== 1 ? "s" : ""}`}
+            size="small"
+            color={isInvalidRange ? "error" : "primary"}
+            variant="outlined"
+            sx={{
+              fontWeight: 700,
+              height: 24,
+              fontSize: "0.72rem",
+              borderWidth: "1px",
+            }}
+          />
+          {isInvalidRange && (
+            <Typography variant="caption" color="error.main" fontWeight={700}>
+              ⚠️ End date must be after start date
+            </Typography>
+          )}
+          {isLargeRange && !isInvalidRange && (
             <Chip
-              icon={<CalendarTodayOutlinedIcon sx={{ fontSize: 14 }} />}
-              label={`${dateRangeDays} day${dateRangeDays !== 1 ? "s" : ""}`}
+              icon={<InfoOutlinedIcon sx={{ fontSize: 14 }} />}
+              label="Large exports may take longer to download."
               size="small"
-              color={rangeError ? "error" : "info"}
-              sx={{ fontWeight: 700, height: 22, fontSize: "0.7rem" }}
+              color="info"
+              sx={{
+                fontWeight: 600,
+                height: 24,
+                fontSize: "0.72rem",
+                border: "none",
+                bgcolor: isDark
+                  ? alpha(theme.palette.info.main, 0.15)
+                  : alpha(theme.palette.info.main, 0.1),
+              }}
             />
-            {rangeError ? (
-              <Typography
-                variant="caption"
-                color="error.dark"
-                fontWeight={700}
-                sx={{ fontSize: "0.7rem" }}
-              >
-                ⚠️ {rangeError}
-              </Typography>
-            ) : !classesLoading && classes.length > 0 ? (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontSize: "0.7rem" }}
-              >
-                {classes.length} class{classes.length !== 1 ? "es" : ""}{" "}
-                available
-              </Typography>
-            ) : null}
-          </Stack>
+          )}
         </Stack>
       </Paper>
 
-      {/* ─── SUMMARY CARD ─── */}
+      {/* ─── MAIN CONTENT ─── */}
       {classesLoading ? (
-        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3 }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 6,
+            textAlign: "center",
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: "divider",
+          }}
+        >
           <CircularProgress />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 2, fontWeight: 600 }}
+          >
             Loading classes...
           </Typography>
         </Paper>
       ) : classes.length === 0 ? (
-        <Paper sx={{ borderRadius: 3 }}>
+        <Paper
+          elevation={0}
+          sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider" }}
+        >
           <EmptyState
             icon={<EventNoteOutlinedIcon sx={{ fontSize: 64 }} />}
             title="No classes available"
@@ -392,14 +405,30 @@ const AttendanceRegisterTab = () => {
           />
         </Paper>
       ) : loading ? (
-        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3 }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 6,
+            textAlign: "center",
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: "divider",
+          }}
+        >
           <CircularProgress />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 2, fontWeight: 600 }}
+          >
             Loading register data...
           </Typography>
         </Paper>
       ) : !selectedClass ? (
-        <Paper sx={{ borderRadius: 3 }}>
+        <Paper
+          elevation={0}
+          sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider" }}
+        >
           <EmptyState
             icon={<EventNoteOutlinedIcon sx={{ fontSize: 64 }} />}
             title="Select a class"
@@ -407,9 +436,12 @@ const AttendanceRegisterTab = () => {
           />
         </Paper>
       ) : !register || register.students.length === 0 ? (
-        <Paper sx={{ borderRadius: 3 }}>
+        <Paper
+          elevation={0}
+          sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider" }}
+        >
           <EmptyState
-            icon={<EventNoteOutlinedIcon sx={{ fontSize: 64 }} />}
+            icon={<PeopleOutlinedIcon sx={{ fontSize: 64 }} />}
             title="No students found"
             message="This class has no active students for the selected period"
           />
@@ -419,14 +451,15 @@ const AttendanceRegisterTab = () => {
           register={register}
           dateFrom={dateFrom}
           dateTo={dateTo}
+          isDark={isDark}
         />
       )}
     </Box>
   );
 };
 
-// ─── SUMMARY CARD COMPONENT ───
-const RegisterSummaryCard = ({ register, dateFrom, dateTo }) => {
+// ─── SUMMARY CARD COMPONENT (Redesigned) ───
+const RegisterSummaryCard = ({ register, dateFrom, dateTo, isDark }) => {
   const fromStr = new Date(dateFrom).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
@@ -438,7 +471,6 @@ const RegisterSummaryCard = ({ register, dateFrom, dateTo }) => {
     year: "numeric",
   });
 
-  // Calculate aggregate stats
   const aggregateStats = useMemo(() => {
     if (!register?.students) return null;
     let totalPresent = 0;
@@ -453,134 +485,76 @@ const RegisterSummaryCard = ({ register, dateFrom, dateTo }) => {
 
     const avgPercentage =
       totalMarked > 0 ? Math.round((totalPresent / totalMarked) * 100) : 0;
-
-    return {
-      totalPresent,
-      totalAbsent,
-      totalMarked,
-      avgPercentage,
-    };
+    return { totalPresent, totalAbsent, totalMarked, avgPercentage };
   }, [register]);
 
   return (
-    <Stack spacing={2}>
-      {/* CLASS HEADER */}
+    <Stack spacing={2.5}>
+      {/* ── CLASS HERO HEADER ── */}
       <Paper
+        elevation={0}
         sx={{
-          borderRadius: 3,
-          overflow: "hidden",
+          borderRadius: 4,
           border: "1px solid",
           borderColor: "divider",
+          overflow: "hidden",
         }}
       >
         <Box
           sx={{
-            p: { xs: 2, sm: 2.5 },
-            background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
-            color: "white",
-            position: "relative",
-            overflow: "hidden",
+            p: { xs: 2.5, sm: 3 },
+            bgcolor: isDark ? "rgba(255,255,255,0.02)" : "#FAFBFC",
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: { xs: "flex-start", sm: "center" },
+            justifyContent: "space-between",
+            gap: 2,
           }}
         >
-          {/* Decorative blob */}
-          <Box
-            sx={{
-              position: "absolute",
-              top: -40,
-              right: -40,
-              width: 140,
-              height: 140,
-              borderRadius: "50%",
-              background:
-                "radial-gradient(circle, rgba(245,166,35,0.18) 0%, transparent 70%)",
-            }}
-          />
-
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={2}
-            sx={{ position: "relative", zIndex: 1 }}
-          >
-            <Avatar
-              sx={{
-                width: { xs: 48, sm: 56 },
-                height: { xs: 48, sm: 56 },
-                bgcolor: "white",
-                color: "primary.main",
-                fontSize: { xs: "1.2rem", sm: "1.4rem" },
-                fontWeight: 900,
-              }}
-            >
-              {register.class.name?.[0]}
-            </Avatar>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "rgba(255,255,255,0.7)",
-                  letterSpacing: "0.08em",
-                  fontWeight: 700,
-                  fontSize: "0.65rem",
-                  textTransform: "uppercase",
-                }}
-              >
-                Attendance Register
-              </Typography>
-              <Typography
-                variant="h6"
-                fontWeight={900}
-                sx={{
-                  fontSize: { xs: "1.05rem", sm: "1.25rem" },
-                  color: "white",
-                  lineHeight: 1.2,
-                  mt: 0.3,
-                }}
-              >
-                Class {register.class.name} - {register.class.section}
-              </Typography>
-              {register.class.classTeacher && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: "rgba(255,255,255,0.8)",
-                    fontSize: "0.72rem",
-                    display: "block",
-                    mt: 0.2,
-                  }}
-                >
-                  Teacher: {register.class.classTeacher}
-                </Typography>
-              )}
-            </Box>
-          </Stack>
-
-          <Box
-            sx={{
-              mt: 2,
-              p: 1.2,
-              borderRadius: 2,
-              bgcolor: "rgba(255,255,255,0.1)",
-              border: "1px solid rgba(255,255,255,0.15)",
-            }}
-          >
+          <Box>
             <Typography
               variant="caption"
               sx={{
-                color: "rgba(255,255,255,0.7)",
-                fontSize: "0.65rem",
+                color: "text.secondary",
                 fontWeight: 700,
-                textTransform: "uppercase",
                 letterSpacing: "0.05em",
-                display: "block",
+                textTransform: "uppercase",
               }}
             >
-              Period
+              Attendance Register Report
+            </Typography>
+            <Typography
+              variant="h4"
+              fontWeight={900}
+              sx={{ mt: 0.5, letterSpacing: "-0.02em" }}
+            >
+              {register.class.name} - {register.class.section}
             </Typography>
             <Typography
               variant="body2"
+              sx={{ color: "text.secondary", mt: 0.5, fontWeight: 500 }}
+            >
+              Teacher: {register.class.classTeacher || "Unassigned"}
+            </Typography>
+          </Box>
+          <Box sx={{ textAlign: { xs: "left", sm: "right" } }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontWeight: 700,
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+              }}
+            >
+              Selected Period
+            </Typography>
+            <Typography
+              variant="h6"
               fontWeight={800}
-              sx={{ color: "white", mt: 0.2 }}
+              sx={{ mt: 0.5, color: "primary.main" }}
             >
               {fromStr} → {toStr}
             </Typography>
@@ -588,191 +562,195 @@ const RegisterSummaryCard = ({ register, dateFrom, dateTo }) => {
         </Box>
       </Paper>
 
-      {/* STATS GRID */}
-      <Stack spacing={1.5}>
-        {/* Class Stats */}
-        <Stack direction="row" spacing={1.2}>
+      {/* ── STATS GRID (6 Columns on Desktop) ── */}
+      <Grid container spacing={1.5}>
+        <Grid item xs={6} sm={4} md={2}>
           <StatBox
             label="STUDENTS"
             value={register.summary.totalStudents}
             icon={<PeopleOutlinedIcon />}
-            color={{ bg: "#F0F4FF", text: "#1E4D98", border: "#BFDBFE" }}
+            colorKey="info"
+            isDark={isDark}
           />
+        </Grid>
+        <Grid item xs={6} sm={4} md={2}>
           <StatBox
             label="WORKING DAYS"
             value={register.summary.workingDays}
             icon={<CalendarTodayOutlinedIcon />}
-            color={{ bg: "#FEF3C7", text: "#92400E", border: "#FCD34D" }}
+            colorKey="warning"
+            isDark={isDark}
           />
+        </Grid>
+        <Grid item xs={6} sm={4} md={2}>
           <StatBox
             label="HOLIDAYS"
             value={register.summary.holidays}
             icon={<BeachAccessOutlinedIcon />}
-            color={{ bg: "#FCE7F3", text: "#9F1239", border: "#FBCFE8" }}
+            colorKey="error"
+            isDark={isDark}
           />
-        </Stack>
+        </Grid>
 
-        {/* Attendance Stats */}
         {aggregateStats && (
-          <Stack direction="row" spacing={1.2}>
-            <StatBox
-              label="PRESENT MARKS"
-              value={aggregateStats.totalPresent}
-              icon={<CheckCircleOutlinedIcon />}
-              color={{ bg: "#E6F4EA", text: "#065F46", border: "#A7F3D0" }}
-            />
-            <StatBox
-              label="ABSENT MARKS"
-              value={aggregateStats.totalAbsent}
-              icon={<CancelOutlinedIcon />}
-              color={{ bg: "#FEE2E2", text: "#991B1B", border: "#FECACA" }}
-            />
-            <StatBox
-              label="AVG ATTENDANCE"
-              value={`${aggregateStats.avgPercentage}%`}
-              icon={<InfoOutlinedIcon />}
-              color={
-                aggregateStats.avgPercentage >= 75
-                  ? { bg: "#E6F4EA", text: "#065F46", border: "#A7F3D0" }
-                  : aggregateStats.avgPercentage >= 50
-                    ? { bg: "#FEF3C7", text: "#92400E", border: "#FCD34D" }
-                    : { bg: "#FEE2E2", text: "#991B1B", border: "#FECACA" }
-              }
-            />
-          </Stack>
+          <>
+            <Grid item xs={6} sm={4} md={2}>
+              <StatBox
+                label="PRESENT"
+                value={aggregateStats.totalPresent}
+                icon={<CheckCircleOutlinedIcon />}
+                colorKey="success"
+                isDark={isDark}
+              />
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <StatBox
+                label="ABSENT"
+                value={aggregateStats.totalAbsent}
+                icon={<CancelOutlinedIcon />}
+                colorKey="error"
+                isDark={isDark}
+              />
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <StatBox
+                label="AVERAGE"
+                value={`${aggregateStats.avgPercentage}%`}
+                icon={<PercentOutlinedIcon />}
+                colorKey={
+                  aggregateStats.avgPercentage >= 75
+                    ? "success"
+                    : aggregateStats.avgPercentage >= 50
+                      ? "warning"
+                      : "error"
+                }
+                isDark={isDark}
+              />
+            </Grid>
+          </>
         )}
-      </Stack>
+      </Grid>
 
-      {/* DOWNLOAD CTA CARD */}
+      {/* ── DOWNLOAD CTA CARD ── */}
       <Paper
+        elevation={0}
         sx={{
-          p: 2.5,
-          borderRadius: 3,
+          p: 3,
+          borderRadius: 4,
           textAlign: "center",
-          background: "linear-gradient(135deg, #F8FAFF 0%, #E8F0FF 100%)",
-          border: "1px dashed",
-          borderColor: "primary.light",
+          bgcolor: isDark ? alpha("#3B82F6", 0.05) : alpha("#3B82F6", 0.04),
+          border: "1px solid",
+          borderColor: isDark ? alpha("#3B82F6", 0.2) : alpha("#3B82F6", 0.2),
         }}
       >
         <FileDownloadOutlinedIcon
           sx={{ fontSize: 40, color: "primary.main", mb: 1 }}
         />
-        <Typography variant="body1" fontWeight={800} sx={{ mb: 0.5 }}>
-          Ready to Download
+        <Typography
+          variant="h6"
+          fontWeight={800}
+          sx={{ mb: 0.5, letterSpacing: "-0.01em" }}
+        >
+          Report Ready to Export
         </Typography>
         <Typography
-          variant="caption"
+          variant="body2"
           color="text.secondary"
-          sx={{ display: "block", mb: 1 }}
+          sx={{ fontWeight: 500 }}
         >
-          Register data for{" "}
-          <strong>
-            {register.summary.totalStudents} students ×{" "}
-            {register.summary.totalDays} days
-          </strong>{" "}
-          is ready
+          Data for <strong>{register.summary.totalStudents} students</strong>{" "}
+          across <strong>{register.summary.totalDays} days</strong> is
+          processed.
         </Typography>
         <Typography
           variant="caption"
           sx={{
             display: "block",
-            fontSize: "0.7rem",
+            mt: 1,
             color: "text.disabled",
+            fontWeight: 600,
           }}
         >
-          Use the Excel or PDF buttons above to download the full register
+          Use the Excel or PDF buttons in the top filter bar to download.
         </Typography>
       </Paper>
-
-      {/* HOLIDAYS LIST (if any) */}
-      {register.summary.holidays > 0 && (
-        <Paper
-          sx={{
-            p: 2,
-            borderRadius: 3,
-            border: "1px solid",
-            borderColor: "warning.light",
-            bgcolor: "#FFFBEB",
-          }}
-        >
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-            <BeachAccessOutlinedIcon
-              sx={{ fontSize: 18, color: "warning.dark" }}
-            />
-            <Typography variant="body2" fontWeight={800} color="warning.dark">
-              Holidays in this period
-            </Typography>
-          </Stack>
-          <Stack direction="row" spacing={0.6} flexWrap="wrap" useFlexGap>
-            {register.dates
-              .filter((d) => d.isHoliday)
-              .map((d) => (
-                <Chip
-                  key={d.dateKey}
-                  label={`${d.day} ${d.monthShort}: ${d.holidayName}`}
-                  size="small"
-                  sx={{
-                    height: 24,
-                    fontSize: "0.7rem",
-                    bgcolor: "white",
-                    border: "1px solid",
-                    borderColor: "warning.light",
-                    fontWeight: 600,
-                  }}
-                />
-              ))}
-          </Stack>
-        </Paper>
-      )}
     </Stack>
   );
 };
 
-// ─── STAT BOX COMPONENT ───
-const StatBox = ({ label, value, icon, color }) => (
-  <Paper
-    sx={{
-      flex: 1,
-      p: 1.5,
-      borderRadius: 2.5,
-      bgcolor: color.bg,
-      border: "1px solid",
-      borderColor: color.border,
-      textAlign: "center",
-      boxShadow: "none",
-      minWidth: 0,
-    }}
-  >
-    {icon &&
-      React.cloneElement(icon, {
-        sx: { fontSize: 18, color: color.text, mb: 0.5 },
-      })}
-    <Typography
-      variant="caption"
+// ─── PREMIUM STAT BOX COMPONENT ───
+const StatBox = ({ label, value, icon, colorKey, isDark }) => {
+  const theme = useTheme();
+  const color = theme.palette[colorKey];
+  const bgColor = alpha(color.main, isDark ? 0.12 : 0.06);
+
+  return (
+    <Paper
+      elevation={0}
       sx={{
-        display: "block",
-        color: color.text,
-        fontWeight: 700,
-        fontSize: "0.6rem",
-        letterSpacing: "0.04em",
-        lineHeight: 1.2,
-        mb: 0.3,
+        p: { xs: 1.5, sm: 2 },
+        borderRadius: 3,
+        border: "1px solid",
+        borderColor: "divider",
+        bgcolor: "background.paper",
+        textAlign: "center",
+        transition: "all 0.2s ease",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        "&:hover": {
+          borderColor: color.main,
+          transform: "translateY(-2px)",
+          boxShadow: isDark
+            ? `0 8px 16px ${alpha(color.main, 0.15)}`
+            : `0 8px 16px ${alpha(color.main, 0.1)}`,
+        },
       }}
     >
-      {label}
-    </Typography>
-    <Typography
-      variant="h6"
-      fontWeight={900}
-      sx={{
-        color: color.text,
-        fontSize: { xs: "1.05rem", sm: "1.2rem" },
-        lineHeight: 1,
-      }}
-    >
-      {value}
-    </Typography>
-  </Paper>
-);
+      <Box
+        sx={{
+          width: 32,
+          height: 32,
+          borderRadius: 1.5,
+          bgcolor: bgColor,
+          color: color.main,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          mx: "auto",
+          mb: 1.25,
+        }}
+      >
+        {React.cloneElement(icon, { sx: { fontSize: 18 } })}
+      </Box>
+      <Typography
+        variant="h5"
+        fontWeight={900}
+        sx={{
+          color: "text.primary",
+          lineHeight: 1,
+          mb: 0.5,
+          letterSpacing: "-0.02em",
+        }}
+      >
+        {value}
+      </Typography>
+      <Typography
+        variant="caption"
+        sx={{
+          display: "block",
+          color: "text.secondary",
+          fontWeight: 700,
+          fontSize: "0.65rem",
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+      </Typography>
+    </Paper>
+  );
+};
 
 export default AttendanceRegisterTab;

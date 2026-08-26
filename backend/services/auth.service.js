@@ -74,6 +74,20 @@ class AuthService {
       status: "success",
     });
 
+    // ═══════════════════════════════════════════════════════════════════
+    //  FETCH GENDER FOR TEACHERS (To power "Ma'am/Sir" frontend feature)
+    // ═══════════════════════════════════════════════════════════════════
+    let gender = null;
+    if (user.role === "teacher") {
+      const Teacher = require("../models/Teacher.model");
+      const teacherProfile = await Teacher.findOne({ user: user._id })
+        .select("gender")
+        .lean();
+      if (teacherProfile) {
+        gender = teacherProfile.gender;
+      }
+    }
+
     const safeUser = {
       _id: user._id,
       name: user.name,
@@ -82,6 +96,7 @@ class AuthService {
       avatar: user.avatar,
       isActive: user.isActive,
       lastLogin: user.lastLogin,
+      gender: gender || user.gender || null, // Included safely
     };
 
     return { user: safeUser, tokens };
@@ -191,7 +206,27 @@ class AuthService {
     if (!user) {
       throw Object.assign(new Error("User not found"), { statusCode: 404 });
     }
-    return user;
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  FETCH GENDER ON REFRESH (To keep "Ma'am/Sir" working after F5)
+    // ═══════════════════════════════════════════════════════════════════
+    let gender = null;
+    if (user.role === "teacher") {
+      const Teacher = require("../models/Teacher.model");
+      const teacherProfile = await Teacher.findOne({ user: user._id })
+        .select("gender")
+        .lean();
+      if (teacherProfile) {
+        gender = teacherProfile.gender;
+      }
+    }
+
+    // Convert mongoose document to plain object so we can add gender
+    const plainUser =
+      typeof user.toObject === "function" ? user.toObject() : user;
+    plainUser.gender = gender || plainUser.gender || null;
+
+    return plainUser;
   }
 }
 

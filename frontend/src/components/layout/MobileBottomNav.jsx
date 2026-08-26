@@ -151,6 +151,12 @@ const MobileBottomNav = () => {
       icon: <TodayOutlinedIcon />,
       path: "/reports/daily",
     },
+    // ✅ ADDED REGISTER TO TEACHER MOBILE MENU
+    {
+      label: "Register",
+      icon: <ListAltOutlinedIcon />,
+      path: "/reports/register",
+    },
   ];
 
   const moreItems = isAdmin ? adminMoreItems : teacherMoreItems;
@@ -172,7 +178,6 @@ const MobileBottomNav = () => {
           borderColor: "divider",
           borderRadius: 0,
           bgcolor: "background.paper",
-          // iOS Safe Area support
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
         elevation={0}
@@ -189,7 +194,6 @@ const MobileBottomNav = () => {
               padding: "6px 4px",
               color: "text.secondary",
               transition: "all 0.2s",
-              // Premium Active Tab Indicator (Top Accent Line)
               "&.Mui-selected": {
                 color: "primary.main",
                 position: "relative",

@@ -1209,7 +1209,7 @@ class ReportService {
       throwError("Start date must be before end date", 400);
     }
 
-    // ─── Limit: max 90 days range ───
+    // Extended limit: max 1 year (365 days) range
     const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
     if (daysDiff > 365) {
       throwError("Date range cannot exceed 1 year (365 days)", 400);

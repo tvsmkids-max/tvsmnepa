@@ -48,11 +48,7 @@ const adminNav = [
   { label: "Classes", icon: <ClassOutlinedIcon />, path: "/classes" },
   { label: "Teachers", icon: <PersonOutlinedIcon />, path: "/teachers" },
   { type: "section", label: "Attendance" },
-  {
-    label: "Mark",
-    icon: <EventNoteOutlinedIcon />,
-    path: "/attendance/mark",
-  },
+  { label: "Mark", icon: <EventNoteOutlinedIcon />, path: "/attendance/mark" },
   { type: "section", label: "Reports" },
   { label: "Daily", icon: <TodayOutlinedIcon />, path: "/reports/daily" },
   {
@@ -93,11 +89,7 @@ const teacherNav = [
     path: "/teacher/dashboard",
   },
   { type: "section", label: "Attendance" },
-  {
-    label: "Mark",
-    icon: <EventNoteOutlinedIcon />,
-    path: "/attendance/mark",
-  },
+  { label: "Mark", icon: <EventNoteOutlinedIcon />, path: "/attendance/mark" },
   { type: "section", label: "Students" },
   { label: "Students", icon: <PeopleOutlinedIcon />, path: "/students" },
   { type: "section", label: "Reports" },
@@ -106,6 +98,12 @@ const teacherNav = [
     label: "Monthly",
     icon: <CalendarMonthOutlinedIcon />,
     path: "/reports/monthly",
+  },
+  // ✅ ADDED REGISTER TO TEACHER SIDEBAR
+  {
+    label: "Register",
+    icon: <ListAltOutlinedIcon />,
+    path: "/reports/register",
   },
 ];
 
