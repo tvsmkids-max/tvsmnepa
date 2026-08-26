@@ -1,17 +1,10 @@
 import React, { useState, useCallback, useMemo } from "react";
-import {
-  Box,
-  Paper,
-  Grid,
-  CircularProgress,
-  Typography,
-  Alert,
-} from "@mui/material";
+import { Box, Paper, CircularProgress, Typography, Alert } from "@mui/material";
 import BeachAccessIcon from "@mui/icons-material/BeachAccess";
 
 import HolidayHeader from "./components/HolidayHeader";
 import HolidayFilterBar from "./components/HolidayFilterBar";
-import HolidayCard from "./components/HolidayCard";
+import HolidayTable from "./components/HolidayTable"; // ✅ Now using the Table!
 import HolidayFormDialog from "./components/HolidayFormDialog";
 
 import ConfirmDialog from "../../components/common/ConfirmDialog";
@@ -52,7 +45,7 @@ const HolidayManagePage = () => {
     { enabled: !!activeSession?._id },
   );
 
-  // ─── CLIENT-SIDE FILTERING (search + type + timeframe + sort) ───
+  // ─── CLIENT-SIDE FILTERING ───
   const filteredHolidays = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -60,7 +53,6 @@ const HolidayManagePage = () => {
 
     let result = [...holidays];
 
-    // Search
     if (debouncedSearch) {
       const s = debouncedSearch.toLowerCase();
       result = result.filter(
@@ -70,12 +62,10 @@ const HolidayManagePage = () => {
       );
     }
 
-    // Type filter
     if (filters.type) {
       result = result.filter((h) => h.type === filters.type);
     }
 
-    // Timeframe filter
     if (filters.timeframe && filters.timeframe !== "all") {
       result = result.filter((h) => {
         const startDate = new Date(h.date);
@@ -108,12 +98,8 @@ const HolidayManagePage = () => {
 
       if (aPast && !bPast) return 1;
       if (!aPast && bPast) return -1;
-
-      // Both past: most recent first
-      if (aPast && bPast) return bStart - aStart;
-
-      // Both upcoming: nearest first
-      return aStart - bStart;
+      if (aPast && bPast) return bStart - aStart; // most recent first
+      return aStart - bStart; // nearest first
     });
 
     return result;
@@ -153,11 +139,9 @@ const HolidayManagePage = () => {
   const [editing, setEditing] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  // ─── HANDLERS ───
   const handleFilterChange = useCallback((newFilters) => {
     setFilters(newFilters);
   }, []);
-
   const handleResetFilters = useCallback(() => {
     setFilters(DEFAULT_FILTERS);
   }, []);
@@ -179,17 +163,10 @@ const HolidayManagePage = () => {
   const handleSave = useCallback(
     async (formData) => {
       try {
-        const payload = {
-          ...formData,
-          session: activeSession._id,
-        };
-
+        const payload = { ...formData, session: activeSession._id };
         if (editing) {
           delete payload.session;
-          await updateMutation.mutateAsync({
-            id: editing._id,
-            data: payload,
-          });
+          await updateMutation.mutateAsync({ id: editing._id, data: payload });
         } else {
           await createMutation.mutateAsync(payload);
         }
@@ -197,7 +174,7 @@ const HolidayManagePage = () => {
         setEditing(null);
         refetch();
       } catch {
-        // Errors handled by mutation hooks
+        // Handled by hook
       }
     },
     [activeSession, editing, createMutation, updateMutation, refetch],
@@ -209,11 +186,10 @@ const HolidayManagePage = () => {
       await deleteMutation.mutateAsync(confirmDelete._id);
       setConfirmDelete(null);
     } catch {
-      // Error handled
+      // Handled by hook
     }
   }, [confirmDelete, deleteMutation]);
 
-  // ─── NO SESSION FALLBACK ───
   if (!activeSession) {
     return (
       <Box>
@@ -233,7 +209,6 @@ const HolidayManagePage = () => {
 
   return (
     <Box sx={{ pb: { xs: 10, md: 4 } }}>
-      {/* HEADER */}
       <HolidayHeader
         total={filteredHolidays.length}
         sessionName={activeSession.name}
@@ -241,7 +216,6 @@ const HolidayManagePage = () => {
         onAdd={handleOpenCreate}
       />
 
-      {/* TODAY ALERT */}
       {stats.today > 0 && filters.timeframe !== "today" && (
         <Alert
           severity="success"
@@ -263,38 +237,46 @@ const HolidayManagePage = () => {
         </Alert>
       )}
 
-      {/* FILTERS */}
       <HolidayFilterBar
         filters={filters}
         onChange={handleFilterChange}
         onReset={handleResetFilters}
       />
 
-      {/* BODY */}
       {isLoading ? (
-        <Paper sx={{ p: 8, textAlign: "center", borderRadius: 3 }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 8,
+            textAlign: "center",
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: "divider",
+          }}
+        >
           <CircularProgress />
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
             Loading holidays...
           </Typography>
         </Paper>
       ) : filteredHolidays.length === 0 ? (
-        <Paper sx={{ borderRadius: 3 }}>
+        <Paper
+          elevation={0}
+          sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider" }}
+        >
           <EmptyState
             icon={<BeachAccessIcon sx={{ fontSize: 64 }} />}
             title={
-              holidays.length === 0
-                ? "No holidays added"
-                : "No holidays match your filters"
+              holidays.length === 0 ? "No holidays added" : "No holidays match"
             }
             message={
               holidays.length === 0
-                ? "Add school, national, or vacation holidays for the session."
-                : "Try adjusting your search or filters"
+                ? "Add school, national, or vacation holidays."
+                : "Try adjusting your search."
             }
             actionLabel={
               isAdmin && holidays.length === 0
-                ? "Add First Holiday"
+                ? "Add Holiday"
                 : holidays.length > 0
                   ? "Reset Filters"
                   : null
@@ -310,7 +292,6 @@ const HolidayManagePage = () => {
         </Paper>
       ) : (
         <>
-          {/* Background loading indicator */}
           {isFetching && !isLoading && (
             <Box
               sx={{
@@ -334,30 +315,22 @@ const HolidayManagePage = () => {
                   display: "flex",
                   alignItems: "center",
                   gap: 0.8,
-                  boxShadow: "0 4px 12px rgba(13,27,62,0.2)",
                 }}
               >
-                <CircularProgress size={10} sx={{ color: "white" }} />
+                <CircularProgress size={10} sx={{ color: "white" }} />{" "}
                 Refreshing...
               </Box>
             </Box>
           )}
 
-          {/* HOLIDAY GRID */}
-          <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-            {filteredHolidays.map((holiday) => (
-              <Grid item xs={12} sm={6} lg={4} xl={3} key={holiday._id}>
-                <HolidayCard
-                  holiday={holiday}
-                  isAdmin={isAdmin}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                />
-              </Grid>
-            ))}
-          </Grid>
+          {/* ✅ RENDER SAAS TABLE INSTEAD OF CARDS */}
+          <HolidayTable
+            holidays={filteredHolidays}
+            isAdmin={isAdmin}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
 
-          {/* Stats Footer */}
           <Box sx={{ textAlign: "center", mt: 3 }}>
             <Typography variant="caption" color="text.secondary">
               Showing <strong>{filteredHolidays.length}</strong> holiday
@@ -366,14 +339,6 @@ const HolidayManagePage = () => {
               <strong>{stats.upcoming}</strong> upcoming
               {" • "}
               <strong>{stats.past}</strong> past
-              {stats.today > 0 && (
-                <>
-                  {" • "}
-                  <strong style={{ color: "#16A34A" }}>
-                    {stats.today} today
-                  </strong>
-                </>
-              )}
             </Typography>
           </Box>
         </>
