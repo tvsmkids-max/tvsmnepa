@@ -59,9 +59,7 @@ const formatDate = (d) => {
 // Auto-formats sequential numbers (e.g., 1 -> "01", 2 -> "02")
 const formatSerialNumber = (idx) => String(idx + 1).padStart(2, "0");
 
-// ═══════════════════════════════════════════════════════════════════
-//  SEPARATED CIRCLES: Light Tint Default → Solid Active Fill
-// ═══════════════════════════════════════════════════════════════════
+// SEPARATED CIRCLES: Light Tint Default → Solid Active Fill
 const StatusToggle = React.memo(function StatusToggle({
   status,
   disabled,
