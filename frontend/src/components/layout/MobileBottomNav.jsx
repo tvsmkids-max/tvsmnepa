@@ -48,6 +48,7 @@ const MobileBottomNav = () => {
 
   const homeRoute = isAdmin ? "/dashboard" : "/teacher/dashboard";
 
+  // Dynamic selector logic optimized to keep the blue bar active on sub-pages
   const getCurrentValue = () => {
     const path = location.pathname;
     if (
@@ -58,9 +59,8 @@ const MobileBottomNav = () => {
       return "home";
     }
     if (path.startsWith("/attendance/mark")) return "mark";
-    if (isAdmin && path.startsWith("/reports/daily")) return "daily";
+    if (path.startsWith("/reports/daily")) return "daily";
     if (path.startsWith("/students")) return "students";
-    if (!isAdmin && path.startsWith("/reports/monthly")) return "monthly";
     return false;
   };
 
@@ -74,7 +74,6 @@ const MobileBottomNav = () => {
       mark: "/attendance/mark",
       daily: "/reports/daily",
       students: "/students",
-      monthly: "/reports/monthly",
     };
     if (routes[newValue]) navigate(routes[newValue]);
   };
@@ -90,7 +89,7 @@ const MobileBottomNav = () => {
     navigate("/login", { replace: true });
   };
 
-  // ─── ADMIN MORE ITEMS (Cleaned - No Profile) ───
+  // ─── ADMIN MORE ITEMS (Monthly stays here, Students moved to Main Bar) ───
   const adminMoreItems = [
     { divider: true, label: "Management" },
     { label: "Classes", icon: <ClassOutlinedIcon />, path: "/classes" },
@@ -137,13 +136,13 @@ const MobileBottomNav = () => {
     { label: "Settings", icon: <SettingsOutlinedIcon />, path: "/settings" },
   ];
 
-  // ─── CLASS USER MORE ITEMS ───
+  // ─── CLASS USER MORE ITEMS (Monthly moved here, Daily moved to Main Bar) ───
   const classMoreItems = [
     { divider: true, label: "Reports" },
     {
-      label: "Daily Report",
-      icon: <TodayOutlinedIcon />,
-      path: "/reports/daily",
+      label: "Monthly Report",
+      icon: <CalendarMonthOutlinedIcon />,
+      path: "/reports/monthly",
     },
     {
       label: "Register",
@@ -228,23 +227,15 @@ const MobileBottomNav = () => {
             value="mark"
             icon={<EventNoteOutlinedIcon sx={{ fontSize: 22 }} />}
           />
-          {isAdmin ? (
-            <BottomNavigationAction
-              label="Daily"
-              value="daily"
-              icon={<TodayOutlinedIcon sx={{ fontSize: 22 }} />}
-            />
-          ) : (
-            <BottomNavigationAction
-              label="Students"
-              value="students"
-              icon={<PeopleOutlinedIcon sx={{ fontSize: 22 }} />}
-            />
-          )}
           <BottomNavigationAction
-            label="Monthly"
-            value="monthly"
-            icon={<CalendarMonthOutlinedIcon sx={{ fontSize: 22 }} />}
+            label="Daily"
+            value="daily"
+            icon={<TodayOutlinedIcon sx={{ fontSize: 22 }} />}
+          />
+          <BottomNavigationAction
+            label="Students"
+            value="students"
+            icon={<PeopleOutlinedIcon sx={{ fontSize: 22 }} />}
           />
           <BottomNavigationAction
             label="More"
