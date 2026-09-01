@@ -15,7 +15,7 @@ const startServer = async () => {
   try {
     await connectDB();
 
-    server.listen(env.PORT, async () => {
+    server.listen(env.PORT, "0.0.0.0", async () => {
       logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       logger.info("  SCHOOL ATTENDANCE MANAGEMENT SYSTEM");
       logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
