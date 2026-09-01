@@ -18,9 +18,6 @@ Production-ready attendance management system for schools.
 - Analytics Dashboard with Charts
 - Excel Import/Export
 - PDF Reports
-- Role-based Access (Admin + Teacher)
-- Mobile-first Design
-- Auto Notifications
 
 ### Deployment
 
