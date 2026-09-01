@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import useAuth from "../../hooks/useAuth";
@@ -7,13 +7,13 @@ import useIdleTimer from "../../hooks/useIdleTimer";
 import IdleWarningDialog from "./IdleWarningDialog";
 
 /**
- * Mounts the idle timer + warning dialog system.
- * Place inside protected routes (e.g., inside DashboardLayout).
+ * Idle timer + warning dialog.
+ * Must wrap protected layout (DashboardLayout).
  *
- * Reads idle config from Settings:
- *   - sessionIdleEnabled
- *   - sessionIdleTimeout (minutes)
- *   - sessionIdleWarning (seconds)
+ * Settings (expected keys):
+ *   sessionIdleEnabled  boolean
+ *   sessionIdleTimeout  minutes (e.g. 1, 15)
+ *   sessionIdleWarning  seconds (e.g. 60) — clamped if >= idle timeout
  */
 const IdleTimeoutProvider = ({ children }) => {
   const { isAuthenticated, logout } = useAuth();
@@ -24,18 +24,30 @@ const IdleTimeoutProvider = ({ children }) => {
   const [warningOpen, setWarningOpen] = useState(false);
   const [countdownEnd, setCountdownEnd] = useState(null);
 
-  // Convert settings to ms
-  const idleEnabled = isAuthenticated && (settings?.sessionIdleEnabled ?? true);
-  const idleTimeoutMs = (settings?.sessionIdleTimeout ?? 15) * 60 * 1000;
-  const warningMs = (settings?.sessionIdleWarning ?? 60) * 1000;
+  const idleEnabled =
+    Boolean(isAuthenticated) && (settings?.sessionIdleEnabled ?? true);
 
-  // When warning should appear
+  // Minutes → ms (fallback 15 min)
+  const rawTimeoutMin = Number(settings?.sessionIdleTimeout);
+  const idleTimeoutMs =
+    (Number.isFinite(rawTimeoutMin) && rawTimeoutMin > 0 ? rawTimeoutMin : 15) *
+    60 *
+    1000;
+
+  // Warning: settings in SECONDS (fallback 60). Clamp vs idle length.
+  const rawWarnSec = Number(settings?.sessionIdleWarning);
+  let warningMs =
+    (Number.isFinite(rawWarnSec) && rawWarnSec > 0 ? rawWarnSec : 60) * 1000;
+
+  // e.g. idle 1 min + warn 60s → force warn to half of idle (30s)
+  warningMs = Math.min(warningMs, Math.floor(idleTimeoutMs * 0.5));
+  warningMs = Math.max(3000, Math.min(warningMs, idleTimeoutMs - 2000));
+
   const handleWarn = useCallback((endTimestamp) => {
     setCountdownEnd(endTimestamp);
     setWarningOpen(true);
   }, []);
 
-  // When user must be logged out
   const handleIdle = useCallback(async () => {
     setWarningOpen(false);
     setCountdownEnd(null);
@@ -60,14 +72,12 @@ const IdleTimeoutProvider = ({ children }) => {
     onIdle: handleIdle,
   });
 
-  // User clicks "Stay Logged In"
   const handleStayLoggedIn = useCallback(() => {
     setWarningOpen(false);
     setCountdownEnd(null);
     reset();
   }, [reset]);
 
-  // User clicks "Logout Now"
   const handleLogoutNow = useCallback(async () => {
     setWarningOpen(false);
     setCountdownEnd(null);
@@ -76,11 +86,10 @@ const IdleTimeoutProvider = ({ children }) => {
     } catch {
       // ignore
     } finally {
-      navigate("/login", { replace: true });
+      navigate("/login?reason=logged-out", { replace: true });
     }
   }, [logout, navigate]);
 
-  // Close dialog if disabled mid-session
   useEffect(() => {
     if (!idleEnabled && warningOpen) {
       setWarningOpen(false);
@@ -88,7 +97,21 @@ const IdleTimeoutProvider = ({ children }) => {
     }
   }, [idleEnabled, warningOpen]);
 
-  const value = useMemo(() => ({ reset }), [reset]);
+  // Debug helper (remove later): log effective timings once settings load
+  useEffect(() => {
+    if (!idleEnabled || !settings) return;
+    if (process.env.NODE_ENV === "development") {
+      // eslint-disable-next-line no-console
+      console.debug("[IdleTimeout]", {
+        enabled: idleEnabled,
+        timeoutMin: idleTimeoutMs / 60000,
+        warningSec: warningMs / 1000,
+        settingsTimeout: settings.sessionIdleTimeout,
+        settingsWarning: settings.sessionIdleWarning,
+        settingsEnabled: settings.sessionIdleEnabled,
+      });
+    }
+  }, [idleEnabled, idleTimeoutMs, warningMs, settings]);
 
   return (
     <>

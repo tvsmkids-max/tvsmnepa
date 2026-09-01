@@ -60,8 +60,7 @@ const redirectAfterCrossTabLogout = (reason = "session-expired") => {
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
   const isSelfLogoutRef = useRef(false);
-
-  // ─── NEW: Splash Screen State ───
+  const isSelfLoginRef = useRef(false);
   const [showSplash, setShowSplash] = useState(false);
 
   useEffect(() => {
@@ -98,13 +97,45 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  // ═══════════════════════════════════════════════════════════════
+  //  CROSS-TAB SYNC — Both LOGOUT and LOGIN
+  // ═══════════════════════════════════════════════════════════════
   useEffect(() => {
-    const handleStorageEvent = (event) => {
-      if (isPublicPath()) return;
+    const handleStorageEvent = async (event) => {
+      // Ignore events from our own tab
       if (isSelfLogoutRef.current) {
         isSelfLogoutRef.current = false;
         return;
       }
+      if (isSelfLoginRef.current) {
+        isSelfLoginRef.current = false;
+        return;
+      }
+
+      // ─── LOGIN in another tab ─────────────────────────────────
+      if (event.key === "sams_access_token" && event.newValue) {
+        // A new token appeared in another tab → sync this tab
+        if (isPublicPath()) {
+          // If we're on /login, redirect to home
+          window.location.href = "/";
+          return;
+        }
+
+        // Refresh user data in this tab
+        try {
+          const res = await authApi.getMe();
+          const u = res.data.data;
+          storage.setUser(u);
+          dispatch({ type: "LOGIN_SUCCESS", payload: u });
+        } catch {
+          // If getMe fails, force reload
+          window.location.reload();
+        }
+        return;
+      }
+
+      // ─── LOGOUT in another tab ────────────────────────────────
+      if (isPublicPath()) return;
 
       const isIdleLogout =
         event.key === storage.IDLE_LOGOUT_EVENT_KEY && event.newValue;
@@ -127,6 +158,9 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: "CLEAR_ERROR" });
     dispatch({ type: "SET_LOADING", payload: true });
     try {
+      // Mark self-login so our storage event listener ignores it
+      isSelfLoginRef.current = true;
+
       const res = await authApi.login(credentials);
       const { user, accessToken, refreshToken } = res.data.data;
       storage.setToken(accessToken);
@@ -134,12 +168,18 @@ export const AuthProvider = ({ children }) => {
       storage.setUser(user);
       storage.setLastActivity();
 
-      // ✅ Trigger splash screen ONLY on explicit login success
       setShowSplash(true);
 
       dispatch({ type: "LOGIN_SUCCESS", payload: user });
+
+      // Reset the flag after a moment so future cross-tab logins are detected
+      setTimeout(() => {
+        isSelfLoginRef.current = false;
+      }, 500);
+
       return { success: true, user };
     } catch (error) {
+      isSelfLoginRef.current = false;
       const msg = error.response?.data?.message || "Login failed";
       dispatch({ type: "SET_ERROR", payload: msg });
       return { success: false, message: msg };
@@ -158,8 +198,6 @@ export const AuthProvider = ({ children }) => {
       storage.clearAuth();
       storage.broadcastLogout();
       dispatch({ type: "LOGOUT" });
-
-      // ✅ Reset splash on logout
       setShowSplash(false);
 
       setTimeout(() => {
@@ -177,7 +215,6 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: "CLEAR_ERROR" });
   }, []);
 
-  // ─── NEW: Clear Splash Screen ───
   const dismissSplash = useCallback(() => {
     setShowSplash(false);
   }, []);
@@ -187,13 +224,11 @@ export const AuthProvider = ({ children }) => {
       value={{
         ...state,
         isAdmin: state.user?.role === "admin",
-        isTeacher: state.user?.role === "teacher",
-        isPrincipal: state.user?.role === "principal",
+        isClassUser: state.user?.role === "class",
         login,
         logout,
         updateUser,
         clearError,
-        // Splash API
         showSplash,
         dismissSplash,
       }}

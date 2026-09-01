@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   Box,
@@ -12,31 +12,25 @@ import {
   Stack,
   useTheme,
   Avatar,
+  FormControl,
+  Select,
+  MenuItem,
+  Chip,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
-import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { useForm } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as yup from "yup";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import ClassIcon from "@mui/icons-material/Class";
 import { useSnackbar } from "notistack";
 import useAuth from "../../hooks/useAuth";
 import useThemeMode from "../../hooks/useThemeMode";
+import authApi from "../../api/authApi";
 
 const SCHOOL_NAME = import.meta.env.VITE_SCHOOL_NAME || "TVSM School";
 const SCHOOL_LOGO = import.meta.env.VITE_SCHOOL_LOGO || "/logo.png";
-const APP_VERSION = import.meta.env.VITE_APP_VERSION || "2.0.1";
-
-const schema = yup.object({
-  email: yup
-    .string()
-    .email("Please enter a valid email address")
-    .required("Email is required"),
-  password: yup.string().required("Password is required"),
-});
+const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -47,12 +41,48 @@ const LoginPage = () => {
     useAuth();
   const theme = useTheme();
   const { isDark } = useThemeMode();
+
+  const [loginOptions, setLoginOptions] = useState([]);
+  const [loadingOptions, setLoadingOptions] = useState(true);
+
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [password, setPassword] = useState(""); // Used for Admin
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // ══════════════════════════════════════════════════════════
-  //  Alerts & Redirects
-  // ══════════════════════════════════════════════════════════
+  // ─── PIN State (For Class Login) ───
+  const [pinDigits, setPinDigits] = useState(["", "", "", "", ""]);
+  const pinRefs = useRef([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchOptions = async () => {
+      setLoadingOptions(true);
+      try {
+        const res = await authApi.getLoginOptions();
+        if (!cancelled) {
+          const options = res.data?.data || [];
+          setLoginOptions(options);
+          if (options.length > 0) {
+            setSelectedUserId(options[0]._id);
+          }
+          setLoadingOptions(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setLoadingOptions(false);
+          enqueueSnackbar("Failed to load login accounts", {
+            variant: "error",
+          });
+        }
+      }
+    };
+    fetchOptions();
+    return () => {
+      cancelled = true;
+    };
+  }, [enqueueSnackbar]);
+
   useEffect(() => {
     const reason = searchParams.get("reason");
     if (!reason) return;
@@ -84,55 +114,133 @@ const LoginPage = () => {
     if (isAuthenticated && user) {
       const from = location.state?.from?.pathname;
       const defaultRoute =
-        user.role === "admin"
-          ? "/dashboard"
-          : user.role === "principal"
-            ? "/principal/dashboard"
-            : "/teacher/dashboard";
+        user.role === "admin" ? "/dashboard" : "/teacher/dashboard";
 
-      const targetRoute =
-        from && from !== "/login" && from !== "/unauthorized"
-          ? from
-          : defaultRoute;
+      let targetRoute = defaultRoute;
+      if (
+        from &&
+        from !== "/login" &&
+        from !== "/unauthorized" &&
+        !(user.role === "class" && from === "/dashboard") &&
+        !(user.role === "admin" && from === "/teacher/dashboard")
+      ) {
+        targetRoute = from;
+      }
+
       navigate(targetRoute, { replace: true });
     }
   }, [isAuthenticated, user, navigate, location.state]);
 
-  useEffect(() => () => clearError(), []);
+  useEffect(() => () => clearError(), [clearError]);
 
-  // ══════════════════════════════════════════════════════════
-  //  Form Handling
-  // ══════════════════════════════════════════════════════════
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
-    resolver: yupResolver(schema),
-    defaultValues: { email: "", password: "" },
-  });
+  // Reset fields when switching accounts
+  useEffect(() => {
+    setPassword("");
+    setPinDigits(["", "", "", "", ""]);
+  }, [selectedUserId]);
 
-  const onSubmit = async (data) => {
-    setSubmitting(true);
-    clearError();
-    await login(data); // Redirect is handled by the useEffect above
-    setSubmitting(false);
+  const selectedUserObj = loginOptions.find((o) => o._id === selectedUserId);
+  const isAdminLogin = selectedUserObj?.role === "admin";
+  const isClassLogin = selectedUserObj?.role === "class";
+
+  const classPin = pinDigits.join("");
+
+  // ─── PIN Handlers ───
+  const handlePinChange = (index, value) => {
+    const digit = value.replace(/\D/g, "").slice(-1);
+    const next = [...pinDigits];
+    next[index] = digit;
+    setPinDigits(next);
+
+    // Auto-advance
+    if (digit && index < 4) {
+      pinRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handlePinKeyDown = (index, e) => {
+    if (e.key === "Backspace" && !pinDigits[index] && index > 0) {
+      pinRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePinPaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 5);
+    if (!pasted) return;
+
+    const next = ["", "", "", "", ""];
+    pasted.split("").forEach((ch, idx) => {
+      next[idx] = ch;
+    });
+    setPinDigits(next);
+
+    // Focus the next empty box or the last box
+    const focusIndex = Math.min(pasted.length, 4);
+    pinRefs.current[focusIndex]?.focus();
+  };
+
+  // ─── Submit ───
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedUserId) {
+      enqueueSnackbar("Please select an account to log in", {
+        variant: "warning",
+      });
+      return;
+    }
+
+    if (isAdminLogin) {
+      if (!password) {
+        enqueueSnackbar("Please enter password", { variant: "warning" });
+        return;
+      }
+      setSubmitting(true);
+      clearError();
+      await login({ userId: selectedUserId, password });
+      setSubmitting(false);
+      return;
+    }
+
+    if (isClassLogin) {
+      if (!/^\d{5}$/.test(classPin)) {
+        enqueueSnackbar("Enter all 5 digits of the PIN", {
+          variant: "warning",
+        });
+        return;
+      }
+      setSubmitting(true);
+      clearError();
+      await login({ userId: selectedUserId, password: classPin }); // PIN is sent in password field
+      setSubmitting(false);
+    }
   };
 
   if (isLoading) return null;
 
-  // ══════════════════════════════════════════════════════════
-  //  Visual Theme Values (Glassmorphism & Animations)
-  // ══════════════════════════════════════════════════════════
   const bgGradient = isDark
     ? "linear-gradient(135deg, #020617 0%, #0F172A 50%, #1E1B4B 100%)"
     : "linear-gradient(135deg, #E0E7FF 0%, #F1F5F9 50%, #DBEAFE 100%)";
 
-  const glassBg = isDark ? "rgba(15, 23, 42, 0.6)" : "rgba(255, 255, 255, 0.6)";
+  const glassBg = isDark
+    ? "rgba(15, 23, 42, 0.65)"
+    : "rgba(255, 255, 255, 0.75)";
   const glassBorder = isDark
     ? "rgba(255, 255, 255, 0.08)"
-    : "rgba(255, 255, 255, 0.6)";
-  const inputBg = isDark ? "rgba(0, 0, 0, 0.2)" : "rgba(255, 255, 255, 0.7)";
+    : "rgba(255, 255, 255, 0.8)";
+  const inputBg = isDark ? "rgba(0, 0, 0, 0.25)" : "rgba(255, 255, 255, 0.8)";
+
+  const labelSx = {
+    color: "text.secondary",
+    mb: 0.8,
+    display: "block",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+    fontSize: "0.7rem",
+  };
 
   return (
     <Box
@@ -147,7 +255,6 @@ const LoginPage = () => {
         p: 2,
       }}
     >
-      {/* ─── ANIMATED BACKGROUND BLOBS ─── */}
       <Box
         sx={{
           position: "absolute",
@@ -160,12 +267,6 @@ const LoginPage = () => {
           filter: "blur(120px)",
           opacity: isDark ? 0.2 : 0.4,
           animation: "blob1 15s infinite alternate",
-          "@keyframes blob1": {
-            "0%": { transform: "translate(0px, 0px) scale(1)" },
-            "33%": { transform: "translate(50px, -50px) scale(1.1)" },
-            "66%": { transform: "translate(-20px, 20px) scale(0.9)" },
-            "100%": { transform: "translate(0px, 0px) scale(1)" },
-          },
         }}
       />
       <Box
@@ -180,35 +281,23 @@ const LoginPage = () => {
           filter: "blur(120px)",
           opacity: isDark ? 0.2 : 0.4,
           animation: "blob2 20s infinite alternate",
-          "@keyframes blob2": {
-            "0%": { transform: "translate(0px, 0px) scale(1)" },
-            "33%": { transform: "translate(-50px, 50px) scale(1.2)" },
-            "66%": { transform: "translate(20px, -20px) scale(0.8)" },
-            "100%": { transform: "translate(0px, 0px) scale(1)" },
-          },
         }}
       />
 
-      {/* ─── GLASSMORPHISM CARD ─── */}
       <Box
         sx={{
           width: "100%",
           maxWidth: 420,
           zIndex: 1,
           animation: "fadeInUp 0.6s ease-out forwards",
-          "@keyframes fadeInUp": {
-            from: { opacity: 0, transform: "translateY(20px)" },
-            to: { opacity: 1, transform: "translateY(0)" },
-          },
         }}
       >
         <Box
           sx={{
             bgcolor: glassBg,
             backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
             border: `1px solid ${glassBorder}`,
-            borderRadius: 4, // Modern large radius
+            borderRadius: 4,
             boxShadow: isDark
               ? "0 24px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)"
               : "0 24px 48px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.6)",
@@ -216,7 +305,6 @@ const LoginPage = () => {
             textAlign: "center",
           }}
         >
-          {/* Logo */}
           <Avatar
             src={SCHOOL_LOGO}
             sx={{
@@ -241,7 +329,8 @@ const LoginPage = () => {
             variant="body2"
             sx={{ color: "text.secondary", mb: 4, fontWeight: 500 }}
           >
-            {SCHOOL_NAME}
+            Select account and enter {isAdminLogin ? "password" : "PIN"} to
+            access {SCHOOL_NAME}
           </Typography>
 
           {error && (
@@ -254,106 +343,224 @@ const LoginPage = () => {
             </Alert>
           )}
 
-          {/* Form */}
           <Box
             component="form"
-            onSubmit={handleSubmit(onSubmit)}
+            onSubmit={handleSubmit}
             noValidate
             sx={{ textAlign: "left" }}
           >
-            <TextField
-              {...register("email")}
-              placeholder="Email Address"
-              type="email"
+            <Typography variant="caption" fontWeight={700} sx={labelSx}>
+              Select Account
+            </Typography>
+            <FormControl
               fullWidth
-              autoComplete="email"
-              error={!!errors.email}
-              helperText={errors.email?.message}
-              sx={{
-                mb: 2.5,
-                "& .MuiOutlinedInput-root": {
-                  bgcolor: inputBg,
-                  borderRadius: 2.5,
-                  "& fieldset": { border: "none" }, // Clean rimless look
-                  "&:hover": {
-                    bgcolor: isDark
-                      ? "rgba(255,255,255,0.05)"
-                      : "rgba(255,255,255,1)",
-                  },
-                  "&.Mui-focused": {
-                    bgcolor: isDark ? "rgba(255,255,255,0.08)" : "#FFFFFF",
-                    boxShadow: `0 0 0 2px ${theme.palette.primary.main}`,
-                  },
-                },
-                "& .MuiInputBase-input": { py: 1.8 },
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <EmailOutlinedIcon sx={{ color: "text.disabled" }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
-
-            <TextField
-              {...register("password")}
-              placeholder="Password"
-              type={showPassword ? "text" : "password"}
-              fullWidth
-              autoComplete="current-password"
-              error={!!errors.password}
-              helperText={errors.password?.message}
-              sx={{
-                mb: 4,
-                "& .MuiOutlinedInput-root": {
+              size="medium"
+              sx={{ mb: 2.5 }}
+              disabled={loadingOptions}
+            >
+              <Select
+                value={selectedUserId}
+                onChange={(e) => setSelectedUserId(e.target.value)}
+                displayEmpty
+                sx={{
                   bgcolor: inputBg,
                   borderRadius: 2.5,
                   "& fieldset": { border: "none" },
-                  "&:hover": {
-                    bgcolor: isDark
-                      ? "rgba(255,255,255,0.05)"
-                      : "rgba(255,255,255,1)",
+                  "& .MuiSelect-select": {
+                    py: 1.6,
+                    fontWeight: 800,
+                    fontSize: "0.95rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
                   },
-                  "&.Mui-focused": {
-                    bgcolor: isDark ? "rgba(255,255,255,0.08)" : "#FFFFFF",
-                    boxShadow: `0 0 0 2px ${theme.palette.primary.main}`,
-                  },
-                },
-                "& .MuiInputBase-input": { py: 1.8 },
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LockOutlinedIcon sx={{ color: "text.disabled" }} />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword((p) => !p)}
-                      edge="end"
-                      size="small"
-                      tabIndex={-1}
-                      sx={{ color: "text.secondary" }}
+                }}
+              >
+                {loadingOptions ? (
+                  <MenuItem disabled value="">
+                    Loading accounts...
+                  </MenuItem>
+                ) : (
+                  loginOptions.map((opt) => (
+                    <MenuItem
+                      key={opt._id}
+                      value={opt._id}
+                      sx={{
+                        py: 1.2,
+                        fontWeight: opt.role === "admin" ? 800 : 700,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
                     >
-                      {showPassword ? (
+                      <Stack direction="row" alignItems="center" spacing={1.5}>
+                        {opt.role === "admin" ? (
+                          <AdminPanelSettingsIcon
+                            color="primary"
+                            fontSize="small"
+                          />
+                        ) : (
+                          <ClassIcon color="action" fontSize="small" />
+                        )}
+                        <Typography
+                          variant="body2"
+                          fontWeight={opt.role === "admin" ? 800 : 700}
+                        >
+                          {opt.displayName}
+                        </Typography>
+                      </Stack>
+                      {opt.role === "admin" && (
+                        <Chip
+                          label="Admin"
+                          size="small"
+                          color="primary"
+                          sx={{
+                            height: 20,
+                            fontSize: "0.62rem",
+                            fontWeight: 800,
+                          }}
+                        />
+                      )}
+                    </MenuItem>
+                  ))
+                )}
+              </Select>
+            </FormControl>
+
+            {/* ─── CONDITIONAL CREDENTIAL FIELD ─── */}
+            {isAdminLogin ? (
+              <>
+                <Typography variant="caption" fontWeight={700} sx={labelSx}>
+                  Password
+                </Typography>
+                <TextField
+                  placeholder="••••••••"
+                  type={showPassword ? "text" : "password"}
+                  fullWidth
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  sx={{
+                    mb: 4,
+                    "& .MuiOutlinedInput-root": {
+                      bgcolor: inputBg,
+                      borderRadius: 2.5,
+                      "& fieldset": { border: "none" },
+                      "&:hover": {
+                        bgcolor: isDark ? "rgba(255,255,255,0.05)" : "#FFFFFF",
+                      },
+                      "&.Mui-focused": {
+                        bgcolor: isDark ? "rgba(255,255,255,0.08)" : "#FFFFFF",
+                        boxShadow: `0 0 0 2px ${theme.palette.primary.main}`,
+                      },
+                    },
+                    "& .MuiInputBase-input": { py: 1.8 },
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockOutlinedIcon sx={{ color: "text.disabled" }} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword((p) => !p)}
+                          edge="end"
+                          size="small"
+                          tabIndex={-1}
+                          sx={{ color: "text.secondary" }}
+                        >
+                          {showPassword ? (
+                            <VisibilityOffOutlinedIcon fontSize="small" />
+                          ) : (
+                            <VisibilityOutlinedIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </>
+            ) : (
+              <>
+                <Typography variant="caption" fontWeight={700} sx={labelSx}>
+                  5-Digit PIN
+                </Typography>
+                <Stack
+                  direction="row"
+                  spacing={1.5}
+                  justifyContent="center"
+                  sx={{ mb: 4 }}
+                >
+                  {pinDigits.map((digit, i) => (
+                    <TextField
+                      key={i}
+                      inputRef={(el) => (pinRefs.current[i] = el)}
+                      value={digit}
+                      onChange={(e) => handlePinChange(i, e.target.value)}
+                      onKeyDown={(e) => handlePinKeyDown(i, e)}
+                      onPaste={i === 0 ? handlePinPaste : undefined}
+                      type={showPassword ? "text" : "password"}
+                      inputProps={{
+                        inputMode: "numeric", // ✅ Triggers number pad on mobile
+                        pattern: "[0-9]*",
+                        maxLength: 1,
+                        autoComplete: "one-time-code",
+                        style: {
+                          textAlign: "center",
+                          fontSize: "1.5rem",
+                          fontWeight: 800,
+                          padding: "12px 0",
+                        },
+                      }}
+                      sx={{
+                        width: 56,
+                        "& .MuiOutlinedInput-root": {
+                          bgcolor: inputBg,
+                          borderRadius: 2,
+                          "& fieldset": { border: "none" },
+                          "&.Mui-focused": {
+                            boxShadow: `0 0 0 2px ${theme.palette.primary.main}`,
+                          },
+                        },
+                      }}
+                    />
+                  ))}
+                </Stack>
+                {/* Optional: Add eye button below PIN for class if needed */}
+                <Box textAlign="right" sx={{ mt: -3, mb: 3 }}>
+                  <Button
+                    size="small"
+                    onClick={() => setShowPassword(!showPassword)}
+                    sx={{
+                      color: "text.secondary",
+                      textTransform: "none",
+                      fontSize: "0.7rem",
+                    }}
+                    endIcon={
+                      showPassword ? (
                         <VisibilityOffOutlinedIcon fontSize="small" />
                       ) : (
                         <VisibilityOutlinedIcon fontSize="small" />
-                      )}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
+                      )
+                    }
+                  >
+                    {showPassword ? "Hide PIN" : "Show PIN"}
+                  </Button>
+                </Box>
+              </>
+            )}
 
             <Button
               type="submit"
               fullWidth
               variant="contained"
               size="large"
-              disabled={submitting}
+              disabled={
+                submitting ||
+                loadingOptions ||
+                (isClassLogin && classPin.length !== 5)
+              }
               endIcon={!submitting && <ArrowForwardIcon />}
               sx={{
                 py: 1.8,
@@ -375,14 +582,15 @@ const LoginPage = () => {
             >
               {submitting ? (
                 <CircularProgress size={24} sx={{ color: "white" }} />
-              ) : (
+              ) : isAdminLogin ? (
                 "Sign in"
+              ) : (
+                "Enter Class"
               )}
             </Button>
           </Box>
         </Box>
 
-        {/* Floating Footer */}
         <Stack
           direction="row"
           justifyContent="center"

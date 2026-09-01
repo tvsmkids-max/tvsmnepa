@@ -13,16 +13,6 @@ const userSchema = new mongoose.Schema(
       maxlength: [100, "Name cannot exceed 100 characters"],
     },
 
-    email: {
-      type: String,
-      required: [true, "Email is required"],
-      unique: true,
-      lowercase: true,
-      trim: true,
-      match: [/^\S+@\S+\.\S+$/, "Please provide a valid email"],
-      maxlength: [150, "Email cannot exceed 150 characters"],
-    },
-
     password: {
       type: String,
       required: [true, "Password is required"],
@@ -36,12 +26,13 @@ const userSchema = new mongoose.Schema(
         values: ROLE_LIST,
         message: `Role must be one of: ${ROLE_LIST.join(", ")}`,
       },
-      default: ROLES.TEACHER,
       required: true,
     },
 
-    avatar: {
-      type: String,
+    // Links to a Class document (only for role="class")
+    linkedClass: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Class",
       default: null,
     },
 
@@ -84,8 +75,8 @@ const userSchema = new mongoose.Schema(
   },
 );
 
-userSchema.index({ email: 1 });
 userSchema.index({ role: 1, isActive: 1 });
+userSchema.index({ linkedClass: 1 });
 
 userSchema.virtual("isLocked").get(function () {
   return !!(this.lockUntil && this.lockUntil > Date.now());

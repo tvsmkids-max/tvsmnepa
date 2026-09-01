@@ -14,17 +14,7 @@ const MOUSE_THROTTLE_MS = 1000;
 const STORAGE_SYNC_INTERVAL_MS = 1000;
 
 /**
- * Tracks user inactivity and triggers warning + logout callbacks.
- *
- * @param {Object} options
- * @param {boolean} options.enabled - Master switch
- * @param {number} options.idleTimeoutMs - Total idle time before logout (ms)
- * @param {number} options.warningMs - Warning duration before logout (ms)
- * @param {Function} options.onWarn - Called when warning should appear (receives countdown end timestamp)
- * @param {Function} options.onIdle - Called when user must be logged out
- * @param {Function} options.onActivity - Called whenever activity detected (optional)
- *
- * @returns {Object} { reset, lastActivity }
+ * Tracks user inactivity → warning + logout.
  */
 const useIdleTimer = ({
   enabled = true,
@@ -41,7 +31,24 @@ const useIdleTimer = ({
   const isWarningActiveRef = useRef(false);
   const [lastActivity, setLastActivity] = useState(Date.now());
 
-  // Clear all timers
+  // Keep latest callbacks without re-binding window listeners every render
+  const onWarnRef = useRef(onWarn);
+  const onIdleRef = useRef(onIdle);
+  const onActivityRef = useRef(onActivity);
+  const idleTimeoutRef = useRef(idleTimeoutMs);
+  const warningMsRef = useRef(warningMs);
+
+  useEffect(() => {
+    onWarnRef.current = onWarn;
+    onIdleRef.current = onIdle;
+    onActivityRef.current = onActivity;
+  }, [onWarn, onIdle, onActivity]);
+
+  useEffect(() => {
+    idleTimeoutRef.current = idleTimeoutMs;
+    warningMsRef.current = warningMs;
+  }, [idleTimeoutMs, warningMs]);
+
   const clearTimers = useCallback(() => {
     if (warnTimerRef.current) {
       clearTimeout(warnTimerRef.current);
@@ -53,71 +60,77 @@ const useIdleTimer = ({
     }
   }, []);
 
-  // Schedule warning + logout
   const scheduleTimers = useCallback(() => {
     clearTimers();
-
     if (!enabled) return;
 
-    const warningDelay = Math.max(0, idleTimeoutMs - warningMs);
+    const idleMs = Math.max(5000, idleTimeoutRef.current || 15 * 60 * 1000);
+    // Warning must be shorter than idle (e.g. 1 min idle + 60s warn was broken)
+    let warnMs = warningMsRef.current || 60 * 1000;
+    warnMs = Math.min(warnMs, Math.floor(idleMs * 0.5));
+    warnMs = Math.max(3000, Math.min(warnMs, idleMs - 2000));
 
-    // Schedule warning
+    const warningDelay = Math.max(0, idleMs - warnMs);
+
     warnTimerRef.current = setTimeout(() => {
       isWarningActiveRef.current = true;
-      if (typeof onWarn === "function") {
-        onWarn(Date.now() + warningMs);
+      if (typeof onWarnRef.current === "function") {
+        onWarnRef.current(Date.now() + warnMs);
       }
     }, warningDelay);
 
-    // Schedule logout
     idleTimerRef.current = setTimeout(() => {
       isWarningActiveRef.current = false;
-      if (typeof onIdle === "function") {
-        onIdle();
+      if (typeof onIdleRef.current === "function") {
+        onIdleRef.current();
       }
-    }, idleTimeoutMs);
-  }, [enabled, idleTimeoutMs, warningMs, onWarn, onIdle, clearTimers]);
+    }, idleMs);
+  }, [enabled, clearTimers]);
 
-  // Reset timer + record activity
   const reset = useCallback(() => {
     if (!enabled) return;
     const now = Date.now();
     lastActivityRef.current = now;
     setLastActivity(now);
-    storage.setLastActivity(now);
+    try {
+      storage.setLastActivity?.(now);
+    } catch {
+      // ignore storage errors
+    }
     isWarningActiveRef.current = false;
     scheduleTimers();
-    if (typeof onActivity === "function") onActivity();
-  }, [enabled, scheduleTimers, onActivity]);
+    if (typeof onActivityRef.current === "function") {
+      onActivityRef.current();
+    }
+  }, [enabled, scheduleTimers]);
 
-  // Activity handler (throttled for mousemove)
   const handleActivity = useCallback(
     (event) => {
       if (!enabled) return;
 
-      // Throttle mousemove
-      if (event && event.type === "mousemove") {
+      if (event?.type === "mousemove") {
         const now = Date.now();
         if (now - lastMouseMoveRef.current < MOUSE_THROTTLE_MS) return;
         lastMouseMoveRef.current = now;
       }
 
+      // While warning is open, only explicit "Stay logged in" should reset
+      // (dialog buttons call reset). Still allow keyboard/click outside dialog
+      // to count as activity if user is working — standard is to reset on activity.
       reset();
     },
     [enabled, reset],
   );
 
-  // Setup activity listeners
+  // Attach listeners once per enabled flag; schedule from reset
   useEffect(() => {
     if (!enabled) {
       clearTimers();
-      return;
+      return undefined;
     }
 
-    // Initial activity record
     reset();
 
-    // Attach listeners
     ACTIVITY_EVENTS.forEach((evt) => {
       window.addEventListener(evt, handleActivity, { passive: true });
     });
@@ -130,23 +143,29 @@ const useIdleTimer = ({
     };
   }, [enabled, handleActivity, reset, clearTimers]);
 
-  // Cross-tab activity sync
-  // If another tab records activity, we update our timer too
+  // Re-schedule when timeout settings change (without relying on unstable callbacks)
   useEffect(() => {
     if (!enabled) return;
+    scheduleTimers();
+  }, [enabled, idleTimeoutMs, warningMs, scheduleTimers]);
+
+  // Cross-tab activity sync
+  useEffect(() => {
+    if (!enabled) return undefined;
 
     const syncInterval = setInterval(() => {
-      const storedActivity = storage.getLastActivity();
+      let storedActivity = null;
+      try {
+        storedActivity = storage.getLastActivity?.();
+      } catch {
+        return;
+      }
       if (!storedActivity) return;
 
-      // Another tab had more recent activity → sync
       if (storedActivity > lastActivityRef.current) {
         lastActivityRef.current = storedActivity;
         setLastActivity(storedActivity);
-        if (isWarningActiveRef.current) {
-          // Cancel warning since another tab was active
-          isWarningActiveRef.current = false;
-        }
+        isWarningActiveRef.current = false;
         scheduleTimers();
       }
     }, STORAGE_SYNC_INTERVAL_MS);

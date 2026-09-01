@@ -31,10 +31,9 @@ const IdleWarningDialog = ({
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-      return;
+      return undefined;
     }
 
-    // Initial calc
     const calc = () => {
       const diff = Math.max(0, countdownEnd - Date.now());
       setRemainingMs(diff);
@@ -58,26 +57,21 @@ const IdleWarningDialog = ({
   const seconds = Math.ceil(remainingMs / 1000);
   const progress = Math.max(
     0,
-    Math.min(100, (remainingMs / totalWarningMs) * 100),
+    Math.min(100, (remainingMs / Math.max(totalWarningMs, 1)) * 100),
   );
 
-  // Color shifts as time runs out
-  const getColor = () => {
-    if (seconds > 30) return "warning";
-    if (seconds > 10) return "warning";
-    return "error";
-  };
-
-  const color = getColor();
+  const color = seconds > 10 ? "warning" : "error";
 
   return (
     <Dialog
       open={open}
-      onClose={undefined} // Cannot dismiss by clicking outside
+      onClose={undefined}
       disableEscapeKeyDown
       maxWidth="xs"
       fullWidth
       keepMounted={false}
+      // Above topbar / bottom nav / splash
+      sx={{ zIndex: (t) => t.zIndex.modal + 10 }}
       PaperProps={{
         sx: {
           borderRadius: 3,
@@ -87,7 +81,6 @@ const IdleWarningDialog = ({
       aria-labelledby="idle-warning-title"
       aria-describedby="idle-warning-description"
     >
-      {/* Top progress bar */}
       <LinearProgress
         variant="determinate"
         value={progress}
@@ -162,12 +155,12 @@ const IdleWarningDialog = ({
           color="text.secondary"
           sx={{ mb: 1 }}
         >
-          You've been inactive for a while. For your security, you will be{" "}
+          You&apos;ve been inactive for a while. For your security, you will be{" "}
           <strong>automatically logged out</strong> in {seconds} second
           {seconds !== 1 ? "s" : ""}.
         </Typography>
         <Typography variant="caption" color="text.disabled">
-          Click "Stay Logged In" to continue your session.
+          Click &quot;Stay Logged In&quot; to continue your session.
         </Typography>
       </DialogContent>
 

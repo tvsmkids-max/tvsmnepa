@@ -7,15 +7,33 @@ const { validateBody } = require("../middlewares/validate.middleware");
 const {
   loginSchema,
   changePasswordSchema,
-  refreshTokenSchema,
 } = require("../validators/auth.validator");
 
-const login = [
-  validateBody(loginSchema),
-  asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
+/**
+ * GET /auth/login-options — Public, powers the login dropdown
+ */
+const getLoginOptions = asyncHandler(async (req, res) => {
+  const options = await authService.getLoginOptions();
+  return sendResponse(res).success({
+    message: "Login options fetched",
+    data: options,
+  });
+});
 
-    const { user, tokens } = await authService.login({ email, password, req });
+/**
+ * POST /auth/login — Accepts { userId, password }
+ */
+const login = [
+  asyncHandler(async (req, res) => {
+    const { userId, password } = req.body;
+
+    if (!userId || !password) {
+      return sendResponse(res).badRequest({
+        message: "Please select an account and enter password",
+      });
+    }
+
+    const { user, tokens } = await authService.login({ userId, password, req });
 
     res.cookie("refreshToken", tokens.refreshToken, {
       httpOnly: true,
@@ -91,9 +109,16 @@ const changePassword = [
 const getMe = asyncHandler(async (req, res) => {
   const user = await authService.getMe(req.user._id);
   return sendResponse(res).success({
-    message: "User profile fetched",
+    message: "Profile fetched",
     data: user,
   });
 });
 
-module.exports = { login, logout, refreshToken, changePassword, getMe };
+module.exports = {
+  getLoginOptions,
+  login,
+  logout,
+  refreshToken,
+  changePassword,
+  getMe,
+};

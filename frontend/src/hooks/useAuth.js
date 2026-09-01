@@ -6,7 +6,7 @@ const useAuth = () => {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return {
     ...ctx,
-    isPrincipal: ctx.user?.role === "principal",
+    // isAdmin + isClassUser already come from AuthContext
   };
 };
 

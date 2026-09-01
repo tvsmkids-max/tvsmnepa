@@ -1,9 +1,9 @@
 "use strict";
 
-const ROLES = Object.freeze({
+const ROLES = {
   ADMIN: "admin",
-  TEACHER: "teacher",
-});
+  CLASS: "class", // Changed from "teacher" to "class"
+};
 
 const ROLE_LIST = Object.values(ROLES);
 

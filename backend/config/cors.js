@@ -15,10 +15,12 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // In development, allow localhost
+    // In development, allow localhost and local network IPs
     if (
       env.IS_DEVELOPMENT &&
-      (origin.includes("localhost") || origin.includes("127.0.0.1"))
+      (origin.includes("localhost") || 
+       origin.includes("127.0.0.1") ||
+       origin.includes("10.189.16.3"))
     ) {
       return callback(null, true);
     }

@@ -1,5 +1,7 @@
 "use strict";
 
+const User = require("../models/User.model");
+const Class = require("../models/Class.model");
 const userRepository = require("../repositories/user.repository");
 const { hashPassword, comparePassword } = require("../utils/passwordHelper");
 const {
@@ -8,20 +10,66 @@ const {
   generateAccessToken,
 } = require("../utils/jwtHelper");
 const { createAuditLog } = require("../middlewares/audit.middleware");
-const logger = require("../utils/logger");
+const { getClassSortRank } = require("../utils/classSort");
 
 class AuthService {
-  async login({ email, password, req }) {
-    const user = await userRepository.findByEmail(email, true);
+  async getLoginOptions() {
+    const users = await User.find({ isActive: true })
+      .select("_id name role linkedClass")
+      .populate("linkedClass", "name section session teacherLabel")
+      .lean();
+
+    const options = [];
+
+    users
+      .filter((u) => u.role === "admin")
+      .forEach((u) => {
+        options.push({
+          _id: u._id,
+          name: u.name,
+          role: "admin",
+          displayName: "Admin",
+        });
+      });
+
+    const classUsers = users
+      .filter((u) => u.role === "class" && u.linkedClass)
+      .map((u) => {
+        const teacherSuffix = u.linkedClass.teacherLabel
+          ? ` (${u.linkedClass.teacherLabel.toUpperCase()})`
+          : "";
+        return {
+          _id: u._id,
+          name: u.name,
+          role: "class",
+          displayName: `${u.linkedClass.name} - ${u.linkedClass.section}${teacherSuffix}`,
+          sortRank: getClassSortRank(u.linkedClass.name),
+          section: u.linkedClass.section,
+        };
+      })
+      .sort((a, b) => {
+        if (a.sortRank !== b.sortRank) return a.sortRank - b.sortRank;
+        return (a.section || "").localeCompare(b.section || "");
+      });
+
+    options.push(...classUsers);
+    return options;
+  }
+
+  async login({ userId, password, req }) {
+    const user = await User.findById(userId)
+      .select("+password +loginAttempts +lockUntil")
+      .populate("linkedClass", "name section teacherLabel")
+      .lean();
 
     if (!user) {
-      throw Object.assign(new Error("Invalid email or password"), {
+      throw Object.assign(new Error("Invalid account or credentials"), {
         statusCode: 401,
       });
     }
 
     if (!user.isActive) {
-      throw Object.assign(new Error("Your account has been deactivated"), {
+      throw Object.assign(new Error("This account has been deactivated"), {
         statusCode: 401,
       });
     }
@@ -34,11 +82,32 @@ class AuthService {
       );
     }
 
-    const isMatch = await comparePassword(password, user.password);
+    const credential = password != null ? String(password) : "";
+
+    // ✅ NEW: Strict role-based credential enforcement
+    if (user.role === "admin") {
+      if (!credential || credential.length < 8) {
+        throw Object.assign(
+          new Error("Password is required for Admin (min 8 characters)"),
+          { statusCode: 400 },
+        );
+      }
+    } else if (user.role === "class") {
+      if (!/^\d{5}$/.test(credential)) {
+        throw Object.assign(new Error("Please enter a valid 5-digit PIN"), {
+          statusCode: 400,
+        });
+      }
+    } else {
+      throw Object.assign(new Error("Invalid account role"), {
+        statusCode: 401,
+      });
+    }
+
+    const isMatch = await comparePassword(credential, user.password);
 
     if (!isMatch) {
-      const UserModel = require("../models/User.model");
-      const userDoc = await UserModel.findById(user._id).select(
+      const userDoc = await User.findById(user._id).select(
         "+loginAttempts +lockUntil",
       );
       await userDoc.incrementLoginAttempts();
@@ -47,21 +116,24 @@ class AuthService {
         user: { _id: user._id, name: user.name, role: user.role },
         action: "LOGIN",
         module: "Auth",
-        description: `Failed login attempt for ${email}`,
+        description: `Failed login attempt for ${user.name}`,
         req,
         status: "failed",
       });
 
-      throw Object.assign(new Error("Invalid email or password"), {
+      throw Object.assign(new Error("Invalid account or credentials"), {
         statusCode: 401,
       });
     }
 
-    const UserModel = require("../models/User.model");
-    const userDoc = await UserModel.findById(user._id).select("+loginAttempts");
+    const userDoc = await User.findById(user._id).select("+loginAttempts");
     await userDoc.resetLoginAttempts();
 
-    const tokens = generateTokenPair(user);
+    const tokens = generateTokenPair({
+      _id: user._id,
+      name: user.name,
+      role: user.role,
+    });
 
     await userRepository.addRefreshToken(user._id, tokens.refreshToken);
 
@@ -69,34 +141,20 @@ class AuthService {
       user: { _id: user._id, name: user.name, role: user.role },
       action: "LOGIN",
       module: "Auth",
-      description: `User ${user.email} logged in successfully`,
+      description: `${user.name} logged in successfully`,
       req,
       status: "success",
     });
 
-    // ═══════════════════════════════════════════════════════════════════
-    //  FETCH GENDER FOR TEACHERS (To power "Ma'am/Sir" frontend feature)
-    // ═══════════════════════════════════════════════════════════════════
-    let gender = null;
-    if (user.role === "teacher") {
-      const Teacher = require("../models/Teacher.model");
-      const teacherProfile = await Teacher.findOne({ user: user._id })
-        .select("gender")
-        .lean();
-      if (teacherProfile) {
-        gender = teacherProfile.gender;
-      }
-    }
-
     const safeUser = {
       _id: user._id,
       name: user.name,
-      email: user.email,
       role: user.role,
-      avatar: user.avatar,
+      linkedClass: user.linkedClass
+        ? user.linkedClass._id || user.linkedClass
+        : null,
       isActive: user.isActive,
       lastLogin: user.lastLogin,
-      gender: gender || user.gender || null, // Included safely
     };
 
     return { user: safeUser, tokens };
@@ -106,55 +164,44 @@ class AuthService {
     if (refreshToken) {
       await userRepository.removeRefreshToken(userId, refreshToken);
     }
-
     await createAuditLog({
       user,
       action: "LOGOUT",
       module: "Auth",
-      description: `User ${user.email} logged out`,
+      description: `${user.name} logged out`,
       req,
     });
-
     return true;
   }
 
   async refreshAccessToken(refreshToken) {
     const { valid, payload, expired } = verifyRefreshToken(refreshToken);
-
     if (!valid) {
       throw Object.assign(
         new Error(
-          expired
-            ? "Refresh token expired. Please login again."
-            : "Invalid refresh token",
+          expired ? "Session expired. Please login again." : "Invalid session",
         ),
         { statusCode: 401 },
       );
     }
-
     const user = await userRepository.findByIdWithAuth(payload.id);
-
-    if (!user) {
-      throw Object.assign(new Error("User not found"), { statusCode: 401 });
-    }
-
-    if (!user.isActive) {
+    if (!user)
+      throw Object.assign(new Error("Account not found"), { statusCode: 401 });
+    if (!user.isActive)
       throw Object.assign(new Error("Account deactivated"), {
         statusCode: 401,
       });
-    }
 
     if (!user.refreshTokens.includes(refreshToken)) {
       await userRepository.clearRefreshTokens(user._id);
       throw Object.assign(
-        new Error("Token reuse detected. Please login again."),
+        new Error("Session reuse detected. Please login again."),
         { statusCode: 401 },
       );
     }
 
     const newAccessToken = generateAccessToken({
       id: user._id.toString(),
-      email: user.email,
       role: user.role,
       name: user.name,
     });
@@ -164,25 +211,34 @@ class AuthService {
 
   async changePassword({ userId, currentPassword, newPassword, req, user }) {
     const userWithPass = await userRepository.findByIdWithAuth(userId);
-
-    if (!userWithPass) {
-      throw Object.assign(new Error("User not found"), { statusCode: 404 });
-    }
+    if (!userWithPass)
+      throw Object.assign(new Error("Account not found"), { statusCode: 404 });
 
     const isMatch = await comparePassword(
       currentPassword,
       userWithPass.password,
     );
-
-    if (!isMatch) {
-      throw Object.assign(new Error("Current password is incorrect"), {
+    if (!isMatch)
+      throw Object.assign(new Error("Current credential is incorrect"), {
         statusCode: 400,
       });
+
+    if (user.role === "class") {
+      if (!/^\d{5}$/.test(newPassword))
+        throw Object.assign(new Error("New PIN must be exactly 5 digits"), {
+          statusCode: 400,
+        });
+    } else {
+      if (newPassword.length < 8)
+        throw Object.assign(
+          new Error("New password must be at least 8 characters"),
+          { statusCode: 400 },
+        );
     }
 
     if (await comparePassword(newPassword, userWithPass.password)) {
       throw Object.assign(
-        new Error("New password cannot be the same as current password"),
+        new Error("New credential cannot be the same as current"),
         { statusCode: 400 },
       );
     }
@@ -194,7 +250,7 @@ class AuthService {
       user,
       action: "UPDATE",
       module: "Auth",
-      description: "Password changed successfully",
+      description: "Credential changed successfully",
       req,
     });
 
@@ -202,31 +258,18 @@ class AuthService {
   }
 
   async getMe(userId) {
-    const user = await userRepository.findById(userId);
-    if (!user) {
-      throw Object.assign(new Error("User not found"), { statusCode: 404 });
-    }
+    const user = await User.findById(userId)
+      .populate("linkedClass", "name section teacherLabel")
+      .lean();
+    if (!user)
+      throw Object.assign(new Error("Account not found"), { statusCode: 404 });
 
-    // ═══════════════════════════════════════════════════════════════════
-    //  FETCH GENDER ON REFRESH (To keep "Ma'am/Sir" working after F5)
-    // ═══════════════════════════════════════════════════════════════════
-    let gender = null;
-    if (user.role === "teacher") {
-      const Teacher = require("../models/Teacher.model");
-      const teacherProfile = await Teacher.findOne({ user: user._id })
-        .select("gender")
-        .lean();
-      if (teacherProfile) {
-        gender = teacherProfile.gender;
-      }
-    }
+    delete user.password;
+    delete user.refreshTokens;
+    delete user.loginAttempts;
+    delete user.lockUntil;
 
-    // Convert mongoose document to plain object so we can add gender
-    const plainUser =
-      typeof user.toObject === "function" ? user.toObject() : user;
-    plainUser.gender = gender || plainUser.gender || null;
-
-    return plainUser;
+    return user;
   }
 }
 

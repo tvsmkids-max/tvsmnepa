@@ -17,7 +17,7 @@ const authorize = (...roles) => {
 
     if (!roles.includes(req.user.role)) {
       logger.warn(
-        `RBAC: User ${req.user.email} (${req.user.role}) attempted to access ` +
+        `RBAC: User ${req.user.name || req.user._id} (${req.user.role}) attempted to access ` +
           `${req.method} ${req.originalUrl} - required: [${roles.join(", ")}]`,
       );
 
@@ -32,12 +32,18 @@ const authorize = (...roles) => {
 
 // ─── ROLE SHORTCUTS ───
 const adminOnly = authorize(ROLES.ADMIN);
-const adminOrTeacher = authorize(ROLES.ADMIN, ROLES.TEACHER);
-const adminOrPrincipal = authorize(ROLES.ADMIN, ROLES.PRINCIPAL);
-const anyRole = authorize(ROLES.ADMIN, ROLES.TEACHER, ROLES.PRINCIPAL);
+const adminOrClass = authorize(ROLES.ADMIN, ROLES.CLASS);
+const anyRole = authorize(ROLES.ADMIN, ROLES.CLASS);
+
+// ─── LEGACY ALIASES (backward-compat for old imports) ───
+// Prevents old routes from crashing if they still import `adminOrTeacher`.
+// Behaves identically to adminOrClass.
+const adminOrTeacher = adminOrClass;
 
 /**
- * Check if user can access class (admin full, teacher restricted)
+ * Check if user can access a specific class
+ * Admin: full access
+ * Class user: only their own linked class
  */
 const canAccessClass = (classIdParam = "classId") => {
   return async (req, res, next) => {
@@ -47,8 +53,8 @@ const canAccessClass = (classIdParam = "classId") => {
       });
     }
 
-    // Admin and Principal can access all classes
-    if (req.user.role === ROLES.ADMIN || req.user.role === ROLES.PRINCIPAL) {
+    // Admin can access all classes
+    if (req.user.role === ROLES.ADMIN) {
       return next();
     }
 
@@ -58,41 +64,40 @@ const canAccessClass = (classIdParam = "classId") => {
       req.query[classIdParam];
 
     if (!classId) {
-      return sendResponse(res).badRequest({ message: "Class ID is required." });
+      return sendResponse(res).badRequest({
+        message: "Class ID is required.",
+      });
     }
 
-    const Teacher = require("../models/Teacher.model");
-    const teacher = await Teacher.findOne({
-      user: req.user._id,
-      isActive: true,
+    // Class user: must match their linkedClass
+    if (req.user.role === ROLES.CLASS) {
+      const linked = req.user.linkedClass?.toString();
+      if (!linked) {
+        return sendResponse(res).forbidden({
+          message: "No class is linked to this account.",
+        });
+      }
+
+      if (linked !== classId.toString()) {
+        return sendResponse(res).forbidden({
+          message: "Access denied. You can only access your own class.",
+        });
+      }
+
+      return next();
+    }
+
+    return sendResponse(res).forbidden({
+      message: "Access denied.",
     });
-
-    if (!teacher) {
-      return sendResponse(res).forbidden({
-        message: "Teacher profile not found.",
-      });
-    }
-
-    const isAssigned = teacher.assignedClasses.some(
-      (id) => id.toString() === classId.toString(),
-    );
-
-    if (!isAssigned) {
-      return sendResponse(res).forbidden({
-        message: "Access denied. You are not assigned to this class.",
-      });
-    }
-
-    req.teacher = teacher;
-    next();
   };
 };
 
 module.exports = {
   authorize,
   adminOnly,
-  adminOrTeacher,
-  adminOrPrincipal,
+  adminOrClass,
+  adminOrTeacher, // legacy alias
   anyRole,
   canAccessClass,
 };
