@@ -38,7 +38,7 @@ const BACKUP_MODELS = [
 class BackupService {
   async createBackup(user, req) {
     try {
-      logger.info(`[Backup] Started by ${user.email}`);
+      logger.info(`[Backup] Started by ${user.name}`);
       const startTime = Date.now();
 
       const data = {};
@@ -68,7 +68,6 @@ class BackupService {
           createdBy: {
             id: user._id,
             name: user.name,
-            email: user.email,
             role: user.role,
           },
           schoolInfo: await this._getSchoolInfo(),
@@ -181,7 +180,7 @@ class BackupService {
 
   async restoreBackup(backupData, options = {}, user, req) {
     try {
-      logger.info(`[Restore] Started by ${user.email}`);
+      logger.info(`[Restore] Started by ${user.name}`);
       const startTime = Date.now();
 
       const validation = await this.validateBackup(backupData);
