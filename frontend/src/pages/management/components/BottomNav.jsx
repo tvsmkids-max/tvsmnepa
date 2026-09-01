@@ -7,9 +7,6 @@ import {
 } from "@mui/material";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
-import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
-import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 
 const NAV_ITEMS = [
   {
@@ -21,22 +18,6 @@ const NAV_ITEMS = [
     value: "monthly",
     label: "Monthly",
     icon: <TrendingUpOutlinedIcon />,
-  },
-  // ─── TEMPORARILY DISABLED ───
-  // {
-  //   value: "yearly",
-  //   label: "Yearly",
-  //   icon: <CalendarMonthOutlinedIcon />,
-  // },
-  // {
-  //   value: "alerts",
-  //   label: "Alerts",
-  //   icon: <WarningAmberOutlinedIcon />,
-  // },
-  {
-    value: "ranking",
-    label: "Ranking",
-    icon: <EmojiEventsOutlinedIcon />,
   },
 ];
 

@@ -1,1401 +1,1090 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Paper,
-  Grid,
   Stack,
   Typography,
+  Chip,
+  Skeleton,
   Table,
-  TableHead,
   TableBody,
-  TableRow,
   TableCell,
   TableContainer,
-  Chip,
-  LinearProgress,
-  Skeleton,
+  TableHead,
+  TableRow,
   useTheme,
   useMediaQuery,
   alpha,
+  LinearProgress,
+  IconButton,
 } from "@mui/material";
 import {
-  PieChart,
-  Pie,
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
-  Cell,
-  ResponsiveContainer,
   Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
 } from "recharts";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
-import HourglassBottomOutlinedIcon from "@mui/icons-material/HourglassBottomOutlined";
+import ShowChartIcon from "@mui/icons-material/ShowChart";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import EventNoteIcon from "@mui/icons-material/EventNote";
+import PeopleIcon from "@mui/icons-material/People";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
-import { useTodayOverview, useClassDetail } from "../../../hooks/useManagement";
-import { sortClasses } from "../../../utils/classSort";
-import HolidayBanner from "../../../components/common/HolidayBanner";
+import { useRangeOverview, useClassDetail } from "../../../hooks/useManagement";
 import ClassAttendanceDialog from "../../reports/ClassAttendanceDialog";
 
-// ═══════════════════════════════════════════════════════════════════
-//  Status color config
-// ═══════════════════════════════════════════════════════════════════
-const STATUS_CONFIG = {
-  excellent: { dot: "#16A34A", label: "Excellent" },
-  good: { dot: "#F59E0B", label: "Good" },
-  low: { dot: "#DC2626", label: "Low" },
-  notMarked: { dot: "#94A3B8", label: "Pending" },
+// ─── DATE UTILS ───
+const getRangeDates = (rangeVal) => {
+  const to = new Date();
+  const from = new Date();
+  if (rangeVal === "month") from.setDate(1);
+  else from.setDate(to.getDate() - rangeVal);
+  return {
+    from: from.toISOString().split("T")[0],
+    to: to.toISOString().split("T")[0],
+  };
 };
 
+// ═══════════════════════════════════════════════════════════════════
+//  KPI CARD
+// ═══════════════════════════════════════════════════════════════════
+const KpiCard = ({
+  title,
+  value,
+  subtext,
+  delta,
+  icon,
+  color,
+  sparkline,
+  isDark,
+  invertGood = false,
+}) => {
+  const deltaNum = parseFloat(delta);
+  const isPositive = deltaNum > 0;
+  const isNegative = deltaNum < 0;
+
+  let arrow = null;
+  let deltaColor = "text.secondary";
+  let deltaBg = isDark ? alpha("#94A3B8", 0.1) : "#F1F5F9";
+
+  if (isPositive) {
+    arrow = <TrendingUpIcon sx={{ fontSize: 12 }} />;
+    deltaColor = invertGood ? "#DC2626" : "#16A34A";
+    deltaBg = invertGood
+      ? isDark
+        ? alpha("#DC2626", 0.15)
+        : "#FEE2E2"
+      : isDark
+        ? alpha("#16A34A", 0.15)
+        : "#DCFCE7";
+  } else if (isNegative) {
+    arrow = <TrendingDownIcon sx={{ fontSize: 12 }} />;
+    deltaColor = invertGood ? "#16A34A" : "#DC2626";
+    deltaBg = invertGood
+      ? isDark
+        ? alpha("#16A34A", 0.15)
+        : "#DCFCE7"
+      : isDark
+        ? alpha("#DC2626", 0.15)
+        : "#FEE2E2";
+  }
+
+  const sparkColor = deltaNum >= 0 && !invertGood ? "#16A34A" : "#DC2626";
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2.5,
+        borderRadius: 3,
+        border: "1px solid",
+        borderColor: "divider",
+        bgcolor: "background.paper",
+        flex: 1,
+        minWidth: { xs: "100%", sm: "calc(33.333% - 12px)" },
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ mb: 2 }}
+      >
+        <Stack direction="row" spacing={1.25} alignItems="center">
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: 2,
+              bgcolor: alpha(color, isDark ? 0.2 : 0.12),
+              color,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {icon}
+          </Box>
+          <Typography variant="body2" fontWeight={700} color="text.secondary">
+            {title}
+          </Typography>
+        </Stack>
+        {delta !== "0.0" && (
+          <Chip
+            icon={arrow}
+            label={`${isPositive ? "+" : ""}${delta}%`}
+            size="small"
+            sx={{
+              height: 22,
+              fontSize: "0.7rem",
+              fontWeight: 800,
+              color: deltaColor,
+              bgcolor: deltaBg,
+              border: "none",
+              "& .MuiChip-icon": { color: "inherit", ml: 0.5 },
+              "& .MuiChip-label": { pr: 1 },
+            }}
+          />
+        )}
+      </Stack>
+      <Typography
+        variant="h3"
+        fontWeight={900}
+        color="text.primary"
+        sx={{
+          letterSpacing: "-0.02em",
+          fontSize: { xs: "1.8rem", sm: "2.1rem" },
+          lineHeight: 1.1,
+        }}
+      >
+        {value}
+      </Typography>
+      <Typography
+        variant="caption"
+        color="text.disabled"
+        fontWeight={600}
+        sx={{ mt: 0.5, mb: 1.5 }}
+      >
+        {subtext}
+      </Typography>
+      <Box sx={{ height: 40, mx: -2.5, mb: -2.5, mt: "auto" }}>
+        {sparkline && sparkline.length > 1 && (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={sparkline}
+              margin={{ top: 5, right: 0, left: 0, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient
+                  id={`spark-${title}`}
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop offset="5%" stopColor={sparkColor} stopOpacity={0.4} />
+                  <stop offset="95%" stopColor={sparkColor} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke={sparkColor}
+                strokeWidth={2}
+                fill={`url(#spark-${title})`}
+                dot={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
+      </Box>
+    </Paper>
+  );
+};
+
+const STATUS_CONFIG = {
+  excellent: { dot: "#16A34A" },
+  good: { dot: "#F59E0B" },
+  low: { dot: "#DC2626" },
+  notMarked: { dot: "#94A3B8" },
+};
+
+const headSx = (isDark) => ({
+  bgcolor: isDark ? "#111827" : "#F8FAFC",
+  fontWeight: 800,
+  fontSize: "0.72rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.03em",
+  color: "text.secondary",
+  py: 1.5,
+  whiteSpace: "nowrap",
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════════
 const TodayPage = ({ secretKey }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  const { data, isLoading } = useTodayOverview(secretKey);
-
-  // ─── Dialog state ───
+  const [rangeType, setRangeType] = useState(0);
+  const [group, setGroup] = useState("ALL");
   const [selectedClassId, setSelectedClassId] = useState(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
 
+  const dates = getRangeDates(rangeType === "month" ? "month" : rangeType);
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  const { data, isLoading } = useRangeOverview(
+    secretKey,
+    dates.from,
+    dates.to,
+    group,
+  );
   const { data: classDetail } = useClassDetail(
     secretKey,
     selectedClassId,
-    data?.date,
-    dialogOpen,
+    todayStr,
+    !!selectedClassId,
   );
 
-  const handleClassClick = (classId) => {
-    setSelectedClassId(classId);
-    setDialogOpen(true);
-  };
-
-  const handleDialogClose = () => {
-    setDialogOpen(false);
-    setTimeout(() => setSelectedClassId(null), 300);
-  };
-
-  // ─── Sorted class list ───
-  const sortedClasses = useMemo(() => {
-    if (!data?.classWise) return [];
-    return sortClasses(data.classWise);
-  }, [data]);
-
-  // ─── Chart data with stacked bars ───
-  const chartData = useMemo(() => {
-    if (!sortedClasses.length) return [];
-    return sortedClasses.map((c) => {
-      const marked = c.present + c.absent;
-      const pending = Math.max(0, c.totalStudents - marked);
-      return {
-        name: c.label,
-        present: c.isMarked ? c.present : 0,
-        absent: c.isMarked ? c.absent : 0,
-        pending: c.isMarked ? pending : c.totalStudents,
-        total: c.totalStudents,
-        percentage: c.isMarked ? c.percentage : 0,
-        isMarked: c.isMarked,
-        status: c.status,
-        color: STATUS_CONFIG[c.status]?.dot || STATUS_CONFIG.notMarked.dot,
-      };
-    });
-  }, [sortedClasses]);
-
-  // ─── Pie chart data ───
-  const pieData = useMemo(() => {
-    if (!data?.distribution) return [];
-    const { present, absent, pending } = data.distribution;
-    const items = [
-      { name: "Present", value: present, color: "#16A34A" },
-      { name: "Absent", value: absent, color: "#DC2626" },
-      { name: "Pending", value: pending, color: "#F59E0B" },
-    ];
-    return items.filter((i) => i.value > 0);
-  }, [data]);
-
-  // ═══════════════════════════════════════════════════════════════
-  //  LOADING STATE
-  // ═══════════════════════════════════════════════════════════════
-  if (isLoading) {
+  if (isLoading && !data) {
     return (
-      <Stack spacing={2}>
-        <Skeleton variant="rectangular" height={180} sx={{ borderRadius: 2 }} />
-        <Skeleton variant="rectangular" height={500} sx={{ borderRadius: 2 }} />
-        <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 2 }} />
+      <Stack spacing={3}>
+        <Skeleton variant="rectangular" height={50} sx={{ borderRadius: 2 }} />
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Skeleton
+            variant="rectangular"
+            height={180}
+            sx={{ flex: 1, borderRadius: 3 }}
+          />
+          <Skeleton
+            variant="rectangular"
+            height={180}
+            sx={{ flex: 1, borderRadius: 3 }}
+          />
+          <Skeleton
+            variant="rectangular"
+            height={180}
+            sx={{ flex: 1, borderRadius: 3 }}
+          />
+        </Stack>
+        <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 3 }} />
       </Stack>
     );
   }
 
   if (!data) return null;
 
-  // ═══════════════════════════════════════════════════════════════
-  //  HOLIDAY / NON-WORKING DAY
-  // ═══════════════════════════════════════════════════════════════
-  if (data.isHoliday || data.isNonWorkingDay) {
+  const { kpis, trend, todayClassWise, attention } = data;
+
+  const rangeLabels = [
+    { label: "Today", val: 0 },
+    { label: "Last 7 Days", val: 6 },
+    { label: "Last 14 Days", val: 13 },
+    { label: "Last 30 Days", val: 29 },
+    { label: "This Month", val: "month" },
+  ];
+
+  const currentRangeLabel =
+    rangeLabels.find((r) => r.val === rangeType)?.label || "Today";
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  📱 MOBILE VIEW
+  // ═══════════════════════════════════════════════════════════════════
+  if (isMobile) {
     return (
-      <Stack spacing={2}>
-        <HolidayBanner
-          isHoliday={data.isHoliday}
-          holiday={data.holiday}
-          today={data.today}
-          nextWorkingDay={data.nextWorkingDay}
-        />
-      </Stack>
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  //  NORMAL WORKING DAY
-  // ═══════════════════════════════════════════════════════════════
-
-  const stats = data.stats || {};
-  const overallPct = stats.overallPercentage || 0;
-  const totalPending = Math.max(
-    0,
-    (stats.totalStudents || 0) - (stats.totalMarked || 0),
-  );
-
-  const pctColor =
-    overallPct >= 90 ? "#16A34A" : overallPct >= 75 ? "#F59E0B" : "#DC2626";
-
-  return (
-    <Stack spacing={2}>
-      {/* ══════════════════════════════════════════════════════
-          🎯 HERO: SIMPLIFIED SCHOOL SUMMARY
-      ══════════════════════════════════════════════════════ */}
-      <Paper
-        sx={{
-          p: { xs: 2, sm: 2.5 },
-          borderRadius: 2.5,
-          border: "1px solid",
-          borderColor: "divider",
-          background: `linear-gradient(135deg, ${alpha(pctColor, isDark ? 0.15 : 0.08)} 0%, ${alpha(pctColor, isDark ? 0.05 : 0.02)} 100%)`,
-        }}
-      >
-        {/* Top row: Label + marked badge ok */}
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          sx={{ mb: 1.5 }}
-        >
+      <Box sx={{ pb: 2 }}>
+        <Box sx={{ mb: 2 }}>
           <Typography
-            variant="caption"
-            fontWeight={800}
-            sx={{
-              fontSize: "0.75rem",
-              letterSpacing: "0.05em",
-              color: "text.secondary",
-            }}
+            variant="h5"
+            fontWeight={900}
+            sx={{ letterSpacing: "-0.02em", color: "text.primary" }}
           >
+            Today's Attendance
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
             {new Date().toLocaleDateString("en-IN", {
-              weekday: "short",
+              weekday: "long",
               day: "numeric",
               month: "long",
-              year: "numeric",
             })}
           </Typography>
-          <Chip
-            label={`${stats.markedClasses}/${stats.totalClasses} classes marked`}
-            size="small"
-            sx={{
-              fontWeight: 800,
-              height: 22,
-              fontSize: "0.65rem",
-              bgcolor:
-                stats.markedClasses === stats.totalClasses
-                  ? isDark
-                    ? alpha("#16A34A", 0.2)
-                    : "#DCFCE7"
-                  : isDark
-                    ? alpha("#F59E0B", 0.2)
-                    : "#FEF3C7",
-              color:
-                stats.markedClasses === stats.totalClasses
-                  ? isDark
-                    ? "#86EFAC"
-                    : "#15803D"
-                  : isDark
-                    ? "#FCD34D"
-                    : "#B45309",
-            }}
-          />
-        </Stack>
+        </Box>
 
-        {/* Big percentage */}
-        <Typography
+        <Paper
+          elevation={0}
           sx={{
-            fontSize: { xs: "3.2rem", sm: "4rem" },
-            fontWeight: 900,
-            color: pctColor,
-            lineHeight: 1,
-            mb: 1.5,
-          }}
-        >
-          {overallPct}%
-        </Typography>
-
-        {/* Merged stats row: Present · Absent · Pending */}
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-around"
-          sx={{
-            p: 1.25,
             borderRadius: 2,
-            bgcolor: isDark ? alpha("#fff", 0.04) : alpha("#fff", 0.6),
             border: "1px solid",
             borderColor: "divider",
-            mb: 1.25,
+            overflow: "hidden",
+            bgcolor: "background.paper",
           }}
-          divider={
-            <Box
-              sx={{
-                borderLeft: "1px solid",
-                borderColor: "divider",
-                height: 32,
-              }}
-            />
-          }
         >
-          <MergedStat
-            icon={CheckCircleOutlineIcon}
-            value={stats.totalPresent || 0}
-            label="Present"
-            color="#16A34A"
-          />
-          <MergedStat
-            icon={CancelOutlinedIcon}
-            value={stats.totalAbsent || 0}
-            label="Absent"
-            color="#DC2626"
-          />
-          <MergedStat
-            icon={HourglassBottomOutlinedIcon}
-            value={totalPending}
-            label="Pending"
-            color="#F59E0B"
-          />
-        </Stack>
-
-        {/* Bottom bar: Total | Classes */}
-        <Stack
-          direction="row"
-          justifyContent="space-around"
-          alignItems="center"
-          sx={{
-            p: 1,
-            borderRadius: 1.5,
-            bgcolor: isDark ? alpha("#fff", 0.03) : "#FAFBFC",
-            border: "1px solid",
-            borderColor: "divider",
-          }}
-          divider={
-            <Box
-              sx={{
-                borderLeft: "1px solid",
-                borderColor: "divider",
-                height: 22,
-              }}
-            />
-          }
-        >
-          <Stack alignItems="center" sx={{ flex: 1 }}>
-            <Typography
-              variant="body2"
-              fontWeight={900}
-              sx={{ fontSize: "0.9rem" }}
-            >
-              {stats.totalStudents || 0}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                fontSize: "0.6rem",
-                color: "text.secondary",
-                fontWeight: 700,
-                letterSpacing: "0.05em",
-              }}
-            >
-              TOTAL
-            </Typography>
-          </Stack>
-          <Stack alignItems="center" sx={{ flex: 1 }}>
-            <Typography
-              variant="body2"
-              fontWeight={900}
-              sx={{ fontSize: "0.9rem" }}
-            >
-              {stats.totalClasses || 0}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                fontSize: "0.6rem",
-                color: "text.secondary",
-                fontWeight: 700,
-                letterSpacing: "0.05em",
-              }}
-            >
-              CLASSES
-            </Typography>
-          </Stack>
-        </Stack>
-      </Paper>
-
-      {/* ══════════════════════════════════════════════════════
-          📋 CLASS-WISE TABLE + CHART
-      ══════════════════════════════════════════════════════ */}
-      <Grid container spacing={2} sx={{ width: "100%", m: 0 }}>
-        <Grid
-          item
-          xs={12}
-          md={6}
-          sx={{ width: "100%", pl: { xs: "0 !important", md: undefined } }}
-        >
-          <Paper
-            sx={{
-              borderRadius: 2,
-              border: "1px solid",
-              borderColor: "divider",
-              overflow: "hidden",
-              height: { md: 500 },
-              display: "flex",
-              flexDirection: "column",
-              width: "100%",
-            }}
-          >
-            <Box
-              sx={{
-                px: 2,
-                py: 1.5,
-                borderBottom: "1px solid",
-                borderColor: "divider",
-                bgcolor: isDark ? alpha("#fff", 0.02) : "#FAFBFC",
-                flexShrink: 0,
-              }}
-            >
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-              >
-                <Typography variant="subtitle2" fontWeight={800}>
-                  📋 Class-wise Attendance
-                </Typography>
-                <Chip
-                  label={`${sortedClasses.length} classes`}
-                  size="small"
-                  sx={{ fontWeight: 700, height: 20, fontSize: "0.65rem" }}
-                />
-              </Stack>
+          {todayClassWise.length === 0 ? (
+            <Box sx={{ p: 4, textAlign: "center" }}>
+              <Typography variant="body2" color="text.secondary">
+                No classes found
+              </Typography>
             </Box>
-
-            {sortedClasses.length === 0 ? (
-              <Box sx={{ p: 4, textAlign: "center" }}>
-                <Typography variant="body2" color="text.secondary">
-                  No classes found
-                </Typography>
-              </Box>
-            ) : isSmallMobile ? (
-              /* ═══ MOBILE: Tabular list ═══ */
-              <Box
-                sx={{
-                  flex: 1,
-                  overflowY: "auto",
-                  width: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                {/* Sticky header */}
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "1.6fr 0.7fr 0.6fr 0.6fr 1.3fr",
-                    alignItems: "center",
-                    px: 1.5,
-                    py: 1,
-                    bgcolor: isDark ? "#1E293B" : "#F1F5F9",
-                    borderBottom: "1px solid",
-                    borderColor: "divider",
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 2,
-                  }}
-                >
-                  <Typography sx={mobileHeaderStyle}>Class</Typography>
-                  <Typography align="center" sx={mobileHeaderStyle}>
-                    Total
-                  </Typography>
-                  <Typography
-                    align="center"
-                    sx={{ ...mobileHeaderStyle, color: "#16A34A" }}
-                  >
-                    P
-                  </Typography>
-                  <Typography
-                    align="center"
-                    sx={{ ...mobileHeaderStyle, color: "#DC2626" }}
-                  >
-                    A
-                  </Typography>
-                  <Typography align="center" sx={mobileHeaderStyle}>
-                    %
-                  </Typography>
-                </Box>
-
-                {/* Data rows */}
-                <Box sx={{ flex: 1, overflowY: "auto" }}>
-                  {sortedClasses.map((cls) => {
+          ) : (
+            <TableContainer sx={{ overflowX: "hidden" }}>
+              <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ ...headSx(isDark), width: "auto", pl: 2 }}>
+                      Class
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        ...headSx(isDark),
+                        width: 40,
+                        px: 0,
+                        borderLeft: "1px solid",
+                        borderColor: "divider",
+                      }}
+                    >
+                      Std
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        ...headSx(isDark),
+                        width: 36,
+                        px: 0,
+                        borderLeft: "1px solid",
+                        borderColor: "divider",
+                        color: "#16A34A !important",
+                      }}
+                    >
+                      P
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        ...headSx(isDark),
+                        width: 36,
+                        px: 0,
+                        borderLeft: "1px solid",
+                        borderColor: "divider",
+                        color: "#DC2626 !important",
+                      }}
+                    >
+                      A
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        ...headSx(isDark),
+                        width: 50,
+                        px: 0,
+                        borderLeft: "1px solid",
+                        borderColor: "divider",
+                      }}
+                    >
+                      %
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{ ...headSx(isDark), width: 32, px: 0 }}
+                    />
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {todayClassWise.map((cls) => {
                     const config =
                       STATUS_CONFIG[cls.status] || STATUS_CONFIG.notMarked;
                     return (
-                      <Box
+                      <TableRow
                         key={cls._id}
-                        onClick={() => handleClassClick(cls._id)}
+                        hover
+                        onClick={() => setSelectedClassId(cls._id)}
                         sx={{
-                          px: 1.5,
-                          py: 1,
-                          borderLeft: "3px solid",
-                          borderLeftColor: config.dot,
-                          borderBottom: "1px solid",
-                          borderColor: "divider",
                           cursor: "pointer",
-                          "&:hover": { bgcolor: "action.hover" },
-                          "&:active": { bgcolor: "action.selected" },
+                          "& td": { py: 1.25, borderColor: "divider", px: 1 },
                         }}
                       >
-                        {/* Row: Class | Total | P | A | % */}
-                        <Box
+                        {/* Class Name & Teacher */}
+                        <TableCell
                           sx={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "1.6fr 0.7fr 0.6fr 0.6fr 1.3fr",
-                            alignItems: "center",
+                            pl: 2,
+                            borderLeft: "3px solid",
+                            borderLeftColor: config.dot,
                           }}
                         >
                           <Typography
+                            variant="body2"
                             fontWeight={800}
-                            sx={{ fontSize: "0.82rem" }}
+                            sx={{
+                              fontSize: "0.85rem",
+                              lineHeight: 1.1,
+                              textTransform: "uppercase",
+                            }}
                           >
                             {cls.label}
                           </Typography>
                           <Typography
-                            align="center"
-                            fontWeight={700}
+                            variant="caption"
                             sx={{
-                              fontSize: "0.85rem",
-                              fontFamily: "monospace",
+                              fontSize: "0.65rem",
+                              fontWeight: 600,
+                              color: cls.teacherLabel
+                                ? "text.secondary"
+                                : "text.disabled",
+                              textTransform: "uppercase",
+                              display: "block",
+                              mt: 0.2,
                             }}
+                          >
+                            {cls.teacherLabel
+                              ? cls.teacherLabel.toUpperCase()
+                              : "No teacher"}
+                          </Typography>
+                        </TableCell>
+
+                        {/* Std (Total) */}
+                        <TableCell
+                          align="center"
+                          sx={{
+                            borderLeft: "1px solid",
+                            borderColor: "divider",
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            fontWeight={800}
+                            sx={{ fontSize: "0.85rem", color: "text.primary" }}
                           >
                             {cls.totalStudents}
                           </Typography>
+                        </TableCell>
+
+                        {/* Present (Green Text, No Bg) */}
+                        <TableCell
+                          align="center"
+                          sx={{
+                            borderLeft: "1px solid",
+                            borderColor: "divider",
+                          }}
+                        >
                           <Typography
-                            align="center"
+                            variant="body2"
                             fontWeight={800}
                             sx={{
                               fontSize: "0.85rem",
-                              fontFamily: "monospace",
                               color: cls.isMarked ? "#16A34A" : "text.disabled",
                             }}
                           >
                             {cls.isMarked ? cls.present : "—"}
                           </Typography>
+                        </TableCell>
+
+                        {/* Absent (Red Text, No Bg) */}
+                        <TableCell
+                          align="center"
+                          sx={{
+                            borderLeft: "1px solid",
+                            borderColor: "divider",
+                          }}
+                        >
                           <Typography
-                            align="center"
+                            variant="body2"
                             fontWeight={800}
                             sx={{
                               fontSize: "0.85rem",
-                              fontFamily: "monospace",
                               color: cls.isMarked ? "#DC2626" : "text.disabled",
                             }}
                           >
                             {cls.isMarked ? cls.absent : "—"}
                           </Typography>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              justifyContent: "center",
-                            }}
-                          >
-                            {cls.isMarked ? (
-                              <Typography
-                                fontWeight={900}
-                                sx={{
-                                  fontSize: "0.88rem",
-                                  color: config.dot,
-                                  fontFamily: "monospace",
-                                }}
-                              >
-                                {cls.percentage}%
-                              </Typography>
-                            ) : (
-                              <Chip
-                                label="Pending"
-                                size="small"
-                                sx={{
-                                  height: 18,
-                                  fontSize: "0.6rem",
-                                  fontWeight: 700,
-                                  bgcolor: isDark
-                                    ? alpha("#F59E0B", 0.15)
-                                    : "#FEF3C7",
-                                  color: isDark ? "#FCD34D" : "#B45309",
-                                  "& .MuiChip-label": { px: 0.6 },
-                                }}
-                              />
-                            )}
-                          </Box>
-                        </Box>
+                        </TableCell>
 
-                        {/* Teacher name below class (UPPERCASE) */}
-                        <Typography
+                        {/* Percentage (Colored Text, No Bar) */}
+                        <TableCell
+                          align="center"
                           sx={{
-                            fontSize: "0.68rem",
-                            color: cls.classTeacher
-                              ? "text.secondary"
-                              : "text.disabled",
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.02em",
-                            mt: 0.2,
-                            mb: cls.isMarked ? 0.5 : 0,
+                            borderLeft: "1px solid",
+                            borderColor: "divider",
                           }}
                         >
-                          {cls.classTeacher
-                            ? cls.classTeacher.toUpperCase()
-                            : "NO TEACHER ASSIGNED"}
-                        </Typography>
-
-                        {/* Progress bar */}
-                        {cls.isMarked && (
-                          <LinearProgress
-                            variant="determinate"
-                            value={cls.percentage}
-                            sx={{
-                              mt: 0.4,
-                              height: 3,
-                              borderRadius: 2,
-                              bgcolor: isDark
-                                ? alpha("#fff", 0.08)
-                                : alpha("#000", 0.06),
-                              "& .MuiLinearProgress-bar": {
-                                bgcolor: config.dot,
-                                borderRadius: 2,
-                              },
-                            }}
-                          />
-                        )}
-                      </Box>
-                    );
-                  })}
-                </Box>
-
-                {/* Grand total footer */}
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "1.6fr 0.7fr 0.6fr 0.6fr 1.3fr",
-                    alignItems: "center",
-                    px: 1.5,
-                    py: 1.25,
-                    bgcolor: isDark ? "#0F172A" : "#F8FAFC",
-                    borderTop: "2px solid",
-                    borderColor: "divider",
-                    position: "sticky",
-                    bottom: 0,
-                    zIndex: 2,
-                  }}
-                >
-                  <Typography
-                    fontWeight={900}
-                    sx={{
-                      fontSize: "0.78rem",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    Total
-                  </Typography>
-                  <Typography
-                    align="center"
-                    fontWeight={900}
-                    sx={{
-                      fontSize: "0.88rem",
-                      fontFamily: "monospace",
-                    }}
-                  >
-                    {stats.totalStudents || 0}
-                  </Typography>
-                  <Typography
-                    align="center"
-                    fontWeight={900}
-                    sx={{
-                      fontSize: "0.88rem",
-                      fontFamily: "monospace",
-                      color: "#16A34A",
-                    }}
-                  >
-                    {stats.totalPresent || 0}
-                  </Typography>
-                  <Typography
-                    align="center"
-                    fontWeight={900}
-                    sx={{
-                      fontSize: "0.88rem",
-                      fontFamily: "monospace",
-                      color: "#DC2626",
-                    }}
-                  >
-                    {stats.totalAbsent || 0}
-                  </Typography>
-                  <Typography
-                    align="center"
-                    fontWeight={900}
-                    sx={{
-                      fontSize: "0.92rem",
-                      fontFamily: "monospace",
-                      color: pctColor,
-                    }}
-                  >
-                    {overallPct}%
-                  </Typography>
-                </Box>
-              </Box>
-            ) : (
-              /* ═══ DESKTOP: Table ═══ */
-              <TableContainer sx={{ flex: 1, overflowY: "auto" }}>
-                <Table
-                  stickyHeader
-                  size="small"
-                  sx={{ tableLayout: "fixed", width: "100%" }}
-                >
-                  <TableHead>
-                    <TableRow>
-                      <TableCell
-                        sx={{
-                          ...headerCellStyle(isDark),
-                          width: "auto",
-                          pl: 2,
-                        }}
-                      >
-                        Class & Teacher
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{ ...headerCellStyle(isDark), width: 55 }}
-                      >
-                        Std
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{
-                          ...headerCellStyle(isDark),
-                          width: 45,
-                          color: "#16A34A !important",
-                        }}
-                      >
-                        P
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{
-                          ...headerCellStyle(isDark),
-                          width: 45,
-                          color: "#DC2626 !important",
-                        }}
-                      >
-                        A
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{ ...headerCellStyle(isDark), width: 140, pr: 2 }}
-                      >
-                        Attendance
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {sortedClasses.map((cls) => {
-                      const config =
-                        STATUS_CONFIG[cls.status] || STATUS_CONFIG.notMarked;
-                      return (
-                        <TableRow
-                          key={cls._id}
-                          hover
-                          onClick={() => handleClassClick(cls._id)}
-                          sx={{
-                            cursor: "pointer",
-                            "& td": { py: 1.1, borderColor: "divider" },
-                          }}
-                        >
-                          <TableCell
-                            sx={{
-                              pl: 2,
-                              borderLeft: "3px solid",
-                              borderLeftColor: config.dot,
-                            }}
-                          >
+                          {cls.isMarked ? (
                             <Typography
                               variant="body2"
-                              fontWeight={800}
-                              sx={{ fontSize: "0.85rem", lineHeight: 1.2 }}
+                              fontWeight={900}
+                              sx={{ fontSize: "0.85rem", color: config.dot }}
                             >
-                              {cls.label}
+                              {cls.percentage}%
                             </Typography>
+                          ) : (
                             <Typography
                               variant="caption"
-                              sx={{
-                                fontSize: "0.68rem",
-                                fontWeight: 700,
-                                color: cls.classTeacher
-                                  ? "text.secondary"
-                                  : "text.disabled",
-                                textTransform: "uppercase",
-                                letterSpacing: "0.03em",
-                                display: "block",
-                                mt: 0.2,
-                              }}
-                            >
-                              {cls.classTeacher
-                                ? cls.classTeacher.toUpperCase()
-                                : "NO TEACHER"}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Typography
-                              variant="body2"
                               fontWeight={700}
                               sx={{
-                                fontSize: "0.85rem",
-                                fontFamily: "monospace",
+                                fontSize: "0.6rem",
+                                color: "text.disabled",
                               }}
                             >
-                              {cls.totalStudents}
+                              PENDING
                             </Typography>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Typography
-                              variant="body2"
-                              fontWeight={800}
-                              sx={{
-                                fontSize: "0.85rem",
-                                color: cls.isMarked
-                                  ? "#16A34A"
-                                  : "text.disabled",
-                                fontFamily: "monospace",
-                              }}
-                            >
-                              {cls.isMarked ? cls.present : "—"}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Typography
-                              variant="body2"
-                              fontWeight={800}
-                              sx={{
-                                fontSize: "0.85rem",
-                                color: cls.isMarked
-                                  ? "#DC2626"
-                                  : "text.disabled",
-                                fontFamily: "monospace",
-                              }}
-                            >
-                              {cls.isMarked ? cls.absent : "—"}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center" sx={{ pr: 2 }}>
-                            {cls.isMarked ? (
-                              <Stack
-                                direction="row"
-                                alignItems="center"
-                                spacing={1}
-                                justifyContent="center"
-                              >
-                                <Typography
-                                  variant="body2"
-                                  fontWeight={900}
-                                  sx={{
-                                    fontSize: "0.9rem",
-                                    color: config.dot,
-                                    minWidth: 42,
-                                    textAlign: "right",
-                                  }}
-                                >
-                                  {cls.percentage}%
-                                </Typography>
-                                <LinearProgress
-                                  variant="determinate"
-                                  value={cls.percentage}
-                                  sx={{
-                                    flex: 1,
-                                    height: 5,
-                                    borderRadius: 2,
-                                    bgcolor: isDark
-                                      ? alpha("#fff", 0.08)
-                                      : alpha("#000", 0.06),
-                                    "& .MuiLinearProgress-bar": {
-                                      bgcolor: config.dot,
-                                      borderRadius: 2,
-                                    },
-                                  }}
-                                />
-                              </Stack>
-                            ) : (
-                              <Chip
-                                label="Pending"
-                                size="small"
-                                sx={{
-                                  height: 20,
-                                  fontSize: "0.62rem",
-                                  fontWeight: 700,
-                                  bgcolor: isDark
-                                    ? alpha("#F59E0B", 0.15)
-                                    : "#FEF3C7",
-                                  color: isDark ? "#FCD34D" : "#B45309",
-                                }}
-                              />
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
+                          )}
+                        </TableCell>
 
-            {/* Legend */}
-            <Box
-              sx={{
-                px: 2,
-                py: 1.25,
-                borderTop: "1px solid",
-                borderColor: "divider",
-                bgcolor: isDark ? alpha("#fff", 0.02) : "#FAFBFC",
-                flexShrink: 0,
-              }}
-            >
-              <Stack
-                direction="row"
-                spacing={{ xs: 1.5, sm: 2 }}
-                flexWrap="wrap"
-                useFlexGap
-                justifyContent="center"
-              >
-                <LegendItem dot="#16A34A" label="≥90%" isDark={isDark} />
-                <LegendItem dot="#F59E0B" label="75-89%" isDark={isDark} />
-                <LegendItem dot="#DC2626" label="<75%" isDark={isDark} />
-                <LegendItem dot="#94A3B8" label="Pending" isDark={isDark} />
-              </Stack>
-            </Box>
-          </Paper>
-        </Grid>
+                        {/* Chevron */}
+                        <TableCell align="center">
+                          <ChevronRightIcon
+                            sx={{ fontSize: 18, color: "text.secondary" }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Paper>
 
-        {/* ─── RIGHT: Stacked Bar Chart (DESKTOP ONLY) ─── */}
-        {!isMobile && (
-          <Grid item xs={12} md={6}>
-            <Paper
+        <ClassAttendanceDialog
+          open={!!selectedClassId}
+          onClose={() => setSelectedClassId(null)}
+          classData={classDetail}
+          date={todayStr}
+          mode="management"
+        />
+      </Box>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  💻 DESKTOP EXCLUSIVE VIEW (Full Dashboard)
+  // ═══════════════════════════════════════════════════════════════════
+  return (
+    <Box>
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          variant="h4"
+          fontWeight={900}
+          sx={{ letterSpacing: "-0.02em", fontSize: "1.8rem" }}
+        >
+          Attendance Overview
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          Monitor school attendance, coverage and absence across all classes.
+        </Typography>
+      </Box>
+
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        spacing={2}
+        sx={{ mb: 3 }}
+      >
+        <Stack direction="row" spacing={1}>
+          {rangeLabels.map((r) => (
+            <Chip
+              key={r.val}
+              label={r.label}
+              onClick={() => setRangeType(r.val)}
+              variant={rangeType === r.val ? "filled" : "outlined"}
               sx={{
+                fontWeight: rangeType === r.val ? 800 : 600,
                 borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-                overflow: "hidden",
-                height: 500,
-                display: "flex",
-                flexDirection: "column",
+                height: 30,
+                bgcolor: rangeType === r.val ? "primary.main" : "transparent",
+                color: rangeType === r.val ? "white" : "text.primary",
+                "&:hover": {
+                  bgcolor:
+                    rangeType === r.val ? "primary.dark" : "action.hover",
+                },
               }}
-            >
-              <Box
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
-                  bgcolor: isDark ? alpha("#fff", 0.02) : "#FAFBFC",
-                  flexShrink: 0,
-                }}
-              >
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                >
-                  <Typography variant="subtitle2" fontWeight={800}>
-                    📊 Visual Comparison
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ fontSize: "0.65rem" }}
-                  >
-                    Hover for details
-                  </Typography>
-                </Stack>
-              </Box>
+            />
+          ))}
+        </Stack>
+        <Stack direction="row" spacing={1}>
+          {["ALL", "PRE PRIMARY", "PRIMARY", "MIDDLE", "SENIOR"].map((g) => (
+            <Chip
+              key={g}
+              label={g}
+              onClick={() => setGroup(g)}
+              variant={group === g ? "filled" : "outlined"}
+              sx={{
+                fontWeight: group === g ? 800 : 600,
+                borderRadius: 2,
+                height: 30,
+                fontSize: "0.7rem",
+                bgcolor:
+                  group === g
+                    ? isDark
+                      ? "#5B21B6"
+                      : "#6D28D9"
+                    : "transparent",
+                color: group === g ? "white" : "text.secondary",
+                borderColor: group === g ? "transparent" : "divider",
+              }}
+            />
+          ))}
+        </Stack>
+      </Stack>
 
-              <Box sx={{ flex: 1, overflow: "auto", p: 1 }}>
-                <Box
-                  sx={{
-                    width: Math.max(400, chartData.length * 40),
-                    height: "100%",
-                    minHeight: 400,
-                  }}
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={chartData}
-                      margin={{ top: 20, right: 15, left: -15, bottom: 60 }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke={isDark ? "#334155" : "#E2E8F0"}
-                        vertical={false}
-                      />
-                      <XAxis
-                        dataKey="name"
-                        tick={{
-                          fontSize: 10,
-                          fill: theme.palette.text.primary,
-                          fontWeight: 600,
-                        }}
-                        angle={-45}
-                        textAnchor="end"
-                        height={60}
-                        interval={0}
-                      />
-                      <YAxis
-                        tick={{
-                          fontSize: 10,
-                          fill: theme.palette.text.secondary,
-                        }}
-                        width={35}
-                      />
-                      <RechartsTooltip
-                        content={<CustomTooltip isDark={isDark} />}
-                      />
-                      <Bar
-                        dataKey="present"
-                        stackId="a"
-                        fill="#16A34A"
-                        name="Present"
-                        radius={[0, 0, 0, 0]}
-                        maxBarSize={35}
-                      />
-                      <Bar
-                        dataKey="absent"
-                        stackId="a"
-                        fill="#DC2626"
-                        name="Absent"
-                        radius={[0, 0, 0, 0]}
-                        maxBarSize={35}
-                      />
-                      <Bar
-                        dataKey="pending"
-                        stackId="a"
-                        fill="#F59E0B"
-                        name="Pending"
-                        radius={[4, 4, 0, 0]}
-                        maxBarSize={35}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </Box>
-              </Box>
+      <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+        <KpiCard
+          title="Attendance Rate"
+          value={`${kpis.attendanceRate.value}%`}
+          subtext={`vs prior ${currentRangeLabel.toLowerCase()}`}
+          delta={kpis.attendanceRate.delta}
+          icon={<ShowChartIcon fontSize="small" />}
+          color="#6D28D9"
+          sparkline={kpis.attendanceRate.sparkline}
+          isDark={isDark}
+        />
+        <KpiCard
+          title="Coverage"
+          value={`${kpis.coverage.value}%`}
+          subtext="Students marked in range"
+          delta={kpis.coverage.delta}
+          icon={<EventNoteIcon fontSize="small" />}
+          color="#2563EB"
+          sparkline={kpis.coverage.sparkline}
+          isDark={isDark}
+        />
+        <KpiCard
+          title="Absent Rate"
+          value={`${kpis.absentRate.value}%`}
+          subtext="Days marked absent"
+          delta={kpis.absentRate.delta}
+          icon={<PeopleIcon fontSize="small" />}
+          color="#DC2626"
+          sparkline={kpis.absentRate.sparkline}
+          isDark={isDark}
+          invertGood
+        />
+      </Stack>
 
-              <Box
-                sx={{
-                  px: 2,
-                  py: 1.25,
-                  borderTop: "1px solid",
-                  borderColor: "divider",
-                  bgcolor: isDark ? alpha("#fff", 0.02) : "#FAFBFC",
-                  flexShrink: 0,
-                }}
-              >
-                <Stack
-                  direction="row"
-                  spacing={2}
-                  flexWrap="wrap"
-                  useFlexGap
-                  justifyContent="center"
-                >
-                  <LegendItem dot="#16A34A" label="Present" isDark={isDark} />
-                  <LegendItem dot="#DC2626" label="Absent" isDark={isDark} />
-                  <LegendItem dot="#F59E0B" label="Pending" isDark={isDark} />
-                </Stack>
-              </Box>
-            </Paper>
-          </Grid>
-        )}
-      </Grid>
-
-      {/* ══════════════════════════════════════════════════════
-          🥧 DISTRIBUTION OVERVIEW
-      ══════════════════════════════════════════════════════ */}
-      {pieData.length > 0 && (
+      {(attention.pending > 0 || attention.low > 0) && (
         <Paper
           sx={{
-            p: { xs: 1.5, sm: 2 },
-            borderRadius: 2,
+            p: 2,
+            mb: 3,
+            borderRadius: 3,
             border: "1px solid",
-            borderColor: "divider",
+            borderColor: alpha("#F59E0B", 0.4),
+            bgcolor: isDark ? alpha("#F59E0B", 0.08) : "#FFFBEB",
           }}
         >
-          <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 1 }}>
-            🥧 Distribution Overview
-          </Typography>
-          <Grid container spacing={1} alignItems="center">
-            <Grid item xs={12} sm={5}>
-              <Box sx={{ height: { xs: 160, sm: 180 } }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={isSmallMobile ? 35 : 45}
-                      outerRadius={isSmallMobile ? 60 : 75}
-                      dataKey="value"
-                      paddingAngle={2}
-                    >
-                      {pieData.map((entry, idx) => (
-                        <Cell key={idx} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip
-                      contentStyle={{
-                        background: theme.palette.background.paper,
-                        border: `1px solid ${theme.palette.divider}`,
-                        borderRadius: 8,
-                        fontSize: 12,
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={7}>
-              <Stack spacing={1}>
-                {pieData.map((item) => {
-                  const total = pieData.reduce((s, p) => s + p.value, 0);
-                  const pct =
-                    total > 0 ? Math.round((item.value / total) * 100) : 0;
-                  return (
-                    <Stack
-                      key={item.name}
-                      direction="row"
-                      alignItems="center"
-                      spacing={1.5}
-                      sx={{
-                        p: 1,
-                        borderRadius: 1.5,
-                        bgcolor: alpha(item.color, isDark ? 0.1 : 0.05),
-                        border: "1px solid",
-                        borderColor: alpha(item.color, 0.2),
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          width: 12,
-                          height: 12,
-                          borderRadius: "50%",
-                          bgcolor: item.color,
-                          flexShrink: 0,
-                        }}
-                      />
-                      <Typography
-                        variant="body2"
-                        fontWeight={700}
-                        sx={{ flex: 1, fontSize: "0.82rem" }}
-                      >
-                        {item.name}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        fontWeight={800}
-                        sx={{
-                          fontSize: "0.85rem",
-                          color: item.color,
-                          fontFamily: "monospace",
-                        }}
-                      >
-                        {item.value}
-                      </Typography>
-                      <Chip
-                        label={`${pct}%`}
-                        size="small"
-                        sx={{
-                          height: 20,
-                          fontSize: "0.65rem",
-                          fontWeight: 800,
-                          bgcolor: item.color,
-                          color: "white",
-                          minWidth: 42,
-                        }}
-                      />
-                    </Stack>
-                  );
-                })}
-              </Stack>
-            </Grid>
-          </Grid>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <WarningAmberIcon sx={{ color: "#F59E0B" }} />
+            <Box>
+              <Typography
+                variant="body2"
+                fontWeight={800}
+                sx={{ color: isDark ? "#FCD34D" : "#B45309" }}
+              >
+                Attention Required Today
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {attention.pending > 0 &&
+                  `${attention.pending} classes pending. `}
+                {attention.low > 0 && `${attention.low} classes below 75%.`}
+              </Typography>
+            </Box>
+          </Stack>
         </Paper>
       )}
 
-      {/* ══════════════════════════════════════════════════════
-          🔍 CLASS DETAIL DIALOG
-      ══════════════════════════════════════════════════════ */}
-      <ClassAttendanceDialog
-        open={dialogOpen}
-        onClose={handleDialogClose}
-        classData={classDetail}
-        date={data?.date}
-        mode="management"
-      />
-    </Stack>
-  );
-};
-
-// ═══════════════════════════════════════════════════════════════════
-//  CUSTOM TOOLTIP for stacked bar chart
-// ═══════════════════════════════════════════════════════════════════
-
-const CustomTooltip = ({ active, payload, isDark }) => {
-  if (!active || !payload || !payload.length) return null;
-  const data = payload[0].payload;
-
-  return (
-    <Paper
-      sx={{
-        p: 1.25,
-        border: "1px solid",
-        borderColor: "divider",
-        borderRadius: 1.5,
-        minWidth: 180,
-        bgcolor: "background.paper",
-      }}
-    >
-      <Typography
-        variant="body2"
-        fontWeight={800}
-        sx={{ fontSize: "0.85rem", mb: 0.75 }}
-      >
-        {data.name}
-      </Typography>
-      <Stack spacing={0.5}>
-        <Stack direction="row" justifyContent="space-between">
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ fontSize: "0.72rem" }}
-          >
-            Total Students:
-          </Typography>
-          <Typography
-            variant="caption"
-            fontWeight={800}
-            sx={{ fontSize: "0.75rem", fontFamily: "monospace" }}
-          >
-            {data.total}
-          </Typography>
-        </Stack>
-        <Box
-          sx={{ borderBottom: "1px solid", borderColor: "divider", my: 0.3 }}
-        />
-        <Stack direction="row" alignItems="center" spacing={0.75}>
-          <Box
-            sx={{
-              width: 10,
-              height: 10,
-              borderRadius: "2px",
-              bgcolor: "#16A34A",
-              flexShrink: 0,
-            }}
-          />
-          <Typography
-            variant="caption"
-            sx={{ fontSize: "0.72rem", flex: 1, color: "#16A34A" }}
-          >
-            Present:
-          </Typography>
-          <Typography
-            variant="caption"
-            fontWeight={800}
-            sx={{
-              fontSize: "0.75rem",
-              color: "#16A34A",
-              fontFamily: "monospace",
-            }}
-          >
-            {data.present}
-          </Typography>
-        </Stack>
-        <Stack direction="row" alignItems="center" spacing={0.75}>
-          <Box
-            sx={{
-              width: 10,
-              height: 10,
-              borderRadius: "2px",
-              bgcolor: "#DC2626",
-              flexShrink: 0,
-            }}
-          />
-          <Typography
-            variant="caption"
-            sx={{ fontSize: "0.72rem", flex: 1, color: "#DC2626" }}
-          >
-            Absent:
-          </Typography>
-          <Typography
-            variant="caption"
-            fontWeight={800}
-            sx={{
-              fontSize: "0.75rem",
-              color: "#DC2626",
-              fontFamily: "monospace",
-            }}
-          >
-            {data.absent}
-          </Typography>
-        </Stack>
-        <Stack direction="row" alignItems="center" spacing={0.75}>
-          <Box
-            sx={{
-              width: 10,
-              height: 10,
-              borderRadius: "2px",
-              bgcolor: "#F59E0B",
-              flexShrink: 0,
-            }}
-          />
-          <Typography
-            variant="caption"
-            sx={{ fontSize: "0.72rem", flex: 1, color: "#B45309" }}
-          >
-            Pending:
-          </Typography>
-          <Typography
-            variant="caption"
-            fontWeight={800}
-            sx={{
-              fontSize: "0.75rem",
-              color: "#B45309",
-              fontFamily: "monospace",
-            }}
-          >
-            {data.pending}
-          </Typography>
-        </Stack>
-        {data.isMarked && (
-          <>
-            <Box
-              sx={{
-                borderBottom: "1px solid",
-                borderColor: "divider",
-                my: 0.3,
-              }}
-            />
-            <Stack direction="row" justifyContent="space-between">
-              <Typography
-                variant="caption"
-                fontWeight={700}
-                sx={{ fontSize: "0.72rem" }}
-              >
-                Attendance:
-              </Typography>
-              <Typography
-                variant="caption"
-                fontWeight={900}
-                sx={{
-                  fontSize: "0.85rem",
-                  color:
-                    data.percentage >= 90
-                      ? "#16A34A"
-                      : data.percentage >= 75
-                        ? "#F59E0B"
-                        : "#DC2626",
-                  fontFamily: "monospace",
-                }}
-              >
-                {data.percentage}%
-              </Typography>
-            </Stack>
-          </>
-        )}
-      </Stack>
-    </Paper>
-  );
-};
-
-// ═══════════════════════════════════════════════════════════════════
-//  SMALL COMPONENTS
-// ═══════════════════════════════════════════════════════════════════
-
-const MergedStat = ({ icon: Icon, value, label, color }) => (
-  <Stack alignItems="center" sx={{ flex: 1 }}>
-    <Stack direction="row" alignItems="center" spacing={0.5}>
-      <Icon sx={{ fontSize: 16, color }} />
-      <Typography
-        fontWeight={900}
+      {/* ═══════════════════════════════════════════
+          📋 DESKTOP TODAY CLASS-WISE TABLE
+      ═══════════════════════════════════════════ */}
+      <Paper
+        elevation={0}
         sx={{
-          fontSize: "1.1rem",
-          color,
-          lineHeight: 1,
-          fontFamily: "monospace",
+          mb: 3,
+          borderRadius: 3,
+          border: "1px solid",
+          borderColor: "divider",
+          overflow: "hidden",
+          bgcolor: "background.paper",
         }}
       >
-        {value}
-      </Typography>
-    </Stack>
-    <Typography
-      sx={{
-        fontSize: "0.62rem",
-        fontWeight: 800,
-        color: "text.secondary",
-        textTransform: "uppercase",
-        letterSpacing: "0.05em",
-        mt: 0.3,
-      }}
-    >
-      {label}
-    </Typography>
-  </Stack>
-);
+        <Box
+          sx={{
+            px: 2.5,
+            py: 2,
+            borderBottom: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Typography variant="h6" fontWeight={800} sx={{ fontSize: "1rem" }}>
+              Today's Class-wise Attendance
+            </Typography>
+            <Chip
+              label={`${todayClassWise.length} classes`}
+              size="small"
+              sx={{ fontWeight: 700, height: 22, fontSize: "0.65rem" }}
+            />
+          </Stack>
+        </Box>
 
-const LegendItem = ({ dot, label, isDark }) => (
-  <Stack direction="row" alignItems="center" spacing={0.5}>
-    <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: dot }} />
-    <Typography
-      variant="caption"
-      sx={{ fontSize: "0.68rem", fontWeight: 700, color: "text.secondary" }}
-    >
-      {label}
-    </Typography>
-  </Stack>
-);
+        {todayClassWise.length === 0 ? (
+          <Box sx={{ p: 4, textAlign: "center" }}>
+            <Typography variant="body2" color="text.secondary">
+              No classes found
+            </Typography>
+          </Box>
+        ) : (
+          <TableContainer sx={{ maxHeight: 500 }}>
+            <Table stickyHeader size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={headSx(isDark)}>Class & Teacher</TableCell>
+                  <TableCell
+                    align="center"
+                    sx={{ ...headSx(isDark), width: 70 }}
+                  >
+                    Std
+                  </TableCell>
+                  <TableCell
+                    align="center"
+                    sx={{
+                      ...headSx(isDark),
+                      width: 70,
+                      color: "#16A34A !important",
+                    }}
+                  >
+                    P
+                  </TableCell>
+                  <TableCell
+                    align="center"
+                    sx={{
+                      ...headSx(isDark),
+                      width: 70,
+                      color: "#DC2626 !important",
+                    }}
+                  >
+                    A
+                  </TableCell>
+                  <TableCell
+                    align="center"
+                    sx={{ ...headSx(isDark), width: 160 }}
+                  >
+                    Attendance
+                  </TableCell>
+                  <TableCell
+                    align="center"
+                    sx={{ ...headSx(isDark), width: 50 }}
+                  >
+                    View
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {todayClassWise.map((cls) => {
+                  const config =
+                    STATUS_CONFIG[cls.status] || STATUS_CONFIG.notMarked;
+                  return (
+                    <TableRow
+                      key={cls._id}
+                      hover
+                      onClick={() => setSelectedClassId(cls._id)}
+                      sx={{
+                        cursor: "pointer",
+                        "& td": { py: 1.15, borderColor: "divider" },
+                      }}
+                    >
+                      <TableCell
+                        sx={{
+                          pl: 2,
+                          borderLeft: "3px solid",
+                          borderLeftColor: config.dot,
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          fontWeight={800}
+                          sx={{ fontSize: "0.86rem" }}
+                        >
+                          {cls.label}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontSize: "0.68rem",
+                            fontWeight: 600,
+                            color: cls.teacherLabel
+                              ? "text.secondary"
+                              : "text.disabled",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.03em",
+                            display: "block",
+                          }}
+                        >
+                          {cls.teacherLabel
+                            ? cls.teacherLabel.toUpperCase()
+                            : "No teacher"}
+                        </Typography>
+                      </TableCell>
 
-const mobileHeaderStyle = {
-  fontSize: "0.62rem",
-  fontWeight: 800,
-  textTransform: "uppercase",
-  letterSpacing: "0.05em",
-  color: "text.secondary",
+                      <TableCell align="center">
+                        <Box
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            minWidth: 34,
+                            height: 28,
+                            borderRadius: 1.5,
+                            bgcolor: isDark ? alpha("#fff", 0.05) : "#F1F5F9",
+                            color: "text.primary",
+                            fontWeight: 800,
+                            fontSize: "0.9rem",
+                          }}
+                        >
+                          {cls.totalStudents}
+                        </Box>
+                      </TableCell>
+
+                      <TableCell align="center">
+                        <Box
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            minWidth: 34,
+                            height: 28,
+                            borderRadius: 1.5,
+                            bgcolor: cls.isMarked
+                              ? isDark
+                                ? alpha("#16A34A", 0.15)
+                                : "#DCFCE7"
+                              : "transparent",
+                            color: cls.isMarked ? "#16A34A" : "text.disabled",
+                            fontWeight: 800,
+                            fontSize: "0.9rem",
+                          }}
+                        >
+                          {cls.isMarked ? cls.present : "—"}
+                        </Box>
+                      </TableCell>
+
+                      <TableCell align="center">
+                        <Box
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            minWidth: 34,
+                            height: 28,
+                            borderRadius: 1.5,
+                            bgcolor: cls.isMarked
+                              ? isDark
+                                ? alpha("#DC2626", 0.15)
+                                : "#FEE2E2"
+                              : "transparent",
+                            color: cls.isMarked ? "#DC2626" : "text.disabled",
+                            fontWeight: 800,
+                            fontSize: "0.9rem",
+                          }}
+                        >
+                          {cls.isMarked ? cls.absent : "—"}
+                        </Box>
+                      </TableCell>
+
+                      <TableCell align="center">
+                        {cls.isMarked ? (
+                          <Stack
+                            direction="row"
+                            alignItems="center"
+                            spacing={1.5}
+                            justifyContent="center"
+                          >
+                            <Typography
+                              variant="body2"
+                              fontWeight={900}
+                              sx={{
+                                fontSize: "0.95rem",
+                                color: config.dot,
+                                minWidth: 42,
+                                textAlign: "right",
+                              }}
+                            >
+                              {cls.percentage}%
+                            </Typography>
+                            <LinearProgress
+                              variant="determinate"
+                              value={cls.percentage}
+                              sx={{
+                                flex: 1,
+                                height: 6,
+                                borderRadius: 3,
+                                bgcolor: isDark
+                                  ? alpha("#fff", 0.08)
+                                  : alpha("#000", 0.06),
+                                "& .MuiLinearProgress-bar": {
+                                  bgcolor: config.dot,
+                                  borderRadius: 3,
+                                },
+                              }}
+                            />
+                          </Stack>
+                        ) : (
+                          <Chip
+                            label="Pending"
+                            size="small"
+                            sx={{
+                              height: 24,
+                              fontSize: "0.68rem",
+                              fontWeight: 800,
+                              bgcolor: isDark
+                                ? alpha("#F59E0B", 0.15)
+                                : "#FEF3C7",
+                              color: isDark ? "#FCD34D" : "#B45309",
+                            }}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell align="center">
+                        <IconButton
+                          size="small"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          <ChevronRightIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Paper>
+
+      {/* ═══════════════════════════════════════════
+          📈 TREND CHART
+      ═══════════════════════════════════════════ */}
+      {trend.length > 0 && (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: "divider",
+            bgcolor: "background.paper",
+          }}
+        >
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={2}
+          >
+            <Box>
+              <Typography
+                variant="h6"
+                fontWeight={800}
+                sx={{ fontSize: "1rem" }}
+              >
+                Attendance Trend
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Daily attendance % · {currentRangeLabel}
+              </Typography>
+            </Box>
+          </Stack>
+          <Box sx={{ height: 300, width: "100%" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={trend}
+                margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient
+                    id="trendGradient"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor="#2563EB" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke={isDark ? "#334155" : "#E2E8F0"}
+                />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 11, fill: theme.palette.text.secondary }}
+                  axisLine={false}
+                  tickLine={false}
+                  dy={10}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: theme.palette.text.secondary }}
+                  axisLine={false}
+                  tickLine={false}
+                  domain={[0, 100]}
+                />
+                <RechartsTooltip
+                  contentStyle={{
+                    borderRadius: 8,
+                    border: "none",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                    fontWeight: 700,
+                  }}
+                  itemStyle={{ color: "#2563EB" }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="percentage"
+                  name="Attendance %"
+                  stroke="#2563EB"
+                  strokeWidth={3}
+                  dot={{
+                    r: 4,
+                    fill: theme.palette.background.paper,
+                    strokeWidth: 2,
+                    stroke: "#2563EB",
+                  }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </Box>
+        </Paper>
+      )}
+
+      {/* Dialog */}
+      <ClassAttendanceDialog
+        open={!!selectedClassId}
+        onClose={() => setSelectedClassId(null)}
+        classData={classDetail}
+        date={todayStr}
+        mode="management"
+      />
+    </Box>
+  );
 };
-
-const headerCellStyle = (isDark) => ({
-  fontWeight: 800,
-  fontSize: "0.65rem",
-  textTransform: "uppercase",
-  letterSpacing: "0.03em",
-  bgcolor: isDark ? "#1E293B" : "#F1F5F9",
-  color: "text.secondary",
-  py: 1.25,
-  whiteSpace: "nowrap",
-});
 
 export default TodayPage;

@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import {
-  Box,
-  CircularProgress,
-  Typography,
-  useTheme,
-  alpha,
-} from "@mui/material";
+import { Box, CircularProgress, Typography, useTheme } from "@mui/material";
 
 import DashboardHeader from "./components/DashboardHeader";
 import BottomNav from "./components/BottomNav";
@@ -14,14 +8,10 @@ import AccessDenied from "./components/AccessDenied";
 
 import TodayPage from "./pages/TodayPage";
 import MonthlyPage from "./pages/MonthlyPage";
-import YearlyPage from "./pages/YearlyPage";
-import AlertsPage from "./pages/AlertsPage";
-import RankingPage from "./pages/RankingPage";
 
 import {
   useValidateAccess,
-  useTodayOverview,
-  useAlerts,
+  useRangeOverview,
   useRefreshManagement,
 } from "../../hooks/useManagement";
 
@@ -29,7 +19,6 @@ const ManagementDashboard = () => {
   const { secretKey } = useParams();
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
-
   const [activePage, setActivePage] = useState("today");
 
   useEffect(() => {
@@ -47,17 +36,15 @@ const ManagementDashboard = () => {
     refetch: retryValidation,
   } = useValidateAccess(secretKey);
 
-  const {
-    data: todayData,
-    isRefetching: todayRefetching,
-    dataUpdatedAt: todayUpdatedAt,
-  } = useTodayOverview(secretKey, {
-    enabled: !!validation?.valid,
-  });
-
-  const { data: alertsData } = useAlerts(secretKey, {
-    enabled: !!validation?.valid,
-  });
+  // Get today's default range for live sync status
+  const todayStr = new Date().toISOString().split("T")[0];
+  const { isRefetching: liveSyncing } = useRangeOverview(
+    secretKey,
+    todayStr,
+    todayStr,
+    "ALL",
+    { enabled: !!validation?.valid },
+  );
 
   const refreshAll = useRefreshManagement();
 
@@ -97,37 +84,19 @@ const ManagementDashboard = () => {
     return <AccessDenied reason={reason} onRetry={retryValidation} />;
   }
 
-  const handleRefresh = () => {
-    refreshAll(secretKey);
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const alertCount =
-    (alertsData?.counts?.criticalClasses || 0) +
-    (alertsData?.counts?.pendingClasses || 0);
+  const handleRefresh = () => refreshAll(secretKey);
+  const handlePrint = () => window.print();
 
   const renderPage = () => {
-    const commonProps = { secretKey };
     switch (activePage) {
       case "today":
-        return <TodayPage {...commonProps} />;
+        return <TodayPage secretKey={secretKey} />;
       case "monthly":
-        return <MonthlyPage {...commonProps} />;
-      case "yearly":
-        return <YearlyPage {...commonProps} />;
-      case "alerts":
-        return <AlertsPage {...commonProps} />;
-      case "ranking":
-        return <RankingPage {...commonProps} />;
+        return <MonthlyPage secretKey={secretKey} />;
       default:
-        return <TodayPage {...commonProps} />;
+        return <TodayPage secretKey={secretKey} />;
     }
   };
-
-  const currentYear = new Date().getFullYear();
 
   return (
     <Box
@@ -138,35 +107,30 @@ const ManagementDashboard = () => {
         flexDirection: "column",
       }}
     >
-      {/* HEADER */}
       <DashboardHeader
         label={validation.label}
-        lastUpdated={todayUpdatedAt}
-        isRefetching={todayRefetching}
+        isRefetching={liveSyncing}
         onRefresh={handleRefresh}
         onPrint={handlePrint}
       />
 
-      {/* PAGE CONTENT */}
       <Box
         sx={{
           flex: 1,
           overflow: "auto",
           overflowX: "hidden",
           pb: { xs: 9, sm: 10 },
-          px: { xs: 1.5, sm: 2.5 },
-          py: 2,
+          px: { xs: 1.5, sm: 2.5, md: 4 },
+          py: { xs: 2, md: 3 },
           width: "100%",
-          maxWidth: "100vw",
+          maxWidth: "1400px",
+          mx: "auto",
           boxSizing: "border-box",
         }}
         className="management-content"
       >
         {renderPage()}
 
-        {/* ══════════════════════════════════════════
-            FOOTER — Developed by Abhishek
-        ══════════════════════════════════════════ */}
         <Box
           sx={{
             mt: 4,
@@ -186,13 +150,10 @@ const ManagementDashboard = () => {
               letterSpacing: "0.03em",
             }}
           >
-            © {currentYear} · Developed by{" "}
+            © {new Date().getFullYear()} · Developed by{" "}
             <Box
               component="span"
-              sx={{
-                fontWeight: 800,
-                color: isDark ? "#93C5FD" : "#1E4D98",
-              }}
+              sx={{ fontWeight: 800, color: isDark ? "#93C5FD" : "#1E4D98" }}
             >
               Abhishek
             </Box>
@@ -200,19 +161,11 @@ const ManagementDashboard = () => {
         </Box>
       </Box>
 
-      {/* BOTTOM NAV */}
-      <BottomNav
-        activePage={activePage}
-        onChange={setActivePage}
-        alertCount={alertCount}
-      />
+      <BottomNav activePage={activePage} onChange={setActivePage} />
 
-      {/* PRINT STYLES */}
       <style>{`
         @media print {
-          .management-content {
-            padding: 0 !important;
-          }
+          .management-content { padding: 0 !important; }
           nav, header, .MuiBottomNavigation-root, .MuiPaper-root:has(.MuiBottomNavigation-root) {
             display: none !important;
           }

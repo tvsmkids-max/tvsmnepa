@@ -9,9 +9,7 @@ const {
   validateManagementKey,
 } = require("../middlewares/managementAuth.middleware");
 
-// ═══════════════════════════════════════════════════════════════════
-//  ADMIN ROUTES
-// ═══════════════════════════════════════════════════════════════════
+// ADMIN
 router.get(
   "/admin/access-urls",
   authenticate,
@@ -37,60 +35,28 @@ router.delete(
   managementController.deleteAccessUrl,
 );
 
-// ═══════════════════════════════════════════════════════════════════
-//  PUBLIC ROUTES (via secret key)
-// ═══════════════════════════════════════════════════════════════════
+// PUBLIC
 router.get("/:secretKey/validate", managementController.validateAccess);
-
 router.get(
-  "/:secretKey/today",
+  "/:secretKey/range",
   validateManagementKey,
-  managementController.getTodayOverview,
+  managementController.getRangeOverview,
 );
-
-router.get(
-  "/:secretKey/monthly",
-  validateManagementKey,
-  managementController.getMonthlyTrends,
-);
-
-router.get(
-  "/:secretKey/yearly",
-  validateManagementKey,
-  managementController.getYearlyPerformance,
-);
-
-router.get(
-  "/:secretKey/alerts",
-  validateManagementKey,
-  managementController.getAlerts,
-);
-
-router.get(
-  "/:secretKey/rankings",
-  validateManagementKey,
-  managementController.getRankings,
-);
-
 router.get(
   "/:secretKey/class/:classId",
   validateManagementKey,
   managementController.getClassDetail,
 );
-
 router.get(
   "/:secretKey/monthly-report",
   validateManagementKey,
   managementController.getMonthlyReport,
 );
-
 router.get(
   "/:secretKey/monthly-class/:classId",
   validateManagementKey,
   managementController.getMonthlyClassDetail,
 );
-
-// ─── NEW: Monthly Matrix ───
 router.get(
   "/:secretKey/monthly-matrix",
   validateManagementKey,

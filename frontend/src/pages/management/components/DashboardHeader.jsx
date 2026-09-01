@@ -11,27 +11,13 @@ import {
 } from "@mui/material";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 
 const SCHOOL_LOGO = import.meta.env.VITE_SCHOOL_LOGO || "/logo.png";
 const SCHOOL_SHORT_NAME = "TVSM H. SEC. SCHOOL";
 
-const DashboardHeader = ({
-  label,
-  lastUpdated,
-  isRefetching,
-  onRefresh,
-  onPrint,
-}) => {
+const DashboardHeader = ({ label, isRefetching, onRefresh, onPrint }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
-
-  const lastUpdatedStr = lastUpdated
-    ? new Date(lastUpdated).toLocaleTimeString("en-IN", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "—";
 
   return (
     <Box
@@ -44,7 +30,7 @@ const DashboardHeader = ({
         zIndex: 50,
       }}
     >
-      <Box sx={{ px: { xs: 1.5, sm: 2.5 }, py: { xs: 1, sm: 1.25 } }}>
+      <Box sx={{ px: { xs: 1.5, sm: 2.5, md: 4 }, py: { xs: 1, sm: 1.25 } }}>
         <Stack direction="row" alignItems="center" spacing={1.5}>
           {/* Logo */}
           <Box
@@ -64,20 +50,14 @@ const DashboardHeader = ({
               component="img"
               src={SCHOOL_LOGO}
               alt="Logo"
-              sx={{
-                width: "82%",
-                height: "82%",
-                objectFit: "contain",
-              }}
+              sx={{ width: "82%", height: "82%", objectFit: "contain" }}
               onError={(e) => {
                 e.currentTarget.style.display = "none";
-                e.currentTarget.parentElement.innerHTML =
-                  '<span style="font-size:1.1rem;font-weight:900;color:#1E4D98">🏫</span>';
               }}
             />
           </Box>
 
-          {/* School Name (short) */}
+          {/* School Name */}
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               variant="body1"
@@ -95,23 +75,46 @@ const DashboardHeader = ({
           </Box>
 
           {/* Actions */}
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            {/* Last updated indicator */}
+          <Stack direction="row" spacing={1} alignItems="center">
+            {/* Live Sync Pill */}
             <Chip
-              icon={<CheckCircleOutlineIcon sx={{ fontSize: 12 }} />}
-              label={`Updated: ${lastUpdatedStr}`}
+              icon={
+                <Box
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    bgcolor: isRefetching ? "#F59E0B" : "#16A34A",
+                    ml: "8px !important",
+                    animation: isRefetching
+                      ? "pulseLoading 1s ease-in-out infinite"
+                      : "pulseLive 2s ease-in-out infinite",
+                    "@keyframes pulseLive": {
+                      "0%, 100%": {
+                        boxShadow: `0 0 0 0 ${alpha("#16A34A", 0.6)}`,
+                      },
+                      "50%": {
+                        boxShadow: `0 0 0 4px ${alpha("#16A34A", 0)}`,
+                      },
+                    },
+                    "@keyframes pulseLoading": {
+                      "0%, 100%": { opacity: 1 },
+                      "50%": { opacity: 0.3 },
+                    },
+                  }}
+                />
+              }
+              label={isRefetching ? "Syncing" : "Live sync"}
               size="small"
               sx={{
-                height: 22,
-                fontSize: "0.62rem",
+                height: 26,
+                fontSize: "0.72rem",
                 fontWeight: 700,
-                display: { xs: "none", sm: "flex" },
                 bgcolor: isDark ? alpha("#16A34A", 0.15) : "#DCFCE7",
                 color: isDark ? "#86EFAC" : "#15803D",
-                "& .MuiChip-icon": {
-                  color: "inherit",
-                  marginLeft: "6px",
-                },
+                border: "1px solid",
+                borderColor: isDark ? alpha("#16A34A", 0.3) : "#BBF7D0",
+                "& .MuiChip-label": { pl: 1, pr: 1.25 },
               }}
             />
 
