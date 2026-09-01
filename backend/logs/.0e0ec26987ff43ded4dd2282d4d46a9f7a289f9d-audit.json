@@ -6,16 +6,6 @@
     "auditLog": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\.0e0ec26987ff43ded4dd2282d4d46a9f7a289f9d-audit.json",
     "files": [
         {
-            "date": 1785241177143,
-            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\error-2026-07-28.log",
-            "hash": "0e32035724b5eaa9b3eb66f73b9795eea0651f00ace788df532797600d4dace4"
-        },
-        {
-            "date": 1785266127852,
-            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\error-2026-07-29.log",
-            "hash": "02b3f589409e52eaf3c0bb3558cfe500a0bb8318bde41973d0b57826d23a1387"
-        },
-        {
             "date": 1787662214473,
             "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\error-2026-08-25.log",
             "hash": "329366ad57fcdeb1a41ae650fc617f4e590475410bc636d248793fc652068fef"
@@ -24,6 +14,36 @@
             "date": 1787682675732,
             "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\error-2026-08-26.log",
             "hash": "20bf246e0b11fa2ac2364ff228afe7d2e690c23883a6df70c7c27ae0a1c38235"
+        },
+        {
+            "date": 1787855841662,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\error-2026-08-28.log",
+            "hash": "a6d813fda4428f71973cc1802383f2918eebabaab333f02804216ca764d0666e"
+        },
+        {
+            "date": 1788009331509,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\error-2026-08-29.log",
+            "hash": "333dfdfdd04103a89c13cee410eb0d8276f378c57335fd8ae33f74e1deb3a00c"
+        },
+        {
+            "date": 1788085234308,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\error-2026-08-30.log",
+            "hash": "f494b87a5e7c3fc0519b60e63f2dabd9c2a1a65ae737019dae77595c9110dc63"
+        },
+        {
+            "date": 1788196353669,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\error-2026-08-31.log",
+            "hash": "451ebf2d3d259374f9e07c9f01cc071f11e03f5007a8cc6344d6104267e48cf5"
+        },
+        {
+            "date": 1788201287920,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\error-2026-09-01.log",
+            "hash": "051277f7494c180601fa729d9fee42189a1ed64993882b002302c70a0a2679fc"
+        },
+        {
+            "date": 1788287658011,
+            "name": "C:\\Users\\CB\\Desktop\\tvsmnepa\\backend\\logs\\error-2026-09-02.log",
+            "hash": "85c0bd4dbcfdde66c58b5030e0ca3dcfb82c1c3fdaaaadc1e38878ab6018cea2"
         }
     ],
     "hashType": "sha256"
