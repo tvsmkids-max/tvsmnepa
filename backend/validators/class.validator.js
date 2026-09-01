@@ -10,20 +10,18 @@ const createClassSchema = Joi.object({
   session: objectId.required().messages({
     "string.pattern.base": "Invalid session ID",
   }),
-  classTeacher: objectId.allow(null, ""),
-  assignedTeachers: Joi.array().items(objectId).default([]),
   displayOrder: Joi.number().integer().min(0).default(0),
   description: Joi.string().trim().max(500).allow(""),
+  teacherLabel: Joi.string().trim().max(100).allow("").optional(),
 });
 
 const updateClassSchema = Joi.object({
   name: Joi.string().trim().min(1).max(50),
   section: Joi.string().trim().min(1).max(20),
-  classTeacher: objectId.allow(null, ""),
-  assignedTeachers: Joi.array().items(objectId),
   displayOrder: Joi.number().integer().min(0),
   description: Joi.string().trim().max(500).allow(""),
   isArchived: Joi.boolean(),
+  teacherLabel: Joi.string().trim().max(100).allow("").optional(),
 }).min(1);
 
 const queryClassSchema = Joi.object({

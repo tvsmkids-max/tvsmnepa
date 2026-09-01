@@ -8,6 +8,8 @@ const classApi = {
   delete: (id) => axiosInstance.delete(`/classes/${id}`),
   archive: (id, isArchived) =>
     axiosInstance.patch(`/classes/${id}/archive`, { isArchived }),
+  resetPassword: (id, newPassword) =>
+    axiosInstance.patch(`/classes/${id}/reset-password`, { newPassword }),
 };
 
 export default classApi;

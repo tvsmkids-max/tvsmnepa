@@ -19,13 +19,12 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { useSnackbar } from "notistack";
 import classApi from "../../api/classApi";
-import teacherApi from "../../api/teacherApi";
 
 const schema = yup.object({
   name: yup.string().trim().required("Class name is required").max(50),
   section: yup.string().trim().required("Section is required").max(20),
   session: yup.string().required("Session is required"),
-  classTeacher: yup.string().nullable(),
+  teacherLabel: yup.string().trim().max(100).nullable().default(""), // ✅ Changed
   displayOrder: yup.number().typeError("Must be a number").min(0).default(0),
   description: yup.string().max(500),
 });
@@ -39,8 +38,6 @@ const ClassFormDialog = ({
   activeSession,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
-  const [teachers, setTeachers] = useState([]);
-  const [loadingTeachers, setLoadingTeachers] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const {
@@ -54,7 +51,7 @@ const ClassFormDialog = ({
       name: "",
       section: "",
       session: "",
-      classTeacher: "",
+      teacherLabel: "",
       displayOrder: 0,
       description: "",
     },
@@ -67,7 +64,7 @@ const ClassFormDialog = ({
         name: editingClass.name || "",
         section: editingClass.section || "",
         session: editingClass.session?._id || editingClass.session || "",
-        classTeacher: editingClass.classTeacher?._id || "",
+        teacherLabel: editingClass.teacherLabel || "",
         displayOrder: editingClass.displayOrder || 0,
         description: editingClass.description || "",
       });
@@ -76,36 +73,12 @@ const ClassFormDialog = ({
         name: "",
         section: "",
         session: activeSession?._id || "",
-        classTeacher: "",
+        teacherLabel: "",
         displayOrder: 0,
         description: "",
       });
     }
   }, [open, editingClass, activeSession, reset]);
-
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    const load = async () => {
-      setLoadingTeachers(true);
-      try {
-        const res = await teacherApi.list({ limit: 500, isActive: true });
-        if (!cancelled) {
-          setTeachers(res.data?.data || []);
-          setLoadingTeachers(false);
-        }
-      } catch {
-        if (!cancelled) {
-          setTeachers([]);
-          setLoadingTeachers(false);
-        }
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
 
   const onSubmit = async (data) => {
     setSubmitting(true);
@@ -114,8 +87,7 @@ const ClassFormDialog = ({
         name: data.name.trim(),
         section: data.section.trim(),
         session: data.session,
-        classTeacher: data.classTeacher || null,
-        assignedTeachers: data.classTeacher ? [data.classTeacher] : [],
+        teacherLabel: data.teacherLabel || "",
         displayOrder: data.displayOrder || 0,
         description: data.description || "",
       };
@@ -125,7 +97,9 @@ const ClassFormDialog = ({
         enqueueSnackbar("Class updated", { variant: "success" });
       } else {
         await classApi.create(payload);
-        enqueueSnackbar("Class created", { variant: "success" });
+        enqueueSnackbar("Class created. Default password is Teacher@123", {
+          variant: "success",
+        });
       }
       onSaved();
     } catch (err) {
@@ -216,37 +190,29 @@ const ClassFormDialog = ({
                 )}
               />
             </Grid>
+
+            {/* ✅ NEW: Teacher Label (Text Field) */}
             <Grid item xs={12}>
               <Controller
-                name="classTeacher"
+                name="teacherLabel"
                 control={control}
                 render={({ field }) => (
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Class Teacher</InputLabel>
-                    <Select
-                      {...field}
-                      label="Class Teacher"
-                      disabled={loadingTeachers}
-                    >
-                      <MenuItem value="">
-                        <em>Not assigned</em>
-                      </MenuItem>
-                      {loadingTeachers ? (
-                        <MenuItem disabled>Loading...</MenuItem>
-                      ) : teachers.length === 0 ? (
-                        <MenuItem disabled>No teachers — optional</MenuItem>
-                      ) : (
-                        teachers.map((t) => (
-                          <MenuItem key={t._id} value={t._id}>
-                            {t.name} ({t.employeeId})
-                          </MenuItem>
-                        ))
-                      )}
-                    </Select>
-                  </FormControl>
+                  <TextField
+                    {...field}
+                    label="Class Teacher Name (Optional)"
+                    placeholder="e.g. ANITA SHARMA"
+                    fullWidth
+                    size="small"
+                    error={!!errors.teacherLabel}
+                    helperText={
+                      errors.teacherLabel?.message ||
+                      "For display purposes only on reports"
+                    }
+                  />
                 )}
               />
             </Grid>
+
             <Grid item xs={12} sm={6}>
               <Controller
                 name="displayOrder"

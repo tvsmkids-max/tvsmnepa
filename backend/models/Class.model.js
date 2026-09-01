@@ -21,17 +21,13 @@ const classSchema = new mongoose.Schema(
       ref: "AcademicSession",
       required: [true, "Academic session is required"],
     },
-    classTeacher: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Teacher",
-      default: null,
+    // Optional text label — just for display on reports/printouts
+    teacherLabel: {
+      type: String,
+      trim: true,
+      maxlength: [100],
+      default: "",
     },
-    assignedTeachers: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Teacher",
-      },
-    ],
     displayOrder: {
       type: Number,
       default: 0,
@@ -58,7 +54,6 @@ const classSchema = new mongoose.Schema(
 // Unique constraint: name + section + session
 classSchema.index({ name: 1, section: 1, session: 1 }, { unique: true });
 classSchema.index({ session: 1, isArchived: 1 });
-classSchema.index({ classTeacher: 1 });
 
 classSchema.virtual("fullName").get(function () {
   return `${this.name} - ${this.section}`;

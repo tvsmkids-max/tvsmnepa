@@ -2,19 +2,26 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Paper,
-  Grid,
   CircularProgress,
   Typography,
-  useMediaQuery,
-  useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
+import { useNavigate } from "react-router-dom";
 import ClassIcon from "@mui/icons-material/Class";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 
 import ClassHeader from "./components/ClassHeader";
 import ClassFilterBar from "./components/ClassFilterBar";
-import ClassCard from "./components/ClassCard";
-
+import ClassTable from "./components/ClassTable";
 import ClassFormDialog from "./ClassFormDialog";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import EmptyState from "../../components/common/EmptyState";
@@ -27,6 +34,7 @@ import {
   useDeleteClass,
   useArchiveClass,
 } from "../../hooks/useClasses";
+import classApi from "../../api/classApi";
 
 const DEFAULT_FILTERS = {
   search: "",
@@ -34,18 +42,131 @@ const DEFAULT_FILTERS = {
   isArchived: "false",
 };
 
+// ═══════════════════════════════════════════════════════════════════
+//  5-DIGIT PIN RESET DIALOG
+// ═══════════════════════════════════════════════════════════════════
+const PasswordResetDialog = ({ open, cls, onClose }) => {
+  const { enqueueSnackbar } = useSnackbar();
+  const [pin, setPin] = useState("");
+  const [showPin, setShowPin] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setPin("");
+      setShowPin(false);
+    }
+  }, [open]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!/^\d{5}$/.test(pin)) {
+      enqueueSnackbar("Class PIN must be exactly 5 digits", {
+        variant: "error",
+      });
+      return;
+    }
+    setSaving(true);
+    try {
+      await classApi.resetPassword(cls._id, pin);
+      enqueueSnackbar(`PIN updated for ${cls.name}-${cls.section}`, {
+        variant: "success",
+      });
+      onClose();
+    } catch (err) {
+      enqueueSnackbar(err.response?.data?.message || "Failed to reset PIN", {
+        variant: "error",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={saving ? undefined : onClose}
+      maxWidth="xs"
+      fullWidth
+    >
+      <DialogTitle fontWeight={800}>Reset Class PIN</DialogTitle>
+      <form onSubmit={handleSubmit}>
+        <DialogContent dividers>
+          <Typography variant="body2" color="text.secondary" mb={2}>
+            Set a new 5-digit login PIN for the{" "}
+            <strong>
+              {cls?.name}-{cls?.section}
+            </strong>{" "}
+            account.
+          </Typography>
+          <TextField
+            fullWidth
+            size="small"
+            label="5-Digit PIN"
+            type={showPin ? "text" : "password"}
+            value={pin}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (/^\d{0,5}$/.test(v)) setPin(v);
+            }}
+            inputProps={{
+              inputMode: "numeric",
+              pattern: "[0-9]*",
+              maxLength: 5,
+              autoComplete: "one-time-code",
+              style: { letterSpacing: "0.2em", fontWeight: "bold" },
+            }}
+            required
+            helperText="Exactly 5 digits (0–9). Default after create: 88898"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => setShowPin((s) => !s)}
+                    edge="end"
+                    tabIndex={-1}
+                  >
+                    {showPin ? (
+                      <VisibilityOffOutlinedIcon fontSize="small" />
+                    ) : (
+                      <VisibilityOutlinedIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={onClose} color="inherit" disabled={saving}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={saving || pin.length !== 5}
+          >
+            {saving ? "Saving..." : "Update PIN"}
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════
+//  MAIN PAGE COMPONENT
+// ═══════════════════════════════════════════════════════════════════
 const ClassListPage = () => {
   const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const { sessions, activeSession } = useSessions();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  // ─── FILTERS ───
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const debouncedSearch = useDebounce(filters.search, 400);
 
-  // Set active session as default when sessions load
   useEffect(() => {
     if (activeSession?._id && !filters.session) {
       const timer = setTimeout(
@@ -56,7 +177,6 @@ const ClassListPage = () => {
     }
   }, [activeSession, filters.session]);
 
-  // Build query params for API
   const queryParams = useMemo(
     () => ({
       session: filters.session,
@@ -66,7 +186,6 @@ const ClassListPage = () => {
     [filters.session, filters.isArchived],
   );
 
-  // ─── TANSTACK QUERY ───
   const {
     data: classesData,
     isLoading,
@@ -78,7 +197,6 @@ const ClassListPage = () => {
 
   const allClasses = classesData?.data || [];
 
-  // ─── CLIENT-SIDE SEARCH FILTER ───
   const filteredClasses = useMemo(() => {
     if (!debouncedSearch) return allClasses;
     const s = debouncedSearch.toLowerCase();
@@ -86,30 +204,26 @@ const ClassListPage = () => {
       (cls) =>
         cls.name?.toLowerCase().includes(s) ||
         cls.section?.toLowerCase().includes(s) ||
-        cls.classTeacher?.name?.toLowerCase().includes(s),
+        cls.teacherLabel?.toLowerCase().includes(s),
     );
   }, [allClasses, debouncedSearch]);
 
-  // ─── MUTATIONS ───
   const deleteMutation = useDeleteClass();
   const archiveMutation = useArchiveClass();
 
-  // ─── DIALOG STATES ───
   const [formOpen, setFormOpen] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [confirmArchive, setConfirmArchive] = useState(null);
+  const [resetPasswordClass, setResetPasswordClass] = useState(null);
 
-  // ─── HANDLERS ───
-  const handleFilterChange = useCallback((newFilters) => {
-    setFilters(newFilters);
-  }, []);
+  const handleFilterChange = useCallback(
+    (newFilters) => setFilters(newFilters),
+    [],
+  );
 
   const handleResetFilters = useCallback(() => {
-    setFilters({
-      ...DEFAULT_FILTERS,
-      session: activeSession?._id || "",
-    });
+    setFilters({ ...DEFAULT_FILTERS, session: activeSession?._id || "" });
   }, [activeSession]);
 
   const handleSaved = useCallback(() => {
@@ -124,7 +238,7 @@ const ClassListPage = () => {
       await deleteMutation.mutateAsync(confirmDelete._id);
       setConfirmDelete(null);
     } catch {
-      // Error already handled by mutation
+      // Error handled by hook
     }
   }, [confirmDelete, deleteMutation]);
 
@@ -137,27 +251,28 @@ const ClassListPage = () => {
       });
       setConfirmArchive(null);
     } catch {
-      // Error already handled
+      // Error handled by hook
     }
   }, [confirmArchive, archiveMutation]);
 
-  // ─── CARD ACTION HANDLERS ───
   const handleEdit = useCallback((cls) => {
     setEditingClass(cls);
     setFormOpen(true);
   }, []);
 
-  const handleArchive = useCallback((cls) => {
-    setConfirmArchive(cls);
-  }, []);
-
-  const handleDelete = useCallback((cls) => {
-    setConfirmDelete(cls);
-  }, []);
+  const handleArchive = useCallback((cls) => setConfirmArchive(cls), []);
+  const handleDelete = useCallback((cls) => setConfirmDelete(cls), []);
+  const handleResetPassword = useCallback(
+    (cls) => setResetPasswordClass(cls),
+    [],
+  );
+  const handleViewStudents = useCallback(
+    (cls) => navigate(`/students?class=${cls._id}`),
+    [navigate],
+  );
 
   return (
     <Box sx={{ pb: { xs: 10, md: 4 } }}>
-      {/* HEADER */}
       <ClassHeader
         total={filteredClasses.length}
         isAdmin={isAdmin}
@@ -167,7 +282,6 @@ const ClassListPage = () => {
         }}
       />
 
-      {/* FILTERS */}
       <ClassFilterBar
         filters={filters}
         onChange={handleFilterChange}
@@ -175,7 +289,6 @@ const ClassListPage = () => {
         sessions={sessions || []}
       />
 
-      {/* BODY */}
       {isLoading ? (
         <Paper sx={{ p: 8, textAlign: "center", borderRadius: 3 }}>
           <CircularProgress />
@@ -216,7 +329,6 @@ const ClassListPage = () => {
         </Paper>
       ) : (
         <>
-          {/* Background loading indicator */}
           {isFetching && !isLoading && (
             <Box
               sx={{
@@ -249,22 +361,17 @@ const ClassListPage = () => {
             </Box>
           )}
 
-          {/* CLASS GRID */}
-          <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-            {filteredClasses.map((cls) => (
-              <Grid item xs={12} sm={6} lg={4} xl={3} key={cls._id}>
-                <ClassCard
-                  cls={cls}
-                  isAdmin={isAdmin}
-                  onEdit={handleEdit}
-                  onArchive={handleArchive}
-                  onDelete={handleDelete}
-                />
-              </Grid>
-            ))}
-          </Grid>
+          {/* Unified Table View for all screen sizes */}
+          <ClassTable
+            classes={filteredClasses}
+            isAdmin={isAdmin}
+            onViewStudents={handleViewStudents}
+            onEdit={handleEdit}
+            onArchive={handleArchive}
+            onDelete={handleDelete}
+            onResetPassword={handleResetPassword}
+          />
 
-          {/* Count footer */}
           <Box sx={{ textAlign: "center", mt: 3 }}>
             <Typography variant="caption" color="text.secondary">
               Showing <strong>{filteredClasses.length}</strong> class
@@ -280,7 +387,7 @@ const ClassListPage = () => {
         </>
       )}
 
-      {/* DIALOGS */}
+      {/* ─── DIALOGS ─── */}
       <ClassFormDialog
         open={formOpen}
         onClose={() => {
@@ -292,7 +399,6 @@ const ClassListPage = () => {
         sessions={sessions || []}
         activeSession={activeSession}
       />
-
       <ConfirmDialog
         open={!!confirmDelete}
         title="Delete Class"
@@ -303,7 +409,6 @@ const ClassListPage = () => {
         onConfirm={handleConfirmDelete}
         onClose={() => setConfirmDelete(null)}
       />
-
       <ConfirmDialog
         open={!!confirmArchive}
         title={confirmArchive?.isArchived ? "Unarchive Class" : "Archive Class"}
@@ -317,6 +422,11 @@ const ClassListPage = () => {
         loading={archiveMutation.isPending}
         onConfirm={handleConfirmArchive}
         onClose={() => setConfirmArchive(null)}
+      />
+      <PasswordResetDialog
+        open={!!resetPasswordClass}
+        cls={resetPasswordClass}
+        onClose={() => setResetPasswordClass(null)}
       />
     </Box>
   );

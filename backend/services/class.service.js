@@ -3,37 +3,46 @@
 const classRepository = require("../repositories/class.repository");
 const studentRepository = require("../repositories/student.repository");
 const Settings = require("../models/Settings.model");
+const User = require("../models/User.model");
+const { hashPassword } = require("../utils/passwordHelper");
 const { createAuditLog } = require("../middlewares/audit.middleware");
-const logger = require("../utils/logger");
+
+const DEFAULT_CLASS_PIN = "88898";
 
 const throwError = (message, statusCode = 400) => {
   throw Object.assign(new Error(message), { statusCode });
 };
 
+const linkedClassId = (user) => {
+  if (!user?.linkedClass) return null;
+  return user.linkedClass._id || user.linkedClass;
+};
+
 class ClassService {
   async list(query, user) {
     const { page, limit, sort, ...filterParams } = query;
-
     const filter = { ...filterParams };
     if (filter.isArchived === undefined) filter.isArchived = false;
 
-    if (user && user.role === "teacher") {
-      const Teacher = require("../models/Teacher.model");
-      const teacher = await Teacher.findOne({ user: user._id }).lean();
+    // ─── RBAC: NEVER fail open ───
+    if (!user || !user.role) {
+      return {
+        data: [],
+        pagination: { page: 1, limit: 0, total: 0, totalPages: 0 },
+      };
+    }
 
-      if (
-        !teacher ||
-        !teacher.assignedClasses ||
-        teacher.assignedClasses.length === 0
-      ) {
+    if (user.role === "class") {
+      // Class users should not use Classes admin UI; API still returns only own class
+      const linkedId = linkedClassId(user);
+      if (!linkedId) {
         return {
           data: [],
           pagination: { page: 1, limit: 0, total: 0, totalPages: 0 },
         };
       }
-
-      filter._id = { $in: teacher.assignedClasses };
-    } else {
+      filter._id = linkedId;
+    } else if (user.role === "admin") {
       if (!filter.session && !filter.all) {
         const settings = await Settings.getSettings();
         if (settings?.activeSession) {
@@ -41,17 +50,18 @@ class ClassService {
         }
       }
       delete filter.all;
+    } else {
+      return {
+        data: [],
+        pagination: { page: 1, limit: 0, total: 0, totalPages: 0 },
+      };
     }
 
     const result = await classRepository.findAll(filter, {
       page,
       limit,
       sort,
-      populate: [
-        { path: "classTeacher", select: "name employeeId email mobile" },
-        { path: "assignedTeachers", select: "name employeeId" },
-        { path: "session", select: "name" },
-      ],
+      populate: [{ path: "session", select: "name" }],
     });
 
     if (result.data.length > 0) {
@@ -83,15 +93,20 @@ class ClassService {
     return result;
   }
 
-  async getById(id) {
+  async getById(id, user) {
     const cls = await classRepository.findById(id, [
-      { path: "classTeacher", select: "name employeeId email mobile" },
-      { path: "assignedTeachers", select: "name employeeId email" },
       { path: "session", select: "name startDate endDate" },
       { path: "createdBy", select: "name" },
     ]);
 
     if (!cls) throwError("Class not found", 404);
+
+    if (user?.role === "class") {
+      const linkedId = linkedClassId(user)?.toString();
+      if (!linkedId || cls._id.toString() !== linkedId) {
+        throwError("Access denied", 403);
+      }
+    }
 
     const studentCount = await studentRepository.count({
       class: cls._id,
@@ -101,9 +116,6 @@ class ClassService {
     return { ...cls, studentCount };
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  //  CREATE — with bi-directional teacher sync
-  // ═══════════════════════════════════════════════════════════════
   async create(data, user, req) {
     const exists = await classRepository.exists({
       name: data.name,
@@ -123,46 +135,20 @@ class ClassService {
       createdBy: user._id,
     });
 
-    const Teacher = require("../models/Teacher.model");
-
-    // Collect ALL teacher IDs that need this class in their assignedClasses
-    const teacherIdsToSync = new Set();
-
-    if (data.classTeacher) {
-      teacherIdsToSync.add(data.classTeacher.toString());
-    }
-
-    if (data.assignedTeachers?.length > 0) {
-      data.assignedTeachers.forEach((id) =>
-        teacherIdsToSync.add(id.toString()),
-      );
-    }
-
-    // Sync: Add this class to each teacher's assignedClasses
-    if (teacherIdsToSync.size > 0) {
-      const teacherIds = Array.from(teacherIdsToSync);
-
-      await Teacher.updateMany(
-        { _id: { $in: teacherIds } },
-        { $addToSet: { assignedClasses: cls._id } },
-      );
-
-      // Also ensure classTeacher is in assignedTeachers list on the Class
-      if (
-        data.classTeacher &&
-        !data.assignedTeachers?.includes(data.classTeacher.toString())
-      ) {
-        await classRepository.updateById(cls._id, {
-          $addToSet: { assignedTeachers: data.classTeacher },
-        });
-      }
-    }
+    const hashedPin = await hashPassword(DEFAULT_CLASS_PIN);
+    await User.create({
+      name: `${cls.name}-${cls.section}`,
+      password: hashedPin,
+      role: "class",
+      linkedClass: cls._id,
+      isActive: true,
+    });
 
     await createAuditLog({
       user,
       action: "CREATE",
       module: "Class",
-      description: `Created class ${cls.name} - ${cls.section}`,
+      description: `Created class ${cls.name} - ${cls.section} (Login PIN account created)`,
       resourceId: cls._id,
       resourceType: "Class",
       after: cls,
@@ -172,9 +158,6 @@ class ClassService {
     return cls;
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  //  UPDATE — with bi-directional teacher sync
-  // ═══════════════════════════════════════════════════════════════
   async update(id, data, user, req) {
     const existing = await classRepository.findById(id);
     if (!existing) throwError("Class not found", 404);
@@ -193,73 +176,14 @@ class ClassService {
         throwError("Another class with same name & section exists", 409);
     }
 
-    const Teacher = require("../models/Teacher.model");
-
-    // --- Track classTeacher changes ---
-    const oldClassTeacher = existing.classTeacher
-      ? existing.classTeacher.toString()
-      : null;
-    const newClassTeacher =
-      data.classTeacher !== undefined
-        ? data.classTeacher
-          ? data.classTeacher.toString()
-          : null
-        : oldClassTeacher;
-
-    const classTeacherChanged = oldClassTeacher !== newClassTeacher;
-
-    // --- Track assignedTeachers changes ---
-    const oldTeachers = (existing.assignedTeachers || []).map((t) =>
-      t.toString(),
-    );
-    const newTeachers = data.assignedTeachers
-      ? data.assignedTeachers.map((t) => t.toString())
-      : oldTeachers;
-
-    const addedTeachers = newTeachers.filter((t) => !oldTeachers.includes(t));
-    const removedTeachers = oldTeachers.filter((t) => !newTeachers.includes(t));
-
-    // --- Ensure classTeacher is always in assignedTeachers ---
-    if (newClassTeacher && !newTeachers.includes(newClassTeacher)) {
-      newTeachers.push(newClassTeacher);
-      addedTeachers.push(newClassTeacher);
-      data.assignedTeachers = newTeachers;
-    }
-
-    // --- Perform the update ---
     const updated = await classRepository.updateById(id, data);
 
-    // Sync Teacher.assignedClasses for added teachers
-    if (addedTeachers.length > 0) {
-      await Teacher.updateMany(
-        { _id: { $in: addedTeachers } },
-        { $addToSet: { assignedClasses: id } },
+    if (data.name || data.section) {
+      const newName = `${data.name || existing.name}-${data.section || existing.section}`;
+      await User.updateOne(
+        { linkedClass: id, role: "class" },
+        { $set: { name: newName } },
       );
-    }
-
-    // Remove class from removed teachers' assignedClasses
-    if (removedTeachers.length > 0) {
-      await Teacher.updateMany(
-        { _id: { $in: removedTeachers } },
-        { $pull: { assignedClasses: id } },
-      );
-    }
-
-    // Handle classTeacher change specifically
-    if (classTeacherChanged) {
-      if (oldClassTeacher && !newTeachers.includes(oldClassTeacher)) {
-        await Teacher.updateOne(
-          { _id: oldClassTeacher },
-          { $pull: { assignedClasses: id } },
-        );
-      }
-
-      if (newClassTeacher) {
-        await Teacher.updateOne(
-          { _id: newClassTeacher },
-          { $addToSet: { assignedClasses: id } },
-        );
-      }
     }
 
     await createAuditLog({
@@ -290,13 +214,7 @@ class ClassService {
     }
 
     await classRepository.deleteById(id);
-
-    // Clean up ALL teacher references
-    const Teacher = require("../models/Teacher.model");
-    await Teacher.updateMany(
-      { assignedClasses: id },
-      { $pull: { assignedClasses: id } },
-    );
+    await User.deleteOne({ linkedClass: id, role: "class" });
 
     await createAuditLog({
       user,
@@ -312,11 +230,47 @@ class ClassService {
     return true;
   }
 
+  async resetClassPassword(classId, newPin, adminUser, req) {
+    const cls = await classRepository.findById(classId);
+    if (!cls) throwError("Class not found", 404);
+
+    if (!/^\d{5}$/.test(String(newPin || ""))) {
+      throwError("Class PIN must be exactly 5 digits (0-9).", 400);
+    }
+
+    const classUser = await User.findOne({
+      linkedClass: classId,
+      role: "class",
+    });
+    if (!classUser) throwError("No login account found for this class", 404);
+
+    classUser.password = await hashPassword(String(newPin));
+    classUser.passwordChangedAt = new Date();
+    await classUser.save();
+
+    await createAuditLog({
+      user: adminUser,
+      action: "UPDATE",
+      module: "Class",
+      description: `PIN reset for class ${cls.name}-${cls.section}`,
+      resourceId: classId,
+      resourceType: "Class",
+      req,
+    });
+
+    return true;
+  }
+
   async archive(id, isArchived, user, req) {
     const cls = await classRepository.findById(id);
     if (!cls) throwError("Class not found", 404);
 
     const updated = await classRepository.updateById(id, { isArchived });
+
+    await User.updateOne(
+      { linkedClass: id, role: "class" },
+      { $set: { isActive: !isArchived } },
+    );
 
     await createAuditLog({
       user,

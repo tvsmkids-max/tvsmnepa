@@ -1,18 +1,34 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
 import classApi from "../api/classApi";
+import useAuth from "./useAuth";
 
 export const classKeys = {
   all: ["classes"],
   lists: () => [...classKeys.all, "list"],
-  list: (filters) => [...classKeys.lists(), filters],
+  // ✅ Include userId + role so admin cache ≠ class cache
+  list: (userId, role, filters) => [
+    ...classKeys.lists(),
+    userId || "anon",
+    role || "none",
+    filters,
+  ],
   details: () => [...classKeys.all, "detail"],
   detail: (id) => [...classKeys.details(), id],
 };
 
+/**
+ * Admin Classes page list only.
+ * Class users must not open /classes (RoleRoute); this hook also refuses to fetch for them.
+ */
 export const useClassList = (params = {}, options = {}) => {
+  const { user, isLoading: authLoading } = useAuth();
+  const { enabled: optionEnabled = true, ...restOptions } = options;
+
+  const isAdmin = user?.role === "admin";
+
   return useQuery({
-    queryKey: classKeys.list(params),
+    queryKey: classKeys.list(user?._id, user?.role, params),
     queryFn: async () => {
       const res = await classApi.list(params);
       return {
@@ -20,9 +36,42 @@ export const useClassList = (params = {}, options = {}) => {
         pagination: res.data?.pagination,
       };
     },
+    enabled:
+      optionEnabled && !authLoading && !!user && isAdmin && !!params.session, // same as your ClassListPage: wait for session
     keepPreviousData: true,
     staleTime: 60 * 1000,
-    ...options,
+    ...restOptions,
+  });
+};
+
+/**
+ * Lightweight class dropdown (Mark Attendance, filters, Shift, etc.).
+ * Backend scopes class role to linkedClass; key still includes user so no bleed.
+ * If your app already uses useClasses from useStudents.js, keep using that OR
+ * switch imports to this — do not define two different hooks with same name in two files.
+ */
+export const useClasses = (params = {}, options = {}) => {
+  const { user, isLoading: authLoading } = useAuth();
+  const { enabled: optionEnabled = true, ...restOptions } = options;
+
+  return useQuery({
+    queryKey: classKeys.list(user?._id, user?.role, {
+      limit: 500,
+      isArchived: false,
+      ...params,
+      _use: "options",
+    }),
+    queryFn: async () => {
+      const res = await classApi.list({
+        limit: 500,
+        isArchived: false,
+        ...params,
+      });
+      return res.data?.data || [];
+    },
+    enabled: optionEnabled && !authLoading && !!user,
+    staleTime: 60 * 1000,
+    ...restOptions,
   });
 };
 

@@ -16,7 +16,7 @@ const {
 const list = [
   validateQuery(queryClassSchema),
   asyncHandler(async (req, res) => {
-    const result = await classService.list(req.query, req.user); // ← pass req.user
+    const result = await classService.list(req.query, req.user);
     return sendResponse(res).success({
       message: "Classes fetched successfully",
       data: result.data,
@@ -26,7 +26,7 @@ const list = [
 ];
 
 const getById = asyncHandler(async (req, res) => {
-  const cls = await classService.getById(req.params.id);
+  const cls = await classService.getById(req.params.id, req.user);
   return sendResponse(res).success({
     message: "Class fetched successfully",
     data: cls,
@@ -81,4 +81,29 @@ const archive = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { list, getById, create, update, remove, archive };
+const resetPassword = asyncHandler(async (req, res) => {
+  const { newPassword } = req.body;
+  const pin = String(newPassword ?? "").trim();
+
+  if (!/^\d{5}$/.test(pin)) {
+    return sendResponse(res).badRequest({
+      message: "Class PIN must be exactly 5 digits (0-9).",
+    });
+  }
+
+  await classService.resetClassPassword(req.params.id, pin, req.user, req);
+
+  return sendResponse(res).success({
+    message: "Class login PIN reset successfully",
+  });
+});
+
+module.exports = {
+  list,
+  getById,
+  create,
+  update,
+  remove,
+  archive,
+  resetPassword,
+};
