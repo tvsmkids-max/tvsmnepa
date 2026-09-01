@@ -30,7 +30,6 @@ import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
-import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
@@ -47,33 +46,35 @@ const MobileBottomNav = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
 
+  const homeRoute = isAdmin ? "/dashboard" : "/teacher/dashboard";
+
   const getCurrentValue = () => {
     const path = location.pathname;
-    if (path === "/dashboard" || path === "/teacher/dashboard") return "home";
+    if (
+      path === "/dashboard" ||
+      path === "/teacher/dashboard" ||
+      path === "/class/dashboard"
+    ) {
+      return "home";
+    }
     if (path.startsWith("/attendance/mark")) return "mark";
-
-    // Admin uses "daily", teacher uses "monthly"
     if (isAdmin && path.startsWith("/reports/daily")) return "daily";
-    if (!isAdmin && path.startsWith("/reports/monthly")) return "monthly";
-
     if (path.startsWith("/students")) return "students";
+    if (!isAdmin && path.startsWith("/reports/monthly")) return "monthly";
     return false;
   };
 
-  const handleChange = (event, newValue) => {
+  const handleChange = (_event, newValue) => {
     if (newValue === "more") {
       setDrawerOpen(true);
       return;
     }
-
-    const homeRoute = isAdmin ? "/dashboard" : "/teacher/dashboard";
-
     const routes = {
       home: homeRoute,
       mark: "/attendance/mark",
       daily: "/reports/daily",
-      monthly: "/reports/monthly",
       students: "/students",
+      monthly: "/reports/monthly",
     };
     if (routes[newValue]) navigate(routes[newValue]);
   };
@@ -89,16 +90,12 @@ const MobileBottomNav = () => {
     navigate("/login", { replace: true });
   };
 
-  // ─── ADMIN MORE ITEMS ───
+  // ─── ADMIN MORE ITEMS (Cleaned - No Profile) ───
   const adminMoreItems = [
-    { divider: true, label: "Personal" },
-    { label: "My Profile", icon: <PersonOutlinedIcon />, path: "/profile" },
-
     { divider: true, label: "Management" },
     { label: "Classes", icon: <ClassOutlinedIcon />, path: "/classes" },
-    { label: "Teachers", icon: <PersonOutlinedIcon />, path: "/teachers" },
     {
-      label: "Section Shift",
+      label: "Class / Section Shift",
       icon: <SwapHorizOutlinedIcon />,
       path: "/students/shift",
     },
@@ -140,11 +137,8 @@ const MobileBottomNav = () => {
     { label: "Settings", icon: <SettingsOutlinedIcon />, path: "/settings" },
   ];
 
-  // ─── TEACHER MORE ITEMS ───
-  const teacherMoreItems = [
-    { divider: true, label: "Personal" },
-    { label: "My Profile", icon: <PersonOutlinedIcon />, path: "/profile" },
-
+  // ─── CLASS USER MORE ITEMS ───
+  const classMoreItems = [
     { divider: true, label: "Reports" },
     {
       label: "Daily Report",
@@ -160,10 +154,17 @@ const MobileBottomNav = () => {
     { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
   ];
 
-  const moreItems = isAdmin ? adminMoreItems : teacherMoreItems;
+  const moreItems = isAdmin ? adminMoreItems : classMoreItems;
 
   const isActivePath = (path) =>
-    location.pathname === path || location.pathname.startsWith(path);
+    location.pathname === path || location.pathname.startsWith(`${path}/`);
+
+  const roleLabel =
+    user?.role === "admin"
+      ? "Admin"
+      : user?.role === "class"
+        ? "Class"
+        : user?.role || "";
 
   return (
     <>
@@ -194,7 +195,6 @@ const MobileBottomNav = () => {
               minWidth: "auto",
               padding: "6px 4px",
               color: "text.secondary",
-              transition: "all 0.2s",
               "&.Mui-selected": {
                 color: "primary.main",
                 position: "relative",
@@ -214,7 +214,7 @@ const MobileBottomNav = () => {
               fontSize: "0.65rem",
               fontWeight: 600,
               marginTop: "2px",
-              "&.Mui-selected": { fontSize: "0.68rem", fontWeight: 800 },
+              "&.Mui-selected": { fontSize: "0.68rem", fontWeight: 700 },
             },
           }}
         >
@@ -236,15 +236,15 @@ const MobileBottomNav = () => {
             />
           ) : (
             <BottomNavigationAction
-              label="Monthly"
-              value="monthly"
-              icon={<CalendarMonthOutlinedIcon sx={{ fontSize: 22 }} />}
+              label="Students"
+              value="students"
+              icon={<PeopleOutlinedIcon sx={{ fontSize: 22 }} />}
             />
           )}
           <BottomNavigationAction
-            label="Students"
-            value="students"
-            icon={<PeopleOutlinedIcon sx={{ fontSize: 22 }} />}
+            label="Monthly"
+            value="monthly"
+            icon={<CalendarMonthOutlinedIcon sx={{ fontSize: 22 }} />}
           />
           <BottomNavigationAction
             label="More"
@@ -292,7 +292,7 @@ const MobileBottomNav = () => {
                   height: 40,
                   bgcolor: isAdmin ? "primary.main" : "secondary.main",
                   fontSize: "0.95rem",
-                  fontWeight: 800,
+                  fontWeight: 700,
                 }}
               >
                 {user?.name?.[0]?.toUpperCase()}
@@ -300,8 +300,8 @@ const MobileBottomNav = () => {
               <Box>
                 <Typography
                   variant="body2"
-                  fontWeight={800}
-                  sx={{ color: "text.primary", letterSpacing: "-0.01em" }}
+                  fontWeight={700}
+                  sx={{ textTransform: isAdmin ? "none" : "uppercase" }}
                 >
                   {user?.name}
                 </Typography>
@@ -311,11 +311,10 @@ const MobileBottomNav = () => {
                     color: "text.secondary",
                     fontSize: "0.7rem",
                     textTransform: "uppercase",
-                    letterSpacing: "0.05em",
                     fontWeight: 700,
                   }}
                 >
-                  {user?.role}
+                  {roleLabel}
                 </Typography>
               </Box>
             </Stack>
@@ -324,9 +323,7 @@ const MobileBottomNav = () => {
               size="small"
               sx={{ bgcolor: "action.hover" }}
             >
-              <CloseOutlinedIcon
-                sx={{ fontSize: 18, color: "text.secondary" }}
-              />
+              <CloseOutlinedIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Stack>
         </Box>
@@ -346,7 +343,7 @@ const MobileBottomNav = () => {
                     pt: idx === 0 ? 1 : 2,
                     pb: 0.5,
                     color: "text.disabled",
-                    fontWeight: 800,
+                    fontWeight: 700,
                     fontSize: "0.65rem",
                     textTransform: "uppercase",
                     letterSpacing: "0.08em",
@@ -372,7 +369,6 @@ const MobileBottomNav = () => {
                       ? alpha(theme.palette.primary.main, 0.12)
                       : "#F0F4FF"
                     : "transparent",
-                  "&:hover": { bgcolor: "action.hover" },
                 }}
               >
                 <ListItemIcon
@@ -389,19 +385,8 @@ const MobileBottomNav = () => {
                     fontSize: "0.88rem",
                     fontWeight: active ? 700 : 500,
                     color: active ? "primary.main" : "text.primary",
-                    letterSpacing: "-0.01em",
                   }}
                 />
-                {active && (
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      bgcolor: "primary.main",
-                    }}
-                  />
-                )}
               </ListItemButton>
             );
           })}
@@ -412,12 +397,7 @@ const MobileBottomNav = () => {
         <Box sx={{ p: 1.5 }}>
           <ListItemButton
             onClick={handleLogout}
-            sx={{
-              borderRadius: 2,
-              py: 1.2,
-              color: "error.main",
-              "&:hover": { bgcolor: "error.50" },
-            }}
+            sx={{ borderRadius: 2, py: 1.2, color: "error.main" }}
           >
             <ListItemIcon sx={{ minWidth: 36 }}>
               <LogoutOutlinedIcon sx={{ fontSize: 20, color: "error.main" }} />
@@ -436,13 +416,9 @@ const MobileBottomNav = () => {
         <Box sx={{ textAlign: "center", pb: 3 }}>
           <Typography
             variant="caption"
-            sx={{
-              color: "text.disabled",
-              fontSize: "0.62rem",
-              fontWeight: 600,
-            }}
+            sx={{ color: "text.disabled", fontSize: "0.62rem" }}
           >
-            v{import.meta.env.VITE_APP_VERSION || "1.0.0"} • TVSM
+            v{import.meta.env.VITE_APP_VERSION || "1.0.0"} · TVSM
           </Typography>
         </Box>
       </Drawer>

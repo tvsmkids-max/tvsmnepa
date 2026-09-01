@@ -9,6 +9,8 @@ import {
   Chip,
   Divider,
   Button,
+  useTheme,
+  alpha,
 } from "@mui/material";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
@@ -23,52 +25,59 @@ import useAuth from "../../hooks/useAuth";
 
 const SCHOOL_LOGO = import.meta.env.VITE_SCHOOL_LOGO || "/logo.png";
 
-const InfoRow = ({ icon, label, value }) => (
-  <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ py: 1 }}>
-    <Box
-      sx={{
-        width: 36,
-        height: 36,
-        borderRadius: 2,
-        bgcolor: "primary.50",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-      }}
-    >
-      {React.cloneElement(icon, {
-        sx: { fontSize: 18, color: "primary.main" },
-      })}
-    </Box>
-    <Box sx={{ flex: 1, minWidth: 0 }}>
-      <Typography
-        variant="caption"
+const InfoRow = ({ icon, label, value }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+
+  return (
+    <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ py: 1 }}>
+      <Box
         sx={{
-          color: "text.secondary",
-          fontSize: "0.68rem",
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-          display: "block",
-          mb: 0.2,
+          width: 36,
+          height: 36,
+          borderRadius: 2,
+          bgcolor: isDark
+            ? alpha(theme.palette.primary.main, 0.15)
+            : alpha(theme.palette.primary.main, 0.08),
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
         }}
       >
-        {label}
-      </Typography>
-      <Typography
-        variant="body2"
-        sx={{
-          fontWeight: 700,
-          color: "text.primary",
-          wordBreak: "break-word",
-        }}
-      >
-        {value || "—"}
-      </Typography>
-    </Box>
-  </Stack>
-);
+        {React.cloneElement(icon, {
+          sx: { fontSize: 18, color: "primary.main" },
+        })}
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            fontSize: "0.68rem",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            display: "block",
+            mb: 0.2,
+          }}
+        >
+          {label}
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{
+            fontWeight: 600,
+            color: "text.primary",
+            wordBreak: "break-word",
+          }}
+        >
+          {value || "—"}
+        </Typography>
+      </Box>
+    </Stack>
+  );
+};
 
 const SchoolInfoSheet = ({ open, onClose, settings }) => {
   const navigate = useNavigate();
@@ -112,7 +121,6 @@ const SchoolInfoSheet = ({ open, onClose, settings }) => {
         />
       </Box>
 
-      {/* Navy gradient header (stays branded in both themes) */}
       <Box
         sx={{
           background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
@@ -131,7 +139,6 @@ const SchoolInfoSheet = ({ open, onClose, settings }) => {
             right: 12,
             color: "white",
             bgcolor: "rgba(255,255,255,0.1)",
-            "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
           }}
           size="small"
         >
@@ -163,7 +170,7 @@ const SchoolInfoSheet = ({ open, onClose, settings }) => {
                 display: "block",
               }}
             >
-              School Name
+              School
             </Typography>
             <Typography
               variant="h6"
@@ -211,7 +218,7 @@ const SchoolInfoSheet = ({ open, onClose, settings }) => {
             mb: 1,
           }}
         >
-          Contact & Details
+          Contact & details
         </Typography>
 
         <Stack divider={<Divider flexItem />}>
@@ -238,7 +245,7 @@ const SchoolInfoSheet = ({ open, onClose, settings }) => {
           )}
           <InfoRow
             icon={<AccessTimeOutlinedIcon />}
-            label="Attendance Hours"
+            label="Attendance hours"
             value={
               settings?.attendanceOpenTime && settings?.attendanceLockTime
                 ? `${settings.attendanceOpenTime} — ${settings.attendanceLockTime}`
@@ -247,6 +254,7 @@ const SchoolInfoSheet = ({ open, onClose, settings }) => {
           />
         </Stack>
 
+        {/* Admin only — never profile */}
         {isAdmin && (
           <Button
             fullWidth
@@ -260,16 +268,10 @@ const SchoolInfoSheet = ({ open, onClose, settings }) => {
               py: 1.3,
               borderRadius: 2,
               fontWeight: 700,
-              borderColor: "primary.main",
-              color: "primary.main",
               justifyContent: "space-between",
-              "&:hover": {
-                bgcolor: "primary.50",
-                borderColor: "primary.dark",
-              },
             }}
           >
-            <Box sx={{ flex: 1, textAlign: "left", ml: 1 }}>Full Settings</Box>
+            <Box sx={{ flex: 1, textAlign: "left", ml: 1 }}>Full settings</Box>
           </Button>
         )}
 
@@ -278,8 +280,8 @@ const SchoolInfoSheet = ({ open, onClose, settings }) => {
             variant="caption"
             sx={{ color: "text.disabled", fontSize: "0.65rem" }}
           >
-            v{import.meta.env.VITE_APP_VERSION || "1.0.0"} • Developed by{" "}
-            <strong style={{ color: "#1E4D98" }}>Abhishek</strong>
+            v{import.meta.env.VITE_APP_VERSION || "1.0.0"} · Developed by
+            Abhishek
           </Typography>
         </Box>
       </Box>

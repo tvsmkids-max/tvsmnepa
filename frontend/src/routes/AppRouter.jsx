@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
 import { Box, LinearProgress } from "@mui/material";
+import useAuth from "../hooks/useAuth";
 
 // ─── Auth ───
 const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
@@ -18,14 +19,8 @@ const TeacherDashboard = lazy(
   () => import("../pages/dashboard/TeacherDashboard"),
 );
 
-// ─── Profile ───
-const TeacherProfilePage = lazy(
-  () => import("../pages/profile/TeacherProfilePage"),
-);
-
 // ─── Management ───
 const ClassListPage = lazy(() => import("../pages/classes/ClassListPage"));
-const TeacherListPage = lazy(() => import("../pages/teachers/TeacherListPage"));
 const StudentListPage = lazy(() => import("../pages/students/StudentListPage"));
 const StudentDetailPage = lazy(
   () => import("../pages/students/StudentDetailPage"),
@@ -81,17 +76,8 @@ const PromotionPage = lazy(() => import("../pages/promotion/PromotionPage"));
 // ─── Backup ───
 const BackupPage = lazy(() => import("../pages/backup/BackupPage"));
 
-// ─── Suspense Loader ───
 const PageLoader = () => (
-  <Box
-    sx={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 9999,
-    }}
-  >
+  <Box sx={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 9999 }}>
     <LinearProgress
       sx={{
         height: 3,
@@ -103,6 +89,15 @@ const PageLoader = () => (
     />
   </Box>
 );
+
+const HomeRedirect = () => {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (user?.role === "admin") return <Navigate to="/dashboard" replace />;
+  if (user?.role === "class")
+    return <Navigate to="/teacher/dashboard" replace />;
+  return <Navigate to="/login" replace />;
+};
 
 const routerFutureFlags = {
   v7_startTransition: true,
@@ -130,7 +125,7 @@ const AppRouter = () => (
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route index element={<HomeRedirect />} />
 
           {/* ─── Dashboards ─── */}
           <Route
@@ -141,17 +136,20 @@ const AppRouter = () => (
               </RoleRoute>
             }
           />
+
           <Route
             path="teacher/dashboard"
             element={
-              <RoleRoute roles={["teacher"]}>
+              <RoleRoute roles={["class"]}>
                 <TeacherDashboard />
               </RoleRoute>
             }
           />
 
-          {/* ─── Profile ─── */}
-          <Route path="profile" element={<TeacherProfilePage />} />
+          <Route
+            path="class/dashboard"
+            element={<Navigate to="/teacher/dashboard" replace />}
+          />
 
           {/* ─── Students ─── */}
           <Route path="students" element={<StudentListPage />} />
@@ -167,15 +165,12 @@ const AppRouter = () => (
             }
           />
 
-          {/* ─── Classes ─── */}
-          <Route path="classes" element={<ClassListPage />} />
-
-          {/* ─── Teachers (Admin only) ─── */}
+          {/* ─── Classes (Admin only) ─── */}
           <Route
-            path="teachers"
+            path="classes"
             element={
               <RoleRoute roles={["admin"]}>
-                <TeacherListPage />
+                <ClassListPage />
               </RoleRoute>
             }
           />

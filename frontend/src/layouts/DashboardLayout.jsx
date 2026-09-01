@@ -5,6 +5,7 @@ import Topbar from "../components/layout/Topbar";
 import Sidebar from "../components/layout/Sidebar";
 import MobileBottomNav from "../components/layout/MobileBottomNav";
 import AppSplashScreen from "../components/common/AppSplashScreen";
+import IdleTimeoutProvider from "../components/common/IdleTimeoutProvider";
 import useAuth from "../hooks/useAuth";
 
 const DRAWER_WIDTH = 220;
@@ -24,42 +25,39 @@ const DashboardLayout = () => {
   const currentDrawerWidth = collapsed ? COLLAPSED_DRAWER_WIDTH : DRAWER_WIDTH;
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        minHeight: "100vh",
-        bgcolor: "background.default",
-      }}
-    >
-      {/* Global Splash Screen */}
-      {showSplash && user && (
-        <AppSplashScreen user={user} onComplete={dismissSplash} />
-      )}
-
-      {/* Top Header Bar */}
-      <Topbar onMenuClick={handleToggleSidebar} />
-
-      {/* Navigation Sidebar */}
-      <Sidebar drawerWidth={currentDrawerWidth} collapsed={collapsed} />
-
-      {/* Main Content Area — Double-Margin Void Fixed */}
+    <IdleTimeoutProvider>
       <Box
-        component="main"
         sx={{
-          flexGrow: 1,
-          width: 0, // Allows Flexbox flexGrow to distribute remaining width accurately
-          px: { xs: 2, sm: 3, md: 3.5 }, // Clean 28px inner padding
-          py: { xs: 2, sm: 2.5 },
-          pb: { xs: 9, md: 4 },
+          display: "flex",
+          minHeight: "100vh",
+          bgcolor: "background.default",
         }}
       >
-        <Toolbar sx={{ minHeight: "60px !important" }} />
-        <Outlet />
-      </Box>
+        {showSplash && user && (
+          <AppSplashScreen user={user} onComplete={dismissSplash} />
+        )}
 
-      {/* Mobile Bottom Navigation */}
-      {isMobile && <MobileBottomNav />}
-    </Box>
+        <Topbar onMenuClick={handleToggleSidebar} />
+
+        <Sidebar drawerWidth={currentDrawerWidth} collapsed={collapsed} />
+
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            width: 0,
+            px: { xs: 2, sm: 3, md: 3.5 },
+            py: { xs: 2, sm: 2.5 },
+            pb: { xs: 9, md: 4 },
+          }}
+        >
+          <Toolbar sx={{ minHeight: "60px !important" }} />
+          <Outlet />
+        </Box>
+
+        {isMobile && <MobileBottomNav />}
+      </Box>
+    </IdleTimeoutProvider>
   );
 };
 

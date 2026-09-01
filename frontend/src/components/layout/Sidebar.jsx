@@ -15,7 +15,6 @@ import {
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
-import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
@@ -40,13 +39,12 @@ const adminNav = [
   },
   { type: "section", label: "Management" },
   { label: "Students", icon: <PeopleOutlinedIcon />, path: "/students" },
+  { label: "Classes", icon: <ClassOutlinedIcon />, path: "/classes" },
   {
-    label: "Section Shift",
+    label: "Class / Section Shift",
     icon: <SwapHorizOutlinedIcon />,
     path: "/students/shift",
   },
-  { label: "Classes", icon: <ClassOutlinedIcon />, path: "/classes" },
-  { label: "Teachers", icon: <PersonOutlinedIcon />, path: "/teachers" },
   { type: "section", label: "Attendance" },
   { label: "Mark", icon: <EventNoteOutlinedIcon />, path: "/attendance/mark" },
   { type: "section", label: "Reports" },
@@ -81,6 +79,7 @@ const adminNav = [
   { label: "Settings", icon: <SettingsOutlinedIcon />, path: "/settings" },
 ];
 
+// Same paths as before — still /teacher/dashboard
 const teacherNav = [
   {
     type: "item",
@@ -99,13 +98,11 @@ const teacherNav = [
     icon: <CalendarMonthOutlinedIcon />,
     path: "/reports/monthly",
   },
-
   {
     label: "Register",
     icon: <ListAltOutlinedIcon />,
     path: "/reports/register",
   },
-
   { type: "section", label: "Info" },
   { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
 ];
@@ -118,6 +115,7 @@ const SidebarContent = ({ collapsed }) => {
 
   const navItems = useMemo(() => {
     if (user?.role === "admin") return adminNav;
+    // class role uses same teacher nav UI
     return teacherNav;
   }, [user?.role]);
 

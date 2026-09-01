@@ -1,31 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   AppBar,
   Toolbar,
   IconButton,
   Typography,
   Box,
-  Avatar,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
   Tooltip,
   Chip,
   Stack,
   useMediaQuery,
   useTheme,
-  ButtonBase,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import ExitToAppOutlinedIcon from "@mui/icons-material/ExitToAppOutlined";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
-import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
-import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
-import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDownOutlined";
-import ExpandMoreOutlinedIcon from "@mui/icons-material/ExpandMoreOutlined";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import { useNavigate } from "react-router-dom";
@@ -33,6 +21,9 @@ import useAuth from "../../hooks/useAuth";
 import useSettings from "../../hooks/useSettings";
 import useThemeMode from "../../hooks/useThemeMode";
 import SchoolInfoSheet from "./SchoolInfoSheet";
+
+// ✅ Correct quote import
+import { getDailyQuoteForUser } from "../../utils/quoteUtils";
 
 const SCHOOL_LOGO = import.meta.env.VITE_SCHOOL_LOGO || "/logo.png";
 const DEFAULT_SCHOOL_NAME =
@@ -43,7 +34,7 @@ const getShortName = (fullName) => {
   const words = fullName.split(/\s+/).filter(Boolean);
   if (words.length <= 3) return words.join(" ").toUpperCase();
   const initials = words
-    .slice(0, words.length - 1)
+    .slice(0, -1)
     .map((w) => w[0])
     .join("");
   return `${initials} ${words[words.length - 1]}`.toUpperCase();
@@ -57,14 +48,11 @@ const Topbar = ({ onMenuClick }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  const [anchorEl, setAnchorEl] = useState(null);
+  const isClassUser = user?.role === "class";
+
   const [schoolSheetOpen, setSchoolSheetOpen] = useState(false);
 
-  const handleMenuOpen = (e) => setAnchorEl(e.currentTarget);
-  const handleMenuClose = () => setAnchorEl(null);
-
   const handleLogout = async () => {
-    handleMenuClose();
     await logout();
     navigate("/login", { replace: true });
   };
@@ -80,16 +68,22 @@ const Topbar = ({ onMenuClick }) => {
       : DEFAULT_SCHOOL_NAME;
 
   const displayName = isMobile ? getShortName(fullSchoolName) : fullSchoolName;
+  const classLabel = isClassUser
+    ? String(user?.name || "Class").toUpperCase()
+    : null;
 
-  // ─── PREMIUM UX COLORS & EFFECTS ───
-  const topbarBg = theme.palette.background.paper;
-  const topbarText = theme.palette.text.primary;
-  const borderColor = theme.palette.divider;
-  const subtleText = theme.palette.text.secondary;
-
-  const roleStyle = isAdmin
-    ? { bg: theme.palette.primary.main, text: "#FFF" }
-    : { bg: theme.palette.secondary.main, text: "#FFF" };
+  // ✅ Read quote using getDailyQuoteForUser and property .quote
+  const dailyQuoteText = useMemo(() => {
+    try {
+      const q = getDailyQuoteForUser ? getDailyQuoteForUser(user) : null;
+      return (
+        q?.quote ||
+        "Education is the most powerful weapon which you can use to change the world."
+      );
+    } catch {
+      return "Education is the most powerful weapon which you can use to change the world.";
+    }
+  }, [user]);
 
   return (
     <>
@@ -97,116 +91,180 @@ const Topbar = ({ onMenuClick }) => {
         position="fixed"
         elevation={0}
         sx={{
-          // Apple-style frosted glass effect
-          bgcolor: alpha(topbarBg, 0.85),
+          bgcolor: isDark ? alpha("#0F172A", 0.92) : alpha("#FFFFFF", 0.92),
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
-          color: topbarText,
-          zIndex: (theme) => theme.zIndex.drawer + 1,
+          color: "text.primary",
+          zIndex: (t) => t.zIndex.drawer + 1,
           width: "100%",
-          borderBottom: `1px solid ${alpha(borderColor, 0.8)}`,
-          transition: "background-color 0.3s ease",
+          borderBottom: "1px solid",
+          borderColor: "divider",
         }}
       >
         <Toolbar
           sx={{
-            gap: { xs: 1, sm: 2 },
-            minHeight: "60px !important", // Modern fixed height
-            px: { xs: 1.5, sm: 2.5, md: 3 },
+            gap: { xs: 0.75, sm: 1.5 },
+            minHeight: "56px !important",
+            px: { xs: 1.25, sm: 2, md: 2.5 },
           }}
         >
-          {/* Hamburger Menu (Clean, Circular, Subtle) */}
+          {/* Desktop Hamburger */}
           {!isMobile && (
             <IconButton
               edge="start"
               onClick={onMenuClick}
+              aria-label="Toggle menu"
               sx={{
-                color: subtleText,
-                transition: "all 0.2s",
-                "&:hover": { color: topbarText, bgcolor: "action.hover" },
-                mr: 0.5,
+                color: "text.secondary",
+                "&:hover": { color: "text.primary", bgcolor: "action.hover" },
               }}
             >
               <MenuOutlinedIcon sx={{ fontSize: 22 }} />
             </IconButton>
           )}
 
-          {/* School Brand (No weird backgrounds, crisp typography) */}
+          {/* School Brand (Clickable for Admin to open Info Sheet on all screens) */}
           <Box
-            onClick={() => isMobile && setSchoolSheetOpen(true)}
+            onClick={isAdmin ? () => setSchoolSheetOpen(true) : undefined}
             sx={{
-              flex: 1,
+              flex: { xs: 1, md: "none" },
+              minWidth: 0,
               display: "flex",
               alignItems: "center",
-              gap: 1.5,
-              cursor: isMobile ? "pointer" : "default",
+              gap: 1.25,
+              cursor: isAdmin ? "pointer" : "default",
               userSelect: "none",
             }}
           >
-            <Avatar
-              src={SCHOOL_LOGO}
-              alt="Logo"
-              variant="square"
+            <Box
               sx={{
-                width: { xs: 28, sm: 32 },
-                height: { xs: 28, sm: 32 },
-                bgcolor: "transparent",
-                "& img": { objectFit: "contain" },
+                width: 32,
+                height: 32,
+                borderRadius: 1.5,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                bgcolor: isDark ? alpha("#fff", 0.95) : alpha("#0F172A", 0.04),
+                border: "1px solid",
+                borderColor: "divider",
+                p: 0.4,
               }}
             >
-              <SchoolOutlinedIcon sx={{ color: subtleText, fontSize: 24 }} />
-            </Avatar>
-
-            <Typography
-              sx={{
-                color: topbarText,
-                fontWeight: 800,
-                fontSize: { xs: "0.9rem", sm: "1.05rem" },
-                letterSpacing: "-0.02em",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {displayName}
-            </Typography>
-
-            {isMobile && (
-              <ExpandMoreOutlinedIcon
-                sx={{ fontSize: 16, color: subtleText, ml: -0.5 }}
+              <Box
+                component="img"
+                src={SCHOOL_LOGO}
+                alt=""
+                sx={{ width: "100%", height: "100%", objectFit: "contain" }}
               />
-            )}
+            </Box>
+
+            <Box sx={{ minWidth: 0, flex: { xs: 1, md: "none" } }}>
+              <Typography
+                sx={{
+                  fontWeight: 700,
+                  fontSize: { xs: "0.8rem", sm: "0.95rem" },
+                  letterSpacing: "-0.01em",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  lineHeight: 1.2,
+                }}
+              >
+                {displayName}
+              </Typography>
+              {classLabel && isMobile && (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                    display: "block",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {classLabel}
+                </Typography>
+              )}
+            </Box>
           </Box>
 
+          {/* DESKTOP QUOTE (Centered in empty space) */}
+          {!isMobile && (
+            <Box
+              sx={{
+                flex: 1,
+                display: "flex",
+                justifyContent: "center",
+                px: 4,
+                minWidth: 0,
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  fontStyle: "italic",
+                  color: "text.secondary",
+                  fontWeight: 600,
+                  fontSize: "0.82rem",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  maxWidth: "100%",
+                }}
+              >
+                "{dailyQuoteText}"
+              </Typography>
+            </Box>
+          )}
+
           {/* Right Controls */}
-          <Stack direction="row" alignItems="center" spacing={1.5}>
-            {/* Session Pill */}
-            {!isMobile && sessionName && (
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={{ xs: 0.5, sm: 1 }}
+          >
+            {sessionName && !isMobile && (
+              <Chip
+                label={sessionName}
+                size="small"
+                variant="outlined"
+                sx={{
+                  height: 24,
+                  fontWeight: 600,
+                  fontSize: "0.68rem",
+                  borderColor: "divider",
+                  color: "text.secondary",
+                }}
+              />
+            )}
+            {sessionName && isMobile && (
               <Chip
                 label={sessionName}
                 size="small"
                 sx={{
+                  height: 22,
                   fontWeight: 700,
-                  bgcolor: isDark ? "rgba(255,255,255,0.08)" : "#F1F5F9",
-                  color: isDark ? "#E2E8F0" : "#475569",
-                  height: 26,
-                  fontSize: "0.75rem",
-                  letterSpacing: "0.02em",
-                  border: "1px solid",
-                  borderColor: borderColor,
+                  fontSize: "0.62rem",
+                  bgcolor: isDark ? alpha("#fff", 0.06) : "#F1F5F9",
+                  color: "text.secondary",
+                  "& .MuiChip-label": { px: 0.75 },
                 }}
               />
             )}
 
             {/* Dark Mode Toggle */}
-            <Tooltip title={isDark ? "Light Mode" : "Dark Mode"}>
+            <Tooltip title={isDark ? "Light mode" : "Dark mode"}>
               <IconButton
                 onClick={toggleTheme}
-                sx={{
-                  color: subtleText,
-                  transition: "all 0.2s",
-                  "&:hover": { color: topbarText, bgcolor: "action.hover" },
-                }}
+                size="small"
+                aria-label="Toggle theme"
+                sx={{ color: "text.secondary", mr: 0.5 }}
               >
                 {isDark ? (
                   <LightModeOutlinedIcon sx={{ fontSize: 20 }} />
@@ -216,160 +274,36 @@ const Topbar = ({ onMenuClick }) => {
               </IconButton>
             </Tooltip>
 
-            {/* User Dropdown Button (Sleek Outline) */}
-            <Tooltip title="Account menu">
-              <ButtonBase
-                onClick={handleMenuOpen}
+            {/* DIRECT SIGN OUT BUTTON FOR EVERYONE (ADMIN & CLASS) */}
+            <Tooltip title="Sign out">
+              <IconButton
+                onClick={handleLogout}
+                size="small"
+                aria-label="Sign out"
                 sx={{
-                  borderRadius: "30px", // Fully rounded pill
-                  pl: 0.5,
-                  pr: { xs: 0.5, md: 1.5 },
-                  py: 0.5,
-                  border: `1px solid ${borderColor}`,
-                  bgcolor: isDark ? "rgba(255,255,255,0.02)" : "#FAFBFC",
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    bgcolor: "action.hover",
-                    borderColor: subtleText,
-                  },
+                  color: "error.main",
+                  border: "1px solid",
+                  borderColor: alpha(theme.palette.error.main, 0.35),
+                  borderRadius: 2,
+                  width: 34,
+                  height: 34,
+                  "&:hover": { bgcolor: alpha(theme.palette.error.main, 0.1) },
                 }}
               >
-                <Avatar
-                  sx={{
-                    width: 28,
-                    height: 28,
-                    fontSize: "0.8rem",
-                    fontWeight: 800,
-                    bgcolor: roleStyle.bg,
-                    color: roleStyle.text,
-                  }}
-                >
-                  {user?.name?.[0]?.toUpperCase()}
-                </Avatar>
-                {!isMobile && (
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    spacing={0.5}
-                    sx={{ ml: 1 }}
-                  >
-                    <Typography
-                      sx={{
-                        color: topbarText,
-                        fontWeight: 700,
-                        fontSize: "0.85rem",
-                        maxWidth: 120,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {user?.name?.split(" ")[0]}
-                    </Typography>
-                    <KeyboardArrowDownOutlinedIcon
-                      sx={{ fontSize: 16, color: subtleText }}
-                    />
-                  </Stack>
-                )}
-              </ButtonBase>
+                <ExitToAppOutlinedIcon sx={{ fontSize: 18 }} />
+              </IconButton>
             </Tooltip>
           </Stack>
-
-          {/* Dropdown Menu */}
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-            transformOrigin={{ horizontal: "right", vertical: "top" }}
-            anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-            slotProps={{
-              paper: {
-                sx: { mt: 1.5, minWidth: 220, borderRadius: 3 },
-              },
-            }}
-          >
-            <Box sx={{ px: 2, py: 1.5 }}>
-              <Typography variant="body2" fontWeight={800} noWrap>
-                {user?.name}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                display="block"
-                noWrap
-              >
-                {user?.email}
-              </Typography>
-            </Box>
-
-            <Divider sx={{ my: 0.5 }} />
-
-            <MenuItem
-              onClick={() => {
-                handleMenuClose();
-                navigate("/profile");
-              }}
-              sx={{ py: 1 }}
-            >
-              <ListItemIcon>
-                <PersonOutlinedIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText
-                primary="My Profile"
-                primaryTypographyProps={{
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                }}
-              />
-            </MenuItem>
-
-            {isAdmin && (
-              <MenuItem
-                onClick={() => {
-                  handleMenuClose();
-                  navigate("/settings");
-                }}
-                sx={{ py: 1 }}
-              >
-                <ListItemIcon>
-                  <SettingsOutlinedIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Settings"
-                  primaryTypographyProps={{
-                    fontSize: "0.85rem",
-                    fontWeight: 600,
-                  }}
-                />
-              </MenuItem>
-            )}
-
-            <Divider sx={{ my: 0.5 }} />
-
-            <MenuItem
-              onClick={handleLogout}
-              sx={{ py: 1, color: "error.main" }}
-            >
-              <ListItemIcon>
-                <ExitToAppOutlinedIcon fontSize="small" color="error" />
-              </ListItemIcon>
-              <ListItemText
-                primary="Sign Out"
-                primaryTypographyProps={{
-                  fontSize: "0.85rem",
-                  fontWeight: 700,
-                }}
-              />
-            </MenuItem>
-          </Menu>
         </Toolbar>
       </AppBar>
 
-      <SchoolInfoSheet
-        open={schoolSheetOpen}
-        onClose={() => setSchoolSheetOpen(false)}
-        settings={settings}
-      />
+      {isAdmin && (
+        <SchoolInfoSheet
+          open={schoolSheetOpen}
+          onClose={() => setSchoolSheetOpen(false)}
+          settings={settings}
+        />
+      )}
     </>
   );
 };
