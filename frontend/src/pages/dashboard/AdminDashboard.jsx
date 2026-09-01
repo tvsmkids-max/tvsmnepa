@@ -431,6 +431,22 @@ const AdminDashboard = () => {
               }}
             />
           )}
+          <Chip
+            label={new Date().toLocaleDateString("en-IN", {
+              weekday: "short",
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+            size="small"
+            sx={{
+              height: 24,
+              fontWeight: 700,
+              fontSize: "0.7rem",
+              bgcolor: isDark ? alpha("#3B82F6", 0.12) : "#EFF6FF",
+              color: isDark ? "#93C5FD" : "#1D4ED8",
+            }}
+          />
         </Stack>
         <Button
           size="small"

@@ -1,46 +1,80 @@
 "use strict";
 
 const Attendance = require("../models/Attendance.model");
+const mongoose = require("mongoose");
 
 class AttendanceRepository {
+  /**
+   * Normalize incoming date WITHOUT setHours (which breaks IST UTC midnights).
+   * Service already passes Asia/Kolkata-locked YYYY-MM-DDT00:00:00.000Z.
+   */
+  _asDay(dateInput) {
+    if (!dateInput) return new Date();
+    if (dateInput instanceof Date) {
+      return new Date(dateInput.getTime());
+    }
+    if (
+      typeof dateInput === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(dateInput)
+    ) {
+      return new Date(`${dateInput}T00:00:00.000Z`);
+    }
+    return new Date(dateInput);
+  }
+
+  _dayRange(dateInput) {
+    const start = this._asDay(dateInput);
+    start.setUTCHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setUTCHours(23, 59, 59, 999);
+    return { start, end };
+  }
+
   async findByClassAndDate(classId, date) {
-    const day = new Date(date);
-    day.setHours(0, 0, 0, 0);
-    return Attendance.find({ class: classId, date: day })
-      .populate("student", "name rollNumber scholarNumber status")
+    const { start, end } = this._dayRange(date);
+    return Attendance.find({
+      class: classId,
+      date: { $gte: start, $lte: end },
+    })
+      .populate("student", "name scholarNumber status")
       .populate("markedBy", "name")
       .populate("editedBy", "name")
       .lean();
   }
+
   async findByStudentAndRange(studentId, dateFrom, dateTo) {
     const filter = { student: studentId };
     if (dateFrom || dateTo) {
       filter.date = {};
-      if (dateFrom) {
-        const from = new Date(dateFrom);
-        from.setHours(0, 0, 0, 0);
-        filter.date.$gte = from;
-      }
+      if (dateFrom) filter.date.$gte = this._asDay(dateFrom);
       if (dateTo) {
-        const to = new Date(dateTo);
-        to.setHours(23, 59, 59, 999);
+        const to = this._asDay(dateTo);
+        to.setUTCHours(23, 59, 59, 999);
         filter.date.$lte = to;
       }
     }
     return Attendance.find(filter)
       .sort("-date")
-      .populate("markedBy", "name email role")
-      .populate("editedBy", "name email role")
+      .populate("markedBy", "name role")
+      .populate("editedBy", "name role")
       .populate("class", "name section")
       .lean();
   }
+
+  /**
+   * ✅ CRITICAL FIX: Do NOT call setHours(0,0,0,0) on already-normalized IST dates.
+   * That shifted dates by -5.5h on servers and made getSheet miss all records.
+   */
   async upsertMany(records) {
     const ops = records.map((r) => {
-      const date = new Date(r.date);
-      date.setHours(0, 0, 0, 0);
+      const date = this._asDay(r.date);
+
       return {
         updateOne: {
-          filter: { student: r.student, date },
+          filter: {
+            student: r.student,
+            date,
+          },
           update: {
             $set: {
               status: r.status,
@@ -59,6 +93,7 @@ class AttendanceRepository {
         },
       };
     });
+
     return Attendance.bulkWrite(ops);
   }
 
@@ -78,81 +113,68 @@ class AttendanceRepository {
   }
 
   async lockByClassAndDate(classId, date) {
-    const day = new Date(date);
-    day.setHours(0, 0, 0, 0);
+    const { start, end } = this._dayRange(date);
     return Attendance.updateMany(
-      { class: classId, date: day },
+      { class: classId, date: { $gte: start, $lte: end } },
       { $set: { isLocked: true } },
     );
   }
 
   async unlockByClassAndDate(classId, date) {
-    const day = new Date(date);
-    day.setHours(0, 0, 0, 0);
+    const { start, end } = this._dayRange(date);
     return Attendance.updateMany(
-      { class: classId, date: day },
+      { class: classId, date: { $gte: start, $lte: end } },
       { $set: { isLocked: false } },
     );
   }
 
   async isLocked(classId, date) {
-    const day = new Date(date);
-    day.setHours(0, 0, 0, 0);
+    const { start, end } = this._dayRange(date);
     const record = await Attendance.findOne({
       class: classId,
-      date: day,
+      date: { $gte: start, $lte: end },
       isLocked: true,
     }).lean();
     return !!record;
   }
 
   async getStatsByClassAndDate(classId, date) {
-    const day = new Date(date);
-    day.setHours(0, 0, 0, 0);
+    const { start, end } = this._dayRange(date);
     const result = await Attendance.aggregate([
       {
         $match: {
-          class: new (require("mongoose").Types.ObjectId)(classId),
-          date: day,
+          class: new mongoose.Types.ObjectId(classId),
+          date: { $gte: start, $lte: end },
         },
       },
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
+
     const stats = { Present: 0, Absent: 0, total: 0, isLocked: false };
     result.forEach((r) => {
       stats[r._id] = r.count;
       stats.total += r.count;
     });
-    stats.isLocked = await this.isLocked(classId, day);
+    stats.isLocked = await this.isLocked(classId, date);
     return stats;
   }
 
   async getAttendancePercentage(studentId, fromDate, toDate) {
-    const mongoose = require("mongoose");
     const filter = { student: new mongoose.Types.ObjectId(studentId) };
 
     if (fromDate || toDate) {
       filter.date = {};
-      if (fromDate) {
-        const from = new Date(fromDate);
-        from.setHours(0, 0, 0, 0);
-        filter.date.$gte = from;
-      }
+      if (fromDate) filter.date.$gte = this._asDay(fromDate);
       if (toDate) {
-        const to = new Date(toDate);
-        to.setHours(23, 59, 59, 999);
+        const to = this._asDay(toDate);
+        to.setUTCHours(23, 59, 59, 999);
         filter.date.$lte = to;
       }
     }
 
     const result = await Attendance.aggregate([
       { $match: filter },
-      {
-        $group: {
-          _id: "$status",
-          count: { $sum: 1 },
-        },
-      },
+      { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
 
     const stats = { Present: 0, Absent: 0, total: 0, percentage: 0 };
@@ -168,10 +190,10 @@ class AttendanceRepository {
 
     return stats;
   }
+
   async getPendingClasses(sessionId, date) {
     const Class = require("../models/Class.model");
-    const day = new Date(date);
-    day.setHours(0, 0, 0, 0);
+    const { start, end } = this._dayRange(date);
 
     const classes = await Class.find({
       session: sessionId,
@@ -182,7 +204,7 @@ class AttendanceRepository {
     for (const cls of classes) {
       const count = await Attendance.countDocuments({
         class: cls._id,
-        date: day,
+        date: { $gte: start, $lte: end },
       });
       if (count === 0) {
         result.push(cls);

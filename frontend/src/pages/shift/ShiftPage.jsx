@@ -1,488 +1,579 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   Box,
   Paper,
-  Grid,
   Typography,
   Stack,
   Button,
   CircularProgress,
-  Alert,
-  Chip,
   Breadcrumbs,
   Link,
-  Divider,
-  Avatar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  FormControl,
+  Select,
+  MenuItem,
+  TextField,
+  InputAdornment,
+  InputLabel,
+  useTheme,
+  useMediaQuery,
+  alpha,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
-import ArrowDownwardOutlinedIcon from "@mui/icons-material/ArrowDownwardOutlined";
-import PreviewOutlinedIcon from "@mui/icons-material/PreviewOutlined";
-import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
+import SearchIcon from "@mui/icons-material/Search";
 
-import ClassSelector from "./components/ClassSelector";
-import StudentPicker from "./components/StudentPicker";
-import ShiftPreviewDialog from "./components/ShiftPreviewDialog";
+import { useClasses, useStudentList } from "../../hooks/useStudents";
+import { useShiftExecute } from "../../hooks/useShift";
+import { formatScholarNo } from "../../utils/formatters";
 
-import { useClasses } from "../../hooks/useStudents";
-import { useShiftPreview, useShiftExecute } from "../../hooks/useShift";
-import useThemeMode from "../../hooks/useThemeMode";
-import studentApi from "../../api/studentApi";
+// ═══════════════════════════════════════════════════════════════════
+//  UI/UX CONSTANTS & HELPERS
+// ═══════════════════════════════════════════════════════════════════
 
 const ShiftPage = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
-  const { isDark } = useThemeMode();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  // const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  // ─── Class data ───
+  // ─── Data Fetching ───
   const { data: classes = [], isLoading: classesLoading } = useClasses();
-
-  // ─── State ───
-  const [sourceClassId, setSourceClassId] = useState("");
-  const [targetClassId, setTargetClassId] = useState("");
-  const [students, setStudents] = useState([]);
-  const [studentsLoading, setStudentsLoading] = useState(false);
-  const [selectedIds, setSelectedIds] = useState(new Set());
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewData, setPreviewData] = useState(null);
-
-  // ─── Mutations ───
-  const previewMutation = useShiftPreview();
   const executeMutation = useShiftExecute();
 
-  // ─── Source class label ───
-  const sourceClass = useMemo(
-    () => classes.find((c) => c._id === sourceClassId),
-    [classes, sourceClassId],
+  const {
+    data: studentsData,
+    isLoading: studentsLoading,
+    refetch,
+  } = useStudentList({
+    limit: 5000,
+    status: "Active",
+  });
+  const allStudents = studentsData?.data || [];
+
+  // ─── Filter States ───
+  const [filterGrade, setFilterGrade] = useState("");
+  const [filterSection, setFilterSection] = useState("All");
+  const [search, setSearch] = useState("");
+
+  // ─── Row-Level Target States ───
+  const [rowTargets, setRowTargets] = useState({});
+  const [updatingId, setUpdatingId] = useState(null);
+
+  // ─── Derived Data ───
+  const uniqueGrades = useMemo(() => {
+    const grades = classes.map((c) => c.name);
+    return [...new Set(grades)];
+  }, [classes]);
+
+  const getSectionsForGrade = useCallback(
+    (gradeName) => {
+      return classes
+        .filter((c) => c.name === gradeName)
+        .map((c) => c.section)
+        .sort();
+    },
+    [classes],
   );
-  const targetClass = useMemo(
-    () => classes.find((c) => c._id === targetClassId),
-    [classes, targetClassId],
-  );
 
-  const sourceLabel = sourceClass
-    ? `${sourceClass.name}-${sourceClass.section}`
-    : "";
-  const targetLabel = targetClass
-    ? `${targetClass.name}-${targetClass.section}`
-    : "";
+  React.useEffect(() => {
+    if (uniqueGrades.length > 0 && !filterGrade) {
+      setFilterGrade(uniqueGrades[0]);
+    }
+  }, [uniqueGrades, filterGrade]);
 
-  // ─── Load students when source class changes ───
-  useEffect(() => {
-    if (!sourceClassId) {
-      setStudents([]);
-      setSelectedIds(new Set());
-      return;
+  // ─── Filter Logic ───
+  const displayStudents = useMemo(() => {
+    let list = allStudents;
+
+    if (filterGrade) {
+      list = list.filter((s) => s.class?.name === filterGrade);
+    }
+    if (filterSection !== "All") {
+      list = list.filter((s) => s.class?.section === filterSection);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (s) =>
+          s.name?.toLowerCase().includes(q) ||
+          s.scholarNumber?.toLowerCase().includes(q),
+      );
     }
 
-    let cancelled = false;
+    return list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  }, [allStudents, filterGrade, filterSection, search]);
 
-    const load = async () => {
-      setStudentsLoading(true);
-      try {
-        const res = await studentApi.list({
-          class: sourceClassId,
-          status: "Active",
-          limit: 500,
-        });
-        if (!cancelled) {
-          setStudents(res.data?.data || []);
-          setStudentsLoading(false);
-          setSelectedIds(new Set());
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setStudents([]);
-          setStudentsLoading(false);
-          enqueueSnackbar(
-            err.response?.data?.message || "Failed to load students",
-            { variant: "error" },
-          );
-        }
-      }
-    };
+  // ─── Handlers ───
+  const handleTargetGradeChange = (studentId, newGrade) => {
+    const availableClasses = classes.filter((c) => c.name === newGrade);
+    const defaultClass = availableClasses[0];
 
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [sourceClassId, enqueueSnackbar]);
-
-  // ─── Selection handlers ───
-  const handleToggleSelect = useCallback((id) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }, []);
-
-  const handleSelectAll = useCallback((ids) => {
-    setSelectedIds(new Set(ids));
-  }, []);
-
-  const handleClearSelection = useCallback(() => {
-    setSelectedIds(new Set());
-  }, []);
-
-  // ─── Preview handler ───
-  const handlePreview = async () => {
-    if (!sourceClassId || !targetClassId) {
-      enqueueSnackbar("Select both source and target class", {
-        variant: "warning",
-      });
-      return;
-    }
-
-    if (selectedIds.size === 0) {
-      enqueueSnackbar("Select at least one student", {
-        variant: "warning",
-      });
-      return;
-    }
-
-    try {
-      const res = await previewMutation.mutateAsync({
-        sourceClassId,
-        targetClassId,
-        studentIds: Array.from(selectedIds),
-      });
-
-      setPreviewData(res.data?.data || null);
-      setPreviewOpen(true);
-    } catch {
-      // Error handled by mutation
-    }
+    setRowTargets((prev) => ({
+      ...prev,
+      [studentId]: {
+        grade: newGrade,
+        section: defaultClass ? defaultClass.section : "",
+        classId: defaultClass ? defaultClass._id : "",
+      },
+    }));
   };
 
-  // ─── Execute handler ───
-  const handleConfirmShift = async () => {
-    if (!previewData) return;
+  const handleTargetSectionChange = (studentId, newSection) => {
+    setRowTargets((prev) => {
+      const currentGrade = prev[studentId]?.grade;
+      const targetClass = classes.find(
+        (c) => c.name === currentGrade && c.section === newSection,
+      );
+      return {
+        ...prev,
+        [studentId]: {
+          ...prev[studentId],
+          section: newSection,
+          classId: targetClass ? targetClass._id : "",
+        },
+      };
+    });
+  };
 
+  const handleUpdate = async (student) => {
+    const target = rowTargets[student._id];
+
+    if (!target || !target.classId) {
+      enqueueSnackbar("Please select a target Class and Section first.", {
+        variant: "warning",
+      });
+      return;
+    }
+
+    if (target.classId === student.class?._id) {
+      enqueueSnackbar("Student is already in this class and section.", {
+        variant: "info",
+      });
+      return;
+    }
+
+    setUpdatingId(student._id);
     try {
       await executeMutation.mutateAsync({
-        sourceClassId,
-        targetClassId,
-        studentIds: Array.from(selectedIds),
+        sourceClassId: student.class._id,
+        targetClassId: target.classId,
+        studentIds: [student._id],
       });
 
-      setPreviewOpen(false);
-      setPreviewData(null);
-      setSelectedIds(new Set());
-
-      // Reload students in source class
-      setSourceClassId((prev) => {
-        // Force re-fetch by re-setting
-        const temp = prev;
-        setSourceClassId("");
-        setTimeout(() => setSourceClassId(temp), 100);
-        return "";
+      enqueueSnackbar(`${student.name} shifted successfully!`, {
+        variant: "success",
       });
-    } catch {
-      // Error handled by mutation
+
+      setRowTargets((prev) => {
+        const next = { ...prev };
+        delete next[student._id];
+        return next;
+      });
+      refetch();
+    } catch (err) {
+      enqueueSnackbar(
+        err.response?.data?.message || "Failed to shift student",
+        { variant: "error" },
+      );
+    } finally {
+      setUpdatingId(null);
     }
   };
 
-  // ─── Validation ───
-  const canPreview =
-    sourceClassId &&
-    targetClassId &&
-    sourceClassId !== targetClassId &&
-    selectedIds.size > 0;
+  const isLoading = classesLoading || studentsLoading;
+
+  const headSx = {
+    bgcolor: isDark ? "#0F172A" : "#F8FAFC",
+    fontWeight: 700,
+    fontSize: "0.68rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+    color: "text.secondary",
+    borderBottom: "1px solid",
+    borderColor: "divider",
+    py: 1.5,
+    px: 2,
+    whiteSpace: "nowrap",
+  };
+
+  const cellStyle = {
+    borderBottom: "1px solid",
+    borderColor: "divider",
+    py: 1.25,
+    px: 2,
+    whiteSpace: "nowrap",
+  };
 
   return (
     <Box sx={{ pb: { xs: 10, md: 4 } }}>
-      {/* ─── HEADER ─── */}
-      <Box sx={{ mb: 2.5 }}>
+      {/* ─── BREADCRUMBS & HEADER ─── */}
+      <Box sx={{ mb: 2 }}>
         <Breadcrumbs
           separator={<NavigateNextIcon fontSize="small" />}
-          sx={{ mb: 1 }}
+          sx={{ mb: 0.5 }}
         >
           <Link
             underline="hover"
             color="inherit"
             onClick={() => navigate("/dashboard")}
-            sx={{ cursor: "pointer", fontSize: "0.82rem" }}
+            sx={{ cursor: "pointer", fontSize: "0.75rem", fontWeight: 500 }}
           >
             Dashboard
           </Link>
-          <Link
-            underline="hover"
-            color="inherit"
-            onClick={() => navigate("/students")}
-            sx={{ cursor: "pointer", fontSize: "0.82rem" }}
-          >
-            Students
-          </Link>
           <Typography
             color="text.primary"
-            sx={{ fontSize: "0.82rem", fontWeight: 700 }}
+            sx={{ fontSize: "0.75rem", fontWeight: 600 }}
           >
-            Section Shift
+            Class / Section Shift
           </Typography>
         </Breadcrumbs>
-
-        <Stack direction="row" alignItems="center" spacing={1.5}>
-          <Avatar
-            sx={{
-              width: 44,
-              height: 44,
-              background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
-            }}
-          >
-            <SwapHorizOutlinedIcon sx={{ color: "white", fontSize: 22 }} />
-          </Avatar>
-          <Box>
-            <Typography
-              variant="h4"
-              fontWeight={900}
-              sx={{
-                fontSize: { xs: "1.5rem", sm: "1.75rem" },
-                lineHeight: 1.1,
-                color: "text.primary",
-              }}
-            >
-              Section Shift
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: "0.82rem" }}
-            >
-              Move students between classes and sections
-            </Typography>
-          </Box>
-        </Stack>
-      </Box>
-
-      {/* ─── INFO BANNER ─── */}
-      <Alert
-        severity="info"
-        sx={{ mb: 2, borderRadius: 3 }}
-        icon={<SwapHorizOutlinedIcon />}
-      >
-        <Typography variant="body2" fontWeight={700}>
-          How it works
-        </Typography>
-        <Typography variant="caption" sx={{ display: "block", mt: 0.3 }}>
-          1. Select source class → 2. Pick students → 3. Choose target class →
-          4. Preview & confirm
-        </Typography>
-      </Alert>
-
-      {/* ─── CLASS SELECTORS ─── */}
-      <Paper
-        sx={{
-          p: { xs: 2, sm: 2.5 },
-          mb: 2,
-          borderRadius: 3,
-          border: "1px solid",
-          borderColor: "divider",
-        }}
-      >
-        <Grid container spacing={2} alignItems="center">
-          {/* Source Class */}
-          <Grid item xs={12} md={5}>
-            <Stack spacing={1}>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Chip
-                  label="FROM"
-                  size="small"
-                  color="error"
-                  sx={{ fontWeight: 800, fontSize: "0.7rem", height: 22 }}
-                />
-                <Typography
-                  variant="caption"
-                  fontWeight={700}
-                  color="text.secondary"
-                  sx={{ textTransform: "uppercase", fontSize: "0.7rem" }}
-                >
-                  Source Class
-                </Typography>
-              </Stack>
-              <ClassSelector
-                label="Select Source Class"
-                value={sourceClassId}
-                onChange={(val) => {
-                  setSourceClassId(val);
-                  if (val === targetClassId) setTargetClassId("");
-                }}
-                classes={classes}
-                color="error"
-              />
-            </Stack>
-          </Grid>
-
-          {/* Arrow */}
-          <Grid
-            item
-            xs={12}
-            md={2}
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <ArrowDownwardOutlinedIcon
-              sx={{
-                fontSize: 32,
-                color: "primary.main",
-                transform: { xs: "rotate(0)", md: "rotate(-90deg)" },
-              }}
-            />
-          </Grid>
-
-          {/* Target Class */}
-          <Grid item xs={12} md={5}>
-            <Stack spacing={1}>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Chip
-                  label="TO"
-                  size="small"
-                  color="success"
-                  sx={{ fontWeight: 800, fontSize: "0.7rem", height: 22 }}
-                />
-                <Typography
-                  variant="caption"
-                  fontWeight={700}
-                  color="text.secondary"
-                  sx={{ textTransform: "uppercase", fontSize: "0.7rem" }}
-                >
-                  Target Class
-                </Typography>
-              </Stack>
-              <ClassSelector
-                label="Select Target Class"
-                value={targetClassId}
-                onChange={setTargetClassId}
-                classes={classes}
-                excludeId={sourceClassId}
-                color="success"
-                helperText={
-                  targetClass
-                    ? `Currently has ${targetClass.studentCount || 0} students`
-                    : ""
-                }
-              />
-            </Stack>
-          </Grid>
-        </Grid>
-
-        {/* Same class warning */}
-        {sourceClassId && targetClassId && sourceClassId === targetClassId && (
-          <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>
-            Source and target class cannot be the same!
-          </Alert>
-        )}
-      </Paper>
-
-      {/* ─── STUDENT PICKER ─── */}
-      {sourceClassId && (
-        <Box sx={{ mb: 2 }}>
-          <StudentPicker
-            students={students}
-            selectedIds={selectedIds}
-            onToggleSelect={handleToggleSelect}
-            onSelectAll={handleSelectAll}
-            onClearSelection={handleClearSelection}
-            loading={studentsLoading}
-            sourceLabel={sourceLabel}
-          />
-        </Box>
-      )}
-
-      {/* ─── SHIFT BUTTON ─── */}
-      {sourceClassId && (
-        <Paper
+        <Typography
+          variant="h4"
+          fontWeight={800}
           sx={{
-            p: 2,
-            borderRadius: 3,
-            border: "1px solid",
-            borderColor: canPreview ? "primary.main" : "divider",
-            bgcolor: canPreview
-              ? isDark
-                ? "rgba(59,130,246,0.08)"
-                : "primary.50"
-              : "background.paper",
+            fontSize: { xs: "1.35rem", sm: "1.75rem" },
+            lineHeight: 1.2,
+            color: "text.primary",
+            letterSpacing: "-0.02em",
           }}
         >
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            justifyContent="space-between"
-            alignItems={{ xs: "stretch", sm: "center" }}
-            spacing={2}
-          >
-            <Box>
-              <Typography variant="body2" fontWeight={800}>
-                {selectedIds.size > 0
-                  ? `${selectedIds.size} student${selectedIds.size !== 1 ? "s" : ""} selected`
-                  : "No students selected"}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontSize: "0.72rem" }}
-              >
-                {canPreview
-                  ? `Ready to shift from ${sourceLabel} → ${targetLabel}`
-                  : selectedIds.size === 0
-                    ? "Select students from the list above"
-                    : !targetClassId
-                      ? "Select a target class"
-                      : "Cannot shift — check selections"}
-              </Typography>
-            </Box>
+          Class / Section Shift
+        </Typography>
+      </Box>
 
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={
-                previewMutation.isPending ? (
-                  <CircularProgress size={18} sx={{ color: "white" }} />
-                ) : (
-                  <PreviewOutlinedIcon />
-                )
-              }
-              onClick={handlePreview}
-              disabled={!canPreview || previewMutation.isPending}
-              sx={{
-                background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
-                fontWeight: 800,
-                textTransform: "none",
-                px: 4,
-                py: 1.3,
-                fontSize: "0.95rem",
-                "&.Mui-disabled": {
-                  background: "rgba(0,0,0,0.12)",
-                },
-              }}
-            >
-              {previewMutation.isPending
-                ? "Generating Preview..."
-                : `Preview Shift (${selectedIds.size})`}
-            </Button>
-          </Stack>
-        </Paper>
-      )}
-
-      {/* ─── PREVIEW DIALOG ─── */}
-      <ShiftPreviewDialog
-        open={previewOpen}
-        onClose={() => {
-          setPreviewOpen(false);
-          setPreviewData(null);
+      {/* ─── COMPACT FILTER BAR ─── */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 1.5, sm: 2 },
+          mb: 2,
+          borderRadius: 2,
+          border: "1px solid",
+          borderColor: "divider",
+          bgcolor: "background.paper",
         }}
-        onConfirm={handleConfirmShift}
-        previewData={previewData}
-        loading={executeMutation.isPending}
-      />
+      >
+        <Stack spacing={1.5}>
+          <Stack direction="row" spacing={1.5}>
+            <FormControl size="small" fullWidth>
+              <InputLabel sx={{ fontSize: "0.8rem", fontWeight: 600 }}>
+                Class
+              </InputLabel>
+              <Select
+                label="Class"
+                value={filterGrade}
+                onChange={(e) => {
+                  setFilterGrade(e.target.value);
+                  setFilterSection("All");
+                }}
+                sx={{
+                  bgcolor: isDark ? alpha("#fff", 0.02) : "#F8FAFC",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                }}
+              >
+                {uniqueGrades.map((g) => (
+                  <MenuItem key={g} value={g} sx={{ fontSize: "0.85rem" }}>
+                    {g}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" fullWidth>
+              <InputLabel sx={{ fontSize: "0.8rem", fontWeight: 600 }}>
+                Section
+              </InputLabel>
+              <Select
+                label="Section"
+                value={filterSection}
+                onChange={(e) => setFilterSection(e.target.value)}
+                sx={{
+                  bgcolor: isDark ? alpha("#fff", 0.02) : "#F8FAFC",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                }}
+              >
+                <MenuItem value="All" sx={{ fontSize: "0.85rem" }}>
+                  All Sections
+                </MenuItem>
+                {getSectionsForGrade(filterGrade).map((sec) => (
+                  <MenuItem key={sec} value={sec} sx={{ fontSize: "0.85rem" }}>
+                    {sec}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+
+          <TextField
+            placeholder="Search student or scholar no..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            size="small"
+            fullWidth
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                bgcolor: isDark ? alpha("#fff", 0.02) : "#F8FAFC",
+                fontSize: "0.85rem",
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" color="action" />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Stack>
+      </Paper>
+
+      {/* ─── PROFESSIONAL DATA TABLE ─── */}
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 2,
+          border: "1px solid",
+          borderColor: "divider",
+          overflow: "hidden",
+        }}
+      >
+        <TableContainer
+          sx={{
+            maxHeight: { xs: "calc(100vh - 280px)", md: "calc(100vh - 250px)" },
+            overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          <Table
+            stickyHeader
+            size="small"
+            sx={{ minWidth: { xs: 700, md: "100%" } }}
+          >
+            <TableHead>
+              <TableRow>
+                <TableCell sx={headSx}>Student Details</TableCell>
+                <TableCell sx={headSx}>Current Class</TableCell>
+                <TableCell sx={headSx}>Target Class</TableCell>
+                <TableCell sx={headSx}>Target Section</TableCell>
+                <TableCell sx={headSx} align="center">
+                  Action
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
+                    <CircularProgress size={28} />
+                  </TableCell>
+                </TableRow>
+              ) : displayStudents.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
+                    <Typography
+                      color="text.secondary"
+                      fontWeight={500}
+                      fontSize="0.85rem"
+                    >
+                      No students found in this class.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                displayStudents.map((student) => {
+                  const targetData = rowTargets[student._id] || {};
+                  const isUpdating = updatingId === student._id;
+
+                  return (
+                    <TableRow
+                      key={student._id}
+                      hover
+                      sx={{
+                        bgcolor: isDark ? "#1E293B" : "#FFFFFF",
+                        "&:hover": {
+                          bgcolor: isDark
+                            ? alpha("#fff", 0.03)
+                            : alpha("#0F172A", 0.02),
+                        },
+                      }}
+                    >
+                      {/* STICKY COLUMN */}
+                      <TableCell sx={cellStyle}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={600}
+                          sx={{
+                            textTransform: "uppercase",
+                            mb: 0.2,
+                            fontSize: "0.82rem",
+                            color: "text.primary",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {student.name}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          fontFamily="monospace"
+                          color="text.secondary"
+                          sx={{ fontSize: "0.7rem", fontWeight: 500 }}
+                        >
+                          {formatScholarNo(student)}
+                        </Typography>
+                      </TableCell>
+
+                      <TableCell sx={cellStyle}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={600}
+                          fontSize="0.8rem"
+                          color="text.primary"
+                        >
+                          {student.class?.name || "—"} -{" "}
+                          {student.class?.section || "—"}
+                        </Typography>
+                      </TableCell>
+
+                      {/* MINIMAL TARGET DROPDOWNS */}
+                      <TableCell sx={cellStyle}>
+                        <FormControl size="small" fullWidth variant="outlined">
+                          <Select
+                            displayEmpty
+                            value={targetData.grade || ""}
+                            onChange={(e) =>
+                              handleTargetGradeChange(
+                                student._id,
+                                e.target.value,
+                              )
+                            }
+                            sx={{
+                              fontSize: "0.8rem",
+                              fontWeight: 500,
+                              height: 30,
+                              bgcolor: isDark ? "background.default" : "#fff",
+                              "& .MuiOutlinedInput-notchedOutline": {
+                                borderColor: "divider",
+                              },
+                            }}
+                          >
+                            <MenuItem
+                              value=""
+                              disabled
+                              sx={{ fontSize: "0.8rem" }}
+                            >
+                              <em>Select Class</em>
+                            </MenuItem>
+                            {uniqueGrades.map((g) => (
+                              <MenuItem
+                                key={g}
+                                value={g}
+                                sx={{ fontSize: "0.8rem" }}
+                              >
+                                {g}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </TableCell>
+
+                      <TableCell sx={cellStyle}>
+                        <FormControl
+                          size="small"
+                          fullWidth
+                          variant="outlined"
+                          disabled={!targetData.grade}
+                        >
+                          <Select
+                            displayEmpty
+                            value={targetData.section || ""}
+                            onChange={(e) =>
+                              handleTargetSectionChange(
+                                student._id,
+                                e.target.value,
+                              )
+                            }
+                            sx={{
+                              fontSize: "0.8rem",
+                              fontWeight: 500,
+                              height: 30,
+                              bgcolor: isDark ? "background.default" : "#fff",
+                              "& .MuiOutlinedInput-notchedOutline": {
+                                borderColor: "divider",
+                              },
+                            }}
+                          >
+                            <MenuItem
+                              value=""
+                              disabled
+                              sx={{ fontSize: "0.8rem" }}
+                            >
+                              <em>Select Section</em>
+                            </MenuItem>
+                            {targetData.grade &&
+                              getSectionsForGrade(targetData.grade).map(
+                                (sec) => (
+                                  <MenuItem
+                                    key={sec}
+                                    value={sec}
+                                    sx={{ fontSize: "0.8rem" }}
+                                  >
+                                    {sec}
+                                  </MenuItem>
+                                ),
+                              )}
+                          </Select>
+                        </FormControl>
+                      </TableCell>
+
+                      {/* SLEEK ACTION BUTTON */}
+                      <TableCell sx={cellStyle} align="center">
+                        <Button
+                          variant="contained"
+                          disableElevation
+                          disabled={
+                            isUpdating ||
+                            !targetData.classId ||
+                            targetData.classId === student.class?._id
+                          }
+                          onClick={() => handleUpdate(student)}
+                          sx={{
+                            height: 28,
+                            px: 2,
+                            textTransform: "none",
+                            fontWeight: 600,
+                            fontSize: "0.75rem",
+                            bgcolor: isDark ? "#2563EB" : "#1D4ED8",
+                            "&:hover": {
+                              bgcolor: isDark ? "#1D4ED8" : "#1E3A8A",
+                            },
+                          }}
+                        >
+                          {isUpdating ? (
+                            <CircularProgress size={14} color="inherit" />
+                          ) : (
+                            "Update"
+                          )}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
     </Box>
   );
 };

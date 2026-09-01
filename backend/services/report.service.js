@@ -12,9 +12,47 @@ const throwError = (message, statusCode = 400) => {
 };
 
 class ReportService {
-  /**
-   * Get daily report — enhanced with teacher info, status, smart sort
-   */
+  // ═══════════════════════════════════════════════════════════════
+  //  HELPER: Restrict class filter for "class" role users
+  //  Returns null if user has no linkedClass (empty results)
+  //  Returns updated filter otherwise
+  // ═══════════════════════════════════════════════════════════════
+  _applyClassRoleFilter(classFilter, user, classId) {
+    if (user?.role !== "class") return classFilter;
+
+    const linked = user.linkedClass?.toString();
+    if (!linked) return null; // no access
+
+    // If a specific classId was requested, it must match the linked class
+    if (classId && classId.toString() !== linked) return null;
+
+    classFilter._id = new mongoose.Types.ObjectId(linked);
+    return classFilter;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  HELPER: Smart class sort rank (Nursery → 12th)
+  // ═══════════════════════════════════════════════════════════════
+  _getClassRank(className) {
+    if (!className) return 999;
+    const name = className.toString().trim().toUpperCase();
+    if (/^NUR/.test(name) || name === "NURSERY") return 1;
+    if (/^L\.?K\.?G/.test(name) || name === "LKG" || name === "LOWER KG")
+      return 2;
+    if (/^U\.?K\.?G/.test(name) || name === "UKG" || name === "UPPER KG")
+      return 3;
+    if (/^PRE/.test(name) || name === "PLAYGROUP") return 0;
+    const numMatch = name.match(/^(?:CLASS\s*)?(\d{1,2})(?:ST|ND|RD|TH)?/);
+    if (numMatch) {
+      const num = parseInt(numMatch[1], 10);
+      if (num >= 1 && num <= 12) return 10 + num;
+    }
+    return 999;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  DAILY REPORT
+  // ═══════════════════════════════════════════════════════════════
   async getDailyReport({ date, classId, user }) {
     const settings = await Settings.getSettings();
     const sessionId = settings?.activeSession?._id || settings?.activeSession;
@@ -35,37 +73,30 @@ class ReportService {
     const isHoliday = holiday && !holiday.allowAttendance;
     const isNonWorkingDay = !isWorkingDay && !isHoliday;
 
-    // Get classes with teacher info
-    const classFilter = { session: sessionId, isArchived: false };
+    // Build class filter
+    let classFilter = { session: sessionId, isArchived: false };
     if (classId) classFilter._id = classId;
 
-    // Filter teacher's classes only
-    if (user?.role === "teacher") {
-      const Teacher = require("../models/Teacher.model");
-      const teacher = await Teacher.findOne({ user: user._id }).lean();
-      if (!teacher?.assignedClasses?.length) {
-        return {
-          date: day,
-          classes: [],
-          summary: this._emptySummary(),
-          holiday,
-          isHoliday,
-          isNonWorkingDay,
-          isWorkingDay,
-          today: { date: day.toISOString(), dayName },
-        };
-      }
-      classFilter._id = { $in: teacher.assignedClasses };
+    // Apply role-based filter
+    classFilter = this._applyClassRoleFilter(classFilter, user, classId);
+    if (!classFilter) {
+      return {
+        date: day,
+        classes: [],
+        summary: this._emptySummary(),
+        holiday,
+        isHoliday,
+        isNonWorkingDay,
+        isWorkingDay,
+        today: { date: day.toISOString(), dayName },
+      };
     }
 
-    // ✅ Populate classTeacher for teacher name
-    const classes = await Class.find(classFilter)
-      .populate("classTeacher", "name employeeId")
-      .lean();
-
+    // ✅ NO populate — teacherLabel is a plain string on Class
+    const classes = await Class.find(classFilter).lean();
     const classIds = classes.map((c) => c._id);
 
-    // Get all students in these classes
+    // Get students
     const students = await Student.find({
       class: { $in: classIds },
       status: "Active",
@@ -78,7 +109,7 @@ class ReportService {
       studentMap[s.class.toString()].push(s);
     });
 
-    // ✅ Get attendance records WITH markedBy and editedBy
+    // Get attendance with markedBy / editedBy (User names)
     const records = await Attendance.find({
       class: { $in: classIds },
       date: { $gte: day, $lt: tomorrow },
@@ -93,33 +124,13 @@ class ReportService {
       recordMap[r.class.toString()][r.student.toString()] = r;
     });
 
-    // ✅ Smart class sort helper
-    const getClassRank = (className) => {
-      if (!className) return 999;
-      const name = className.toString().trim().toUpperCase();
-      if (/^NUR/.test(name) || name === "NURSERY") return 1;
-      if (/^L\.?K\.?G/.test(name) || name === "LKG" || name === "LOWER KG")
-        return 2;
-      if (/^U\.?K\.?G/.test(name) || name === "UKG" || name === "UPPER KG")
-        return 3;
-      if (/^PRE/.test(name) || name === "PLAYGROUP") return 0;
-      const numMatch = name.match(/^(?:CLASS\s*)?(\d{1,2})(?:ST|ND|RD|TH)?/);
-      if (numMatch) {
-        const num = parseInt(numMatch[1], 10);
-        if (num >= 1 && num <= 12) return 10 + num;
-      }
-      return 999;
-    };
-
-    // Build report per class
+    // Build per-class reports
     const classReports = classes.map((cls) => {
       const classStudents = studentMap[cls._id.toString()] || [];
       const classRecords = recordMap[cls._id.toString()] || {};
 
       let present = 0;
       let absent = 0;
-
-      // ✅ Track who marked and who edited
       let markedByName = null;
       let editedByName = null;
       let markedAt = null;
@@ -133,13 +144,11 @@ class ReportService {
           if (rec?.status === "Present") present++;
           else if (rec?.status === "Absent") absent++;
 
-          // Capture first markedBy (all records in a class usually marked by same person)
           if (rec?.markedBy?.name && !markedByName) {
             markedByName = rec.markedBy.name;
             markedAt = rec.markedAt || rec.createdAt;
           }
 
-          // Capture if any record was edited
           if (rec?.editedBy?.name) {
             editedByName = rec.editedBy.name;
             editedAt = rec.editedAt;
@@ -163,17 +172,11 @@ class ReportService {
       const unmarked = total - marked;
       const percentage = marked > 0 ? Math.round((present / marked) * 100) : 0;
 
-      // ✅ Determine status
       let status = "pending";
-      if (total === 0) {
-        status = "empty";
-      } else if (marked === total) {
-        status = "completed";
-      } else if (marked > 0) {
-        status = "partial";
-      }
+      if (total === 0) status = "empty";
+      else if (marked === total) status = "completed";
+      else if (marked > 0) status = "partial";
 
-      // ✅ Low attendance warning
       const isLowAttendance = marked > 0 && percentage < 80;
 
       return {
@@ -189,30 +192,25 @@ class ReportService {
         isEmpty: total === 0,
         status,
         isLowAttendance,
-        // ✅ NEW: Teacher info
-        classTeacher: cls.classTeacher?.name || null,
-        classTeacherEmpId: cls.classTeacher?.employeeId || null,
-        // ✅ NEW: Who marked/edited
+        // ✅ NEW: teacherLabel replaces classTeacher.name
+        classTeacher: cls.teacherLabel || null,
+        classTeacherEmpId: null,
         markedBy: markedByName,
         markedAt,
         editedBy: hasEdits ? editedByName : null,
         editedAt: hasEdits ? editedAt : null,
         hasEdits,
-        // ✅ NEW: Sort rank for frontend backup
-        sortRank: getClassRank(cls.name),
+        sortRank: this._getClassRank(cls.name),
         students: studentDetails,
       };
     });
 
-    // ✅ Sort classes: Nursery → LKG → UKG → 1st → ... → 12th, then by section
+    // Sort classes
     classReports.sort((a, b) => {
-      const rankA = getClassRank(a.name);
-      const rankB = getClassRank(b.name);
-      if (rankA !== rankB) return rankA - rankB;
+      if (a.sortRank !== b.sortRank) return a.sortRank - b.sortRank;
       return (a.section || "").localeCompare(b.section || "");
     });
 
-    // Overall summary
     const summary = {
       totalClasses: classes.length,
       markedClasses: classReports.filter((c) => c.status === "completed")
@@ -241,18 +239,15 @@ class ReportService {
       isNonWorkingDay,
       isWorkingDay,
       holiday: isHoliday ? holiday : null,
-      today: {
-        date: day.toISOString(),
-        dayName,
-      },
+      today: { date: day.toISOString(), dayName },
       classes: classReports,
       summary,
     };
   }
 
-  /**
-   * Get monthly report — enhanced with teacher, rank, trend, smart sort
-   */
+  // ═══════════════════════════════════════════════════════════════
+  //  MONTHLY REPORT
+  // ═══════════════════════════════════════════════════════════════
   async getMonthlyReport({ year, month, classId, user }) {
     const settings = await Settings.getSettings();
     const sessionId = settings?.activeSession?._id || settings?.activeSession;
@@ -260,30 +255,22 @@ class ReportService {
 
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59, 999);
-
-    // Previous month for trend comparison
     const prevStartDate = new Date(year, month - 2, 1);
     const prevEndDate = new Date(year, month - 1, 0, 23, 59, 59, 999);
 
-    const classFilter = { session: sessionId, isArchived: false };
+    let classFilter = { session: sessionId, isArchived: false };
     if (classId) classFilter._id = classId;
 
-    if (user?.role === "teacher") {
-      const Teacher = require("../models/Teacher.model");
-      const teacher = await Teacher.findOne({ user: user._id }).lean();
-      if (!teacher?.assignedClasses?.length) {
-        return { year, month, classes: [], summary: this._emptySummary() };
-      }
-      classFilter._id = { $in: teacher.assignedClasses };
+    classFilter = this._applyClassRoleFilter(classFilter, user, classId);
+    if (!classFilter) {
+      return { year, month, classes: [], summary: this._emptySummary() };
     }
 
-    // ✅ Populate classTeacher
-    const classes = await Class.find(classFilter)
-      .populate("classTeacher", "name employeeId")
-      .lean();
+    // ✅ NO populate
+    const classes = await Class.find(classFilter).lean();
     const classIds = classes.map((c) => c._id);
 
-    // Aggregate attendance by class for THIS month
+    // Current month aggregation
     const attendanceAgg = await Attendance.aggregate([
       {
         $match: {
@@ -306,7 +293,7 @@ class ReportService {
       classStatsMap[cid][a._id.status] = a.count;
     });
 
-    // ✅ Aggregate attendance for PREVIOUS month (for trend)
+    // Previous month aggregation
     const prevAttendanceAgg = await Attendance.aggregate([
       {
         $match: {
@@ -330,7 +317,7 @@ class ReportService {
       prevClassStatsMap[cid][a._id.status] = a.count;
     });
 
-    // Get student counts per class
+    // Student counts
     const studentCounts = await Student.aggregate([
       {
         $match: {
@@ -347,13 +334,12 @@ class ReportService {
       studentCountMap[s._id.toString()] = s.count;
     });
 
-    // Get holidays in the month
+    // Holidays
     const holidays = await Holiday.find({
       session: sessionId,
       date: { $gte: startDate, $lte: endDate },
     }).lean();
 
-    // Calculate working days
     const workingDays = this._calculateWorkingDays(
       startDate,
       endDate,
@@ -361,7 +347,7 @@ class ReportService {
       settings,
     );
 
-    // ✅ Get last attendance record per class (for "last modified by")
+    // Last modified info
     const lastRecords = await Attendance.aggregate([
       {
         $match: {
@@ -409,24 +395,6 @@ class ReportService {
       };
     });
 
-    // ✅ Smart class sort helper
-    const getClassRank = (className) => {
-      if (!className) return 999;
-      const name = className.toString().trim().toUpperCase();
-      if (/^NUR/.test(name) || name === "NURSERY") return 1;
-      if (/^L\.?K\.?G/.test(name) || name === "LKG" || name === "LOWER KG")
-        return 2;
-      if (/^U\.?K\.?G/.test(name) || name === "UKG" || name === "UPPER KG")
-        return 3;
-      if (/^PRE/.test(name) || name === "PLAYGROUP") return 0;
-      const numMatch = name.match(/^(?:CLASS\s*)?(\d{1,2})(?:ST|ND|RD|TH)?/);
-      if (numMatch) {
-        const num = parseInt(numMatch[1], 10);
-        if (num >= 1 && num <= 12) return 10 + num;
-      }
-      return 999;
-    };
-
     // Build class reports
     const classReports = classes.map((cls) => {
       const cid = cls._id.toString();
@@ -438,20 +406,17 @@ class ReportService {
       const percentage =
         totalMarks > 0 ? Math.round((stats.Present / totalMarks) * 100) : 0;
 
-      // Previous month percentage (for trend)
       const prevTotalMarks = prevStats.Present + prevStats.Absent;
       const prevPercentage =
         prevTotalMarks > 0
           ? Math.round((prevStats.Present / prevTotalMarks) * 100)
           : 0;
 
-      // Trend
       const trendDiff = percentage - prevPercentage;
       let trend = "stable";
       if (trendDiff > 2) trend = "up";
       else if (trendDiff < -2) trend = "down";
 
-      // Average per student
       const avgPresentDays =
         totalStudents > 0
           ? Math.round((stats.Present / totalStudents) * 10) / 10
@@ -461,7 +426,6 @@ class ReportService {
           ? Math.round((stats.Absent / totalStudents) * 10) / 10
           : 0;
 
-      // Last modified info
       const lastRecord = lastRecordMap[cid] || {};
 
       return {
@@ -477,31 +441,25 @@ class ReportService {
         percentage,
         isEmpty: totalStudents === 0,
         isLowAttendance: totalMarks > 0 && percentage < 80,
-        // ✅ NEW: Teacher info
-        classTeacher: cls.classTeacher?.name || null,
-        // ✅ NEW: Trend
+        // ✅ NEW: teacherLabel
+        classTeacher: cls.teacherLabel || null,
         prevPercentage,
         trendDiff,
         trend,
-        // ✅ NEW: Averages
         avgPresentDays,
         avgAbsentDays,
-        // ✅ NEW: Last modified
         markedBy: lastRecord.markedBy,
         editedBy: lastRecord.editedBy,
         lastUpdatedAt: lastRecord.lastUpdatedAt,
-        // ✅ NEW: Sort rank
-        sortRank: getClassRank(cls.name),
+        sortRank: this._getClassRank(cls.name),
       };
     });
 
-    // ✅ Sort classes (Nursery → 10th)
     classReports.sort((a, b) => {
       if (a.sortRank !== b.sortRank) return a.sortRank - b.sortRank;
       return (a.section || "").localeCompare(b.section || "");
     });
 
-    // ✅ Assign monthly rank (by percentage, descending)
     const ranked = [...classReports]
       .filter((c) => !c.isEmpty && c.totalMarks > 0)
       .sort((a, b) => b.percentage - a.percentage);
@@ -513,7 +471,6 @@ class ReportService {
       if (original) original.rank = idx + 1;
     });
 
-    // Mark highest and lowest
     if (ranked.length > 0) {
       const highest = classReports.find(
         (c) => c._id.toString() === ranked[0]._id.toString(),
@@ -526,7 +483,6 @@ class ReportService {
       if (lowest && ranked.length > 1) lowest.isLowest = true;
     }
 
-    // Summary
     const summary = {
       totalClasses: classes.length,
       totalStudents: classReports.reduce((s, c) => s + c.totalStudents, 0),
@@ -563,11 +519,9 @@ class ReportService {
     };
   }
 
-  /**
-   * Get student-wise monthly attendance for a specific class
-   * ✅ NEW: Returns date-wise attendance matrix (calendar view)
-   * Used when user clicks a class card in monthly report
-   */
+  // ═══════════════════════════════════════════════════════════════
+  //  MONTHLY CLASS DETAIL (Calendar view)
+  // ═══════════════════════════════════════════════════════════════
   async getMonthlyClassDetail({ classId, year, month, user }) {
     if (!classId) throwError("Class ID is required", 400);
 
@@ -579,27 +533,18 @@ class ReportService {
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
-    // Teacher RBAC
-    if (user?.role === "teacher") {
-      const Teacher = require("../models/Teacher.model");
-      const teacher = await Teacher.findOne({ user: user._id }).lean();
-      if (
-        !teacher?.assignedClasses?.length ||
-        !teacher.assignedClasses.some(
-          (c) => c.toString() === classId.toString(),
-        )
-      ) {
-        throwError("You are not assigned to this class", 403);
+    // Class role RBAC
+    if (user?.role === "class") {
+      const linked = user.linkedClass?.toString();
+      if (!linked || linked !== classId.toString()) {
+        throwError("You can only access your own class", 403);
       }
     }
 
-    // Get class info
-    const cls = await Class.findById(classId)
-      .populate("classTeacher", "name")
-      .lean();
+    // ✅ NO populate
+    const cls = await Class.findById(classId).lean();
     if (!cls) throwError("Class not found", 404);
 
-    // Get students (Active only)
     const students = await Student.find({
       class: classId,
       session: sessionId,
@@ -609,7 +554,6 @@ class ReportService {
       .sort({ name: 1 })
       .lean();
 
-    // Get holidays in the month
     const holidays = await Holiday.find({
       session: sessionId,
       $or: [
@@ -618,14 +562,12 @@ class ReportService {
       ],
     }).lean();
 
-    // Build holiday date map (dateKey → true)
     const holidayMap = {};
     holidays.forEach((h) => {
       const hStart = new Date(h.date);
       hStart.setHours(0, 0, 0, 0);
       const hEnd = h.endDate ? new Date(h.endDate) : new Date(h.date);
       hEnd.setHours(23, 59, 59, 999);
-
       const cur = new Date(hStart);
       while (cur <= hEnd) {
         const key = this._dateKey(cur);
@@ -634,14 +576,12 @@ class ReportService {
       }
     });
 
-    // Working days config
     const workingDayNames = new Set(
       (settings?.workingDays || [])
         .filter((d) => d.isWorking)
         .map((d) => d.day),
     );
 
-    // ─── Build date array (1 to end of month) ───
     const dateArray = [];
     const cur = new Date(startDate);
     while (cur <= endDate) {
@@ -665,13 +605,11 @@ class ReportService {
         isBlocked,
         holidayName: holiday?.name || null,
       });
-
       cur.setDate(cur.getDate() + 1);
     }
 
     const workingDays = dateArray.filter((d) => !d.isBlocked).length;
 
-    // ─── Get attendance records for month ───
     const records = await Attendance.find({
       class: classId,
       date: { $gte: startDate, $lte: endDate },
@@ -679,7 +617,6 @@ class ReportService {
       .select("student status date")
       .lean();
 
-    // Build attendance map: { studentId: { dateKey: "P"/"A" } }
     const attendanceMap = {};
     records.forEach((r) => {
       const sid = r.student.toString();
@@ -689,7 +626,6 @@ class ReportService {
         r.status === "Present" ? "P" : r.status === "Absent" ? "A" : "";
     });
 
-    // ─── Build student rows with dailyAttendance + totals ───
     const studentDetails = students.map((s) => {
       const sid = s._id.toString();
       const dailyAttendance = {};
@@ -700,7 +636,7 @@ class ReportService {
         if (d.isHoliday) {
           dailyAttendance[d.dateKey] = "H";
         } else if (d.isBlocked) {
-          dailyAttendance[d.dateKey] = "-"; // Sunday / Non-working
+          dailyAttendance[d.dateKey] = "-";
         } else {
           const status = attendanceMap[sid]?.[d.dateKey];
           if (status === "P") {
@@ -710,7 +646,7 @@ class ReportService {
             dailyAttendance[d.dateKey] = "A";
             absent++;
           } else {
-            dailyAttendance[d.dateKey] = ""; // Unmarked
+            dailyAttendance[d.dateKey] = "";
           }
         }
       });
@@ -735,7 +671,6 @@ class ReportService {
       };
     });
 
-    // ─── Summary ───
     const totalPresent = studentDetails.reduce((s, st) => s + st.present, 0);
     const totalAbsent = studentDetails.reduce((s, st) => s + st.absent, 0);
     const totalMarked = totalPresent + totalAbsent;
@@ -745,7 +680,8 @@ class ReportService {
         _id: cls._id,
         name: cls.name,
         section: cls.section,
-        classTeacher: cls.classTeacher?.name || null,
+        // ✅ NEW: teacherLabel
+        classTeacher: cls.teacherLabel || null,
       },
       year,
       month,
@@ -753,9 +689,9 @@ class ReportService {
         month: "long",
       }),
       workingDays,
-      dates: dateArray, // ✅ NEW: Date array for column headers
+      dates: dateArray,
       holidays: holidays.length,
-      students: studentDetails, // ✅ Each student has dailyAttendance map
+      students: studentDetails,
       summary: {
         totalStudents: students.length,
         totalPresent,
@@ -771,9 +707,10 @@ class ReportService {
       },
     };
   }
-  /**
-   * Get student-wise attendance report
-   */
+
+  // ═══════════════════════════════════════════════════════════════
+  //  STUDENT REPORT
+  // ═══════════════════════════════════════════════════════════════
   async getStudentReport({ studentId, dateFrom, dateTo }) {
     const student = await Student.findById(studentId)
       .populate("class", "name section")
@@ -812,9 +749,9 @@ class ReportService {
     };
   }
 
-  /**
-   * Get defaulter report — OPTIMIZED (single aggregation instead of per-student loop)
-   */
+  // ═══════════════════════════════════════════════════════════════
+  //  DEFAULTER REPORT
+  // ═══════════════════════════════════════════════════════════════
   async getDefaulterReport({
     classId,
     threshold = 75,
@@ -833,19 +770,14 @@ class ReportService {
     };
     if (classId) studentFilter.class = classId;
 
-    if (user?.role === "teacher") {
-      const Teacher = require("../models/Teacher.model");
-      const teacher = await Teacher.findOne({ user: user._id }).lean();
-      if (!teacher?.assignedClasses?.length)
+    // Class role RBAC
+    if (user?.role === "class") {
+      const linked = user.linkedClass?.toString();
+      if (!linked) return { defaulters: [], threshold, total: 0 };
+      if (classId && classId.toString() !== linked) {
         return { defaulters: [], threshold, total: 0 };
-      if (classId) {
-        const isAssigned = teacher.assignedClasses.some(
-          (c) => c.toString() === classId.toString(),
-        );
-        if (!isAssigned) return { defaulters: [], threshold, total: 0 };
-      } else {
-        studentFilter.class = { $in: teacher.assignedClasses };
       }
+      studentFilter.class = new mongoose.Types.ObjectId(linked);
     }
 
     const students = await Student.find(studentFilter)
@@ -858,7 +790,6 @@ class ReportService {
 
     const studentIds = students.map((s) => s._id);
 
-    // ✅ Build date filter for attendance query
     const attendanceMatch = { student: { $in: studentIds } };
     if (dateFrom || dateTo) {
       attendanceMatch.date = {};
@@ -874,7 +805,6 @@ class ReportService {
       }
     }
 
-    // ✅ OPTIMIZED: Single aggregation for ALL students at once
     const allStats = await Attendance.aggregate([
       { $match: attendanceMatch },
       {
@@ -885,7 +815,6 @@ class ReportService {
       },
     ]);
 
-    // Build stats map: { studentId: { present: X, absent: Y } }
     const statsMap = {};
     allStats.forEach((r) => {
       const sid = r._id.student.toString();
@@ -894,13 +823,11 @@ class ReportService {
       else if (r._id.status === "Absent") statsMap[sid].absent = r.count;
     });
 
-    // Build defaulters list
     const defaulters = [];
-
     students.forEach((s) => {
       const stats = statsMap[s._id.toString()] || { present: 0, absent: 0 };
       const total = stats.present + stats.absent;
-      if (total === 0) return; // Skip students with no attendance data
+      if (total === 0) return;
 
       const percentage = Math.round((stats.present / total) * 100);
       if (percentage < threshold) {
@@ -919,7 +846,6 @@ class ReportService {
       }
     });
 
-    // Sort by percentage (lowest first)
     defaulters.sort((a, b) => a.percentage - b.percentage);
 
     return {
@@ -929,9 +855,9 @@ class ReportService {
     };
   }
 
-  /**
-   * Get class-wise attendance trend (for charts)
-   */
+  // ═══════════════════════════════════════════════════════════════
+  //  CLASS TREND
+  // ═══════════════════════════════════════════════════════════════
   async getClassTrend({ classId, days = 30 }) {
     if (!classId) throwError("Class ID required", 400);
 
@@ -983,9 +909,9 @@ class ReportService {
     return { classId, days, data };
   }
 
-  /**
-   * Get analytics overview — for admin dashboard
-   */
+  // ═══════════════════════════════════════════════════════════════
+  //  ANALYTICS OVERVIEW
+  // ═══════════════════════════════════════════════════════════════
   async getAnalyticsOverview() {
     const settings = await Settings.getSettings();
     const sessionId = settings?.activeSession?._id || settings?.activeSession;
@@ -997,20 +923,17 @@ class ReportService {
     startDate.setDate(startDate.getDate() - 30);
     startDate.setHours(0, 0, 0, 0);
 
-    // Class count
     const totalClasses = await Class.countDocuments({
       session: sessionId,
       isArchived: false,
     });
 
-    // Student count
     const totalStudents = await Student.countDocuments({
       session: sessionId,
       status: "Active",
       isActive: true,
     });
 
-    // Attendance trend (last 30 days)
     const trend = await Attendance.aggregate([
       {
         $match: {
@@ -1051,7 +974,6 @@ class ReportService {
         };
       });
 
-    // Class-wise comparison (current month)
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
@@ -1105,7 +1027,6 @@ class ReportService {
       })
       .sort((a, b) => b.percentage - a.percentage);
 
-    // Status distribution (pie chart data)
     const overallStats = await Attendance.aggregate([
       {
         $match: {
@@ -1122,16 +1043,224 @@ class ReportService {
     });
 
     return {
-      totals: {
-        students: totalStudents,
-        classes: totalClasses,
-      },
+      totals: { students: totalStudents, classes: totalClasses },
       trend: trendData,
       classComparison: classData,
       distribution,
     };
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  ATTENDANCE REGISTER
+  // ═══════════════════════════════════════════════════════════════
+  async getAttendanceRegister({ classId, dateFrom, dateTo, user }) {
+    if (!classId) throwError("Class ID is required", 400);
+    if (!dateFrom || !dateTo) {
+      throwError("Date range (from/to) is required", 400);
+    }
+
+    const settings = await Settings.getSettings();
+    const sessionId = settings?.activeSession?._id || settings?.activeSession;
+    if (!sessionId) throwError("No active session", 400);
+
+    const startDate = new Date(dateFrom);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(dateTo);
+    endDate.setHours(23, 59, 59, 999);
+
+    if (startDate > endDate) {
+      throwError("Start date must be before end date", 400);
+    }
+
+    const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    if (daysDiff > 365) {
+      throwError("Date range cannot exceed 1 year (365 days)", 400);
+    }
+
+    // Class role RBAC
+    if (user?.role === "class") {
+      const linked = user.linkedClass?.toString();
+      if (!linked || linked !== classId.toString()) {
+        throwError("You can only access your own class", 403);
+      }
+    }
+
+    // ✅ NO populate
+    const cls = await Class.findById(classId).lean();
+    if (!cls) throwError("Class not found", 404);
+
+    const students = await Student.find({
+      class: classId,
+      session: sessionId,
+      status: "Active",
+      isActive: true,
+    })
+      .sort({ name: 1 })
+      .lean();
+
+    const records = await Attendance.find({
+      class: classId,
+      date: { $gte: startDate, $lte: endDate },
+    }).lean();
+
+    const holidays = await Holiday.find({
+      session: sessionId,
+      $or: [
+        { date: { $gte: startDate, $lte: endDate }, endDate: null },
+        { date: { $lte: endDate }, endDate: { $gte: startDate } },
+      ],
+    }).lean();
+
+    const holidayMap = {};
+    holidays.forEach((h) => {
+      const start = new Date(h.date);
+      start.setHours(0, 0, 0, 0);
+      const end = h.endDate ? new Date(h.endDate) : new Date(h.date);
+      end.setHours(23, 59, 59, 999);
+      const cur = new Date(start);
+      while (cur <= end) {
+        const key = this._dateKey(cur);
+        holidayMap[key] = {
+          name: h.name,
+          type: h.type,
+          allowAttendance: h.allowAttendance,
+        };
+        cur.setDate(cur.getDate() + 1);
+      }
+    });
+
+    const workingDayNames = new Set(
+      (settings?.workingDays || [])
+        .filter((d) => d.isWorking)
+        .map((d) => d.day),
+    );
+
+    const dateArray = [];
+    const cur = new Date(startDate);
+    while (cur <= endDate) {
+      const key = this._dateKey(cur);
+      const dayName = cur.toLocaleDateString("en-US", { weekday: "long" });
+      const dayShort = cur.toLocaleDateString("en-US", { weekday: "short" });
+      const monthShort = cur.toLocaleDateString("en-US", { month: "short" });
+      const dayNumber = cur.getDate();
+      const isWorkingDay = workingDayNames.has(dayName);
+      const holiday = holidayMap[key];
+
+      dateArray.push({
+        date: new Date(cur),
+        dateKey: key,
+        day: dayNumber,
+        dayName,
+        dayShort,
+        monthShort,
+        year: cur.getFullYear(),
+        isSunday: dayName === "Sunday",
+        isHoliday: !!holiday,
+        holidayName: holiday?.name || null,
+        isWorkingDay,
+        isBlocked: !!holiday || !isWorkingDay,
+      });
+
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    const attendanceMap = {};
+    records.forEach((r) => {
+      const studentId = r.student.toString();
+      const dateKey = this._dateKey(r.date);
+      if (!attendanceMap[studentId]) attendanceMap[studentId] = {};
+      attendanceMap[studentId][dateKey] = r.status;
+    });
+
+    const studentRows = students.map((s) => {
+      const sid = s._id.toString();
+      const attendance = {};
+      let presentCount = 0;
+      let absentCount = 0;
+      let workingDaysCount = 0;
+
+      dateArray.forEach((d) => {
+        if (d.isBlocked) {
+          attendance[d.dateKey] = d.isHoliday ? "H" : "-";
+        } else {
+          workingDaysCount++;
+          const status = attendanceMap[sid]?.[d.dateKey];
+          if (status === "Present") {
+            attendance[d.dateKey] = "P";
+            presentCount++;
+          } else if (status === "Absent") {
+            attendance[d.dateKey] = "A";
+            absentCount++;
+          } else {
+            attendance[d.dateKey] = "";
+          }
+        }
+      });
+
+      const markedCount = presentCount + absentCount;
+      const percentage =
+        markedCount > 0 ? Math.round((presentCount / markedCount) * 100) : 0;
+
+      return {
+        _id: s._id,
+        scholarNumber: s.scholarNumber,
+        name: s.name,
+        fatherName: s.fatherName,
+        motherName: s.motherName,
+        gender: s.gender,
+        mobile: s.mobile,
+        attendance,
+        totals: {
+          present: presentCount,
+          absent: absentCount,
+          workingDays: workingDaysCount,
+          marked: markedCount,
+          percentage,
+        },
+      };
+    });
+
+    const monthGroups = [];
+    let currentGroup = null;
+    dateArray.forEach((d) => {
+      const monthKey = `${d.monthShort} ${d.year}`;
+      if (!currentGroup || currentGroup.label !== monthKey) {
+        if (currentGroup) monthGroups.push(currentGroup);
+        currentGroup = { label: monthKey, count: 1, year: d.year };
+      } else {
+        currentGroup.count++;
+      }
+    });
+    if (currentGroup) monthGroups.push(currentGroup);
+
+    const summary = {
+      totalStudents: students.length,
+      totalDays: dateArray.length,
+      workingDays: dateArray.filter((d) => !d.isBlocked).length,
+      holidays: dateArray.filter((d) => d.isHoliday).length,
+      sundays: dateArray.filter((d) => d.isSunday).length,
+      dateFrom: startDate,
+      dateTo: endDate,
+    };
+
+    return {
+      class: {
+        _id: cls._id,
+        name: cls.name,
+        section: cls.section,
+        // ✅ NEW: teacherLabel
+        classTeacher: cls.teacherLabel || null,
+      },
+      students: studentRows,
+      dates: dateArray,
+      monthGroups,
+      summary,
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  HELPERS
+  // ═══════════════════════════════════════════════════════════════
   _emptySummary() {
     return {
       totalClasses: 0,
@@ -1185,240 +1314,7 @@ class ReportService {
     }
     return workingDays;
   }
-  /**
-   * Get attendance register — Excel-style date-wise view
-   * Returns students × dates matrix with P/A/H status
-   */
-  async getAttendanceRegister({ classId, dateFrom, dateTo, user }) {
-    if (!classId) throwError("Class ID is required", 400);
-    if (!dateFrom || !dateTo) {
-      throwError("Date range (from/to) is required", 400);
-    }
 
-    const settings = await Settings.getSettings();
-    const sessionId = settings?.activeSession?._id || settings?.activeSession;
-    if (!sessionId) throwError("No active session", 400);
-
-    // ─── Parse dates ───
-    const startDate = new Date(dateFrom);
-    startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(dateTo);
-    endDate.setHours(23, 59, 59, 999);
-
-    if (startDate > endDate) {
-      throwError("Start date must be before end date", 400);
-    }
-
-    // Extended limit: max 1 year (365 days) range
-    const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-    if (daysDiff > 365) {
-      throwError("Date range cannot exceed 1 year (365 days)", 400);
-    }
-
-    // ─── Teacher RBAC ───
-    if (user?.role === "teacher") {
-      const Teacher = require("../models/Teacher.model");
-      const teacher = await Teacher.findOne({ user: user._id }).lean();
-      if (
-        !teacher?.assignedClasses?.length ||
-        !teacher.assignedClasses.some(
-          (c) => c.toString() === classId.toString(),
-        )
-      ) {
-        throwError("You are not assigned to this class", 403);
-      }
-    }
-
-    // ─── Get class info ───
-    const cls = await Class.findById(classId)
-      .populate("classTeacher", "name")
-      .lean();
-    if (!cls) throwError("Class not found", 404);
-
-    // ─── Get students of this class (active only, sorted by roll number) ───
-    const students = await Student.find({
-      class: classId,
-      session: sessionId,
-      status: "Active",
-      isActive: true,
-    })
-      .sort({ name: 1 })
-      .lean();
-
-    // ─── Get all attendance records for this class in the date range ───
-    const records = await Attendance.find({
-      class: classId,
-      date: { $gte: startDate, $lte: endDate },
-    }).lean();
-
-    // ─── Get all holidays in the date range ───
-    const holidays = await Holiday.find({
-      session: sessionId,
-      $or: [
-        { date: { $gte: startDate, $lte: endDate }, endDate: null },
-        { date: { $lte: endDate }, endDate: { $gte: startDate } },
-      ],
-    }).lean();
-
-    // ─── Build holiday date map ───
-    const holidayMap = {};
-    holidays.forEach((h) => {
-      const start = new Date(h.date);
-      start.setHours(0, 0, 0, 0);
-      const end = h.endDate ? new Date(h.endDate) : new Date(h.date);
-      end.setHours(23, 59, 59, 999);
-
-      const cur = new Date(start);
-      while (cur <= end) {
-        const key = this._dateKey(cur);
-        holidayMap[key] = {
-          name: h.name,
-          type: h.type,
-          allowAttendance: h.allowAttendance,
-        };
-        cur.setDate(cur.getDate() + 1);
-      }
-    });
-
-    // ─── Working days config ───
-    const workingDayNames = new Set(
-      (settings?.workingDays || [])
-        .filter((d) => d.isWorking)
-        .map((d) => d.day),
-    );
-
-    // ─── Build date array with metadata ───
-    const dateArray = [];
-    const cur = new Date(startDate);
-    while (cur <= endDate) {
-      const key = this._dateKey(cur);
-      const dayName = cur.toLocaleDateString("en-US", { weekday: "long" });
-      const dayShort = cur.toLocaleDateString("en-US", { weekday: "short" });
-      const monthShort = cur.toLocaleDateString("en-US", { month: "short" });
-      const dayNumber = cur.getDate();
-      const isWorkingDay = workingDayNames.has(dayName);
-      const holiday = holidayMap[key];
-
-      dateArray.push({
-        date: new Date(cur),
-        dateKey: key,
-        day: dayNumber,
-        dayName,
-        dayShort,
-        monthShort,
-        year: cur.getFullYear(),
-        isSunday: dayName === "Sunday",
-        isHoliday: !!holiday,
-        holidayName: holiday?.name || null,
-        isWorkingDay,
-        // Cell is "blocked" if it's a holiday or non-working day
-        isBlocked: !!holiday || !isWorkingDay,
-      });
-
-      cur.setDate(cur.getDate() + 1);
-    }
-
-    // ─── Build attendance map: { studentId: { dateKey: status } } ───
-    const attendanceMap = {};
-    records.forEach((r) => {
-      const studentId = r.student.toString();
-      const dateKey = this._dateKey(r.date);
-      if (!attendanceMap[studentId]) attendanceMap[studentId] = {};
-      attendanceMap[studentId][dateKey] = r.status;
-    });
-
-    // ─── Build student rows with attendance per date ───
-    const studentRows = students.map((s) => {
-      const sid = s._id.toString();
-      const attendance = {};
-      let presentCount = 0;
-      let absentCount = 0;
-      let workingDaysCount = 0;
-
-      dateArray.forEach((d) => {
-        if (d.isBlocked) {
-          // Holiday or non-working day
-          attendance[d.dateKey] = d.isHoliday ? "H" : "-";
-        } else {
-          workingDaysCount++;
-          const status = attendanceMap[sid]?.[d.dateKey];
-          if (status === "Present") {
-            attendance[d.dateKey] = "P";
-            presentCount++;
-          } else if (status === "Absent") {
-            attendance[d.dateKey] = "A";
-            absentCount++;
-          } else {
-            attendance[d.dateKey] = ""; // Unmarked
-          }
-        }
-      });
-
-      const markedCount = presentCount + absentCount;
-      const percentage =
-        markedCount > 0 ? Math.round((presentCount / markedCount) * 100) : 0;
-
-      return {
-        _id: s._id,
-        scholarNumber: s.scholarNumber,
-        name: s.name,
-        fatherName: s.fatherName,
-        motherName: s.motherName,
-        gender: s.gender,
-        mobile: s.mobile,
-        attendance,
-        totals: {
-          present: presentCount,
-          absent: absentCount,
-          workingDays: workingDaysCount,
-          marked: markedCount,
-          percentage,
-        },
-      };
-    });
-
-    // ─── Build month grouping for headers ───
-    const monthGroups = [];
-    let currentGroup = null;
-    dateArray.forEach((d) => {
-      const monthKey = `${d.monthShort} ${d.year}`;
-      if (!currentGroup || currentGroup.label !== monthKey) {
-        if (currentGroup) monthGroups.push(currentGroup);
-        currentGroup = { label: monthKey, count: 1, year: d.year };
-      } else {
-        currentGroup.count++;
-      }
-    });
-    if (currentGroup) monthGroups.push(currentGroup);
-
-    // ─── Summary stats ───
-    const summary = {
-      totalStudents: students.length,
-      totalDays: dateArray.length,
-      workingDays: dateArray.filter((d) => !d.isBlocked).length,
-      holidays: dateArray.filter((d) => d.isHoliday).length,
-      sundays: dateArray.filter((d) => d.isSunday).length,
-      dateFrom: startDate,
-      dateTo: endDate,
-    };
-
-    return {
-      class: {
-        _id: cls._id,
-        name: cls.name,
-        section: cls.section,
-        classTeacher: cls.classTeacher?.name || null,
-      },
-      students: studentRows,
-      dates: dateArray,
-      monthGroups,
-      summary,
-    };
-  }
-
-  /**
-   * Helper: Format date as YYYY-MM-DD key
-   */
   _dateKey(date) {
     const d = new Date(date);
     const y = d.getFullYear();

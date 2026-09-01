@@ -1,11 +1,11 @@
 "use strict";
 
+const mongoose = require("mongoose");
 const Student = require("../models/Student.model");
 const Class = require("../models/Class.model");
-const Teacher = require("../models/Teacher.model");
 const Attendance = require("../models/Attendance.model");
 const Holiday = require("../models/Holiday.model");
-const holidayRepository = require("../repositories/holiday.repository"); // ✅ FIXED IMPORT
+const holidayRepository = require("../repositories/holiday.repository");
 const Settings = require("../models/Settings.model");
 const AcademicSession = require("../models/AcademicSession.model");
 const { STATUSES_BLOCKING_ATTENDANCE } = require("../constants/studentStatus");
@@ -24,23 +24,32 @@ class DashboardService {
     return session?._id || null;
   }
 
-  async _getTeacherClassIds(userId) {
-    const teacher = await Teacher.findOne({ user: userId }).lean();
-    if (
-      !teacher ||
-      !teacher.assignedClasses ||
-      teacher.assignedClasses.length === 0
-    ) {
-      return [];
+  // ═══════════════════════════════════════════════════════════════
+  //  SAFELY RESOLVE LINKED CLASS ID
+  // ═══════════════════════════════════════════════════════════════
+  _resolveLinkedClassId(user) {
+    if (!user?.linkedClass) return null;
+    const lc = user.linkedClass;
+    if (typeof lc === "object" && lc !== null) {
+      return (lc._id || lc.id || null)?.toString?.() || null;
     }
-    return teacher.assignedClasses.map((id) => id.toString());
+    return lc.toString();
+  }
+
+  async _getTeacherClassIds(user) {
+    if (!user) return [];
+    if (user.role === "class") {
+      const id = this._resolveLinkedClassId(user);
+      return id ? [id] : [];
+    }
+    return []; // Admin uses other endpoints
   }
 
   // ═══════════════════════════════════════════════════════════════
   //  TIMEZONE-LOCKED DATE RANGE GENERATOR (Forced to Asia/Kolkata)
   // ═══════════════════════════════════════════════════════════════
   _getDateRange(period) {
-    const tzOffset = 5.5 * 60 * 60 * 1000; // IST offset in milliseconds
+    const tzOffset = 5.5 * 60 * 60 * 1000;
     const now = new Date();
     const istTime = new Date(now.getTime() + tzOffset);
     const y = istTime.getUTCFullYear();
@@ -57,7 +66,6 @@ class DashboardService {
     if (period === "week") {
       const day = istTime.getUTCDay();
       const diffToMonday = day === 0 ? -6 : 1 - day;
-
       const mondayIST = new Date(
         istTime.getTime() + diffToMonday * 24 * 60 * 60 * 1000,
       );
@@ -73,7 +81,7 @@ class DashboardService {
 
     if (period === "month") {
       const start = new Date(`${y}-${m}-01T00:00:00.000Z`);
-      const lastDay = new Date(y, parseInt(m), 0).getDate();
+      const lastDay = new Date(y, parseInt(m, 10), 0).getDate();
       const lastDayStr = String(lastDay).padStart(2, "0");
       const end = new Date(`${y}-${m}-${lastDayStr}T23:59:59.999Z`);
       return { start, end, label: "This Month" };
@@ -85,31 +93,20 @@ class DashboardService {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  TIMEZONE-LOCKED TODAY STATUS
+  //  TIMEZONE-LOCKED TODAY STATUS & NEXT WORKING DAY
   // ═══════════════════════════════════════════════════════════════
   async _getTodayStatus(sessionId) {
-    const tzOffset = 5.5 * 60 * 60 * 1000;
-    const now = new Date();
-    const istTime = new Date(now.getTime() + tzOffset);
-    const y = istTime.getUTCFullYear();
-    const m = String(istTime.getUTCMonth() + 1).padStart(2, "0");
-    const d = String(istTime.getUTCDate()).padStart(2, "0");
-    const dateStr = `${y}-${m}-${d}`;
+    const { start: today } = this._getDateRange("today");
 
-    const today = new Date(`${dateStr}T00:00:00.000Z`);
-
-    const formatter = new Intl.DateTimeFormat("en-US", {
+    const dayName = new Intl.DateTimeFormat("en-US", {
       weekday: "long",
-      timeZone: "Asia/Kolkata",
-    });
-    const dayName = formatter.format(now);
+      timeZone: "UTC", // today is already IST-midnight as UTC
+    }).format(today);
 
     const settings = await Settings.getSettings();
-
     const workingDay = settings?.workingDays?.find((d) => d.day === dayName);
-    const isWorkingDay = !workingDay || workingDay.isWorking;
+    const isWorkingDay = !workingDay || workingDay.isWorking !== false;
 
-    // ✅ FIXED: Using holidayRepository instead of Holiday model!
     const holiday = await holidayRepository.isHoliday(today, sessionId);
     const isHoliday = holiday && !holiday.allowAttendance;
 
@@ -136,61 +133,41 @@ class DashboardService {
     });
 
     const start = new Date(fromDate);
-    const end = new Date(fromDate);
-    end.setDate(end.getDate() + 30);
+    start.setUTCHours(0, 0, 0, 0);
 
-    const holidays = await Holiday.find({
-      session: sessionId,
-      date: { $lte: end },
-      allowAttendance: { $ne: true },
-      $or: [
-        { endDate: null, date: { $gte: start } },
-        { endDate: { $gte: start } },
-      ],
-    })
-      .select("date endDate")
-      .lean();
-
-    const isDateHoliday = (candidateDate) => {
-      return holidays.some((h) => {
-        const hStart = new Date(h.date);
-        hStart.setHours(0, 0, 0, 0);
-        const hEnd = h.endDate ? new Date(h.endDate) : hStart;
-        hEnd.setHours(23, 59, 59, 999);
-        return candidateDate >= hStart && candidateDate <= hEnd;
-      });
-    };
+    let y = start.getUTCFullYear();
+    let m = start.getUTCMonth();
+    let day = start.getUTCDate();
 
     for (let i = 1; i <= 14; i++) {
-      const candidate = new Date(fromDate);
-      candidate.setDate(candidate.getDate() + i);
-      candidate.setHours(0, 0, 0, 0);
+      const candidate = new Date(Date.UTC(y, m, day + i, 0, 0, 0, 0));
 
-      const formatter = new Intl.DateTimeFormat("en-US", {
+      const dayName = new Intl.DateTimeFormat("en-US", {
         weekday: "long",
-        timeZone: "Asia/Kolkata",
-      });
-      const candidateDayName = formatter.format(candidate);
+        timeZone: "UTC",
+      }).format(candidate);
 
       const isWorking =
-        workingDaysMap[candidateDayName] === undefined
-          ? true
-          : workingDaysMap[candidateDayName];
+        workingDaysMap[dayName] === undefined
+          ? dayName !== "Sunday"
+          : workingDaysMap[dayName] === true;
 
       if (!isWorking) continue;
-      if (isDateHoliday(candidate)) continue;
 
-      const labelFormatter = new Intl.DateTimeFormat("en-IN", {
+      const holiday = await holidayRepository.isHoliday(candidate, sessionId);
+      if (holiday && holiday.allowAttendance !== true) continue;
+
+      const label = new Intl.DateTimeFormat("en-IN", {
         weekday: "long",
         day: "numeric",
         month: "short",
-        timeZone: "Asia/Kolkata",
-      });
+        timeZone: "UTC",
+      }).format(candidate);
 
       return {
         date: candidate.toISOString(),
-        dayName: candidateDayName,
-        label: labelFormatter.format(candidate),
+        dayName,
+        label,
       };
     }
 
@@ -198,27 +175,26 @@ class DashboardService {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  TEACHER SUMMARY
+  //  CLASS USER SUMMARY (Teacher Dashboard)
   // ═══════════════════════════════════════════════════════════════
   async getTeacherSummary({ user, period = "today" }) {
     const activeSessionId = await this._getActiveSessionId();
-    if (!activeSessionId) {
-      return this._emptySummary();
-    }
+    if (!activeSessionId) return this._emptySummary();
 
-    const classIds = await this._getTeacherClassIds(user._id);
-    if (classIds.length === 0) {
-      return this._emptySummary();
-    }
+    const classIds = await this._getTeacherClassIds(user);
+    if (classIds.length === 0) return this._emptySummary();
 
-    const classes = await Class.find({
+    // Prefer unarchived, but if it's archived, still load it so UI doesn't say "Not Linked"
+    let classes = await Class.find({
       _id: { $in: classIds },
       isArchived: false,
     }).lean();
 
     if (classes.length === 0) {
-      return this._emptySummary();
+      classes = await Class.find({ _id: { $in: classIds } }).lean();
     }
+
+    if (classes.length === 0) return this._emptySummary();
 
     const todayStatus = await this._getTodayStatus(activeSessionId);
 
@@ -241,22 +217,24 @@ class DashboardService {
         percentage: 0,
         markedClassesToday: 0,
         pendingClassesToday: 0,
-        classBreakdown: [],
+        classBreakdown: classes.map((c) => ({
+          _id: c._id,
+          name: c.name,
+          section: c.section,
+          teacherLabel: c.teacherLabel || null,
+          studentCount: 0,
+          present: 0,
+          absent: 0,
+          marked: 0,
+          pending: 0,
+          percentage: 0,
+          isMarkedToday: false,
+        })),
       };
     }
 
     const classObjIds = classes.map((c) => c._id);
-
-    const tzOffset = 5.5 * 60 * 60 * 1000;
-    const now = new Date();
-    const istTime = new Date(now.getTime() + tzOffset);
-    const y = istTime.getUTCFullYear();
-    const m = String(istTime.getUTCMonth() + 1).padStart(2, "0");
-    const d = String(istTime.getUTCDate()).padStart(2, "0");
-    const dateStr = `${y}-${m}-${d}`;
-
-    const today = new Date(`${dateStr}T00:00:00.000Z`);
-    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+    const { start: today, end: todayEnd } = this._getDateRange("today");
 
     const students = await Student.find({
       class: { $in: classObjIds },
@@ -304,7 +282,7 @@ class DashboardService {
 
     const todayAttendance = await Attendance.find({
       class: { $in: classObjIds },
-      date: { $gte: today, $lt: tomorrow },
+      date: { $gte: today, $lte: todayEnd },
     })
       .select("student class status")
       .lean();
@@ -337,6 +315,7 @@ class DashboardService {
         _id: cls._id,
         name: cls.name,
         section: cls.section,
+        teacherLabel: cls.teacherLabel || null,
         studentCount: totalInClass,
         present,
         absent,
@@ -380,25 +359,16 @@ class DashboardService {
     };
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  //  TEACHER DEFAULTERS (Removed Roll References)
-  // ═══════════════════════════════════════════════════════════════
   async getTeacherDefaulters({ user, limit = 5, threshold = 75 }) {
     const activeSessionId = await this._getActiveSessionId();
     if (!activeSessionId) return [];
 
-    const classIds = await this._getTeacherClassIds(user._id);
+    const classIds = await this._getTeacherClassIds(user);
     if (classIds.length === 0) return [];
 
-    const tzOffset = 5.5 * 60 * 60 * 1000;
-    const now = new Date();
-    const istTime = new Date(now.getTime() + tzOffset);
-    const y = istTime.getUTCFullYear();
-    const m = istTime.getUTCMonth();
-
-    const monthStart = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0) - tzOffset);
-    const monthEnd = new Date(
-      Date.UTC(y, m + 1, 0, 23, 59, 59, 999) - tzOffset,
+    const { start: today } = this._getDateRange("today");
+    const monthStart = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1, 0, 0, 0, 0),
     );
 
     const students = await Student.find({
@@ -418,7 +388,7 @@ class DashboardService {
       {
         $match: {
           student: { $in: studentIds },
-          date: { $gte: monthStart, $lte: monthEnd },
+          date: { $gte: monthStart, $lte: today },
         },
       },
       {
@@ -463,21 +433,11 @@ class DashboardService {
     return defaulters;
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  //  UPCOMING HOLIDAYS
-  // ═══════════════════════════════════════════════════════════════
   async getUpcomingHolidays({ limit = 3, days = 60 }) {
     const activeSessionId = await this._getActiveSessionId();
     if (!activeSessionId) return [];
 
-    const tzOffset = 5.5 * 60 * 60 * 1000;
-    const now = new Date();
-    const istTime = new Date(now.getTime() + tzOffset);
-    const y = istTime.getUTCFullYear();
-    const m = istTime.getUTCMonth();
-    const d = istTime.getUTCDate();
-
-    const today = new Date(Date.UTC(y, m, d, 0, 0, 0, 0) - tzOffset);
+    const { start: today } = this._getDateRange("today");
     const rangeEnd = new Date(today.getTime() + days * 24 * 60 * 60 * 1000);
 
     const holidays = await Holiday.find({
@@ -490,7 +450,7 @@ class DashboardService {
 
     return holidays.map((h) => {
       const holidayDate = new Date(h.date);
-      holidayDate.setHours(0, 0, 0, 0);
+      holidayDate.setUTCHours(0, 0, 0, 0);
       const daysUntil = Math.ceil(
         (holidayDate - today) / (1000 * 60 * 60 * 24),
       );
@@ -500,7 +460,10 @@ class DashboardService {
         date: h.date,
         type: h.type,
         daysUntil,
-        dayName: holidayDate.toLocaleDateString("en-US", { weekday: "short" }),
+        dayName: new Intl.DateTimeFormat("en-US", {
+          weekday: "short",
+          timeZone: "UTC",
+        }).format(holidayDate),
       };
     });
   }

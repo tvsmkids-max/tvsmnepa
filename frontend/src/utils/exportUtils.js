@@ -1,6 +1,28 @@
 import * as XLSX from "xlsx";
 
 // ═══════════════════════════════════════════════════════════════════
+//  SMART CLASS SORT RANK (Nursery → 12th)
+// ═══════════════════════════════════════════════════════════════════
+const getClassRankUtil = (cls) => {
+  if (!cls?.name) return 999;
+  const name = cls.name.toString().trim().toUpperCase();
+  if (/^PRE/.test(name) || name === "PLAYGROUP" || name === "PLAY") return 0;
+  if (/^NUR/.test(name) || name === "NURSERY") return 1;
+  if (/^L\.?K\.?G/.test(name) || name === "LKG" || name === "LOWER KG")
+    return 2;
+  if (/^U\.?K\.?G/.test(name) || name === "UKG" || name === "UPPER KG")
+    return 3;
+  const numMatch = name.match(/^(?:CLASS\s*)?(\d{1,2})(?:ST|ND|RD|TH)?/);
+  if (numMatch) {
+    const num = parseInt(numMatch[1], 10);
+    if (num >= 1 && num <= 12) return 10 + num;
+  }
+  return 999;
+};
+
+const UP = (v) => (v ? String(v).toUpperCase() : "");
+
+// ═══════════════════════════════════════════════════════════════════
 //  GENERIC EXPORT HELPERS
 // ═══════════════════════════════════════════════════════════════════
 
@@ -21,22 +43,37 @@ export const exportMultiSheet = (sheets, filename) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-//  STUDENT LIST EXPORT
+//  STUDENT LIST EXPORT (Sorted + UPPERCASE)
 // ═══════════════════════════════════════════════════════════════════
 
 export const exportStudentsToExcel = (students, filename = "students") => {
-  const data = students.map((s, idx) => ({
+  // ✅ FIX 5 & 10: Sort by Class Rank → Section → Name → UPPERCASE names
+  const sorted = [...students].sort((a, b) => {
+    const rA = getClassRankUtil(a.class);
+    const rB = getClassRankUtil(b.class);
+    if (rA !== rB) return rA - rB;
+
+    const secA = (a.class?.section || a.section || "").toLowerCase();
+    const secB = (b.class?.section || b.section || "").toLowerCase();
+    if (secA !== secB) return secA.localeCompare(secB);
+
+    return (a.name || "")
+      .toLowerCase()
+      .localeCompare((b.name || "").toLowerCase());
+  });
+
+  const data = sorted.map((s, idx) => ({
     "S.No": idx + 1,
-    "Scholar No": s.scholarNumber || "",
-    Name: s.name || "",
-    "Father's Name": s.fatherName || "",
-    "Mother's Name": s.motherName || "",
+    "Scholar No": UP(s.scholarNumber),
+    Name: UP(s.name),
+    "Father's Name": UP(s.fatherName),
+    "Mother's Name": UP(s.motherName),
     Gender: s.gender || "",
     "Date of Birth": s.dob ? new Date(s.dob).toLocaleDateString("en-IN") : "",
     Mobile: s.mobile === "0000000000" ? "—" : s.mobile || "",
     "Alternate Mobile": s.alternateMobile || "",
-    Class: s.class?.name || "",
-    Section: s.class?.section || s.section || "",
+    Class: UP(s.class?.name),
+    Section: UP(s.class?.section || s.section),
     Address: s.address || "",
     "Blood Group": s.bloodGroup || "",
     Category: s.category || "",
@@ -51,24 +88,24 @@ export const exportStudentsToExcel = (students, filename = "students") => {
   const ws = XLSX.utils.json_to_sheet(data);
 
   ws["!cols"] = [
-    { wch: 6 }, // S.No
-    { wch: 14 }, // Scholar
-    { wch: 25 }, // Name
-    { wch: 25 }, // Father
-    { wch: 25 }, // Mother
-    { wch: 10 }, // Gender
-    { wch: 14 }, // DOB
-    { wch: 14 }, // Mobile
-    { wch: 14 }, // Alt Mobile
-    { wch: 12 }, // Class
-    { wch: 10 }, // Section
-    { wch: 40 }, // Address
-    { wch: 12 }, // Blood
-    { wch: 12 }, // Category
-    { wch: 12 }, // Religion
-    { wch: 16 }, // Aadhar
-    { wch: 14 }, // Admission
-    { wch: 12 }, // Status
+    { wch: 6 },
+    { wch: 14 },
+    { wch: 25 },
+    { wch: 25 },
+    { wch: 25 },
+    { wch: 10 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 12 },
+    { wch: 10 },
+    { wch: 40 },
+    { wch: 12 },
+    { wch: 12 },
+    { wch: 12 },
+    { wch: 16 },
+    { wch: 14 },
+    { wch: 12 },
   ];
 
   ws["!freeze"] = { xSplit: 0, ySplit: 1 };
@@ -90,22 +127,18 @@ export const exportRegisterToExcel = (register, filename = "register") => {
   const { students, dates, monthGroups, class: classInfo, summary } = register;
   const rows = [];
 
-  // Row 1: Title
   rows.push([
-    `Attendance Register — Class ${classInfo.name}-${classInfo.section}`,
+    `ATTENDANCE REGISTER — CLASS ${UP(classInfo.name)}-${UP(classInfo.section)}`,
   ]);
 
-  // Row 2: Date range info
   const fromStr = new Date(summary.dateFrom).toLocaleDateString("en-IN");
   const toStr = new Date(summary.dateTo).toLocaleDateString("en-IN");
   rows.push([
     `Period: ${fromStr} to ${toStr} | Students: ${summary.totalStudents} | Working Days: ${summary.workingDays} | Holidays: ${summary.holidays}`,
   ]);
 
-  // Row 3: Empty spacer
   rows.push([]);
 
-  // Row 4: Month groups header (skip first 4 cols: S.No, Scholar, Name, Father)
   const FIXED_COLS = 4;
   const monthHeaderRow = Array(FIXED_COLS).fill("");
   monthGroups.forEach((g) => {
@@ -115,21 +148,19 @@ export const exportRegisterToExcel = (register, filename = "register") => {
   monthHeaderRow.push("TOTALS", "", "");
   rows.push(monthHeaderRow);
 
-  // Row 5: Day short names
-  const dayNameRow = ["S.No", "Scholar No", "Name", "Father"];
+  const dayNameRow = ["S.No", "SCHOLAR NO", "NAME", "FATHER"];
   dates.forEach((d) => dayNameRow.push(d.dayShort));
   dayNameRow.push("P", "A", "%");
   rows.push(dayNameRow);
 
-  // Row 6: Day numbers
   const dayNumRow = Array(FIXED_COLS).fill("");
   dates.forEach((d) => dayNumRow.push(d.day));
   dayNumRow.push("", "", "");
   rows.push(dayNumRow);
 
-  // Body rows
   students.forEach((s, idx) => {
-    const row = [idx + 1, s.scholarNumber, s.name, s.fatherName];
+    // ✅ UPPERCASE names
+    const row = [idx + 1, UP(s.scholarNumber), UP(s.name), UP(s.fatherName)];
     dates.forEach((d) => {
       const status = s.attendance[d.dateKey];
       if (status === "P") row.push("P");
@@ -141,37 +172,19 @@ export const exportRegisterToExcel = (register, filename = "register") => {
     rows.push(row);
   });
 
-  // Build worksheet
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
-  // Column widths
-  const colWidths = [
-    { wch: 5 }, // S.No
-    { wch: 12 }, // Scholar
-    { wch: 20 }, // Name
-    { wch: 20 }, // Father
-  ];
+  const colWidths = [{ wch: 5 }, { wch: 12 }, { wch: 20 }, { wch: 20 }];
   dates.forEach(() => colWidths.push({ wch: 4 }));
-  colWidths.push({ wch: 5 }, { wch: 5 }, { wch: 7 }); // P, A, %
+  colWidths.push({ wch: 5 }, { wch: 5 }, { wch: 7 });
   ws["!cols"] = colWidths;
 
-  // Merge cells
   const totalCols = FIXED_COLS + dates.length + 3;
   ws["!merges"] = ws["!merges"] || [];
 
-  // Merge title row
-  ws["!merges"].push({
-    s: { r: 0, c: 0 },
-    e: { r: 0, c: totalCols - 1 },
-  });
+  ws["!merges"].push({ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } });
+  ws["!merges"].push({ s: { r: 1, c: 0 }, e: { r: 1, c: totalCols - 1 } });
 
-  // Merge info row
-  ws["!merges"].push({
-    s: { r: 1, c: 0 },
-    e: { r: 1, c: totalCols - 1 },
-  });
-
-  // Merge month groups
   let monthCol = FIXED_COLS;
   monthGroups.forEach((g) => {
     if (g.count > 1) {
@@ -183,23 +196,19 @@ export const exportRegisterToExcel = (register, filename = "register") => {
     monthCol += g.count;
   });
 
-  // Merge "TOTALS" header
   ws["!merges"].push({
     s: { r: 3, c: totalCols - 3 },
     e: { r: 3, c: totalCols - 1 },
   });
 
-  // Freeze first 4 cols + first 6 rows
   ws["!freeze"] = { xSplit: FIXED_COLS, ySplit: 6 };
 
-  // Create workbook
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Register");
 
-  // Summary sheet
   const summaryData = [
-    { Metric: "Class", Value: `${classInfo.name}-${classInfo.section}` },
-    { Metric: "Class Teacher", Value: classInfo.classTeacher || "—" },
+    { Metric: "Class", Value: UP(`${classInfo.name}-${classInfo.section}`) },
+    { Metric: "Class Teacher", Value: UP(classInfo.classTeacher) || "—" },
     { Metric: "Period From", Value: fromStr },
     { Metric: "Period To", Value: toStr },
     { Metric: "Total Days", Value: summary.totalDays },
@@ -208,7 +217,7 @@ export const exportRegisterToExcel = (register, filename = "register") => {
     { Metric: "Sundays", Value: summary.sundays },
     { Metric: "Total Students", Value: summary.totalStudents },
     { Metric: "", Value: "" },
-    { Metric: "Legend", Value: "" },
+    { Metric: "LEGEND", Value: "" },
     { Metric: "P", Value: "Present" },
     { Metric: "A", Value: "Absent" },
     { Metric: "H", Value: "Holiday" },
@@ -246,38 +255,29 @@ export const exportMonthlyClassToExcel = (
 
   const rows = [];
 
-  // Title row
   rows.push([
-    `Monthly Attendance — Class ${classInfo.name}-${classInfo.section} — ${monthName} ${year}`,
+    `MONTHLY ATTENDANCE — CLASS ${UP(classInfo.name)}-${UP(classInfo.section)} — ${UP(monthName)} ${year}`,
   ]);
 
-  // Info row
   rows.push([
-    `Teacher: ${classInfo.classTeacher || "—"} | Students: ${summary.totalStudents} | Working Days: ${workingDays} | Overall: ${summary.overallPercentage}%`,
+    `Teacher: ${UP(classInfo.classTeacher) || "—"} | Students: ${summary.totalStudents} | Working Days: ${workingDays} | Overall: ${summary.overallPercentage}%`,
   ]);
 
-  rows.push([]); // spacer
+  rows.push([]);
 
-  // Header row 1: day short names
-  const dayNameRow = ["S.No", "Scholar", "Name", "Father"];
+  const dayNameRow = ["S.No", "SCHOLAR", "NAME", "FATHER"];
   dates.forEach((d) => dayNameRow.push(d.dayShort.charAt(0)));
   dayNameRow.push("P", "A", "%");
   rows.push(dayNameRow);
 
-  // Header row 2: day numbers
   const dayNumRow = ["", "", "", ""];
   dates.forEach((d) => dayNumRow.push(d.day));
   dayNumRow.push("", "", "");
   rows.push(dayNumRow);
 
-  // Data rows
   students.forEach((s, idx) => {
-    const row = [
-      idx + 1,
-      s.scholarNumber || "",
-      s.name || "",
-      s.fatherName || "",
-    ];
+    // ✅ UPPERCASE
+    const row = [idx + 1, UP(s.scholarNumber), UP(s.name), UP(s.fatherName)];
     dates.forEach((d) => {
       const status = s.dailyAttendance[d.dateKey];
       if (status === "P") row.push("P");
@@ -289,38 +289,27 @@ export const exportMonthlyClassToExcel = (
     rows.push(row);
   });
 
-  // Build worksheet
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
-  // Column widths
-  const colWidths = [
-    { wch: 5 }, // S.No
-    { wch: 12 }, // Scholar
-    { wch: 25 }, // Name
-    { wch: 22 }, // Father
-  ];
+  const colWidths = [{ wch: 5 }, { wch: 12 }, { wch: 25 }, { wch: 22 }];
   dates.forEach(() => colWidths.push({ wch: 4 }));
   colWidths.push({ wch: 5 }, { wch: 5 }, { wch: 7 });
   ws["!cols"] = colWidths;
 
-  // Merge title + info rows
   const totalCols = 4 + dates.length + 3;
   ws["!merges"] = [
     { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } },
     { s: { r: 1, c: 0 }, e: { r: 1, c: totalCols - 1 } },
   ];
 
-  // Freeze first 4 cols + first 5 rows
   ws["!freeze"] = { xSplit: 4, ySplit: 5 };
 
-  // Workbook
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Attendance");
 
-  // Summary sheet
   const summaryData = [
-    { Metric: "Class", Value: `${classInfo.name}-${classInfo.section}` },
-    { Metric: "Teacher", Value: classInfo.classTeacher || "—" },
+    { Metric: "Class", Value: UP(`${classInfo.name}-${classInfo.section}`) },
+    { Metric: "Teacher", Value: UP(classInfo.classTeacher) || "—" },
     { Metric: "Month", Value: `${monthName} ${year}` },
     { Metric: "Total Students", Value: summary.totalStudents },
     { Metric: "Working Days", Value: workingDays },

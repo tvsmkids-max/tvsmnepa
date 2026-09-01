@@ -16,6 +16,29 @@ const COLORS = {
   black: [26, 26, 46],
 };
 
+// ✅ UPPERCASE helper
+const UP = (v) => (v ? String(v).toUpperCase() : "");
+
+// ═══════════════════════════════════════════════════════════════════
+//  SMART CLASS SORT
+// ═══════════════════════════════════════════════════════════════════
+const getClassRankUtil = (cls) => {
+  if (!cls?.name) return 999;
+  const name = cls.name.toString().trim().toUpperCase();
+  if (/^PRE/.test(name) || name === "PLAYGROUP" || name === "PLAY") return 0;
+  if (/^NUR/.test(name) || name === "NURSERY") return 1;
+  if (/^L\.?K\.?G/.test(name) || name === "LKG" || name === "LOWER KG")
+    return 2;
+  if (/^U\.?K\.?G/.test(name) || name === "UKG" || name === "UPPER KG")
+    return 3;
+  const numMatch = name.match(/^(?:CLASS\s*)?(\d{1,2})(?:ST|ND|RD|TH)?/);
+  if (numMatch) {
+    const num = parseInt(numMatch[1], 10);
+    if (num >= 1 && num <= 12) return 10 + num;
+  }
+  return 999;
+};
+
 // ═══════════════════════════════════════════════════════════════════
 //  BASE PDF CREATOR
 // ═══════════════════════════════════════════════════════════════════
@@ -40,14 +63,13 @@ const createPdf = (options = {}) => {
   const phone = schoolPhone || "";
   const email = schoolEmail || "";
 
-  // Header bar
   doc.setFillColor(...COLORS.primary);
   doc.rect(0, 0, pageWidth, 28, "F");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
   doc.setTextColor(...COLORS.white);
-  doc.text(name, pageWidth / 2, 12, { align: "center" });
+  doc.text(name.toUpperCase(), pageWidth / 2, 12, { align: "center" });
 
   if (address || phone) {
     doc.setFontSize(8);
@@ -60,7 +82,6 @@ const createPdf = (options = {}) => {
   doc.setLineWidth(1);
   doc.line(pageWidth / 2 - 30, 23, pageWidth / 2 + 30, 23);
 
-  // Title
   doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.primary);
@@ -143,7 +164,6 @@ export const generateDailyAttendancePdf = (reportData, settings, userName) => {
 
   let currentY = startY;
 
-  // Summary box
   doc.setFillColor(...COLORS.lightGray);
   doc.roundedRect(14, currentY, pageWidth - 28, 14, 2, 2, "F");
 
@@ -166,21 +186,27 @@ export const generateDailyAttendancePdf = (reportData, settings, userName) => {
 
   currentY += 20;
 
-  // Per class tables
-  reportData.classes.forEach((cls) => {
+  // ✅ Ensure classes are Nursery → 12th sorted for print
+  const sortedClasses = [...reportData.classes].sort((a, b) => {
+    const rA = getClassRankUtil(a);
+    const rB = getClassRankUtil(b);
+    if (rA !== rB) return rA - rB;
+    return (a.section || "").localeCompare(b.section || "");
+  });
+
+  sortedClasses.forEach((cls) => {
     if (currentY > doc.internal.pageSize.height - 50) {
       doc.addPage();
       currentY = 20;
     }
 
-    // Class header
     doc.setFillColor(...COLORS.secondary);
     doc.roundedRect(14, currentY, pageWidth - 28, 8, 1, 1, "F");
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...COLORS.white);
     doc.text(
-      `Class ${cls.name} - Section ${cls.section}  |  Total: ${cls.total}  |  Present: ${cls.present}  |  Absent: ${cls.absent}  |  ${cls.percentage}%`,
+      `CLASS ${UP(cls.name)} - SECTION ${UP(cls.section)}  |  Total: ${cls.total}  |  Present: ${cls.present}  |  Absent: ${cls.absent}  |  ${cls.percentage}%`,
       18,
       currentY + 5.5,
     );
@@ -189,8 +215,8 @@ export const generateDailyAttendancePdf = (reportData, settings, userName) => {
     if (cls.students && cls.students.length > 0) {
       const tableData = cls.students.map((s, idx) => [
         idx + 1,
-        s.scholarNumber || "—",
-        s.name,
+        UP(s.scholarNumber) || "—",
+        UP(s.name),
         s.status,
       ]);
 
@@ -211,31 +237,21 @@ export const generateDailyAttendancePdf = (reportData, settings, userName) => {
           fontStyle: "bold",
           fontSize: 8,
         },
-        bodyStyles: {
-          textColor: COLORS.black,
-        },
-        alternateRowStyles: {
-          fillColor: [245, 247, 250],
-        },
+        bodyStyles: { textColor: COLORS.black },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
         columnStyles: {
           0: { cellWidth: 12, halign: "center" },
           1: { cellWidth: 25 },
           2: { cellWidth: "auto" },
-          3: {
-            cellWidth: 22,
-            halign: "center",
-            fontStyle: "bold",
-          },
+          3: { cellWidth: 22, halign: "center", fontStyle: "bold" },
         },
         didParseCell: (data) => {
           if (data.column.index === 3 && data.section === "body") {
-            if (data.cell.raw === "Present") {
+            if (data.cell.raw === "Present")
               data.cell.styles.textColor = COLORS.success;
-            } else if (data.cell.raw === "Absent") {
+            else if (data.cell.raw === "Absent")
               data.cell.styles.textColor = COLORS.error;
-            } else {
-              data.cell.styles.textColor = COLORS.gray;
-            }
+            else data.cell.styles.textColor = COLORS.gray;
           }
         },
       });
@@ -264,7 +280,6 @@ export const generateMonthlyReportPdf = (reportData, settings, userName) => {
 
   let currentY = startY;
 
-  // Summary box
   doc.setFillColor(...COLORS.lightGray);
   doc.roundedRect(14, currentY, pageWidth - 28, 14, 2, 2, "F");
 
@@ -286,9 +301,16 @@ export const generateMonthlyReportPdf = (reportData, settings, userName) => {
 
   currentY += 20;
 
-  // Class-wise table
-  const tableData = reportData.classes.map((cls) => [
-    `${cls.name}-${cls.section}`,
+  // ✅ Class-wise sorted table
+  const sortedClasses = [...reportData.classes].sort((a, b) => {
+    const rA = getClassRankUtil(a);
+    const rB = getClassRankUtil(b);
+    if (rA !== rB) return rA - rB;
+    return (a.section || "").localeCompare(b.section || "");
+  });
+
+  const tableData = sortedClasses.map((cls) => [
+    UP(`${cls.name}-${cls.section}`),
     cls.totalStudents,
     cls.workingDays,
     cls.present,
@@ -325,10 +347,7 @@ export const generateMonthlyReportPdf = (reportData, settings, userName) => {
       fontSize: 8,
       halign: "center",
     },
-    bodyStyles: {
-      textColor: COLORS.black,
-      halign: "center",
-    },
+    bodyStyles: { textColor: COLORS.black, halign: "center" },
     columnStyles: {
       0: { halign: "left", fontStyle: "bold" },
       6: { fontStyle: "bold" },
@@ -345,7 +364,6 @@ export const generateMonthlyReportPdf = (reportData, settings, userName) => {
 
   currentY = doc.lastAutoTable.finalY + 10;
 
-  // Holiday list
   if (reportData.holidays && reportData.holidays.length > 0) {
     if (currentY > doc.internal.pageSize.height - 60) {
       doc.addPage();
@@ -363,7 +381,7 @@ export const generateMonthlyReportPdf = (reportData, settings, userName) => {
         day: "numeric",
         month: "short",
       }),
-      h.name,
+      UP(h.name),
       h.type,
     ]);
 
@@ -413,12 +431,20 @@ export const generateDefaulterPdf = (reportData, settings, userName) => {
     return doc;
   }
 
-  const tableData = reportData.defaulters.map((s, idx) => [
+  // ✅ Sort defaulters by class then percentage
+  const sortedDefaulters = [...reportData.defaulters].sort((a, b) => {
+    const rA = getClassRankUtil(a.class);
+    const rB = getClassRankUtil(b.class);
+    if (rA !== rB) return rA - rB;
+    return a.percentage - b.percentage;
+  });
+
+  const tableData = sortedDefaulters.map((s, idx) => [
     idx + 1,
-    s.scholarNumber,
-    s.name,
-    s.fatherName,
-    s.class ? `${s.class.name}-${s.class.section}` : "—",
+    UP(s.scholarNumber),
+    UP(s.name),
+    UP(s.fatherName),
+    s.class ? UP(`${s.class.name}-${s.class.section}`) : "—",
     s.mobile === "0000000000" ? "—" : s.mobile,
     s.present,
     s.absent,
@@ -457,9 +483,7 @@ export const generateDefaulterPdf = (reportData, settings, userName) => {
       fontSize: 7,
       halign: "center",
     },
-    bodyStyles: {
-      textColor: COLORS.black,
-    },
+    bodyStyles: { textColor: COLORS.black },
     columnStyles: {
       0: { cellWidth: 10, halign: "center" },
       1: { cellWidth: 18 },
@@ -470,11 +494,7 @@ export const generateDefaulterPdf = (reportData, settings, userName) => {
       6: { cellWidth: 10, halign: "center" },
       7: { cellWidth: 10, halign: "center" },
       8: { cellWidth: 12, halign: "center" },
-      9: {
-        cellWidth: 12,
-        halign: "center",
-        fontStyle: "bold",
-      },
+      9: { cellWidth: 12, halign: "center", fontStyle: "bold" },
     },
     didParseCell: (data) => {
       if (data.column.index === 9 && data.section === "body") {
@@ -488,7 +508,7 @@ export const generateDefaulterPdf = (reportData, settings, userName) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-//  STUDENT ATTENDANCE CERTIFICATE PDF
+//  STUDENT CERTIFICATE PDF
 // ═══════════════════════════════════════════════════════════════════
 
 export const generateStudentCertificatePdf = (
@@ -510,14 +530,13 @@ export const generateStudentCertificatePdf = (
 
   let currentY = startY + 5;
 
-  // Student info box
   doc.setFillColor(...COLORS.lightGray);
   doc.roundedRect(14, currentY, pageWidth - 28, 34, 2, 2, "F");
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.primary);
-  doc.text("Student Details", 20, currentY + 8);
+  doc.text("STUDENT DETAILS", 20, currentY + 8);
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
@@ -526,14 +545,14 @@ export const generateStudentCertificatePdf = (
   const halfWidth = (pageWidth - 28) / 2;
 
   const leftInfo = [
-    `Name: ${student.name}`,
-    `Scholar Number: ${student.scholarNumber}`,
+    `Name: ${UP(student.name)}`,
+    `Scholar Number: ${UP(student.scholarNumber)}`,
     `Gender: ${student.gender || "—"}`,
   ];
 
   const rightInfo = [
-    `Father: ${student.fatherName}`,
-    `Class: ${student.class?.name || "—"} - ${student.class?.section || "—"}`,
+    `Father: ${UP(student.fatherName)}`,
+    `Class: ${UP(student.class?.name) || "—"} - ${UP(student.class?.section) || "—"}`,
     `Mobile: ${student.mobile === "0000000000" ? "—" : student.mobile}`,
   ];
 
@@ -547,16 +566,14 @@ export const generateStudentCertificatePdf = (
 
   currentY += 42;
 
-  // Attendance summary
   doc.setFillColor(...COLORS.primary);
   doc.roundedRect(14, currentY, pageWidth - 28, 10, 1, 1, "F");
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.white);
-  doc.text("Attendance Summary", 18, currentY + 7);
+  doc.text("ATTENDANCE SUMMARY", 18, currentY + 7);
   currentY += 14;
 
-  // Stats boxes
   const boxWidth = (pageWidth - 28 - 15) / 4;
 
   const statsData = [
@@ -600,7 +617,6 @@ export const generateStudentCertificatePdf = (
 
   currentY += 28;
 
-  // Records table
   if (records && records.length > 0) {
     const tableData = records.map((r) => [
       new Date(r.date).toLocaleDateString("en-IN", {
@@ -610,7 +626,7 @@ export const generateStudentCertificatePdf = (
       }),
       new Date(r.date).toLocaleDateString("en-IN", { weekday: "long" }),
       r.status,
-      r.markedBy?.name || "—",
+      UP(r.markedBy?.name) || "—",
     ]);
 
     doc.autoTable({
@@ -630,25 +646,16 @@ export const generateStudentCertificatePdf = (
         fontStyle: "bold",
         fontSize: 8,
       },
-      bodyStyles: {
-        textColor: COLORS.black,
-      },
-      alternateRowStyles: {
-        fillColor: [245, 247, 250],
-      },
+      bodyStyles: { textColor: COLORS.black },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
       columnStyles: {
-        2: {
-          halign: "center",
-          fontStyle: "bold",
-        },
+        2: { halign: "center", fontStyle: "bold" },
       },
       didParseCell: (data) => {
         if (data.column.index === 2 && data.section === "body") {
-          if (data.cell.raw === "Present") {
+          if (data.cell.raw === "Present")
             data.cell.styles.textColor = COLORS.success;
-          } else {
-            data.cell.styles.textColor = COLORS.error;
-          }
+          else data.cell.styles.textColor = COLORS.error;
         }
       },
     });
@@ -680,7 +687,7 @@ export const generateRegisterPdf = (register, settings, userName) => {
     year: "numeric",
   });
 
-  const subtitle = `Class ${classInfo.name}-${classInfo.section} | ${fromStr} to ${toStr}`;
+  const subtitle = `Class ${UP(classInfo.name)}-${UP(classInfo.section)} | ${fromStr} to ${toStr}`;
 
   const { doc, startY, pageWidth } = createPdf({
     orientation: "landscape",
@@ -694,7 +701,6 @@ export const generateRegisterPdf = (register, settings, userName) => {
 
   let currentY = startY;
 
-  // Summary box
   doc.setFillColor(...COLORS.lightGray);
   doc.roundedRect(10, currentY, pageWidth - 20, 12, 2, 2, "F");
 
@@ -703,7 +709,7 @@ export const generateRegisterPdf = (register, settings, userName) => {
   doc.setTextColor(...COLORS.primary);
 
   const summaryItems = [
-    `Class Teacher: ${classInfo.classTeacher || "—"}`,
+    `Class Teacher: ${UP(classInfo.classTeacher) || "—"}`,
     `Students: ${summary.totalStudents}`,
     `Working Days: ${summary.workingDays}`,
     `Holidays: ${summary.holidays}`,
@@ -717,16 +723,13 @@ export const generateRegisterPdf = (register, settings, userName) => {
 
   currentY += 16;
 
-  // Split dates into chunks per page
   const MAX_DATES_PER_PAGE = 25;
   const dateChunks = [];
   for (let i = 0; i < dates.length; i += MAX_DATES_PER_PAGE) {
     dateChunks.push(dates.slice(i, i + MAX_DATES_PER_PAGE));
   }
 
-  // Fixed column count: Scholar + Name + Father = 3
   const FIXED_COLS = 3;
-  const TOTALS_COLS = 3; // P + A + %
 
   dateChunks.forEach((chunk, chunkIdx) => {
     if (chunkIdx > 0) {
@@ -740,7 +743,7 @@ export const generateRegisterPdf = (register, settings, userName) => {
       const toDate = chunk[chunk.length - 1]?.day;
       const monthLabel = chunk[0]?.monthShort + " " + chunk[0]?.year;
       doc.text(
-        `Class ${classInfo.name}-${classInfo.section} | ${monthLabel} (Day ${fromDate}–${toDate}) | Page ${chunkIdx + 1} of ${dateChunks.length}`,
+        `CLASS ${UP(classInfo.name)}-${UP(classInfo.section)} | ${monthLabel} (Day ${fromDate}–${toDate}) | Page ${chunkIdx + 1} of ${dateChunks.length}`,
         pageWidth / 2,
         currentY,
         { align: "center" },
@@ -748,16 +751,19 @@ export const generateRegisterPdf = (register, settings, userName) => {
       currentY += 6;
     }
 
-    // Header: Scholar | Name | Father | dates... | P | A | %
     const headerRow = ["Scholar", "Name", "Father"];
     chunk.forEach((d) => {
       headerRow.push(`${d.dayShort}\n${d.day}`);
     });
     headerRow.push("P", "A", "%");
 
-    // Body rows
+    // ✅ UPPERCASE body rows
     const bodyRows = students.map((s) => {
-      const row = [s.scholarNumber || "—", s.name || "—", s.fatherName || "—"];
+      const row = [
+        UP(s.scholarNumber) || "—",
+        UP(s.name) || "—",
+        UP(s.fatherName) || "—",
+      ];
 
       chunk.forEach((d) => {
         const status = s.attendance[d.dateKey];
@@ -776,9 +782,8 @@ export const generateRegisterPdf = (register, settings, userName) => {
       return row;
     });
 
-    // Column widths calculation
-    const fixedColsWidth = 18 + 35 + 30; // Scholar + Name + Father
-    const totalsColsWidth = 10 + 10 + 14; // P + A + %
+    const fixedColsWidth = 18 + 35 + 30;
+    const totalsColsWidth = 10 + 10 + 14;
     const availableWidth = pageWidth - 20 - fixedColsWidth - totalsColsWidth;
     const dateColWidth = Math.max(
       6,
@@ -845,14 +850,11 @@ export const generateRegisterPdf = (register, settings, userName) => {
         minCellHeight: 8,
       },
       columnStyles,
-      alternateRowStyles: {
-        fillColor: [248, 249, 252],
-      },
+      alternateRowStyles: { fillColor: [248, 249, 252] },
       didParseCell: (data) => {
         const numDateCols = chunk.length;
         const colIdx = data.column.index;
 
-        // Body cell styling
         if (data.section === "body" && colIdx >= FIXED_COLS) {
           if (colIdx >= FIXED_COLS && colIdx < FIXED_COLS + numDateCols) {
             const cellValue = String(data.cell.raw || "");
@@ -877,7 +879,6 @@ export const generateRegisterPdf = (register, settings, userName) => {
             }
           }
 
-          // Totals columns
           if (colIdx === totalsStart) {
             data.cell.styles.fillColor = [209, 250, 229];
             data.cell.styles.textColor = COLORS.success;
@@ -902,7 +903,6 @@ export const generateRegisterPdf = (register, settings, userName) => {
           }
         }
 
-        // Header cell styling
         if (data.section === "head" && colIdx >= FIXED_COLS) {
           if (colIdx >= FIXED_COLS && colIdx < FIXED_COLS + numDateCols) {
             const dateIdx = colIdx - FIXED_COLS;
@@ -922,14 +922,13 @@ export const generateRegisterPdf = (register, settings, userName) => {
     currentY = doc.lastAutoTable.finalY + 5;
   });
 
-  // Legend page
   doc.addPage();
   currentY = 38;
 
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.primary);
-  doc.text("Legend & Summary", pageWidth / 2, currentY, { align: "center" });
+  doc.text("LEGEND & SUMMARY", pageWidth / 2, currentY, { align: "center" });
   currentY += 10;
 
   doc.autoTable({
@@ -943,11 +942,7 @@ export const generateRegisterPdf = (register, settings, userName) => {
     ],
     margin: { left: 30, right: 30 },
     theme: "grid",
-    styles: {
-      fontSize: 10,
-      cellPadding: 3,
-      halign: "center",
-    },
+    styles: { fontSize: 10, cellPadding: 3, halign: "center" },
     headStyles: {
       fillColor: COLORS.primary,
       textColor: COLORS.white,
@@ -986,15 +981,15 @@ export const generateRegisterPdf = (register, settings, userName) => {
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.primary);
-  doc.text("Register Summary", pageWidth / 2, currentY, { align: "center" });
+  doc.text("REGISTER SUMMARY", pageWidth / 2, currentY, { align: "center" });
   currentY += 6;
 
   doc.autoTable({
     startY: currentY,
     head: [["Metric", "Value"]],
     body: [
-      ["Class", `${classInfo.name}-${classInfo.section}`],
-      ["Class Teacher", classInfo.classTeacher || "—"],
+      ["Class", UP(`${classInfo.name}-${classInfo.section}`)],
+      ["Class Teacher", UP(classInfo.classTeacher) || "—"],
       ["Period From", fromStr],
       ["Period To", toStr],
       ["Total Days in Range", String(summary.totalDays)],
@@ -1005,10 +1000,7 @@ export const generateRegisterPdf = (register, settings, userName) => {
     ],
     margin: { left: 50, right: 50 },
     theme: "grid",
-    styles: {
-      fontSize: 10,
-      cellPadding: 3,
-    },
+    styles: { fontSize: 10, cellPadding: 3 },
     headStyles: {
       fillColor: COLORS.primary,
       textColor: COLORS.white,

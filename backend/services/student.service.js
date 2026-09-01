@@ -13,10 +13,32 @@ const throwError = (message, statusCode = 400) => {
 
 const MAX_BULK_DELETE = 100;
 
-// Teacher can only toggle between these two statuses
-const TEACHER_ALLOWED_STATUSES = ["Active", "Inactive"];
+// Class users can only toggle between these two statuses
+const CLASS_ALLOWED_STATUSES = ["Active", "Inactive"];
 
 class StudentService {
+  /**
+   * Restrict filters for role=class to their linkedClass only
+   */
+  _applyClassRoleFilter(filter, user) {
+    if (!user || user.role !== ROLES.CLASS) return filter;
+
+    if (!user.linkedClass) {
+      return null; // no access
+    }
+
+    const linked = user.linkedClass.toString();
+
+    if (filter.class) {
+      if (filter.class.toString() !== linked) {
+        return null; // requested someone else's class
+      }
+    }
+
+    filter.class = user.linkedClass;
+    return filter;
+  }
+
   async list(query, user) {
     const {
       page,
@@ -30,7 +52,7 @@ class StudentService {
       ...filterParams
     } = query;
 
-    const filter = { ...filterParams };
+    let filter = { ...filterParams };
 
     if (!filter.session) {
       const settings = await Settings.getSettings();
@@ -39,35 +61,13 @@ class StudentService {
       }
     }
 
-    if (user && user.role === "teacher") {
-      const Teacher = require("../models/Teacher.model");
-      const teacher = await Teacher.findOne({ user: user._id }).lean();
-
-      if (
-        !teacher ||
-        !teacher.assignedClasses ||
-        teacher.assignedClasses.length === 0
-      ) {
-        return {
-          data: [],
-          pagination: { page: 1, limit: 0, total: 0, totalPages: 0 },
-        };
-      }
-
-      if (filter.class) {
-        const requestedClass = filter.class.toString();
-        const isAssigned = teacher.assignedClasses.some(
-          (c) => c.toString() === requestedClass,
-        );
-        if (!isAssigned) {
-          return {
-            data: [],
-            pagination: { page: 1, limit: 0, total: 0, totalPages: 0 },
-          };
-        }
-      } else {
-        filter.class = { $in: teacher.assignedClasses };
-      }
+    // ✅ Class-login RBAC (replaces old Teacher model lookup)
+    filter = this._applyClassRoleFilter(filter, user);
+    if (!filter) {
+      return {
+        data: [],
+        pagination: { page: 1, limit: 0, total: 0, totalPages: 0 },
+      };
     }
 
     if (section) filter.section = section;
@@ -82,7 +82,6 @@ class StudentService {
         { fatherName: new RegExp(trimmed, "i") },
         { motherName: new RegExp(trimmed, "i") },
         { scholarNumber: new RegExp(trimmed, "i") },
-        // ✅ Legacy rollNumber regex search option completely purged
         { mobile: new RegExp(trimmed, "i") },
         { alternateMobile: new RegExp(trimmed, "i") },
       ];
@@ -106,11 +105,9 @@ class StudentService {
     const filter = { isActive: true };
     if (sessionId) filter.session = sessionId;
 
-    if (user && user.role === "teacher") {
-      const Teacher = require("../models/Teacher.model");
-      const teacher = await Teacher.findOne({ user: user._id }).lean();
-      if (!teacher?.assignedClasses?.length) return [];
-      filter.class = { $in: teacher.assignedClasses };
+    if (user && user.role === ROLES.CLASS) {
+      if (!user.linkedClass) return [];
+      filter.class = user.linkedClass;
     }
 
     const Student = require("../models/Student.model");
@@ -164,9 +161,6 @@ class StudentService {
     const existing = await studentRepository.findById(id);
     if (!existing) throwError("Student not found", 404);
 
-    // ═══════════════════════════════════════════════════════════════════
-    //  SCHOLAR NUMBER UNIQUE VALIDATION ON UPDATE (Strict Engineering)
-    // ═══════════════════════════════════════════════════════════════════
     if (
       data.scholarNumber &&
       data.scholarNumber.trim().toUpperCase() !== existing.scholarNumber
@@ -183,26 +177,21 @@ class StudentService {
       data.scholarNumber = formattedScholar;
     }
 
-    if (user && user.role === ROLES.TEACHER) {
-      const Teacher = require("../models/Teacher.model");
-      const teacher = await Teacher.findOne({ user: user._id }).lean();
-
-      if (!teacher || !teacher.assignedClasses?.length) {
-        throwError("You are not assigned to any class", 403);
+    // ✅ Class user can only edit students in their linked class
+    if (user && user.role === ROLES.CLASS) {
+      if (!user.linkedClass) {
+        throwError("No class is linked to this account", 403);
       }
 
       const existingClassId = existing.class?.toString();
-      const isAssignedToClass = teacher.assignedClasses.some(
-        (c) => c.toString() === existingClassId,
-      );
-
-      if (!isAssignedToClass) {
-        throwError("You can only edit students in your assigned classes", 403);
+      if (existingClassId !== user.linkedClass.toString()) {
+        throwError("You can only edit students in your own class", 403);
       }
 
+      // Cannot change class/section
       if (data.class && data.class.toString() !== existingClassId) {
         throwError(
-          "Teachers cannot change a student's class. Contact admin.",
+          "Class accounts cannot change a student's class. Contact admin.",
           403,
         );
       }
@@ -237,35 +226,28 @@ class StudentService {
     const existing = await studentRepository.findById(id);
     if (!existing) throwError("Student not found", 404);
 
-    if (user && user.role === ROLES.TEACHER) {
-      const Teacher = require("../models/Teacher.model");
-      const teacher = await Teacher.findOne({ user: user._id }).lean();
-
-      if (!teacher || !teacher.assignedClasses?.length) {
-        throwError("You are not assigned to any class", 403);
+    if (user && user.role === ROLES.CLASS) {
+      if (!user.linkedClass) {
+        throwError("No class is linked to this account", 403);
       }
 
       const existingClassId = existing.class?.toString();
-      const isAssignedToClass = teacher.assignedClasses.some(
-        (c) => c.toString() === existingClassId,
-      );
-
-      if (!isAssignedToClass) {
+      if (existingClassId !== user.linkedClass.toString()) {
         throwError(
-          "You can only change status of students in your assigned classes",
+          "You can only change status of students in your own class",
           403,
         );
       }
 
-      if (!TEACHER_ALLOWED_STATUSES.includes(statusData.status)) {
+      if (!CLASS_ALLOWED_STATUSES.includes(statusData.status)) {
         throwError(
-          `Teachers can only mark students as Active or Inactive. ` +
+          `Class accounts can only mark students as Active or Inactive. ` +
             `Contact admin to change status to "${statusData.status}".`,
           403,
         );
       }
 
-      if (!TEACHER_ALLOWED_STATUSES.includes(existing.status)) {
+      if (!CLASS_ALLOWED_STATUSES.includes(existing.status)) {
         throwError(
           `Cannot change status of ${existing.status} student. Contact admin.`,
           403,
@@ -370,7 +352,7 @@ class StudentService {
     } else {
       await studentRepository.bulkSoftDelete(
         foundIds,
-        `Bulk soft-deleted by ${user.name || user.email}`,
+        `Bulk soft-deleted by ${user.name || user._id}`,
       );
     }
 

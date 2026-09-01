@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   Box,
   Paper,
@@ -16,6 +16,7 @@ import {
   useTheme,
   alpha,
   Avatar,
+  useMediaQuery,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -24,7 +25,6 @@ import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
 import ScheduleIcon from "@mui/icons-material/Schedule";
-import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
@@ -43,9 +43,8 @@ import {
 } from "../../hooks/useDashboard";
 import HolidayBanner from "../../components/common/HolidayBanner";
 
-// ═══════════════════════════════════════════════════════════════════
-//  HELPERS
-// ═══════════════════════════════════════════════════════════════════
+// ✅ Correct function import
+import { getDailyQuoteForUser } from "../../utils/quoteUtils";
 
 const greetingText = () => {
   const hour = new Date().getHours();
@@ -54,28 +53,33 @@ const greetingText = () => {
   return "Good evening";
 };
 
-const getTeacherSalutation = (user) => {
-  const firstName = user?.name?.split(" ")?.[0] || "";
-  if (!firstName) return "";
-  const capitalized =
-    firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
-
-  if (user?.gender === "Female") return `${capitalized} Ma'am`;
-  if (user?.gender === "Male") return `${capitalized} Sir`;
-
-  return capitalized;
+const getClassAccountLabel = (user) => {
+  const lc = user?.linkedClass;
+  if (lc && typeof lc === "object" && lc.name) {
+    const section = lc.section ? `-${lc.section}` : "";
+    return `${lc.name}${section}`.toUpperCase();
+  }
+  if (user?.name) {
+    return String(user.name).toUpperCase();
+  }
+  return "CLASS ACCOUNT";
 };
 
-// ═══════════════════════════════════════════════════════════════════
-//  PREMIUM SAAS STAT PILL
-// ═══════════════════════════════════════════════════════════════════
+const getTeacherLabel = (user, summary) => {
+  const lc = user?.linkedClass;
+  if (lc && typeof lc === "object" && lc.teacherLabel) {
+    return String(lc.teacherLabel).trim().toUpperCase();
+  }
+  const fromBreakdown = summary?.classBreakdown?.[0]?.teacherLabel;
+  if (fromBreakdown) return String(fromBreakdown).trim().toUpperCase();
+  return null;
+};
+
 const StatPill = ({ label, value, icon, colorHex, isDark, isLoading }) => {
-  if (isLoading) {
+  if (isLoading)
     return (
       <Skeleton variant="rectangular" height={100} sx={{ borderRadius: 3 }} />
     );
-  }
-
   return (
     <Paper
       elevation={0}
@@ -92,12 +96,6 @@ const StatPill = ({ label, value, icon, colorHex, isDark, isLoading }) => {
         boxShadow: isDark
           ? "0 4px 12px rgba(0,0,0,0.2)"
           : "0 2px 12px rgba(15,23,42,0.04)",
-        "&:hover": {
-          transform: "translateY(-2px)",
-          boxShadow: isDark
-            ? "0 8px 20px rgba(0,0,0,0.4)"
-            : "0 8px 24px rgba(15,23,42,0.08)",
-        },
       }}
     >
       <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -107,7 +105,6 @@ const StatPill = ({ label, value, icon, colorHex, isDark, isLoading }) => {
             fontWeight: 700,
             fontSize: "0.7rem",
             textTransform: "uppercase",
-            letterSpacing: "0.06em",
             color: "text.secondary",
           }}
         >
@@ -135,7 +132,6 @@ const StatPill = ({ label, value, icon, colorHex, isDark, isLoading }) => {
           color: "text.primary",
           fontSize: { xs: "1.5rem", sm: "1.8rem" },
           lineHeight: 1,
-          letterSpacing: "-0.03em",
         }}
       >
         {value}
@@ -144,14 +140,12 @@ const StatPill = ({ label, value, icon, colorHex, isDark, isLoading }) => {
   );
 };
 
-// ═══════════════════════════════════════════════════════════════════
-//  MAIN DASHBOARD
-// ═══════════════════════════════════════════════════════════════════
 const TeacherDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isDark } = useThemeMode();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const queryClient = useQueryClient();
 
   const [period, setPeriod] = useState("today");
@@ -166,12 +160,44 @@ const TeacherDashboard = () => {
 
   const loading = summaryLoading;
 
+  const classLabel = useMemo(() => getClassAccountLabel(user), [user]);
+  const teacherLabel = useMemo(
+    () => getTeacherLabel(user, summary),
+    [user, summary],
+  );
+
+  const todayDateLabel = useMemo(
+    () =>
+      new Date().toLocaleDateString("en-IN", {
+        weekday: "long",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }),
+    [],
+  );
+
+  // ✅ Read quote using getDailyQuoteForUser and property .quote
+  const dailyQuoteText = useMemo(() => {
+    try {
+      const q = getDailyQuoteForUser ? getDailyQuoteForUser(user) : null;
+      return (
+        q?.quote ||
+        "Education is the most powerful weapon which you can use to change the world."
+      );
+    } catch {
+      return "Education is the most powerful weapon which you can use to change the world.";
+    }
+  }, [user]);
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     setTimeout(() => setRefreshing(false), 600);
   }, [queryClient]);
 
+  const linkedId = user?.linkedClass?._id || user?.linkedClass || null;
+  const hasLinkedClass = Boolean(linkedId);
   const hasClasses = (summary?.totalClasses || 0) > 0;
   const isNonWorking = summary?.isHoliday || summary?.isNonWorkingDay;
 
@@ -206,21 +232,63 @@ const TeacherDashboard = () => {
             fontWeight={800}
             sx={{ letterSpacing: "-0.02em", color: "text.primary" }}
           >
-            {greetingText()}, {getTeacherSalutation(user)}
+            {greetingText()}, {classLabel}
           </Typography>
-          <Typography
-            variant="body2"
-            sx={{ color: "text.secondary", fontWeight: 500, mt: 0.5 }}
+
+          <Stack
+            direction="row"
+            alignItems="center"
+            flexWrap="wrap"
+            gap={1}
+            sx={{ mt: 0.75 }}
           >
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "short",
-              day: "numeric",
-            })}
-            {!isNonWorking &&
-              hasClasses &&
-              ` • ${pendingToday > 0 ? `${pendingToday} classes pending` : "All classes marked"}`}
-          </Typography>
+            {teacherLabel && (
+              <Chip
+                size="small"
+                label={teacherLabel}
+                sx={{
+                  height: 22,
+                  fontWeight: 800,
+                  fontSize: "0.68rem",
+                  textTransform: "uppercase",
+                  bgcolor: isDark
+                    ? alpha("#3B82F6", 0.15)
+                    : alpha("#2563EB", 0.08),
+                  color: isDark ? "#93C5FD" : "#1D4ED8",
+                }}
+              />
+            )}
+            <Typography
+              variant="body2"
+              sx={{ color: "text.secondary", fontWeight: 500 }}
+            >
+              {todayDateLabel}
+              {!isNonWorking &&
+                hasClasses &&
+                ` • ${pendingToday > 0 ? `${pendingToday} class${pendingToday !== 1 ? "es" : ""} pending` : "All classes marked"}`}
+            </Typography>
+          </Stack>
+
+          {/* MOBILE QUOTE: Blockquote under date */}
+          {isMobile && (
+            <Typography
+              variant="caption"
+              sx={{
+                display: "block",
+                mt: 1.5,
+                pl: 1.25,
+                borderLeft: "3px solid",
+                borderColor: "primary.main",
+                fontStyle: "italic",
+                color: "text.secondary",
+                fontWeight: 600,
+                fontSize: "0.75rem",
+                lineHeight: 1.4,
+              }}
+            >
+              "{dailyQuoteText}"
+            </Typography>
+          )}
         </Box>
         <IconButton
           onClick={handleRefresh}
@@ -230,7 +298,6 @@ const TeacherDashboard = () => {
             border: "1px solid",
             borderColor: "divider",
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
           }}
         >
           <RefreshOutlinedIcon
@@ -247,6 +314,7 @@ const TeacherDashboard = () => {
         </IconButton>
       </Stack>
 
+      {/* ── CONDITIONAL RENDERING FOR EMPTY / LOADING / NON-WORKING ── */}
       {loading ? (
         <Stack spacing={3}>
           <Grid container spacing={2}>
@@ -266,7 +334,7 @@ const TeacherDashboard = () => {
             sx={{ borderRadius: 3 }}
           />
         </Stack>
-      ) : !hasClasses ? (
+      ) : !hasLinkedClass ? (
         <Paper
           sx={{
             p: 3,
@@ -280,13 +348,35 @@ const TeacherDashboard = () => {
             <WarningRoundedIcon color="warning" sx={{ fontSize: 32 }} />
             <Box>
               <Typography variant="body1" fontWeight={700} color="warning.dark">
-                No classes assigned to you
+                No class linked to this account
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Contact your administrator to assign classes to your profile.
+                Contact your administrator to link a class login account.
               </Typography>
             </Box>
           </Stack>
+        </Paper>
+      ) : !hasClasses && !loading ? (
+        <Paper
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: "divider",
+            bgcolor: "background.paper",
+            textAlign: "center",
+          }}
+        >
+          <Typography variant="body1" fontWeight={700} sx={{ mb: 1 }}>
+            Class data could not be loaded
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Your class might be archived or temporarily unavailable. Please try
+            refreshing.
+          </Typography>
+          <Button variant="outlined" onClick={handleRefresh}>
+            Refresh Dashboard
+          </Button>
         </Paper>
       ) : isNonWorking ? (
         <Box sx={{ mb: 3 }}>
@@ -391,7 +481,7 @@ const TeacherDashboard = () => {
             </Grid>
           </Grid>
 
-          {/* ── MY CLASSES (Merged CTA — Single Prominent Button Per Class) ── */}
+          {/* ── MY CLASSES ── */}
           <Stack
             direction="row"
             justifyContent="space-between"
@@ -424,6 +514,10 @@ const TeacherDashboard = () => {
           <Stack spacing={1.5} sx={{ mb: 4 }}>
             {summary?.classBreakdown?.map((cls) => {
               const isMarked = cls.isMarkedToday;
+              const cardTeacher =
+                (cls.teacherLabel && String(cls.teacherLabel).toUpperCase()) ||
+                teacherLabel ||
+                null;
               return (
                 <Paper
                   key={cls._id}
@@ -440,7 +534,6 @@ const TeacherDashboard = () => {
                     justifyContent: "space-between",
                     gap: 2,
                     transition: "all 0.2s",
-                    position: "relative",
                     "&:hover": {
                       borderColor: isMarked
                         ? theme.palette.primary.main
@@ -451,7 +544,6 @@ const TeacherDashboard = () => {
                     },
                   }}
                 >
-                  {/* Left: Class Info */}
                   <Stack direction="row" alignItems="center" spacing={2}>
                     <Avatar
                       sx={{
@@ -525,11 +617,26 @@ const TeacherDashboard = () => {
                         {cls.studentCount} enrolled students
                         {isMarked &&
                           ` • ${cls.present} present • ${cls.absent} absent`}
+                        {cardTeacher && (
+                          <Box
+                            component="span"
+                            sx={{
+                              display: "block",
+                              mt: 0.25,
+                              fontWeight: 700,
+                              fontSize: "0.75rem",
+                              letterSpacing: "0.03em",
+                              textTransform: "uppercase",
+                              color: "text.secondary",
+                            }}
+                          >
+                            {cardTeacher}
+                          </Box>
+                        )}
                       </Typography>
                     </Box>
                   </Stack>
 
-                  {/* Right: Progress + Single CTA */}
                   <Stack
                     direction="row"
                     alignItems="center"
@@ -582,8 +689,6 @@ const TeacherDashboard = () => {
                         />
                       </Box>
                     )}
-
-                    {/* SINGLE ACTION BUTTON — Merged & Contextual */}
                     <Button
                       variant={isMarked ? "outlined" : "contained"}
                       onClick={() => navigate("/attendance/mark")}
@@ -690,7 +795,12 @@ const TeacherDashboard = () => {
                           {s.name?.[0]?.toUpperCase() || "S"}
                         </Avatar>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography variant="body2" fontWeight={700} noWrap>
+                          <Typography
+                            variant="body2"
+                            fontWeight={700}
+                            noWrap
+                            sx={{ textTransform: "uppercase" }}
+                          >
                             {s.name}
                           </Typography>
                           <Typography

@@ -2,7 +2,6 @@
 
 const Student = require("../models/Student.model");
 const Class = require("../models/Class.model");
-const Settings = require("../models/Settings.model");
 const { createAuditLog } = require("../middlewares/audit.middleware");
 const logger = require("../utils/logger");
 
@@ -12,12 +11,13 @@ const throwError = (message, statusCode = 400) => {
 
 class ShiftService {
   /**
-   * Preview shift — shows what will happen
+   * Preview shift — optional for bulk tools; safe for single-student too
+   * No rollNumber. No same-grade restriction (class + section shift allowed).
    */
   async preview({ sourceClassId, targetClassId, studentIds, user }) {
     if (!sourceClassId) throwError("Source class is required", 400);
     if (!targetClassId) throwError("Target class is required", 400);
-    if (sourceClassId === targetClassId) {
+    if (sourceClassId.toString() === targetClassId.toString()) {
       throwError("Source and target class cannot be the same", 400);
     }
 
@@ -28,10 +28,10 @@ class ShiftService {
     if (!targetClass) throwError("Target class not found", 404);
 
     if (targetClass.isArchived) {
-      throwError("Cannot shift to archived class", 400);
+      throwError("Cannot shift to an archived class", 400);
     }
 
-    let studentFilter = {
+    const studentFilter = {
       class: sourceClassId,
       status: "Active",
       isActive: true,
@@ -41,9 +41,7 @@ class ShiftService {
       studentFilter._id = { $in: studentIds };
     }
 
-    const students = await Student.find(studentFilter)
-      .sort("rollNumber")
-      .lean();
+    const students = await Student.find(studentFilter).sort("name").lean();
 
     if (students.length === 0) {
       throwError("No eligible students found in source class", 400);
@@ -53,41 +51,34 @@ class ShiftService {
       class: targetClassId,
       isActive: true,
     })
-      .select("rollNumber scholarNumber")
+      .select("scholarNumber")
       .lean();
 
-    const existingRolls = targetStudents
-      .map((s) => parseInt(s.rollNumber, 10))
-      .filter((n) => !isNaN(n));
-    const maxRoll = existingRolls.length > 0 ? Math.max(...existingRolls) : 0;
-
     const targetScholars = new Set(
-      targetStudents.map((s) => s.scholarNumber.toUpperCase()),
+      targetStudents.map((s) => (s.scholarNumber || "").toUpperCase()),
     );
 
-    let nextRoll = maxRoll;
     const shiftable = [];
     const conflicts = [];
 
     students.forEach((s) => {
-      if (targetScholars.has(s.scholarNumber.toUpperCase())) {
+      const sn = (s.scholarNumber || "").toUpperCase();
+      if (sn && targetScholars.has(sn)) {
         conflicts.push({
           _id: s._id,
           scholarNumber: s.scholarNumber,
           name: s.name,
-          rollNumber: s.rollNumber,
           reason: "Scholar number already exists in target class",
         });
       } else {
-        nextRoll++;
         shiftable.push({
           _id: s._id,
           scholarNumber: s.scholarNumber,
           name: s.name,
           fatherName: s.fatherName,
-          currentRoll: s.rollNumber,
-          newRoll: String(nextRoll),
           gender: s.gender,
+          from: `${sourceClass.name}-${sourceClass.section}`,
+          to: `${targetClass.name}-${targetClass.section}`,
         });
       }
     });
@@ -119,12 +110,12 @@ class ShiftService {
   }
 
   /**
-   * Execute the shift
+   * Execute shift (supports 1+ students). Used by new row-level UI.
    */
   async execute({ sourceClassId, targetClassId, studentIds, user, req }) {
     if (!sourceClassId) throwError("Source class is required", 400);
     if (!targetClassId) throwError("Target class is required", 400);
-    if (sourceClassId === targetClassId) {
+    if (sourceClassId.toString() === targetClassId.toString()) {
       throwError("Source and target class cannot be the same", 400);
     }
 
@@ -135,7 +126,7 @@ class ShiftService {
     const targetClass = await Class.findById(targetClassId).lean();
     if (!targetClass) throwError("Target class not found", 404);
     if (targetClass.isArchived) {
-      throwError("Cannot shift to archived class", 400);
+      throwError("Cannot shift to an archived class", 400);
     }
 
     const sourceClass = await Class.findById(sourceClassId).lean();
@@ -146,7 +137,9 @@ class ShiftService {
       class: sourceClassId,
       status: "Active",
       isActive: true,
-    }).lean();
+    })
+      .sort("name")
+      .lean();
 
     if (students.length === 0) {
       throwError(
@@ -157,34 +150,27 @@ class ShiftService {
 
     const targetScholars = await Student.find({
       class: targetClassId,
-      scholarNumber: { $in: students.map((s) => s.scholarNumber) },
+      scholarNumber: {
+        $in: students.map((s) => s.scholarNumber).filter(Boolean),
+      },
     })
       .select("scholarNumber")
       .lean();
 
     const conflictScholars = new Set(
-      targetScholars.map((s) => s.scholarNumber.toUpperCase()),
+      targetScholars.map((s) => (s.scholarNumber || "").toUpperCase()),
     );
 
     const toShift = students.filter(
-      (s) => !conflictScholars.has(s.scholarNumber.toUpperCase()),
+      (s) => !conflictScholars.has((s.scholarNumber || "").toUpperCase()),
     );
 
     if (toShift.length === 0) {
-      throwError("All selected students already exist in target class", 400);
+      throwError(
+        "All selected students already exist in the target class (scholar number conflict).",
+        400,
+      );
     }
-
-    const existingTarget = await Student.find({
-      class: targetClassId,
-      isActive: true,
-    })
-      .select("rollNumber")
-      .lean();
-
-    const existingRolls = existingTarget
-      .map((s) => parseInt(s.rollNumber, 10))
-      .filter((n) => !isNaN(n));
-    let nextRoll = existingRolls.length > 0 ? Math.max(...existingRolls) : 0;
 
     let shifted = 0;
     let failed = 0;
@@ -192,21 +178,21 @@ class ShiftService {
 
     for (const student of toShift) {
       try {
-        nextRoll++;
-        const newRoll = String(nextRoll);
-
         await Student.findByIdAndUpdate(student._id, {
-          class: targetClassId,
-          section: targetClass.section,
-          rollNumber: newRoll,
+          $set: {
+            class: targetClassId,
+            section: targetClass.section || "",
+          },
+          // Explicitly do not touch rollNumber
+          $unset: { rollNumber: "" },
         });
 
         shifted++;
         shiftedDetails.push({
           scholarNumber: student.scholarNumber,
           name: student.name,
-          oldRoll: student.rollNumber,
-          newRoll,
+          from: `${sourceClass.name}-${sourceClass.section}`,
+          to: `${targetClass.name}-${targetClass.section}`,
         });
       } catch (err) {
         failed++;
@@ -228,7 +214,7 @@ class ShiftService {
       action: "UPDATE",
       module: "Student",
       description:
-        `Shifted ${shifted} students from ${sourceClass.name}-${sourceClass.section} ` +
+        `Shifted ${shifted} student(s) from ${sourceClass.name}-${sourceClass.section} ` +
         `to ${targetClass.name}-${targetClass.section}: ${sampleNames}${moreText}`,
       resourceType: "Student",
       before: {

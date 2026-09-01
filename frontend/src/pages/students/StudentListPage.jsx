@@ -7,6 +7,7 @@ import {
   Typography,
   useMediaQuery,
   useTheme,
+  TablePagination, // ✅ NEW: Pagination import
 } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useSnackbar } from "notistack";
@@ -39,7 +40,6 @@ import studentApi from "../../api/studentApi";
 import { exportStudentsToExcel } from "../../utils/exportUtils";
 
 const MAX_BULK_SELECT = 100;
-const EXPORT_LIMIT = 5000;
 
 const DEFAULT_FILTERS = {
   search: "",
@@ -53,9 +53,6 @@ const DEFAULT_FILTERS = {
 
 const DEFAULT_SORT = { sortBy: "class", sortOrder: "asc" };
 
-// ═══════════════════════════════════════════════════════════════════
-//  Smart class rank (Nursery → LKG → UKG → 1st → ... → 12th)
-// ═══════════════════════════════════════════════════════════════════
 const getClassRank = (cls) => {
   if (!cls?.name) return 999;
   const name = cls.name.toString().trim().toUpperCase();
@@ -83,22 +80,22 @@ const StudentListPage = () => {
 
   const [filters, setFilters] = useState(() => {
     const classFromUrl = searchParams.get("class");
-    return {
-      ...DEFAULT_FILTERS,
-      class: classFromUrl || "",
-    };
+    return { ...DEFAULT_FILTERS, class: classFromUrl || "" };
   });
 
   const [sortBy, setSortBy] = useState(DEFAULT_SORT.sortBy);
   const [sortOrder, setSortOrder] = useState(DEFAULT_SORT.sortOrder);
 
+  // ✅ Pagination States
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
+
   const debouncedSearch = useDebounce(filters.search, 400);
 
-  // ✅ Load ALL students at once (no pagination complexity)
   const queryParams = useMemo(
     () => ({
       page: 1,
-      limit: 2000, // Load all students
+      limit: 5000, // Load all for smart client-side sorting
       search: debouncedSearch,
       status: filters.status,
       ...(filters.class && { class: filters.class }),
@@ -131,44 +128,31 @@ const StudentListPage = () => {
   const updateStatusMutation = useUpdateStudentStatus();
 
   const allStudents = studentsData?.data || [];
-  const pagination = studentsData?.pagination || {
-    page: 1,
-    total: 0,
-    totalPages: 0,
-  };
+  const paginationTotal = studentsData?.pagination?.total || 0;
 
-  // ✅ Sort ALL students with smart class ordering (Roll sorting fully removed)
   const sortedStudents = useMemo(() => {
     const list = [...allStudents];
 
     list.sort((a, b) => {
-      // Smart class sort
       if (sortBy === "class") {
         const rankA = getClassRank(a.class);
         const rankB = getClassRank(b.class);
-
-        if (rankA !== rankB) {
+        if (rankA !== rankB)
           return sortOrder === "asc" ? rankA - rankB : rankB - rankA;
-        }
 
-        // Same class → sort by section
         const secA = (a.class?.section || "").toLowerCase();
         const secB = (b.class?.section || "").toLowerCase();
-        if (secA !== secB) {
+        if (secA !== secB)
           return sortOrder === "asc"
             ? secA.localeCompare(secB)
             : secB.localeCompare(secA);
-        }
 
-        // Same class + section → sort by name
         const nameA = (a.name || "").toLowerCase();
         const nameB = (b.name || "").toLowerCase();
         return nameA.localeCompare(nameB);
       }
 
-      // Standard sorting for other columns
       let aVal, bVal;
-
       switch (sortBy) {
         case "scholarNumber":
           aVal = a.scholarNumber?.toLowerCase() || "";
@@ -202,7 +186,6 @@ const StudentListPage = () => {
           aVal = a.name?.toLowerCase() || "";
           bVal = b.name?.toLowerCase() || "";
       }
-
       if (typeof aVal === "string") {
         return sortOrder === "asc"
           ? aVal.localeCompare(bVal)
@@ -214,10 +197,17 @@ const StudentListPage = () => {
     return list;
   }, [allStudents, sortBy, sortOrder]);
 
-  const students = sortedStudents;
+  // ✅ Client-Side Pagination Slicing
+  const paginatedStudents = useMemo(() => {
+    if (!isAdmin) return sortedStudents; // Teachers see all (~40) on 1 page
+    if (rowsPerPage === -1) return sortedStudents; // 'All' option selected
+    return sortedStudents.slice(
+      page * rowsPerPage,
+      page * rowsPerPage + rowsPerPage,
+    );
+  }, [sortedStudents, page, rowsPerPage, isAdmin]);
 
   const handleSort = useCallback((field) => {
-    // S. No is purely dynamic, no sort required on it
     if (field === "serialNumber") return;
     setSortBy((prev) => {
       if (prev === field) {
@@ -229,7 +219,6 @@ const StudentListPage = () => {
     });
   }, []);
 
-  // ─── DIALOG STATES ───
   const [formOpen, setFormOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -239,30 +228,25 @@ const StudentListPage = () => {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [confirmQuickToggle, setConfirmQuickToggle] = useState(null);
 
-  // ─── BULK SELECTION ───
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [exporting, setExporting] = useState(false);
 
+  // Reset page to 0 when filters or search change
   const handleFilterChange = useCallback((newFilters) => {
     setFilters(newFilters);
+    setPage(0);
   }, []);
 
   const handleResetFilters = useCallback(() => {
     setFilters(DEFAULT_FILTERS);
+    setPage(0);
   }, []);
 
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [
-    debouncedSearch,
-    filters.class,
-    filters.section,
-    filters.status,
-    filters.gender,
-    filters.category,
-    filters.bloodGroup,
-  ]);
+    setPage(0);
+  }, [debouncedSearch, filters.class, filters.section, filters.status]);
 
   const toggleSelect = useCallback(
     (id) => {
@@ -287,8 +271,10 @@ const StudentListPage = () => {
     [isAdmin, enqueueSnackbar],
   );
 
-  const allPageIds = useMemo(() => students.map((s) => s._id), [students]);
-
+  const allPageIds = useMemo(
+    () => paginatedStudents.map((s) => s._id),
+    [paginatedStudents],
+  );
   const allPageSelected = useMemo(
     () =>
       allPageIds.length > 0 && allPageIds.every((id) => selectedIds.has(id)),
@@ -331,8 +317,8 @@ const StudentListPage = () => {
   }, []);
 
   const selectedStudents = useMemo(
-    () => students.filter((s) => selectedIds.has(s._id)),
-    [students, selectedIds],
+    () => sortedStudents.filter((s) => selectedIds.has(s._id)),
+    [sortedStudents, selectedIds],
   );
 
   const handleExportExcel = async () => {
@@ -348,30 +334,13 @@ const StudentListPage = () => {
       return;
     }
 
-    if (pagination.total === 0) {
+    if (paginationTotal === 0) {
       enqueueSnackbar("No students to export", { variant: "info" });
-      return;
-    }
-
-    if (pagination.total > EXPORT_LIMIT) {
-      enqueueSnackbar(
-        `Cannot export more than ${EXPORT_LIMIT} students. Filter further.`,
-        { variant: "warning" },
-      );
       return;
     }
 
     setExporting(true);
     try {
-      const params = { ...queryParams, page: 1, limit: EXPORT_LIMIT };
-      const res = await studentApi.list(params);
-      const allExportStudents = res.data?.data || [];
-
-      if (allExportStudents.length === 0) {
-        enqueueSnackbar("No students to export", { variant: "info" });
-        return;
-      }
-
       const className = filters.class
         ? classes.find((c) => c._id === filters.class)
         : null;
@@ -382,14 +351,12 @@ const StudentListPage = () => {
       const dateLabel = new Date().toISOString().split("T")[0];
       const filename = `students_${classLabel}${statusLabel}${dateLabel}`;
 
-      exportStudentsToExcel(allExportStudents, filename);
-      enqueueSnackbar(`${allExportStudents.length} students exported`, {
+      exportStudentsToExcel(sortedStudents, filename);
+      enqueueSnackbar(`✅ Exported ${sortedStudents.length} students`, {
         variant: "success",
       });
     } catch (err) {
-      enqueueSnackbar(err.response?.data?.message || "Export failed", {
-        variant: "error",
-      });
+      enqueueSnackbar("Export failed", { variant: "error" });
     } finally {
       setExporting(false);
     }
@@ -412,12 +379,10 @@ const StudentListPage = () => {
   const handleConfirmQuickToggle = async () => {
     if (!confirmQuickToggle) return;
     const { student, newStatus } = confirmQuickToggle;
-
     const remark =
       newStatus === "Inactive"
         ? "Marked inactive via quick toggle"
         : "Reactivated via quick toggle";
-
     try {
       await updateStatusMutation.mutateAsync({
         id: student._id,
@@ -436,45 +401,6 @@ const StudentListPage = () => {
     }
   };
 
-  const handleImported = () => {
-    setImportOpen(false);
-    refetch();
-  };
-
-  const handleBulkDeleted = () => {
-    exitSelectionMode();
-    refetch();
-  };
-
-  const handleView = useCallback(
-    (student) => navigate(`/students/${student._id}`),
-    [navigate],
-  );
-
-  const handleEdit = useCallback((student) => {
-    setEditingStudent(student);
-    setFormOpen(true);
-  }, []);
-
-  const handleStatus = useCallback((student) => {
-    setStatusStudent(student);
-    setStatusOpen(true);
-  }, []);
-
-  const handleQuickToggleStatus = useCallback((student) => {
-    const newStatus = student.status === "Active" ? "Inactive" : "Active";
-    setConfirmQuickToggle({ student, newStatus });
-  }, []);
-
-  const handleDelete = useCallback((student) => {
-    setConfirmDelete(student);
-  }, []);
-
-  const handleAttendance = useCallback(
-    (student) => navigate(`/attendance/history?student=${student._id}`),
-    [navigate],
-  );
-
   const handleRowClick = useCallback(
     (student) => {
       if (selectionMode && isAdmin) {
@@ -489,11 +415,11 @@ const StudentListPage = () => {
   return (
     <Box sx={{ pb: { xs: 10, md: 4 } }}>
       <StudentHeader
-        total={pagination.total}
+        total={sortedStudents.length}
         isAdmin={isAdmin}
         selectionMode={selectionMode}
         exporting={exporting}
-        exportDisabled={pagination.total === 0}
+        exportDisabled={sortedStudents.length === 0}
         onAdd={() => {
           setEditingStudent(null);
           setFormOpen(true);
@@ -529,39 +455,25 @@ const StudentListPage = () => {
             Loading students...
           </Typography>
         </Paper>
-      ) : students.length === 0 ? (
+      ) : sortedStudents.length === 0 ? (
         <Paper sx={{ borderRadius: 2 }}>
           <EmptyState
             icon={<PeopleIcon sx={{ fontSize: 64 }} />}
             title="No students found"
-            message={
-              filters.search ||
-              filters.class ||
-              filters.section ||
-              filters.gender ||
-              filters.category ||
-              filters.bloodGroup
-                ? "Try adjusting your filters"
-                : "Add your first student"
-            }
-            actionLabel={
-              !filters.search && !filters.class
-                ? "Add Student"
-                : "Reset Filters"
-            }
-            onAction={() => {
-              if (!filters.search && !filters.class) {
-                setEditingStudent(null);
-                setFormOpen(true);
-              } else {
-                handleResetFilters();
-              }
-            }}
+            message="Try adjusting your filters or search."
+            actionLabel="Reset Filters"
+            onAction={handleResetFilters}
           />
         </Paper>
       ) : (
-        <>
-          {/* Background loading indicator */}
+        <Paper
+          sx={{
+            borderRadius: 2,
+            overflow: "hidden",
+            border: "1px solid",
+            borderColor: "divider",
+          }}
+        >
           {isFetching && (
             <Box
               sx={{
@@ -570,7 +482,6 @@ const StudentListPage = () => {
                 zIndex: 5,
                 display: "flex",
                 justifyContent: "center",
-                mb: 1,
               }}
             >
               <Box
@@ -579,16 +490,15 @@ const StudentListPage = () => {
                   color: "white",
                   px: 2,
                   py: 0.4,
-                  borderRadius: 2,
+                  borderRadius: "0 0 8px 8px",
                   fontSize: "0.7rem",
                   fontWeight: 700,
                   display: "flex",
                   alignItems: "center",
                   gap: 0.8,
-                  boxShadow: "0 4px 12px rgba(13,27,62,0.2)",
                 }}
               >
-                <CircularProgress size={10} sx={{ color: "white" }} />
+                <CircularProgress size={10} sx={{ color: "white" }} />{" "}
                 Refreshing...
               </Box>
             </Box>
@@ -596,7 +506,7 @@ const StudentListPage = () => {
 
           {!isMobile ? (
             <StudentTable
-              students={students}
+              students={paginatedStudents} // ✅ Render paginated slice
               isAdmin={isAdmin}
               selectionMode={selectionMode}
               selectedIds={selectedIds}
@@ -604,12 +514,25 @@ const StudentListPage = () => {
               onToggleSelectAll={toggleSelectPage}
               allPageSelected={allPageSelected}
               onRowClick={handleRowClick}
-              onView={handleView}
-              onEdit={handleEdit}
-              onStatus={handleStatus}
-              onQuickToggleStatus={handleQuickToggleStatus}
-              onDelete={handleDelete}
-              onAttendance={handleAttendance}
+              onView={(s) => navigate(`/students/${s._id}`)}
+              onEdit={(s) => {
+                setEditingStudent(s);
+                setFormOpen(true);
+              }}
+              onStatus={(s) => {
+                setStatusStudent(s);
+                setStatusOpen(true);
+              }}
+              onQuickToggleStatus={(s) =>
+                setConfirmQuickToggle({
+                  student: s,
+                  newStatus: s.status === "Active" ? "Inactive" : "Active",
+                })
+              }
+              onDelete={(s) => setConfirmDelete(s)}
+              onAttendance={(s) =>
+                navigate(`/attendance/history?student=${s._id}`)
+              }
               sortBy={sortBy}
               sortOrder={sortOrder}
               onSort={handleSort}
@@ -620,24 +543,37 @@ const StudentListPage = () => {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                totalCount={pagination.total}
+                totalCount={sortedStudents.length}
               />
-
-              <Stack spacing={1.25}>
-                {students.map((student, index) => (
+              <Stack spacing={0}>
+                {paginatedStudents.map((student, index) => (
                   <StudentCard
                     key={student._id}
                     student={student}
-                    serialNumber={index + 1}
+                    serialNumber={page * rowsPerPage + index + 1}
                     isSelected={selectedIds.has(student._id)}
                     selectionMode={selectionMode}
                     isAdmin={isAdmin}
-                    onView={handleView}
-                    onEdit={handleEdit}
-                    onStatus={handleStatus}
-                    onQuickToggleStatus={handleQuickToggleStatus}
-                    onDelete={handleDelete}
-                    onAttendance={handleAttendance}
+                    onView={(s) => navigate(`/students/${s._id}`)}
+                    onEdit={(s) => {
+                      setEditingStudent(s);
+                      setFormOpen(true);
+                    }}
+                    onStatus={(s) => {
+                      setStatusStudent(s);
+                      setStatusOpen(true);
+                    }}
+                    onQuickToggleStatus={(s) =>
+                      setConfirmQuickToggle({
+                        student: s,
+                        newStatus:
+                          s.status === "Active" ? "Inactive" : "Active",
+                      })
+                    }
+                    onDelete={(s) => setConfirmDelete(s)}
+                    onAttendance={(s) =>
+                      navigate(`/attendance/history?student=${s._id}`)
+                    }
                     onToggleSelect={toggleSelect}
                     onCardClick={handleRowClick}
                   />
@@ -646,14 +582,23 @@ const StudentListPage = () => {
             </>
           )}
 
-          {/* Student count footer */}
-          <Box sx={{ textAlign: "center", mt: 3, mb: 1 }}>
-            <Typography variant="caption" color="text.secondary">
-              Showing <strong>{students.length}</strong> of{" "}
-              <strong>{pagination.total}</strong> students
-            </Typography>
-          </Box>
-        </>
+          {/* ✅ PAGINATION CONTROLS (Admin Only) */}
+          {isAdmin && (
+            <TablePagination
+              component="div"
+              count={sortedStudents.length}
+              page={page}
+              onPageChange={(e, newPage) => setPage(newPage)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(e) => {
+                setRowsPerPage(parseInt(e.target.value, 10));
+                setPage(0);
+              }}
+              rowsPerPageOptions={[50, 100, 500, { label: "All", value: -1 }]}
+              sx={{ borderTop: "1px solid", borderColor: "divider" }}
+            />
+          )}
+        </Paper>
       )}
 
       {/* ─── DIALOGS ─── */}
@@ -667,7 +612,6 @@ const StudentListPage = () => {
         editingStudent={editingStudent}
         classes={classes}
       />
-
       <StudentStatusDialog
         open={statusOpen}
         onClose={() => {
@@ -677,13 +621,14 @@ const StudentListPage = () => {
         onSaved={handleSaved}
         student={statusStudent}
       />
-
       <StudentImportDialog
         open={importOpen}
         onClose={() => setImportOpen(false)}
-        onImported={handleImported}
+        onImported={() => {
+          setImportOpen(false);
+          refetch();
+        }}
       />
-
       <ConfirmDialog
         open={!!confirmDelete}
         title="Delete Student"
@@ -694,7 +639,6 @@ const StudentListPage = () => {
         onConfirm={handleConfirmDelete}
         onClose={() => setConfirmDelete(null)}
       />
-
       <ConfirmDialog
         open={!!confirmQuickToggle}
         title={
@@ -719,12 +663,14 @@ const StudentListPage = () => {
         onConfirm={handleConfirmQuickToggle}
         onClose={() => setConfirmQuickToggle(null)}
       />
-
       <StudentBulkDeleteDialog
         open={bulkDeleteOpen}
         selectedStudents={selectedStudents}
         onClose={() => setBulkDeleteOpen(false)}
-        onDeleted={handleBulkDeleted}
+        onDeleted={() => {
+          exitSelectionMode();
+          refetch();
+        }}
       />
     </Box>
   );

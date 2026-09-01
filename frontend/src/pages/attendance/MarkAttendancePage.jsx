@@ -47,19 +47,13 @@ import useSettings from "../../hooks/useSettings";
 import useThemeMode from "../../hooks/useThemeMode";
 import { formatScholarNo } from "../../utils/formatters";
 
-// ═══════════════════════════════════════════════════════════════════
-//  HELPERS
-// ═══════════════════════════════════════════════════════════════════
-
 const formatDate = (d) => {
   const date = new Date(d);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 };
 
-// Auto-formats sequential numbers (e.g., 1 -> "01", 2 -> "02")
 const formatSerialNumber = (idx) => String(idx + 1).padStart(2, "0");
 
-// SEPARATED CIRCLES: Light Tint Default → Solid Active Fill
 const StatusToggle = React.memo(function StatusToggle({
   status,
   disabled,
@@ -75,7 +69,6 @@ const StatusToggle = React.memo(function StatusToggle({
       spacing={1}
       sx={{ flexShrink: 0, alignItems: "center" }}
     >
-      {/* P Button (Present) */}
       <Box
         onClick={(e) => {
           e.stopPropagation();
@@ -112,7 +105,6 @@ const StatusToggle = React.memo(function StatusToggle({
         P
       </Box>
 
-      {/* A Button (Absent) */}
       <Box
         onClick={(e) => {
           e.stopPropagation();
@@ -152,10 +144,6 @@ const StatusToggle = React.memo(function StatusToggle({
   );
 });
 
-// ═══════════════════════════════════════════════════════════════════
-//  MAIN PAGE
-// ═══════════════════════════════════════════════════════════════════
-
 const MarkAttendancePage = () => {
   const { enqueueSnackbar } = useSnackbar();
   const { isAdmin, user } = useAuth();
@@ -164,9 +152,8 @@ const MarkAttendancePage = () => {
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
 
-  const isTeacher = user?.role === "teacher";
+  const isClassUser = user?.role === "class";
 
-  // ─── State ────────────────────────────────────────────────────
   const [classes, setClasses] = useState([]);
   const [classesLoading, setClassesLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState("");
@@ -182,11 +169,9 @@ const MarkAttendancePage = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
 
-  // Always default to alphabetical sort by student name (A-Z)
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
 
-  // ─── Load classes ─────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -201,6 +186,19 @@ const MarkAttendancePage = () => {
           setClasses(list);
           if (list.length === 1 && !selectedClass) {
             setSelectedClass(list[0]._id);
+          } else if (
+            isClassUser &&
+            user?.linkedClass &&
+            list.some(
+              (c) =>
+                c._id === user.linkedClass || c._id === user.linkedClass?._id,
+            )
+          ) {
+            const linkedId =
+              typeof user.linkedClass === "object"
+                ? user.linkedClass._id
+                : user.linkedClass;
+            setSelectedClass(linkedId);
           }
           setClassesLoading(false);
         }
@@ -218,9 +216,13 @@ const MarkAttendancePage = () => {
     return () => {
       cancelled = true;
     };
-  }, [settings?.activeSession, enqueueSnackbar]);
+  }, [
+    settings?.activeSession,
+    enqueueSnackbar,
+    isClassUser,
+    user?.linkedClass,
+  ]);
 
-  // ─── Load attendance sheet ────────────────────────────────────
   useEffect(() => {
     if (!selectedClass || !date) {
       setSheet(null);
@@ -265,7 +267,6 @@ const MarkAttendancePage = () => {
 
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  // ─── Handlers ─────────────────────────────────────────────────
   const markAll = useCallback(
     (status) => {
       if (!sheet?.students) return;
@@ -292,7 +293,6 @@ const MarkAttendancePage = () => {
     });
   }, []);
 
-  // ─── Stats ────────────────────────────────────────────────────
   const stats = useMemo(() => {
     if (!sheet?.students)
       return { Present: 0, Absent: 0, total: 0, unmarked: 0, marked: 0 };
@@ -313,7 +313,6 @@ const MarkAttendancePage = () => {
     };
   }, [sheet, attendance]);
 
-  // ─── Filtered + Sorted students ───────────────────────────────
   const displayStudents = useMemo(() => {
     if (!sheet?.students) return [];
     let list = [...sheet.students];
@@ -336,7 +335,6 @@ const MarkAttendancePage = () => {
       );
     }
 
-    // Default sorting alphabetically by student name
     list.sort((a, b) => {
       let aVal, bVal;
       if (sortBy === "scholarNumber") {
@@ -367,15 +365,41 @@ const MarkAttendancePage = () => {
     }
   };
 
-  // ─── Save ─────────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  //  STRICT SAVE HANDLER — HARD BLOCKS UNMARKED STUDENTS
+  // ═══════════════════════════════════════════════════════════════
   const handleSave = async () => {
     if (!selectedClass || !date) return;
-    if (
-      stats.unmarked > 0 &&
-      !window.confirm(`${stats.unmarked} students unmarked. Save anyway?`)
-    ) {
-      return;
+
+    // ⛔ HARD BLOCK: Do not allow saving until 100% of students are marked
+    if (stats.unmarked > 0) {
+      enqueueSnackbar(
+        `Cannot submit! All students must be marked. ${stats.unmarked} student(s) remaining.`,
+        { variant: "error", autoHideDuration: 5000 },
+      );
+
+      // Auto-scroll to the first unmarked student
+      const firstUnmarked = sheet.students.find(
+        (item) => !attendance[item.student._id],
+      );
+      if (firstUnmarked) {
+        const rowId = `student-row-${firstUnmarked.student._id}`;
+        const element = document.getElementById(rowId);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          element.style.transition = "background-color 0.4s ease";
+          const originalBg = element.style.backgroundColor;
+          element.style.backgroundColor = isDark
+            ? alpha("#F59E0B", 0.35)
+            : "#FEF3C7";
+          setTimeout(() => {
+            element.style.backgroundColor = originalBg;
+          }, 1800);
+        }
+      }
+      return; // 🛑 STRICT BLOCK: Abort submission
     }
+
     setSaving(true);
     try {
       const records = Object.entries(attendance).map(([student, status]) => ({
@@ -388,14 +412,17 @@ const MarkAttendancePage = () => {
         records,
       });
       enqueueSnackbar(
-        `✅ Saved: ${stats.Present}P / ${stats.Absent}A of ${stats.total}`,
+        `✅ Saved successfully: ${stats.Present} Present / ${stats.Absent} Absent`,
         { variant: "success" },
       );
       triggerRefresh();
     } catch (err) {
-      enqueueSnackbar(err.response?.data?.message || "Failed", {
-        variant: "error",
-      });
+      enqueueSnackbar(
+        err.response?.data?.message || "Failed to save attendance",
+        {
+          variant: "error",
+        },
+      );
     } finally {
       setSaving(false);
     }
@@ -406,7 +433,9 @@ const MarkAttendancePage = () => {
     try {
       const action = sheet.isLocked ? "unlock" : "lock";
       await attendanceApi[action]({ class: selectedClass, date });
-      enqueueSnackbar(`Attendance ${action}ed`, { variant: "success" });
+      enqueueSnackbar(`Attendance ${action}ed successfully`, {
+        variant: "success",
+      });
       setConfirmLock(null);
       triggerRefresh();
     } catch (err) {
@@ -417,29 +446,24 @@ const MarkAttendancePage = () => {
   };
 
   const isLockedForMe = sheet?.isLocked && !isAdmin;
+  const isBlockedDay = sheet?.isHoliday || sheet?.isNonWorkingDay;
   const hasRows = displayStudents.length > 0;
-  const singleClass = isTeacher && classes.length === 1 ? classes[0] : null;
+  const singleClass = isClassUser && classes.length === 1 ? classes[0] : null;
 
-  // ✅ DYNAMIC HEADER TITLE
   const headerTitle = useMemo(() => {
-    if (isTeacher && singleClass) {
+    if (isClassUser && singleClass) {
       return `Mark Attendance — ${singleClass.name}-${singleClass.section}`;
     }
     if (sheet && sheet.class) {
       return `Mark Attendance — ${sheet.class.name}-${sheet.class.section}`;
     }
     return "Mark Attendance";
-  }, [isTeacher, singleClass, sheet]);
-
-  // ═══════════════════════════════════════════════════════════════
-  //  RENDER
-  // ═══════════════════════════════════════════════════════════════
+  }, [isClassUser, singleClass, sheet]);
 
   return (
     <Box
       sx={{
-        pb:
-          sheet && !sheet.isHoliday && stats.total > 0 ? { xs: 12, md: 11 } : 2,
+        pb: sheet && !isBlockedDay && stats.total > 0 ? { xs: 12, md: 11 } : 2,
       }}
     >
       <PageHeader
@@ -447,15 +471,12 @@ const MarkAttendancePage = () => {
         breadcrumbs={[
           {
             label: "Dashboard",
-            path: isTeacher ? "/teacher/dashboard" : "/dashboard",
+            path: isClassUser ? "/teacher/dashboard" : "/dashboard",
           },
           { label: "Attendance" },
         ]}
       />
 
-      {/* ═══════════════════════════════════════════════════════════
-          ULTRA-COMPACT CONTROL STRIP 
-      ═══════════════════════════════════════════════════════════ */}
       <Paper
         sx={{
           p: { xs: 1.25, sm: 1.5 },
@@ -469,14 +490,13 @@ const MarkAttendancePage = () => {
           bgcolor: "background.paper",
         }}
       >
-        {/* Row 1: Admin Select + Date */}
         <Stack
           direction="row"
           spacing={1}
-          sx={{ mb: sheet && !sheet.isHoliday && stats.total > 0 ? 1 : 0 }}
+          sx={{ mb: sheet && !isBlockedDay && stats.total > 0 ? 1 : 0 }}
           alignItems="center"
         >
-          {!isTeacher && (
+          {!isClassUser && (
             <FormControl size="small" sx={{ flex: 2, minWidth: 0 }}>
               <InputLabel>Class</InputLabel>
               <Select
@@ -508,22 +528,21 @@ const MarkAttendancePage = () => {
 
           <TextField
             type="date"
-            label={isTeacher ? "Attendance Date" : "Date"}
+            label={isClassUser ? "Attendance Date" : "Date"}
             size="small"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             InputLabelProps={{ shrink: true }}
             inputProps={{ max: formatDate(new Date()) }}
             sx={{
-              flex: isTeacher ? 1 : "none",
-              width: isTeacher ? "auto" : 130,
+              flex: isClassUser ? 1 : "none",
+              width: isClassUser ? "auto" : 130,
               "& input": { fontWeight: 700, fontSize: "0.82rem" },
             }}
           />
         </Stack>
 
-        {/* Row 2: Search + Bulk Actions */}
-        {sheet && !sheet.isHoliday && stats.total > 0 && (
+        {sheet && !isBlockedDay && stats.total > 0 && (
           <>
             <Stack
               direction="row"
@@ -632,7 +651,6 @@ const MarkAttendancePage = () => {
               </Tooltip>
             </Stack>
 
-            {/* Row 3: Filter Chips & Lock Status */}
             <Stack
               direction="row"
               spacing={0.5}
@@ -695,33 +713,15 @@ const MarkAttendancePage = () => {
                   }}
                 />
               )}
-              {isAdmin && sheet.isMarked && (
-                <Tooltip title={sheet.isLocked ? "Unlock" : "Lock"}>
-                  <IconButton
-                    size="small"
-                    onClick={() =>
-                      setConfirmLock(sheet.isLocked ? "unlock" : "lock")
-                    }
-                    sx={{ width: 24, height: 24, flexShrink: 0, ml: 0.5 }}
-                  >
-                    {sheet.isLocked ? (
-                      <LockOpenIcon sx={{ fontSize: 14 }} />
-                    ) : (
-                      <LockIcon sx={{ fontSize: 14 }} />
-                    )}
-                  </IconButton>
-                </Tooltip>
-              )}
             </Stack>
           </>
         )}
       </Paper>
 
-      {/* ═══ EMPTY/LOADING STATES ═══ */}
       {!selectedClass &&
         !classesLoading &&
         classes.length > 0 &&
-        !isTeacher && (
+        !isClassUser && (
           <Paper sx={{ borderRadius: 2 }}>
             <EmptyState
               icon={<EventNoteIcon sx={{ fontSize: 64 }} />}
@@ -737,8 +737,8 @@ const MarkAttendancePage = () => {
             icon={<EventNoteIcon sx={{ fontSize: 64 }} />}
             title="No classes assigned"
             message={
-              isTeacher
-                ? "Contact admin to assign classes to you."
+              isClassUser
+                ? "Contact admin to link a class to this account."
                 : "No classes found. Create one first."
             }
           />
@@ -751,7 +751,6 @@ const MarkAttendancePage = () => {
         </Paper>
       )}
 
-      {/* ═══ HOLIDAY BANNER ═══ */}
       {sheet?.isHoliday && (
         <Paper
           sx={{
@@ -775,8 +774,28 @@ const MarkAttendancePage = () => {
         </Paper>
       )}
 
-      {/* ═══ STUDENT LIST ═══ */}
-      {sheet && !sheet.isHoliday && !loading && (
+      {sheet?.isNonWorkingDay && (
+        <Paper
+          sx={{
+            p: 3,
+            borderRadius: 2,
+            textAlign: "center",
+            border: "1px solid",
+            borderColor: "info.light",
+            bgcolor: isDark ? alpha("#3B82F6", 0.05) : "#EFF6FF",
+          }}
+        >
+          <EventNoteIcon sx={{ fontSize: 56, color: "info.main", mb: 1 }} />
+          <Typography variant="h6" fontWeight={800}>
+            📅 {sheet.nonWorkingDayName || "Non-Working Day"}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Attendance marking is disabled on this day.
+          </Typography>
+        </Paper>
+      )}
+
+      {sheet && !isBlockedDay && !loading && (
         <>
           {stats.total === 0 ? (
             <Paper sx={{ borderRadius: 2, p: 4, textAlign: "center" }}>
@@ -794,9 +813,6 @@ const MarkAttendancePage = () => {
               </Typography>
             </Paper>
           ) : isMobile ? (
-            /* ═══════════════════════════════════════════════════════
-                MOBILE LIST
-            ═══════════════════════════════════════════════════════ */
             <Paper
               sx={{
                 borderRadius: 2,
@@ -822,6 +838,7 @@ const MarkAttendancePage = () => {
                 return (
                   <Box
                     key={item.student._id}
+                    id={`student-row-${item.student._id}`}
                     sx={{
                       display: "flex",
                       alignItems: "center",
@@ -888,16 +905,12 @@ const MarkAttendancePage = () => {
                       disabled={isLockedForMe}
                       onChange={(s) => setStudentStatus(item.student._id, s)}
                       isDark={isDark}
-                      size="md"
                     />
                   </Box>
                 );
               })}
             </Paper>
           ) : (
-            /* ═══════════════════════════════════════════════════════
-                DESKTOP TABLE
-            ═══════════════════════════════════════════════════════ */
             <Paper
               sx={{
                 borderRadius: 2,
@@ -994,6 +1007,7 @@ const MarkAttendancePage = () => {
                       return (
                         <TableRow
                           key={item.student._id}
+                          id={`student-row-${item.student._id}`}
                           hover
                           sx={{
                             bgcolor: rowBg,
@@ -1060,7 +1074,6 @@ const MarkAttendancePage = () => {
                                   setStudentStatus(item.student._id, s)
                                 }
                                 isDark={isDark}
-                                size="sm"
                               />
                             </Box>
                           </TableCell>
@@ -1073,7 +1086,7 @@ const MarkAttendancePage = () => {
             </Paper>
           )}
 
-          {/* ═══ STICKY SAVE BAR ═══ */}
+          {/* STICKY FOOTER */}
           {stats.total > 0 && (
             <Paper
               sx={{
@@ -1092,48 +1105,68 @@ const MarkAttendancePage = () => {
                   : "0 -4px 12px rgba(0,0,0,0.08)",
               }}
             >
-              <Button
-                variant="contained"
-                fullWidth
-                size="large"
-                startIcon={
-                  saving ? (
-                    <CircularProgress size={18} sx={{ color: "white" }} />
-                  ) : (
-                    <SaveIcon />
-                  )
-                }
-                onClick={handleSave}
-                disabled={saving || isLockedForMe || stats.marked === 0}
-                sx={{
-                  py: 1.25,
-                  fontSize: { xs: "0.9rem", sm: "0.95rem" },
-                  fontWeight: 800,
-                  borderRadius: 2,
-                  textTransform: "none",
-                  background:
-                    stats.marked === 0
-                      ? undefined
-                      : "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
-                  boxShadow:
-                    stats.marked === 0
-                      ? "none"
-                      : "0 4px 14px rgba(13,27,62,0.35)",
-                  "&:active": { transform: "scale(0.98)" },
-                }}
-              >
-                {saving
-                  ? "Saving…"
-                  : stats.marked === 0
-                    ? "Mark students to save"
-                    : `Save Attendance · ${stats.marked}/${stats.total}`}
-              </Button>
+              <Stack direction="row" spacing={1}>
+                {isAdmin && sheet.isMarked && (
+                  <Button
+                    variant={sheet.isLocked ? "contained" : "outlined"}
+                    color={sheet.isLocked ? "error" : "primary"}
+                    size="large"
+                    startIcon={sheet.isLocked ? <LockIcon /> : <LockOpenIcon />}
+                    onClick={() =>
+                      setConfirmLock(sheet.isLocked ? "unlock" : "lock")
+                    }
+                    sx={{
+                      px: { xs: 2, sm: 3 },
+                      fontWeight: 800,
+                      textTransform: "none",
+                      borderRadius: 2,
+                    }}
+                  >
+                    {isMobile ? "" : sheet.isLocked ? "Locked" : "Lock"}
+                  </Button>
+                )}
+                <Button
+                  variant="contained"
+                  fullWidth
+                  size="large"
+                  startIcon={
+                    saving ? (
+                      <CircularProgress size={18} sx={{ color: "white" }} />
+                    ) : (
+                      <SaveIcon />
+                    )
+                  }
+                  onClick={handleSave}
+                  disabled={saving || isLockedForMe}
+                  sx={{
+                    py: 1.25,
+                    fontSize: { xs: "0.9rem", sm: "0.95rem" },
+                    fontWeight: 800,
+                    borderRadius: 2,
+                    textTransform: "none",
+                    background:
+                      stats.unmarked > 0
+                        ? undefined
+                        : "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                    boxShadow:
+                      stats.unmarked > 0
+                        ? "none"
+                        : "0 4px 14px rgba(13,27,62,0.35)",
+                    "&:active": { transform: "scale(0.98)" },
+                  }}
+                >
+                  {saving
+                    ? "Saving…"
+                    : stats.unmarked > 0
+                      ? `Mark All Students (${stats.marked}/${stats.total})`
+                      : `Save Attendance · ${stats.marked}/${stats.total}`}
+                </Button>
+              </Stack>
             </Paper>
           )}
         </>
       )}
 
-      {/* ═══ LOCK DIALOG ═══ */}
       <ConfirmDialog
         open={!!confirmLock}
         title={

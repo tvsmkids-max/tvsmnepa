@@ -21,15 +21,16 @@ class AnalyticsService {
   }
 
   /**
-   * Apply teacher filter to class IDs
+   * Apply class-role filter to class IDs
+   * - admin → null (no filter = all classes)
+   * - class → [linkedClass] only
+   * - class with no link → []
    */
   async _getAccessibleClassIds(user, sessionId) {
-    if (user?.role !== "teacher") return null;
+    if (!user || user.role !== "class") return null;
 
-    const Teacher = require("../models/Teacher.model");
-    const teacher = await Teacher.findOne({ user: user._id }).lean();
-    if (!teacher?.assignedClasses?.length) return [];
-    return teacher.assignedClasses;
+    if (!user.linkedClass) return [];
+    return [user.linkedClass];
   }
 
   // Helper to generate strict, timezone-locked date boundary ranges
@@ -220,6 +221,7 @@ class AnalyticsService {
       classQuery._id = { $in: classFilter };
     }
 
+    // ✅ NO populate — teacherLabel is a plain string
     const classes = await Class.find(classQuery).lean();
     if (classes.length === 0) return [];
 
@@ -284,6 +286,7 @@ class AnalyticsService {
         name: `${c.name}-${c.section}`,
         className: c.name,
         section: c.section,
+        teacherLabel: c.teacherLabel || null,
         students: studentMap[cid] || 0,
         present: cs.Present,
         absent: cs.Absent,
@@ -346,7 +349,7 @@ class AnalyticsService {
   }
 
   /**
-   * TOP DEFAULTERS — Lowest attendance (Timezone Locked & Cleaned of Roll references)
+   * TOP DEFAULTERS — Lowest attendance (Timezone Locked)
    */
   async getTopDefaulters(user, limit = 10) {
     const sessionId = await this._getActiveSessionId();
@@ -488,7 +491,7 @@ class AnalyticsService {
     const now = new Date();
     const istTime = new Date(now.getTime() + tzOffset);
     const y = istTime.getUTCFullYear();
-    const m = istTime.getUTCMonth(); // Previous month calculations
+    const m = istTime.getUTCMonth();
 
     const lastMonthStart = new Date(
       Date.UTC(y, m - 1, 1, 0, 0, 0, 0) - tzOffset,
