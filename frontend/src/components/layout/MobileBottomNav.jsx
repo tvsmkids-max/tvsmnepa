@@ -48,7 +48,7 @@ const MobileBottomNav = () => {
 
   const homeRoute = isAdmin ? "/dashboard" : "/teacher/dashboard";
 
-  // Dynamic selector logic optimized to keep the blue bar active on sub-pages
+  // ✅ Active tab matcher (Ensures the top blue bar highlights correctly)
   const getCurrentValue = () => {
     const path = location.pathname;
     if (
@@ -89,7 +89,7 @@ const MobileBottomNav = () => {
     navigate("/login", { replace: true });
   };
 
-  // ─── ADMIN MORE ITEMS (Monthly stays here, Students moved to Main Bar) ───
+  // ─── ADMIN MORE ITEMS ───
   const adminMoreItems = [
     { divider: true, label: "Management" },
     { label: "Classes", icon: <ClassOutlinedIcon />, path: "/classes" },
@@ -136,9 +136,14 @@ const MobileBottomNav = () => {
     { label: "Settings", icon: <SettingsOutlinedIcon />, path: "/settings" },
   ];
 
-  // ─── CLASS USER MORE ITEMS (Monthly moved here, Daily moved to Main Bar) ───
+  // ─── CLASS USER MORE ITEMS ───
   const classMoreItems = [
     { divider: true, label: "Reports" },
+    {
+      label: "Daily Report",
+      icon: <TodayOutlinedIcon />,
+      path: "/reports/daily",
+    },
     {
       label: "Monthly Report",
       icon: <CalendarMonthOutlinedIcon />,
@@ -201,8 +206,8 @@ const MobileBottomNav = () => {
                   content: '""',
                   position: "absolute",
                   top: 0,
-                  left: "25%",
-                  right: "25%",
+                  left: "20%",
+                  right: "20%",
                   height: 3,
                   borderRadius: "0 0 4px 4px",
                   bgcolor: "primary.main",
@@ -232,6 +237,7 @@ const MobileBottomNav = () => {
             value="daily"
             icon={<TodayOutlinedIcon sx={{ fontSize: 22 }} />}
           />
+          {/* ✅ Students icon active on mobile bottom bar */}
           <BottomNavigationAction
             label="Students"
             value="students"
