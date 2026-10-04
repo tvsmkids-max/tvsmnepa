@@ -330,7 +330,7 @@ const LoginPage = () => {
             sx={{ color: "text.secondary", mb: 4, fontWeight: 500 }}
           >
             Select account and enter {isAdminLogin ? "password" : "PIN"} to
-            access {SCHOOL_NAME}
+            access.
           </Typography>
 
           {error && (
