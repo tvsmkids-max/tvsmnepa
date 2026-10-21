@@ -2,24 +2,28 @@
 
 const env = require("./env");
 const logger = require("../utils/logger");
-
 const isPrivateDevelopmentOrigin = (origin) => {
   try {
     const { protocol, hostname, port } = new URL(origin);
 
-    if (!['http:', 'https:'].includes(protocol)) return false;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
+    if (!["http:", "https:"].includes(protocol)) return false;
+    if (hostname === "localhost" || hostname === "127.0.0.1") return true;
 
     // Permit the common private IPv4 ranges only while developing locally.
     // This keeps phones on the same Wi-Fi working when DHCP changes this PC's IP.
-    const octets = hostname.split('.').map(Number);
-    if (octets.length !== 4 || octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) {
+    const octets = hostname.split(".").map(Number);
+    if (
+      octets.length !== 4 ||
+      octets.some(
+        (octet) => !Number.isInteger(octet) || octet < 0 || octet > 255,
+      )
+    ) {
       return false;
     }
 
     const [first, second] = octets;
     return (
-      port === '5173' &&
+      port === "5173" &&
       (first === 10 ||
         (first === 192 && second === 168) ||
         (first === 172 && second >= 16 && second <= 31))
