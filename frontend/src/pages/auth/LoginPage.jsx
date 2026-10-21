@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import "@fontsource/great-vibes/400.css";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   Box,
@@ -10,7 +11,6 @@ import {
   Alert,
   CircularProgress,
   Stack,
-  useTheme,
   Avatar,
   FormControl,
   Select,
@@ -25,10 +25,11 @@ import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import ClassIcon from "@mui/icons-material/Class";
 import { useSnackbar } from "notistack";
 import useAuth from "../../hooks/useAuth";
-import useThemeMode from "../../hooks/useThemeMode";
 import authApi from "../../api/authApi";
 
-const SCHOOL_NAME = import.meta.env.VITE_SCHOOL_NAME || "TVSM School";
+const SCHOOL_NAME =
+  import.meta.env.VITE_SCHOOL_NAME ||
+  "Thakur Virendra Singh Memorial School";
 const SCHOOL_LOGO = import.meta.env.VITE_SCHOOL_LOGO || "/logo.png";
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
 
@@ -39,8 +40,6 @@ const LoginPage = () => {
   const { enqueueSnackbar } = useSnackbar();
   const { login, isAuthenticated, isLoading, error, clearError, user } =
     useAuth();
-  const theme = useTheme();
-  const { isDark } = useThemeMode();
 
   const [loginOptions, setLoginOptions] = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
@@ -221,25 +220,16 @@ const LoginPage = () => {
 
   if (isLoading) return null;
 
-  const bgGradient = isDark
-    ? "linear-gradient(135deg, #020617 0%, #0F172A 50%, #1E1B4B 100%)"
-    : "linear-gradient(135deg, #E0E7FF 0%, #F1F5F9 50%, #DBEAFE 100%)";
-
-  const glassBg = isDark
-    ? "rgba(15, 23, 42, 0.65)"
-    : "rgba(255, 255, 255, 0.75)";
-  const glassBorder = isDark
-    ? "rgba(255, 255, 255, 0.08)"
-    : "rgba(255, 255, 255, 0.8)";
-  const inputBg = isDark ? "rgba(0, 0, 0, 0.25)" : "rgba(255, 255, 255, 0.8)";
+  const inputBg = "#FFFFFF";
 
   const labelSx = {
-    color: "text.secondary",
-    mb: 0.8,
+    color: "#475569",
+    mb: 0.75,
     display: "block",
     textTransform: "uppercase",
-    letterSpacing: "0.05em",
-    fontSize: "0.7rem",
+    letterSpacing: "0.12em",
+    fontSize: "0.68rem",
+    fontWeight: 800,
   };
 
   return (
@@ -249,95 +239,345 @@ const LoginPage = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: bgGradient,
         position: "relative",
-        overflow: "hidden",
-        p: 2,
+        p: 0,
+        background:
+          "radial-gradient(ellipse at 18% 15%, rgba(147,197,253,.55), transparent 32%), radial-gradient(ellipse at 88% 85%, rgba(96,165,250,.45), transparent 34%), linear-gradient(135deg, #0B1B43 0%, #1749A2 48%, #8DBBFF 100%)",
+        color: "#101B38",
+        overflow: "auto",
       }}
     >
       <Box
         sx={{
-          position: "absolute",
-          top: "10%",
-          left: "20%",
-          width: 400,
-          height: 400,
-          background: isDark ? "#3B82F6" : "#60A5FA",
-          borderRadius: "50%",
-          filter: "blur(120px)",
-          opacity: isDark ? 0.2 : 0.4,
-          animation: "blob1 15s infinite alternate",
+          position: "relative",
+          display: "none",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          minHeight: { xs: "auto", sm: "100vh" },
+          px: { xs: 2.5, sm: 5, lg: 8 },
+          py: { xs: 1.5, sm: 4, lg: 6 },
+          overflow: "hidden",
+          color: "#FFFFFF",
+          background:
+            "radial-gradient(ellipse at 75% 18%, rgba(37,99,235,.4), transparent 32%), radial-gradient(ellipse at 12% 90%, rgba(29,78,216,.32), transparent 30%), #07142F",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            opacity: 0.18,
+            backgroundImage:
+              "radial-gradient(rgba(191,219,254,.7) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          },
+          "@media (max-width:599px)": {
+            minHeight: 0,
+            py: 1.5,
+            gap: 0.75,
+          },
         }}
-      />
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: "10%",
-          right: "10%",
-          width: 350,
-          height: 350,
-          background: isDark ? "#8B5CF6" : "#818CF8",
-          borderRadius: "50%",
-          filter: "blur(120px)",
-          opacity: isDark ? 0.2 : 0.4,
-          animation: "blob2 20s infinite alternate",
-        }}
-      />
+      >
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={{ xs: 1.25, sm: 1.75 }}
+          sx={{ position: "relative", zIndex: 1 }}
+        >
+          <Avatar
+            src={SCHOOL_LOGO}
+            alt={`${SCHOOL_NAME} logo`}
+            variant="rounded"
+            sx={{
+              width: { xs: 42, sm: 58 },
+              height: { xs: 42, sm: 58 },
+              bgcolor: "#FFFFFF",
+              border: "2px solid rgba(255,255,255,.75)",
+              boxShadow: "0 8px 24px rgba(0,0,0,.25)",
+              "& img": { objectFit: "contain", p: 0.5 },
+            }}
+          />
+          <Box>
+            <Typography
+              sx={{ fontSize: { xs: "0.9rem", sm: "1rem" }, fontWeight: 800 }}
+            >
+              TVSM School
+            </Typography>
+            <Typography
+              sx={{
+                mt: 0.25,
+                color: "rgba(226,232,240,.78)",
+                fontSize: { xs: "0.7rem", sm: "0.78rem" },
+                display: { xs: "none", sm: "block" },
+              }}
+            >
+              Attendance Management System
+            </Typography>
+          </Box>
+        </Stack>
+
+        <Box
+          sx={{
+            position: "relative",
+            zIndex: 1,
+            maxWidth: 650,
+            py: { xs: 0, sm: 5 },
+          }}
+        >
+          <Typography
+            sx={{
+              display: { xs: "block", sm: "none" },
+              color: "#BFDBFE",
+              fontSize: "0.77rem",
+              fontWeight: 750,
+              letterSpacing: "0.02em",
+            }}
+          >
+            Attendance, made simpler.
+          </Typography>
+          <Typography
+            sx={{
+              display: { xs: "none", sm: "block" },
+              color: "#93C5FD",
+              fontSize: "0.72rem",
+              fontWeight: 800,
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              mb: 2,
+            }}
+          >
+            School attendance, made simpler
+          </Typography>
+          <Typography
+            component="h1"
+            sx={{
+              display: { xs: "none", sm: "block" },
+              maxWidth: 600,
+              fontSize: { xs: "2rem", sm: "2.6rem", lg: "4.2rem" },
+              lineHeight: { xs: 1.12, lg: 1.03 },
+              letterSpacing: "-0.055em",
+              fontWeight: 850,
+            }}
+          >
+            Every school day,
+            <Box
+              component="span"
+              sx={{
+                display: { xs: "inline", sm: "block" },
+                color: "#79A9FF",
+              }}
+            >
+              {" "}in clear focus.
+            </Box>
+          </Typography>
+          <Box
+            sx={{
+              display: { xs: "none", sm: "block" },
+              width: "72%",
+              maxWidth: 360,
+              height: 2,
+              mt: 3,
+              mb: 2,
+              background:
+                "linear-gradient(90deg, #60A5FA 0%, rgba(96,165,250,.08) 100%)",
+            }}
+          />
+          <Typography
+            sx={{
+              display: { xs: "none", sm: "block" },
+              maxWidth: 450,
+              color: "rgba(226,232,240,.8)",
+              fontSize: { xs: "0.9rem", sm: "1rem" },
+              lineHeight: 1.75,
+            }}
+          >
+            Keep attendance, student records, and school reports together in
+            one clear workspace.
+          </Typography>
+
+          <Box
+            sx={{
+              mt: { xs: 3, sm: 5 },
+              display: { xs: "none", sm: "grid" },
+              gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
+              gap: 1.25,
+              maxWidth: 590,
+            }}
+          >
+            {[
+              {
+                icon: <ClassIcon />,
+                title: "Attendance",
+                detail: "Daily class records",
+              },
+              {
+                icon: <AdminPanelSettingsIcon />,
+                title: "School records",
+                detail: "Students and teachers",
+              },
+              {
+                icon: <ArrowForwardIcon />,
+                title: "Reports",
+                detail: "A clearer overview",
+              },
+            ].map((feature) => (
+              <Box
+                key={feature.title}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.25,
+                  minWidth: 0,
+                  p: { xs: 1.25, sm: 1.5 },
+                  borderRadius: 2.5,
+                  border: "1px solid rgba(191,219,254,.18)",
+                  bgcolor: "rgba(255,255,255,.055)",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    display: "grid",
+                    placeItems: "center",
+                    flexShrink: 0,
+                    borderRadius: 2,
+                    color: "#BFDBFE",
+                    bgcolor: "rgba(59,130,246,.2)",
+                    "& svg": { fontSize: 19 },
+                  }}
+                >
+                  {feature.icon}
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography sx={{ fontSize: "0.78rem", fontWeight: 750 }}>
+                    {feature.title}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      color: "rgba(203,213,225,.72)",
+                      fontSize: "0.65rem",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {feature.detail}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+
+        <Typography
+          sx={{
+            display: { xs: "none", sm: "block" },
+            position: "relative",
+            zIndex: 1,
+            color: "rgba(203,213,225,.65)",
+            fontSize: "0.7rem",
+            borderTop: "1px solid rgba(148,163,184,.18)",
+            pt: 2,
+          }}
+        >
+          A focused workspace for {SCHOOL_NAME}
+        </Typography>
+      </Box>
 
       <Box
         sx={{
           width: "100%",
-          maxWidth: 420,
+          minHeight: "100vh",
+          maxWidth: 500,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          px: { xs: 2, sm: 0 },
+          py: { xs: 2, sm: 4 },
           zIndex: 1,
-          animation: "fadeInUp 0.6s ease-out forwards",
         }}
       >
+        <Box sx={{ width: "100%", maxWidth: 470 }}>
         <Box
           sx={{
-            bgcolor: glassBg,
-            backdropFilter: "blur(24px)",
-            border: `1px solid ${glassBorder}`,
-            borderRadius: 4,
-            boxShadow: isDark
-              ? "0 24px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)"
-              : "0 24px 48px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.6)",
-            p: { xs: 3.5, sm: 5 },
-            textAlign: "center",
+            bgcolor: "rgba(255,255,255,.96)",
+            border: "1px solid rgba(255,255,255,.95)",
+            borderRadius: { xs: 3, sm: 4 },
+            boxShadow:
+              "0 28px 70px rgba(30,64,175,.12), 0 4px 12px rgba(15,23,42,.04)",
+            p: { xs: 2.5, sm: 4.5 },
+            textAlign: "left",
           }}
         >
-          <Avatar
-            src={SCHOOL_LOGO}
-            sx={{
-              width: 80,
-              height: 80,
-              mx: "auto",
-              mb: 2,
-              bgcolor: isDark ? "rgba(255,255,255,0.9)" : "white",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-              "& img": { objectFit: "contain", p: 1 },
-            }}
-          />
-
+          <Stack alignItems="center" sx={{ mb: 2.5 }}>
+            <Avatar
+              src={SCHOOL_LOGO}
+              alt={`${SCHOOL_NAME} logo`}
+              sx={{
+                width: 62,
+                height: 62,
+                mb: 0.75,
+                bgcolor: "#FFFFFF",
+                boxShadow: "0 6px 18px rgba(30,64,175,.14)",
+                "& img": { objectFit: "contain", p: 0.5 },
+              }}
+            />
+            <Typography
+              component="p"
+              sx={{
+                color: "#173B82",
+                fontFamily: '"Great Vibes", "Segoe Script", cursive',
+                fontSize: { xs: "1.5rem", sm: "1.9rem" },
+                lineHeight: 1.25,
+                textAlign: "center",
+              }}
+            >
+              {SCHOOL_NAME}
+            </Typography>
+          </Stack>
           <Typography
-            variant="h4"
-            fontWeight={900}
-            sx={{ mb: 0.5, letterSpacing: "-0.03em" }}
+            sx={{
+              color: "#2563EB",
+              fontSize: "0.68rem",
+              fontWeight: 850,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              mb: 0.8,
+              textAlign: "center",
+            }}
           >
-            Welcome
+            TVSM School
           </Typography>
           <Typography
-            variant="body2"
-            sx={{ color: "text.secondary", mb: 4, fontWeight: 500 }}
+            component="h2"
+            sx={{
+              color: "#101B38",
+              fontWeight: 850,
+              fontSize: { xs: "1.8rem", sm: "2.1rem" },
+              lineHeight: 1.15,
+              letterSpacing: "-0.045em",
+              mb: 0.8,
+              textAlign: "center",
+            }}
           >
-            Select account and enter {isAdminLogin ? "password" : "PIN"} to
-            access.
+            Welcome back
+          </Typography>
+          <Typography
+            sx={{
+              color: "#64748B",
+              mb: { xs: 2, sm: 3 },
+              fontSize: "0.88rem",
+              lineHeight: 1.55,
+            }}
+          >
+            Select your account and enter your{" "}
+            {isAdminLogin ? "password" : "class PIN"} to continue.
           </Typography>
 
           {error && (
             <Alert
               severity="error"
               onClose={clearError}
-              sx={{ mb: 3, borderRadius: 2, textAlign: "left" }}
+              sx={{ mb: 2.5, borderRadius: 2, textAlign: "left" }}
             >
               {error}
             </Alert>
@@ -350,12 +590,12 @@ const LoginPage = () => {
             sx={{ textAlign: "left" }}
           >
             <Typography variant="caption" fontWeight={700} sx={labelSx}>
-              Select Account
+              Select account
             </Typography>
             <FormControl
               fullWidth
               size="medium"
-              sx={{ mb: 2.5 }}
+              sx={{ mb: 1.75 }}
               disabled={loadingOptions}
             >
               <Select
@@ -365,7 +605,16 @@ const LoginPage = () => {
                 sx={{
                   bgcolor: inputBg,
                   borderRadius: 2.5,
-                  "& fieldset": { border: "none" },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#D5DFEF",
+                  },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#93B4EA",
+                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#2563EB",
+                    borderWidth: 1.5,
+                  },
                   "& .MuiSelect-select": {
                     py: 1.6,
                     fontWeight: 800,
@@ -434,31 +683,29 @@ const LoginPage = () => {
                   Password
                 </Typography>
                 <TextField
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   type={showPassword ? "text" : "password"}
                   fullWidth
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   sx={{
-                    mb: 4,
+                    mb: { xs: 1.75, sm: 2.5 },
                     "& .MuiOutlinedInput-root": {
                       bgcolor: inputBg,
                       borderRadius: 2.5,
-                      "& fieldset": { border: "none" },
-                      "&:hover": {
-                        bgcolor: isDark ? "rgba(255,255,255,0.05)" : "#FFFFFF",
-                      },
-                      "&.Mui-focused": {
-                        bgcolor: isDark ? "rgba(255,255,255,0.08)" : "#FFFFFF",
-                        boxShadow: `0 0 0 2px ${theme.palette.primary.main}`,
+                      "& fieldset": { borderColor: "#D5DFEF" },
+                      "&:hover fieldset": { borderColor: "#93B4EA" },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#2563EB",
+                        borderWidth: 1.5,
                       },
                     },
-                    "& .MuiInputBase-input": { py: 1.8 },
+                    "& .MuiInputBase-input": { py: 1.7, fontSize: "0.9rem" },
                   }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <LockOutlinedIcon sx={{ color: "text.disabled" }} />
+                        <LockOutlinedIcon sx={{ color: "#7183A0", fontSize: 20 }} />
                       </InputAdornment>
                     ),
                     endAdornment: (
@@ -467,8 +714,10 @@ const LoginPage = () => {
                           onClick={() => setShowPassword((p) => !p)}
                           edge="end"
                           size="small"
-                          tabIndex={-1}
-                          sx={{ color: "text.secondary" }}
+                          aria-label={
+                            showPassword ? "Hide password" : "Show password"
+                          }
+                          sx={{ color: "#64748B" }}
                         >
                           {showPassword ? (
                             <VisibilityOffOutlinedIcon fontSize="small" />
@@ -489,8 +738,8 @@ const LoginPage = () => {
                 <Stack
                   direction="row"
                   spacing={1.5}
-                  justifyContent="center"
-                  sx={{ mb: 4 }}
+                  justifyContent="space-between"
+                  sx={{ mb: 2.5 }}
                 >
                   {pinDigits.map((digit, i) => (
                     <TextField
@@ -508,32 +757,30 @@ const LoginPage = () => {
                         autoComplete: "one-time-code",
                         style: {
                           textAlign: "center",
-                          fontSize: "1.5rem",
+                          fontSize: "1.3rem",
                           fontWeight: 800,
                           padding: "12px 0",
                         },
                       }}
                       sx={{
-                        width: 56,
+                        width: { xs: 48, sm: 58 },
                         "& .MuiOutlinedInput-root": {
                           bgcolor: inputBg,
                           borderRadius: 2,
-                          "& fieldset": { border: "none" },
-                          "&.Mui-focused": {
-                            boxShadow: `0 0 0 2px ${theme.palette.primary.main}`,
-                          },
+                          "& fieldset": { borderColor: "#D5DFEF" },
+                          "&.Mui-focused fieldset": { borderColor: "#2563EB" },
                         },
                       }}
                     />
                   ))}
                 </Stack>
                 {/* Optional: Add eye button below PIN for class if needed */}
-                <Box textAlign="right" sx={{ mt: -3, mb: 3 }}>
+                <Box textAlign="right" sx={{ mt: -2, mb: 2 }}>
                   <Button
                     size="small"
                     onClick={() => setShowPassword(!showPassword)}
                     sx={{
-                      color: "text.secondary",
+                      color: "#52647F",
                       textTransform: "none",
                       fontSize: "0.7rem",
                     }}
@@ -563,19 +810,20 @@ const LoginPage = () => {
               }
               endIcon={!submitting && <ArrowForwardIcon />}
               sx={{
-                py: 1.8,
-                fontSize: "1rem",
+                py: 1.55,
+                fontSize: "0.95rem",
                 fontWeight: 800,
                 borderRadius: 2.5,
-                background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
-                boxShadow: "0 8px 20px rgba(37, 99, 235, 0.3)",
+                background:
+                  "linear-gradient(110deg, #1D4ED8 0%, #2563EB 58%, #3478E8 100%)",
+                boxShadow: "0 12px 24px rgba(37,99,235,.23)",
                 textTransform: "none",
                 transition: "all 0.2s ease",
                 "&:hover": {
                   background:
-                    "linear-gradient(135deg, #1D4ED8 0%, #1E3A8A 100%)",
-                  boxShadow: "0 12px 28px rgba(37, 99, 235, 0.4)",
-                  transform: "translateY(-2px)",
+                    "linear-gradient(110deg, #1E40AF 0%, #1D4ED8 100%)",
+                  boxShadow: "0 15px 28px rgba(37,99,235,.3)",
+                  transform: "translateY(-1px)",
                 },
                 "&:active": { transform: "translateY(0)" },
               }}
@@ -589,25 +837,87 @@ const LoginPage = () => {
               )}
             </Button>
           </Box>
+          <Box
+            sx={{
+              mt: 2.25,
+              p: 1.5,
+              display: "flex",
+              alignItems: "center",
+              gap: 1.25,
+              borderRadius: 2.5,
+              bgcolor: "#EFF5FF",
+              color: "#51627E",
+            }}
+          >
+            <LockOutlinedIcon sx={{ color: "#2563EB", fontSize: 18 }} />
+            <Typography sx={{ fontSize: "0.72rem", lineHeight: 1.5 }}>
+              Sign-in accounts are provided by your school administrator. If
+              you cannot access your account, please ask them for help.
+            </Typography>
+          </Box>
         </Box>
 
         <Stack
-          direction="row"
-          justifyContent="center"
           alignItems="center"
-          spacing={1}
-          sx={{ mt: 4 }}
+          direction="row"
+          spacing={1.5}
+          sx={{
+            display: "none",
+            mt: { xs: 1.25, sm: 1.75 },
+            px: { xs: 1.5, sm: 2 },
+            py: { xs: 1.1, sm: 1.5 },
+            bgcolor: "rgba(255,255,255,.74)",
+            border: "1px solid rgba(255,255,255,.9)",
+            borderRadius: 3,
+            boxShadow: "0 10px 25px rgba(30,64,175,.07)",
+          }}
         >
-          <Typography
-            variant="caption"
+          <Avatar
             sx={{
-              color: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)",
-              fontWeight: 600,
+              width: { xs: 36, sm: 42 },
+              height: { xs: 36, sm: 42 },
+              bgcolor: "#1D4ED8",
+              fontSize: "0.85rem",
+              fontWeight: 800,
             }}
           >
-            TVSM v{APP_VERSION} • Developed by Abhishek
+            AW
+          </Avatar>
+          <Box>
+          <Typography
+            sx={{
+              display: "none",
+              color: "#71809A",
+              fontSize: "0.62rem",
+              fontWeight: 800,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+            }}
+          >
+            Designed and built by
           </Typography>
+            <Typography
+              sx={{ color: "#1E2B47", fontSize: "0.85rem", fontWeight: 800 }}
+            >
+              Abhishek Wani
+            </Typography>
+            <Typography sx={{ color: "#2563EB", fontSize: "0.68rem" }}>
+              TVSM School Attendance System · v{APP_VERSION}
+            </Typography>
+          </Box>
         </Stack>
+        <Typography
+          sx={{
+            display: "none",
+            mt: { xs: 1, sm: 1.5 },
+            color: "#71809A",
+            fontSize: "0.67rem",
+            textAlign: "center",
+          }}
+        >
+          {SCHOOL_NAME}
+        </Typography>
+        </Box>
       </Box>
     </Box>
   );
