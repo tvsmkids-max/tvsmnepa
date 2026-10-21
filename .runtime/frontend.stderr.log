@@ -1,0 +1,34 @@
+9:57:49 pm [vite] (client) [console.warn] MUI: You are providing a disabled `button` child to the Tooltip component.
+A disabled element does not fire events.
+Tooltip needs to listen to the child element's events to display the title.
+
+Add a simple wrapper element, such as a `span`.
+10:02:18 pm [vite] (client) [console.warn] MUI: You are providing a disabled `button` child to the Tooltip component.
+A disabled element does not fire events.
+Tooltip needs to listen to the child element's events to display the title.
+
+Add a simple wrapper element, such as a `span`.
+10:03:36 pm [vite] (client) [console.warn] MUI: You are providing a disabled `button` child to the Tooltip component.
+A disabled element does not fire events.
+Tooltip needs to listen to the child element's events to display the title.
+
+Add a simple wrapper element, such as a `span`.
+10:04:28 pm [vite] (client) [console.warn] Of the table content, 0.4000833333 units width could not fit page
+10:04:28 pm [vite] (client) [console.warn] Of the table content, 67 units width could not fit page
+10:04:28 pm [vite] (client) [console.warn] Of the table content, 17 units width could not fit page
+10:05:39 pm [vite] (client) [console.warn] MUI: You are providing a disabled `button` child to the Tooltip component.
+A disabled element does not fire events.
+Tooltip needs to listen to the child element's events to display the title.
+
+Add a simple wrapper element, such as a `span`.
+10:07:04 pm [vite] (client) [console.warn] MUI: You are providing a disabled `button` child to the Tooltip component.
+A disabled element does not fire events.
+Tooltip needs to listen to the child element's events to display the title.
+
+Add a simple wrapper element, such as a `span`.
+10:08:57 pm [vite] (client) [console.warn] MUI: You have provided an out-of-range value `6a3e61fbc3f791fc97b32113` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are ``.
+10:08:57 pm [vite] (client) [console.warn] MUI: You have provided an out-of-range value `6a3e61fbc3f791fc97b32113` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are ``.
