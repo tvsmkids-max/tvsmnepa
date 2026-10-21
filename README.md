@@ -5,7 +5,6 @@
 Production-ready attendance management system for schools.
 
 ### Tech Stack
-
 - **Frontend:** React 19, Material UI, Vite
 - **Backend:** Node.js, Express, MongoDB
 - **Database:** MongoDB Atlas
