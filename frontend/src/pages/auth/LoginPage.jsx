@@ -569,7 +569,7 @@ const LoginPage = () => {
               lineHeight: 1.55,
             }}
           >
-            Select your account and enter your{" "}
+            Enter your{" "}
             {isAdminLogin ? "password" : "class PIN"} to continue.
           </Typography>
 
@@ -851,8 +851,7 @@ const LoginPage = () => {
           >
             <LockOutlinedIcon sx={{ color: "#2563EB", fontSize: 18 }} />
             <Typography sx={{ fontSize: "0.72rem", lineHeight: 1.5 }}>
-              Sign-in accounts are provided by your school administrator. If
-              you cannot access your account, please ask them for help.
+              Contact the school administrator for account details.
             </Typography>
           </Box>
         </Box>
