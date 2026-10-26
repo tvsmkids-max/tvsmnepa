@@ -232,7 +232,49 @@ const LoginPage = () => {
     }
   };
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 2,
+          px: 2,
+          background:
+            "radial-gradient(ellipse at top left, rgba(191,219,254,0.8), transparent 30%), radial-gradient(ellipse at bottom right, rgba(147,197,253,0.65), transparent 34%), linear-gradient(135deg, #f8fbff 0%, #edf4ff 38%, #eef6ff 100%)",
+          color: "#173B82",
+        }}
+      >
+        <Avatar
+          src={SCHOOL_LOGO}
+          alt={`${SCHOOL_NAME} logo`}
+          sx={{
+            width: { xs: 48, sm: 58, md: 68 },
+            height: { xs: 48, sm: 58, md: 68 },
+            bgcolor: "#FFFFFF",
+            border: "1px solid rgba(37,99,235,0.14)",
+            "& img": { objectFit: "contain", p: 0.5 },
+          }}
+        />
+        <Typography
+          sx={{
+            fontSize: { xs: "1.15rem", sm: "1.55rem", md: "2rem" },
+            fontWeight: 800,
+            lineHeight: 1.15,
+          }}
+        >
+          TVSM School
+        </Typography>
+        <CircularProgress size={28} />
+        <Typography sx={{ color: "#64748B", fontSize: "0.9rem" }}>
+          Loading your school portal...
+        </Typography>
+      </Box>
+    );
+  }
 
   const inputBg = "rgba(255,255,255,0.82)";
 
@@ -285,40 +327,76 @@ const LoginPage = () => {
             position: "relative",
           }}
         >
+          {/* Responsive school branding */}
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: 1.5,
-              mb: 2.5,
-              px: 2,
+              gap: { xs: 1.25, sm: 1.75 },
+              mb: { xs: 3, sm: 3.5 },
+              px: 1,
+              width: "100%",
+              minWidth: 0,
             }}
           >
             <Avatar
               src={SCHOOL_LOGO}
               alt={`${SCHOOL_NAME} logo`}
+              variant="circular"
               sx={{
-                width: 60,
-                height: 60,
-                bgcolor: "rgba(255,255,255,0.88)",
+                width: { xs: 48, sm: 58, md: 68 },
+                height: { xs: 48, sm: 58, md: 68 },
+                flexShrink: 0,
+                bgcolor: "#FFFFFF",
                 border: "1px solid rgba(37,99,235,0.14)",
-                boxShadow: "0 12px 30px rgba(30,64,175,0.08)",
-                "& img": { objectFit: "contain", p: 0.6 },
+                boxShadow: "0 6px 20px rgba(30,64,175,0.09)",
+                "& img": {
+                  objectFit: "contain",
+                  p: { xs: 0.4, sm: 0.6 },
+                },
               }}
             />
-            <Typography
-              sx={{
-                color: "#173B82",
-                fontFamily: '"Segoe UI", "Poppins", "Trebuchet MS", sans-serif',
-                fontSize: { xs: "1.3rem", sm: "1.8rem" },
-                fontWeight: 700,
-                letterSpacing: "0.04em",
-                textAlign: "center",
-              }}
-            >
-              TVSM School
-            </Typography>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                sx={{
+                  color: "#173B82",
+                  fontFamily:
+                    '"Segoe UI", "Poppins", "Trebuchet MS", sans-serif',
+                  fontSize: {
+                    xs: "1.15rem",
+                    sm: "1.55rem",
+                    md: "2rem",
+                  },
+                  fontWeight: 800,
+                  lineHeight: 1.15,
+                  letterSpacing: {
+                    xs: "0.01em",
+                    sm: "0.025em",
+                    md: "0.035em",
+                  },
+                  whiteSpace: "nowrap",
+                }}
+              >
+                TVSM School
+              </Typography>
+              <Typography
+                sx={{
+                  mt: 0.4,
+                  color: "#64748B",
+                  fontSize: {
+                    xs: "0.55rem",
+                    sm: "0.65rem",
+                    md: "0.7rem",
+                  },
+                  fontWeight: 600,
+                  letterSpacing: { xs: "0.08em", sm: "0.12em" },
+                  whiteSpace: "nowrap",
+                }}
+              >
+                SCHOOL MANAGEMENT PORTAL
+              </Typography>
+            </Box>
           </Box>
 
           <Box
