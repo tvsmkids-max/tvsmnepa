@@ -561,18 +561,6 @@ const LoginPage = () => {
           >
             Welcome back
           </Typography>
-          <Typography
-            sx={{
-              color: "#64748B",
-              mb: { xs: 2, sm: 3 },
-              fontSize: "0.88rem",
-              lineHeight: 1.55,
-            }}
-          >
-            Enter your{" "}
-            {isAdminLogin ? "password" : "class PIN"} to continue.
-          </Typography>
-
           {error && (
             <Alert
               severity="error"
