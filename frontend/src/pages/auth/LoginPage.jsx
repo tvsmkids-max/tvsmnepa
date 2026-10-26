@@ -234,7 +234,7 @@ const LoginPage = () => {
 
   if (isLoading) return null;
 
-  const inputBg = "#FFFFFF";
+  const inputBg = "rgba(255,255,255,0.82)";
 
   const labelSx = {
     color: "#475569",
@@ -256,7 +256,7 @@ const LoginPage = () => {
         position: "relative",
         p: 0,
         background:
-          "radial-gradient(ellipse at top left, rgba(147,197,253,0.35), transparent 28%), radial-gradient(ellipse at bottom right, rgba(96,165,250,0.25), transparent 30%), linear-gradient(135deg, #f4f9ff 0%, #edf5ff 44%, #eaf3ff 100%)",
+          "radial-gradient(ellipse at top left, rgba(191,219,254,0.8), transparent 30%), radial-gradient(ellipse at bottom right, rgba(147,197,253,0.65), transparent 34%), linear-gradient(135deg, #f8fbff 0%, #edf4ff 38%, #eef6ff 100%)",
         color: "#101B38",
         overflow: "auto",
       }}
@@ -264,13 +264,13 @@ const LoginPage = () => {
       <Box
         sx={{
           width: "100%",
-          maxWidth: 1180,
+          maxWidth: 1120,
           minHeight: "100vh",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: { xs: 2, md: 4 },
-          px: { xs: 2, sm: 3, md: 5 },
+          gap: { xs: 2.5, md: 4 },
+          px: { xs: 2.2, sm: 3, md: 5 },
           py: { xs: 3, md: 5 },
         }}
       >
@@ -291,7 +291,7 @@ const LoginPage = () => {
               alignItems: "center",
               justifyContent: "center",
               gap: 1.5,
-              mb: 3,
+              mb: 2.5,
               px: 2,
             }}
           >
@@ -299,11 +299,11 @@ const LoginPage = () => {
               src={SCHOOL_LOGO}
               alt={`${SCHOOL_NAME} logo`}
               sx={{
-                width: 62,
-                height: 62,
-                bgcolor: "#FFFFFF",
-                border: "1px solid rgba(37,99,235,0.15)",
-                boxShadow: "0 10px 24px rgba(30,64,175,0.08)",
+                width: 60,
+                height: 60,
+                bgcolor: "rgba(255,255,255,0.88)",
+                border: "1px solid rgba(37,99,235,0.14)",
+                boxShadow: "0 12px 30px rgba(30,64,175,0.08)",
                 "& img": { objectFit: "contain", p: 0.6 },
               }}
             />
@@ -311,7 +311,7 @@ const LoginPage = () => {
               sx={{
                 color: "#173B82",
                 fontFamily: '"Segoe UI", "Poppins", "Trebuchet MS", sans-serif',
-                fontSize: { xs: "1.4rem", sm: "1.8rem" },
+                fontSize: { xs: "1.3rem", sm: "1.8rem" },
                 fontWeight: 700,
                 letterSpacing: "0.04em",
                 textAlign: "center",
@@ -324,14 +324,15 @@ const LoginPage = () => {
           <Box
             sx={{
               width: "100%",
-              bgcolor: "rgba(255,255,255,0.88)",
-              border: "1px solid rgba(148,163,184,0.2)",
-              borderRadius: { xs: 3, sm: 4 },
+              bgcolor: "rgba(255,255,255,0.62)",
+              border: "1px solid rgba(255,255,255,0.7)",
+              borderRadius: 4,
               boxShadow:
-                "0 28px 60px rgba(30,64,175,0.08), 0 4px 14px rgba(15,23,42,0.04)",
-              p: { xs: 2.5, sm: 4.5 },
+                "0 20px 50px rgba(30,64,175,0.10), 0 8px 16px rgba(15,23,42,0.04)",
+              p: { xs: 2.25, sm: 3.2 },
               textAlign: "left",
-              backdropFilter: "blur(8px)",
+              backdropFilter: "blur(14px)",
+              WebkitBackdropFilter: "blur(14px)",
             }}
           >
             <Typography
@@ -353,10 +354,10 @@ const LoginPage = () => {
               sx={{
                 color: "#101B38",
                 fontWeight: 850,
-                fontSize: { xs: "1.8rem", sm: "2.1rem" },
-                lineHeight: 1.15,
+                fontSize: { xs: "1.7rem", sm: "2rem" },
+                lineHeight: 1.12,
                 letterSpacing: "-0.045em",
-                mb: 2,
+                mb: 1.75,
                 textAlign: "center",
               }}
             >
@@ -367,7 +368,7 @@ const LoginPage = () => {
               <Alert
                 severity="error"
                 onClose={clearError}
-                sx={{ mb: 2.5, borderRadius: 2, textAlign: "left" }}
+                sx={{ mb: 2, borderRadius: 2, textAlign: "left" }}
               >
                 {error}
               </Alert>
@@ -386,7 +387,7 @@ const LoginPage = () => {
               <FormControl
                 fullWidth
                 size="medium"
-                sx={{ mb: 1.75 }}
+                sx={{ mb: 1.4 }}
                 disabled={loadingOptions}
               >
                 <Select
@@ -397,17 +398,17 @@ const LoginPage = () => {
                     bgcolor: inputBg,
                     borderRadius: 2.5,
                     "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#D5DFEF",
+                      borderColor: "rgba(148,163,184,0.7)",
                     },
                     "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#93B4EA",
+                      borderColor: "rgba(59,130,246,0.75)",
                     },
                     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
                       borderColor: "#2563EB",
                       borderWidth: 1.5,
                     },
                     "& .MuiSelect-select": {
-                      py: 1.6,
+                      py: 1.4,
                       fontWeight: 800,
                       fontSize: "0.95rem",
                       display: "flex",
@@ -426,7 +427,7 @@ const LoginPage = () => {
                         key={opt._id}
                         value={opt._id}
                         sx={{
-                          py: 1.2,
+                          py: 1.1,
                           fontWeight: opt.role === "admin" ? 800 : 700,
                           display: "flex",
                           justifyContent: "space-between",
@@ -485,18 +486,18 @@ const LoginPage = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     sx={{
-                      mb: { xs: 1.75, sm: 2.5 },
+                      mb: { xs: 1.5, sm: 2 },
                       "& .MuiOutlinedInput-root": {
                         bgcolor: inputBg,
                         borderRadius: 2.5,
-                        "& fieldset": { borderColor: "#D5DFEF" },
-                        "&:hover fieldset": { borderColor: "#93B4EA" },
+                        "& fieldset": { borderColor: "rgba(148,163,184,0.7)" },
+                        "&:hover fieldset": { borderColor: "rgba(59,130,246,0.75)" },
                         "&.Mui-focused fieldset": {
                           borderColor: "#2563EB",
                           borderWidth: 1.5,
                         },
                       },
-                      "& .MuiInputBase-input": { py: 1.7, fontSize: "0.9rem" },
+                      "& .MuiInputBase-input": { py: 1.5, fontSize: "0.9rem" },
                     }}
                     InputProps={{
                       startAdornment: (
@@ -536,9 +537,9 @@ const LoginPage = () => {
 
                   <Stack
                     direction="row"
-                    spacing={1.5}
+                    spacing={1.2}
                     justifyContent="space-between"
-                    sx={{ mb: 2.5 }}
+                    sx={{ mb: 1.6 }}
                   >
                     {pinDigits.map((digit, i) => (
                       <TextField
@@ -556,17 +557,17 @@ const LoginPage = () => {
                           autoComplete: "one-time-code",
                           style: {
                             textAlign: "center",
-                            fontSize: "1.3rem",
+                            fontSize: "1.2rem",
                             fontWeight: 800,
-                            padding: "12px 0",
+                            padding: "11px 0",
                           },
                         }}
                         sx={{
-                          width: { xs: 48, sm: 58 },
+                          width: { xs: 46, sm: 56 },
                           "& .MuiOutlinedInput-root": {
                             bgcolor: inputBg,
                             borderRadius: 2,
-                            "& fieldset": { borderColor: "#D5DFEF" },
+                            "& fieldset": { borderColor: "rgba(148,163,184,0.7)" },
                             "&.Mui-focused fieldset": {
                               borderColor: "#2563EB",
                             },
@@ -576,7 +577,7 @@ const LoginPage = () => {
                     ))}
                   </Stack>
 
-                  <Box textAlign="right" sx={{ mt: -2, mb: 2 }}>
+                  <Box textAlign="right" sx={{ mt: -1, mb: 1.8 }}>
                     <Button
                       size="small"
                       onClick={() => setShowPassword(!showPassword)}
@@ -611,19 +612,19 @@ const LoginPage = () => {
                 }
                 endIcon={!submitting && <ArrowForwardIcon />}
                 sx={{
-                  py: 1.55,
+                  py: 1.45,
                   fontSize: "0.95rem",
                   fontWeight: 800,
                   borderRadius: 2.5,
                   background:
                     "linear-gradient(110deg, #1D4ED8 0%, #2563EB 58%, #3478E8 100%)",
-                  boxShadow: "0 12px 24px rgba(37,99,235,.23)",
+                  boxShadow: "0 14px 26px rgba(37,99,235,.22)",
                   textTransform: "none",
                   transition: "all 0.2s ease",
                   "&:hover": {
                     background:
                       "linear-gradient(110deg, #1E40AF 0%, #1D4ED8 100%)",
-                    boxShadow: "0 15px 28px rgba(37,99,235,.3)",
+                    boxShadow: "0 16px 28px rgba(37,99,235,.28)",
                     transform: "translateY(-1px)",
                   },
                   "&:active": { transform: "translateY(0)" },
@@ -641,13 +642,14 @@ const LoginPage = () => {
 
             <Box
               sx={{
-                mt: 2.25,
-                p: 1.5,
+                mt: 1.9,
+                p: 1.3,
                 display: "flex",
                 alignItems: "center",
-                gap: 1.25,
+                gap: 1.1,
                 borderRadius: 2.5,
-                bgcolor: "#EFF5FF",
+                bgcolor: "rgba(239,245,255,0.9)",
+                border: "1px solid rgba(148,163,184,0.18)",
                 color: "#51627E",
               }}
             >
