@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import "@fontsource/great-vibes/400.css";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   Box,
@@ -28,8 +27,7 @@ import useAuth from "../../hooks/useAuth";
 import authApi from "../../api/authApi";
 
 const SCHOOL_NAME =
-  import.meta.env.VITE_SCHOOL_NAME ||
-  "Thakur Virendra Singh Memorial School";
+  import.meta.env.VITE_SCHOOL_NAME || "Thakur Virendra Singh Memorial School";
 const SCHOOL_LOGO = import.meta.env.VITE_SCHOOL_LOGO || "/logo.png";
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
 
@@ -45,26 +43,30 @@ const LoginPage = () => {
   const [loadingOptions, setLoadingOptions] = useState(true);
 
   const [selectedUserId, setSelectedUserId] = useState("");
-  const [password, setPassword] = useState(""); // Used for Admin
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // ─── PIN State (For Class Login) ───
   const [pinDigits, setPinDigits] = useState(["", "", "", "", ""]);
   const pinRefs = useRef([]);
 
   useEffect(() => {
     let cancelled = false;
+
     const fetchOptions = async () => {
       setLoadingOptions(true);
+
       try {
         const res = await authApi.getLoginOptions();
+
         if (!cancelled) {
           const options = res.data?.data || [];
           setLoginOptions(options);
+
           if (options.length > 0) {
             setSelectedUserId(options[0]._id);
           }
+
           setLoadingOptions(false);
         }
       } catch (err) {
@@ -76,7 +78,9 @@ const LoginPage = () => {
         }
       }
     };
+
     fetchOptions();
+
     return () => {
       cancelled = true;
     };
@@ -105,6 +109,7 @@ const LoginPage = () => {
         autoHideDuration: 5000,
         anchorOrigin: { vertical: "top", horizontal: "center" },
       });
+
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, [searchParams, enqueueSnackbar]);
@@ -116,6 +121,7 @@ const LoginPage = () => {
         user.role === "admin" ? "/dashboard" : "/teacher/dashboard";
 
       let targetRoute = defaultRoute;
+
       if (
         from &&
         from !== "/login" &&
@@ -132,7 +138,6 @@ const LoginPage = () => {
 
   useEffect(() => () => clearError(), [clearError]);
 
-  // Reset fields when switching accounts
   useEffect(() => {
     setPassword("");
     setPinDigits(["", "", "", "", ""]);
@@ -141,17 +146,14 @@ const LoginPage = () => {
   const selectedUserObj = loginOptions.find((o) => o._id === selectedUserId);
   const isAdminLogin = selectedUserObj?.role === "admin";
   const isClassLogin = selectedUserObj?.role === "class";
-
   const classPin = pinDigits.join("");
 
-  // ─── PIN Handlers ───
   const handlePinChange = (index, value) => {
     const digit = value.replace(/\D/g, "").slice(-1);
     const next = [...pinDigits];
     next[index] = digit;
     setPinDigits(next);
 
-    // Auto-advance
     if (digit && index < 4) {
       pinRefs.current[index + 1]?.focus();
     }
@@ -169,22 +171,23 @@ const LoginPage = () => {
       .getData("text")
       .replace(/\D/g, "")
       .slice(0, 5);
+
     if (!pasted) return;
 
     const next = ["", "", "", "", ""];
     pasted.split("").forEach((ch, idx) => {
       next[idx] = ch;
     });
+
     setPinDigits(next);
 
-    // Focus the next empty box or the last box
     const focusIndex = Math.min(pasted.length, 4);
     pinRefs.current[focusIndex]?.focus();
   };
 
-  // ─── Submit ───
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!selectedUserId) {
       enqueueSnackbar("Please select an account to log in", {
         variant: "warning",
@@ -192,28 +195,39 @@ const LoginPage = () => {
       return;
     }
 
-    if (isAdminLogin) {
-      if (!password) {
-        enqueueSnackbar("Please enter password", { variant: "warning" });
-        return;
-      }
-      setSubmitting(true);
-      clearError();
-      await login({ userId: selectedUserId, password });
-      setSubmitting(false);
-      return;
-    }
+    try {
+      if (isAdminLogin) {
+        if (!password) {
+          enqueueSnackbar("Please enter password", {
+            variant: "warning",
+          });
+          return;
+        }
 
-    if (isClassLogin) {
-      if (!/^\d{5}$/.test(classPin)) {
-        enqueueSnackbar("Enter all 5 digits of the PIN", {
-          variant: "warning",
-        });
+        setSubmitting(true);
+        clearError();
+        await login({ userId: selectedUserId, password });
         return;
       }
-      setSubmitting(true);
-      clearError();
-      await login({ userId: selectedUserId, password: classPin }); // PIN is sent in password field
+
+      if (isClassLogin) {
+        if (!/^\d{5}$/.test(classPin)) {
+          enqueueSnackbar("Enter all 5 digits of the PIN", {
+            variant: "warning",
+          });
+          return;
+        }
+
+        setSubmitting(true);
+        clearError();
+        await login({ userId: selectedUserId, password: classPin });
+      }
+    } catch (err) {
+      enqueueSnackbar(
+        err?.response?.data?.message || "Login failed. Please try again.",
+        { variant: "error" }
+      );
+    } finally {
       setSubmitting(false);
     }
   };
@@ -242,7 +256,7 @@ const LoginPage = () => {
         position: "relative",
         p: 0,
         background:
-          "radial-gradient(ellipse at 18% 15%, rgba(147,197,253,.55), transparent 32%), radial-gradient(ellipse at 88% 85%, rgba(96,165,250,.45), transparent 34%), linear-gradient(135deg, #0B1B43 0%, #1749A2 48%, #8DBBFF 100%)",
+          "radial-gradient(ellipse at 18% 15%, rgba(147,197,253,.55), transparent 32%), radial-gradient(ellipse at 88% 85%, rgba(96,165,250,.45), transparent 34%), linear-gradient(135deg, #0B1B43 0%, #091A35 50%, #0F1E3D 100%)",
         color: "#101B38",
         overflow: "auto",
       }}
@@ -297,7 +311,6 @@ const LoginPage = () => {
             }}
           />
           <Box>
-       
             <Typography
               sx={{
                 mt: 0.25,
@@ -330,6 +343,7 @@ const LoginPage = () => {
           >
             Attendance, made simpler.
           </Typography>
+
           <Typography
             sx={{
               display: { xs: "none", sm: "block" },
@@ -343,6 +357,7 @@ const LoginPage = () => {
           >
             School attendance, made simpler
           </Typography>
+
           <Typography
             component="h1"
             sx={{
@@ -365,6 +380,7 @@ const LoginPage = () => {
               {" "}in clear focus.
             </Box>
           </Typography>
+
           <Box
             sx={{
               display: { xs: "none", sm: "block" },
@@ -377,6 +393,7 @@ const LoginPage = () => {
                 "linear-gradient(90deg, #60A5FA 0%, rgba(96,165,250,.08) 100%)",
             }}
           />
+
           <Typography
             sx={{
               display: { xs: "none", sm: "block" },
@@ -386,8 +403,8 @@ const LoginPage = () => {
               lineHeight: 1.75,
             }}
           >
-            Keep attendance, student records, and school reports together in
-            one clear workspace.
+            Keep attendance, student records, and school reports together in one
+            clear workspace.
           </Typography>
 
           <Box
@@ -493,413 +510,437 @@ const LoginPage = () => {
         }}
       >
         <Box sx={{ width: "100%", maxWidth: 470 }}>
-        <Box
-          sx={{
-            bgcolor: "rgba(255,255,255,.96)",
-            border: "1px solid rgba(255,255,255,.95)",
-            borderRadius: { xs: 3, sm: 4 },
-            boxShadow:
-              "0 28px 70px rgba(30,64,175,.12), 0 4px 12px rgba(15,23,42,.04)",
-            p: { xs: 2.5, sm: 4.5 },
-            textAlign: "left",
-          }}
-        >
-          <Stack alignItems="center" sx={{ mb: 2.5 }}>
-            <Avatar
-              src={SCHOOL_LOGO}
-              alt={`${SCHOOL_NAME} logo`}
-              sx={{
-                width: 62,
-                height: 62,
-                mb: 0.75,
-                bgcolor: "#FFFFFF",
-                boxShadow: "0 6px 18px rgba(30,64,175,.14)",
-                "& img": { objectFit: "contain", p: 0.5 },
-              }}
-            />
+          <Box
+            sx={{
+              bgcolor: "rgba(255,255,255,.96)",
+              border: "1px solid rgba(255,255,255,.95)",
+              borderRadius: { xs: 3, sm: 4 },
+              boxShadow:
+                "0 28px 70px rgba(30,64,175,.12), 0 4px 12px rgba(15,23,42,.04)",
+              p: { xs: 2.5, sm: 4.5 },
+              textAlign: "left",
+            }}
+          >
+            <Stack alignItems="center" sx={{ mb: 2.5 }}>
+              <Avatar
+                src={SCHOOL_LOGO}
+                alt={`${SCHOOL_NAME} logo`}
+                sx={{
+                  width: 62,
+                  height: 62,
+                  mb: 0.75,
+                  bgcolor: "#FFFFFF",
+                  boxShadow: "0 6px 18px rgba(30,64,175,.14)",
+                  "& img": { objectFit: "contain", p: 0.5 },
+                }}
+              />
+
+              <Typography
+                component="p"
+                sx={{
+                  color: "#173B82",
+                  fontFamily: '"Segoe UI", "Poppins", "Trebuchet MS", sans-serif',
+                  fontSize: { xs: "1.45rem", sm: "1.8rem" },
+                  lineHeight: 1.25,
+                  fontWeight: 700,
+                  letterSpacing: "0.03em",
+                  textAlign: "center",
+                  textTransform: "none",
+                  textShadow: "0 1px 0 rgba(23,59,130,0.12)",
+                }}
+              >
+                {SCHOOL_NAME}
+              </Typography>
+            </Stack>
+
             <Typography
-              component="p"
               sx={{
-                color: "#173B82",
-                fontFamily: '"Great Vibes", "Segoe Script", cursive',
-                fontSize: { xs: "1.5rem", sm: "1.9rem" },
-                lineHeight: 1.25,
+                color: "#2563EB",
+                fontSize: "0.68rem",
+                fontWeight: 850,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                mb: 0.8,
                 textAlign: "center",
               }}
             >
-              {SCHOOL_NAME}
+              TVSM School
             </Typography>
-          </Stack>
-          <Typography
-            sx={{
-              color: "#2563EB",
-              fontSize: "0.68rem",
-              fontWeight: 850,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              mb: 0.8,
-              textAlign: "center",
-            }}
-          >
-            TVSM School
-          </Typography>
-          <Typography
-            component="h2"
-            sx={{
-              color: "#101B38",
-              fontWeight: 850,
-              fontSize: { xs: "1.8rem", sm: "2.1rem" },
-              lineHeight: 1.15,
-              letterSpacing: "-0.045em",
-              mb: 0.8,
-              textAlign: "center",
-            }}
-          >
-            Welcome back
-          </Typography>
-          {error && (
-            <Alert
-              severity="error"
-              onClose={clearError}
-              sx={{ mb: 2.5, borderRadius: 2, textAlign: "left" }}
-            >
-              {error}
-            </Alert>
-          )}
 
-          <Box
-            component="form"
-            onSubmit={handleSubmit}
-            noValidate
-            sx={{ textAlign: "left" }}
-          >
-            <Typography variant="caption" fontWeight={700} sx={labelSx}>
-              Select account
-            </Typography>
-            <FormControl
-              fullWidth
-              size="medium"
-              sx={{ mb: 1.75 }}
-              disabled={loadingOptions}
-            >
-              <Select
-                value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
-                displayEmpty
-                sx={{
-                  bgcolor: inputBg,
-                  borderRadius: 2.5,
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#D5DFEF",
-                  },
-                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#93B4EA",
-                  },
-                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#2563EB",
-                    borderWidth: 1.5,
-                  },
-                  "& .MuiSelect-select": {
-                    py: 1.6,
-                    fontWeight: 800,
-                    fontSize: "0.95rem",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
-                  },
-                }}
-              >
-                {loadingOptions ? (
-                  <MenuItem disabled value="">
-                    Loading accounts...
-                  </MenuItem>
-                ) : (
-                  loginOptions.map((opt) => (
-                    <MenuItem
-                      key={opt._id}
-                      value={opt._id}
-                      sx={{
-                        py: 1.2,
-                        fontWeight: opt.role === "admin" ? 800 : 700,
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Stack direction="row" alignItems="center" spacing={1.5}>
-                        {opt.role === "admin" ? (
-                          <AdminPanelSettingsIcon
-                            color="primary"
-                            fontSize="small"
-                          />
-                        ) : (
-                          <ClassIcon color="action" fontSize="small" />
-                        )}
-                        <Typography
-                          variant="body2"
-                          fontWeight={opt.role === "admin" ? 800 : 700}
-                        >
-                          {opt.displayName}
-                        </Typography>
-                      </Stack>
-                      {opt.role === "admin" && (
-                        <Chip
-                          label="Admin"
-                          size="small"
-                          color="primary"
-                          sx={{
-                            height: 20,
-                            fontSize: "0.62rem",
-                            fontWeight: 800,
-                          }}
-                        />
-                      )}
-                    </MenuItem>
-                  ))
-                )}
-              </Select>
-            </FormControl>
-
-            {/* ─── CONDITIONAL CREDENTIAL FIELD ─── */}
-            {isAdminLogin ? (
-              <>
-                <Typography variant="caption" fontWeight={700} sx={labelSx}>
-                  Password
-                </Typography>
-                <TextField
-                  placeholder="Enter your password"
-                  type={showPassword ? "text" : "password"}
-                  fullWidth
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  sx={{
-                    mb: { xs: 1.75, sm: 2.5 },
-                    "& .MuiOutlinedInput-root": {
-                      bgcolor: inputBg,
-                      borderRadius: 2.5,
-                      "& fieldset": { borderColor: "#D5DFEF" },
-                      "&:hover fieldset": { borderColor: "#93B4EA" },
-                      "&.Mui-focused fieldset": {
-                        borderColor: "#2563EB",
-                        borderWidth: 1.5,
-                      },
-                    },
-                    "& .MuiInputBase-input": { py: 1.7, fontSize: "0.9rem" },
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LockOutlinedIcon sx={{ color: "#7183A0", fontSize: 20 }} />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={() => setShowPassword((p) => !p)}
-                          edge="end"
-                          size="small"
-                          aria-label={
-                            showPassword ? "Hide password" : "Show password"
-                          }
-                          sx={{ color: "#64748B" }}
-                        >
-                          {showPassword ? (
-                            <VisibilityOffOutlinedIcon fontSize="small" />
-                          ) : (
-                            <VisibilityOutlinedIcon fontSize="small" />
-                          )}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </>
-            ) : (
-              <>
-                <Typography variant="caption" fontWeight={700} sx={labelSx}>
-                  5-Digit PIN
-                </Typography>
-                <Stack
-                  direction="row"
-                  spacing={1.5}
-                  justifyContent="space-between"
-                  sx={{ mb: 2.5 }}
-                >
-                  {pinDigits.map((digit, i) => (
-                    <TextField
-                      key={i}
-                      inputRef={(el) => (pinRefs.current[i] = el)}
-                      value={digit}
-                      onChange={(e) => handlePinChange(i, e.target.value)}
-                      onKeyDown={(e) => handlePinKeyDown(i, e)}
-                      onPaste={i === 0 ? handlePinPaste : undefined}
-                      type={showPassword ? "text" : "password"}
-                      inputProps={{
-                        inputMode: "numeric", // ✅ Triggers number pad on mobile
-                        pattern: "[0-9]*",
-                        maxLength: 1,
-                        autoComplete: "one-time-code",
-                        style: {
-                          textAlign: "center",
-                          fontSize: "1.3rem",
-                          fontWeight: 800,
-                          padding: "12px 0",
-                        },
-                      }}
-                      sx={{
-                        width: { xs: 48, sm: 58 },
-                        "& .MuiOutlinedInput-root": {
-                          bgcolor: inputBg,
-                          borderRadius: 2,
-                          "& fieldset": { borderColor: "#D5DFEF" },
-                          "&.Mui-focused fieldset": { borderColor: "#2563EB" },
-                        },
-                      }}
-                    />
-                  ))}
-                </Stack>
-                {/* Optional: Add eye button below PIN for class if needed */}
-                <Box textAlign="right" sx={{ mt: -2, mb: 2 }}>
-                  <Button
-                    size="small"
-                    onClick={() => setShowPassword(!showPassword)}
-                    sx={{
-                      color: "#52647F",
-                      textTransform: "none",
-                      fontSize: "0.7rem",
-                    }}
-                    endIcon={
-                      showPassword ? (
-                        <VisibilityOffOutlinedIcon fontSize="small" />
-                      ) : (
-                        <VisibilityOutlinedIcon fontSize="small" />
-                      )
-                    }
-                  >
-                    {showPassword ? "Hide PIN" : "Show PIN"}
-                  </Button>
-                </Box>
-              </>
-            )}
-
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              disabled={
-                submitting ||
-                loadingOptions ||
-                (isClassLogin && classPin.length !== 5)
-              }
-              endIcon={!submitting && <ArrowForwardIcon />}
+            <Typography
+              component="h2"
               sx={{
-                py: 1.55,
-                fontSize: "0.95rem",
-                fontWeight: 800,
-                borderRadius: 2.5,
-                background:
-                  "linear-gradient(110deg, #1D4ED8 0%, #2563EB 58%, #3478E8 100%)",
-                boxShadow: "0 12px 24px rgba(37,99,235,.23)",
-                textTransform: "none",
-                transition: "all 0.2s ease",
-                "&:hover": {
-                  background:
-                    "linear-gradient(110deg, #1E40AF 0%, #1D4ED8 100%)",
-                  boxShadow: "0 15px 28px rgba(37,99,235,.3)",
-                  transform: "translateY(-1px)",
-                },
-                "&:active": { transform: "translateY(0)" },
+                color: "#101B38",
+                fontWeight: 850,
+                fontSize: { xs: "1.8rem", sm: "2.1rem" },
+                lineHeight: 1.15,
+                letterSpacing: "-0.045em",
+                mb: 0.8,
+                textAlign: "center",
               }}
             >
-              {submitting ? (
-                <CircularProgress size={24} sx={{ color: "white" }} />
-              ) : isAdminLogin ? (
-                "Sign in"
-              ) : (
-                "Enter Class"
-              )}
-            </Button>
-          </Box>
-          <Box
-            sx={{
-              mt: 2.25,
-              p: 1.5,
-              display: "flex",
-              alignItems: "center",
-              gap: 1.25,
-              borderRadius: 2.5,
-              bgcolor: "#EFF5FF",
-              color: "#51627E",
-            }}
-          >
-            <LockOutlinedIcon sx={{ color: "#2563EB", fontSize: 18 }} />
-            <Typography sx={{ fontSize: "0.72rem", lineHeight: 1.5 }}>
-              Contact the school administrator for account details.
+              Welcome back
             </Typography>
-          </Box>
-        </Box>
 
-        <Stack
-          alignItems="center"
-          direction="row"
-          spacing={1.5}
-          sx={{
-            display: "none",
-            mt: { xs: 1.25, sm: 1.75 },
-            px: { xs: 1.5, sm: 2 },
-            py: { xs: 1.1, sm: 1.5 },
-            bgcolor: "rgba(255,255,255,.74)",
-            border: "1px solid rgba(255,255,255,.9)",
-            borderRadius: 3,
-            boxShadow: "0 10px 25px rgba(30,64,175,.07)",
-          }}
-        >
-          <Avatar
+            {error && (
+              <Alert
+                severity="error"
+                onClose={clearError}
+                sx={{ mb: 2.5, borderRadius: 2, textAlign: "left" }}
+              >
+                {error}
+              </Alert>
+            )}
+
+            <Box
+              component="form"
+              onSubmit={handleSubmit}
+              noValidate
+              sx={{ textAlign: "left" }}
+            >
+              <Typography variant="caption" fontWeight={700} sx={labelSx}>
+                Select account
+              </Typography>
+
+              <FormControl
+                fullWidth
+                size="medium"
+                sx={{ mb: 1.75 }}
+                disabled={loadingOptions}
+              >
+                <Select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  displayEmpty
+                  sx={{
+                    bgcolor: inputBg,
+                    borderRadius: 2.5,
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#D5DFEF",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#93B4EA",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#2563EB",
+                      borderWidth: 1.5,
+                    },
+                    "& .MuiSelect-select": {
+                      py: 1.6,
+                      fontWeight: 800,
+                      fontSize: "0.95rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                    },
+                  }}
+                >
+                  {loadingOptions ? (
+                    <MenuItem disabled value="">
+                      Loading accounts...
+                    </MenuItem>
+                  ) : (
+                    loginOptions.map((opt) => (
+                      <MenuItem
+                        key={opt._id}
+                        value={opt._id}
+                        sx={{
+                          py: 1.2,
+                          fontWeight: opt.role === "admin" ? 800 : 700,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          spacing={1.5}
+                        >
+                          {opt.role === "admin" ? (
+                            <AdminPanelSettingsIcon
+                              color="primary"
+                              fontSize="small"
+                            />
+                          ) : (
+                            <ClassIcon color="action" fontSize="small" />
+                          )}
+                          <Typography
+                            variant="body2"
+                            fontWeight={opt.role === "admin" ? 800 : 700}
+                          >
+                            {opt.displayName}
+                          </Typography>
+                        </Stack>
+
+                        {opt.role === "admin" && (
+                          <Chip
+                            label="Admin"
+                            size="small"
+                            color="primary"
+                            sx={{
+                              height: 20,
+                              fontSize: "0.62rem",
+                              fontWeight: 800,
+                            }}
+                          />
+                        )}
+                      </MenuItem>
+                    ))
+                  )}
+                </Select>
+              </FormControl>
+
+              {isAdminLogin ? (
+                <>
+                  <Typography variant="caption" fontWeight={700} sx={labelSx}>
+                    Password
+                  </Typography>
+
+                  <TextField
+                    placeholder="Enter your password"
+                    type={showPassword ? "text" : "password"}
+                    fullWidth
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    sx={{
+                      mb: { xs: 1.75, sm: 2.5 },
+                      "& .MuiOutlinedInput-root": {
+                        bgcolor: inputBg,
+                        borderRadius: 2.5,
+                        "& fieldset": { borderColor: "#D5DFEF" },
+                        "&:hover fieldset": { borderColor: "#93B4EA" },
+                        "&.Mui-focused fieldset": {
+                          borderColor: "#2563EB",
+                          borderWidth: 1.5,
+                        },
+                      },
+                      "& .MuiInputBase-input": { py: 1.7, fontSize: "0.9rem" },
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockOutlinedIcon
+                            sx={{ color: "#7183A0", fontSize: 20 }}
+                          />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowPassword((p) => !p)}
+                            edge="end"
+                            size="small"
+                            aria-label={
+                              showPassword ? "Hide password" : "Show password"
+                            }
+                            sx={{ color: "#64748B" }}
+                          >
+                            {showPassword ? (
+                              <VisibilityOffOutlinedIcon fontSize="small" />
+                            ) : (
+                              <VisibilityOutlinedIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </>
+              ) : (
+                <>
+                  <Typography variant="caption" fontWeight={700} sx={labelSx}>
+                    5-Digit PIN
+                  </Typography>
+
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    justifyContent="space-between"
+                    sx={{ mb: 2.5 }}
+                  >
+                    {pinDigits.map((digit, i) => (
+                      <TextField
+                        key={i}
+                        inputRef={(el) => (pinRefs.current[i] = el)}
+                        value={digit}
+                        onChange={(e) => handlePinChange(i, e.target.value)}
+                        onKeyDown={(e) => handlePinKeyDown(i, e)}
+                        onPaste={i === 0 ? handlePinPaste : undefined}
+                        type={showPassword ? "text" : "password"}
+                        inputProps={{
+                          inputMode: "numeric",
+                          pattern: "[0-9]*",
+                          maxLength: 1,
+                          autoComplete: "one-time-code",
+                          style: {
+                            textAlign: "center",
+                            fontSize: "1.3rem",
+                            fontWeight: 800,
+                            padding: "12px 0",
+                          },
+                        }}
+                        sx={{
+                          width: { xs: 48, sm: 58 },
+                          "& .MuiOutlinedInput-root": {
+                            bgcolor: inputBg,
+                            borderRadius: 2,
+                            "& fieldset": { borderColor: "#D5DFEF" },
+                            "&.Mui-focused fieldset": {
+                              borderColor: "#2563EB",
+                            },
+                          },
+                        }}
+                      />
+                    ))}
+                  </Stack>
+
+                  <Box textAlign="right" sx={{ mt: -2, mb: 2 }}>
+                    <Button
+                      size="small"
+                      onClick={() => setShowPassword(!showPassword)}
+                      sx={{
+                        color: "#52647F",
+                        textTransform: "none",
+                        fontSize: "0.7rem",
+                      }}
+                      endIcon={
+                        showPassword ? (
+                          <VisibilityOffOutlinedIcon fontSize="small" />
+                        ) : (
+                          <VisibilityOutlinedIcon fontSize="small" />
+                        )
+                      }
+                    >
+                      {showPassword ? "Hide PIN" : "Show PIN"}
+                    </Button>
+                  </Box>
+                </>
+              )}
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={
+                  submitting ||
+                  loadingOptions ||
+                  (isClassLogin && classPin.length !== 5)
+                }
+                endIcon={!submitting && <ArrowForwardIcon />}
+                sx={{
+                  py: 1.55,
+                  fontSize: "0.95rem",
+                  fontWeight: 800,
+                  borderRadius: 2.5,
+                  background:
+                    "linear-gradient(110deg, #1D4ED8 0%, #2563EB 58%, #3478E8 100%)",
+                  boxShadow: "0 12px 24px rgba(37,99,235,.23)",
+                  textTransform: "none",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    background:
+                      "linear-gradient(110deg, #1E40AF 0%, #1D4ED8 100%)",
+                    boxShadow: "0 15px 28px rgba(37,99,235,.3)",
+                    transform: "translateY(-1px)",
+                  },
+                  "&:active": { transform: "translateY(0)" },
+                }}
+              >
+                {submitting ? (
+                  <CircularProgress size={24} sx={{ color: "white" }} />
+                ) : isAdminLogin ? (
+                  "Sign in"
+                ) : (
+                  "Enter Class"
+                )}
+              </Button>
+            </Box>
+
+            <Box
+              sx={{
+                mt: 2.25,
+                p: 1.5,
+                display: "flex",
+                alignItems: "center",
+                gap: 1.25,
+                borderRadius: 2.5,
+                bgcolor: "#EFF5FF",
+                color: "#51627E",
+              }}
+            >
+              <LockOutlinedIcon sx={{ color: "#2563EB", fontSize: 18 }} />
+              <Typography sx={{ fontSize: "0.72rem", lineHeight: 1.5 }}>
+                Contact the school administrator for account details.
+              </Typography>
+            </Box>
+          </Box>
+
+          <Stack
+            alignItems="center"
+            direction="row"
+            spacing={1.5}
             sx={{
-              width: { xs: 36, sm: 42 },
-              height: { xs: 36, sm: 42 },
-              bgcolor: "#1D4ED8",
-              fontSize: "0.85rem",
-              fontWeight: 800,
+              display: "none",
+              mt: { xs: 1.25, sm: 1.75 },
+              px: { xs: 1.5, sm: 2 },
+              py: { xs: 1.1, sm: 1.5 },
+              bgcolor: "rgba(255,255,255,.74)",
+              border: "1px solid rgba(255,255,255,.9)",
+              borderRadius: 3,
+              boxShadow: "0 10px 25px rgba(30,64,175,.07)",
             }}
           >
-            AW
-          </Avatar>
-          <Box>
+            <Avatar
+              sx={{
+                width: { xs: 36, sm: 42 },
+                height: { xs: 36, sm: 42 },
+                bgcolor: "#1D4ED8",
+                fontSize: "0.85rem",
+                fontWeight: 800,
+              }}
+            >
+              AW
+            </Avatar>
+
+            <Box>
+              <Typography
+                sx={{
+                  display: "none",
+                  color: "#71809A",
+                  fontSize: "0.62rem",
+                  fontWeight: 800,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Designed and built by
+              </Typography>
+
+              <Typography
+                sx={{ color: "#1E2B47", fontSize: "0.85rem", fontWeight: 800 }}
+              >
+                Abhishek Wani
+              </Typography>
+
+              <Typography sx={{ color: "#2563EB", fontSize: "0.68rem" }}>
+                TVSM School Attendance System · v{APP_VERSION}
+              </Typography>
+            </Box>
+          </Stack>
+
           <Typography
             sx={{
               display: "none",
+              mt: { xs: 1, sm: 1.5 },
               color: "#71809A",
-              fontSize: "0.62rem",
-              fontWeight: 800,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
+              fontSize: "0.67rem",
+              textAlign: "center",
             }}
           >
-            Designed and built by
+            {SCHOOL_NAME}
           </Typography>
-            <Typography
-              sx={{ color: "#1E2B47", fontSize: "0.85rem", fontWeight: 800 }}
-            >
-              Abhishek Wani
-            </Typography>
-            <Typography sx={{ color: "#2563EB", fontSize: "0.68rem" }}>
-              TVSM School Attendance System · v{APP_VERSION}
-            </Typography>
-          </Box>
-        </Stack>
-        <Typography
-          sx={{
-            display: "none",
-            mt: { xs: 1, sm: 1.5 },
-            color: "#71809A",
-            fontSize: "0.67rem",
-            textAlign: "center",
-          }}
-        >
-          {SCHOOL_NAME}
-        </Typography>
         </Box>
       </Box>
     </Box>
