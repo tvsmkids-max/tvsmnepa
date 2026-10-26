@@ -256,303 +256,84 @@ const LoginPage = () => {
         position: "relative",
         p: 0,
         background:
-          "radial-gradient(ellipse at 18% 15%, rgba(147,197,253,.55), transparent 32%), radial-gradient(ellipse at 88% 85%, rgba(96,165,250,.45), transparent 34%), linear-gradient(135deg, #0B1B43 0%, #091A35 50%, #0F1E3D 100%)",
+          "radial-gradient(ellipse at top left, rgba(147,197,253,0.35), transparent 28%), radial-gradient(ellipse at bottom right, rgba(96,165,250,0.25), transparent 30%), linear-gradient(135deg, #f4f9ff 0%, #edf5ff 44%, #eaf3ff 100%)",
         color: "#101B38",
         overflow: "auto",
       }}
     >
       <Box
         sx={{
-          position: "relative",
-          display: "none",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          minHeight: { xs: "auto", sm: "100vh" },
-          px: { xs: 2.5, sm: 5, lg: 8 },
-          py: { xs: 1.5, sm: 4, lg: 6 },
-          overflow: "hidden",
-          color: "#FFFFFF",
-          background:
-            "radial-gradient(ellipse at 75% 18%, rgba(37,99,235,.4), transparent 32%), radial-gradient(ellipse at 12% 90%, rgba(29,78,216,.32), transparent 30%), #07142F",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            opacity: 0.18,
-            backgroundImage:
-              "radial-gradient(rgba(191,219,254,.7) 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-          },
-          "@media (max-width:599px)": {
-            minHeight: 0,
-            py: 1.5,
-            gap: 0.75,
-          },
-        }}
-      >
-        <Stack
-          direction="row"
-          alignItems="center"
-          spacing={{ xs: 1.25, sm: 1.75 }}
-          sx={{ position: "relative", zIndex: 1 }}
-        >
-          <Avatar
-            src={SCHOOL_LOGO}
-            alt={`${SCHOOL_NAME} logo`}
-            variant="rounded"
-            sx={{
-              width: { xs: 42, sm: 58 },
-              height: { xs: 42, sm: 58 },
-              bgcolor: "#FFFFFF",
-              border: "2px solid rgba(255,255,255,.75)",
-              boxShadow: "0 8px 24px rgba(0,0,0,.25)",
-              "& img": { objectFit: "contain", p: 0.5 },
-            }}
-          />
-          <Box>
-            <Typography
-              sx={{
-                mt: 0.25,
-                color: "rgba(226,232,240,.78)",
-                fontSize: { xs: "0.7rem", sm: "0.78rem" },
-                display: { xs: "none", sm: "block" },
-              }}
-            >
-              Attendance Management System
-            </Typography>
-          </Box>
-        </Stack>
-
-        <Box
-          sx={{
-            position: "relative",
-            zIndex: 1,
-            maxWidth: 650,
-            py: { xs: 0, sm: 5 },
-          }}
-        >
-          <Typography
-            sx={{
-              display: { xs: "block", sm: "none" },
-              color: "#BFDBFE",
-              fontSize: "0.77rem",
-              fontWeight: 750,
-              letterSpacing: "0.02em",
-            }}
-          >
-            Attendance, made simpler.
-          </Typography>
-
-          <Typography
-            sx={{
-              display: { xs: "none", sm: "block" },
-              color: "#93C5FD",
-              fontSize: "0.72rem",
-              fontWeight: 800,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              mb: 2,
-            }}
-          >
-            School attendance, made simpler
-          </Typography>
-
-          <Typography
-            component="h1"
-            sx={{
-              display: { xs: "none", sm: "block" },
-              maxWidth: 600,
-              fontSize: { xs: "2rem", sm: "2.6rem", lg: "4.2rem" },
-              lineHeight: { xs: 1.12, lg: 1.03 },
-              letterSpacing: "-0.055em",
-              fontWeight: 850,
-            }}
-          >
-            Every school day,
-            <Box
-              component="span"
-              sx={{
-                display: { xs: "inline", sm: "block" },
-                color: "#79A9FF",
-              }}
-            >
-              {" "}in clear focus.
-            </Box>
-          </Typography>
-
-          <Box
-            sx={{
-              display: { xs: "none", sm: "block" },
-              width: "72%",
-              maxWidth: 360,
-              height: 2,
-              mt: 3,
-              mb: 2,
-              background:
-                "linear-gradient(90deg, #60A5FA 0%, rgba(96,165,250,.08) 100%)",
-            }}
-          />
-
-          <Typography
-            sx={{
-              display: { xs: "none", sm: "block" },
-              maxWidth: 450,
-              color: "rgba(226,232,240,.8)",
-              fontSize: { xs: "0.9rem", sm: "1rem" },
-              lineHeight: 1.75,
-            }}
-          >
-            Keep attendance, student records, and school reports together in one
-            clear workspace.
-          </Typography>
-
-          <Box
-            sx={{
-              mt: { xs: 3, sm: 5 },
-              display: { xs: "none", sm: "grid" },
-              gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
-              gap: 1.25,
-              maxWidth: 590,
-            }}
-          >
-            {[
-              {
-                icon: <ClassIcon />,
-                title: "Attendance",
-                detail: "Daily class records",
-              },
-              {
-                icon: <AdminPanelSettingsIcon />,
-                title: "School records",
-                detail: "Students and teachers",
-              },
-              {
-                icon: <ArrowForwardIcon />,
-                title: "Reports",
-                detail: "A clearer overview",
-              },
-            ].map((feature) => (
-              <Box
-                key={feature.title}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.25,
-                  minWidth: 0,
-                  p: { xs: 1.25, sm: 1.5 },
-                  borderRadius: 2.5,
-                  border: "1px solid rgba(191,219,254,.18)",
-                  bgcolor: "rgba(255,255,255,.055)",
-                  backdropFilter: "blur(8px)",
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 36,
-                    height: 36,
-                    display: "grid",
-                    placeItems: "center",
-                    flexShrink: 0,
-                    borderRadius: 2,
-                    color: "#BFDBFE",
-                    bgcolor: "rgba(59,130,246,.2)",
-                    "& svg": { fontSize: 19 },
-                  }}
-                >
-                  {feature.icon}
-                </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography sx={{ fontSize: "0.78rem", fontWeight: 750 }}>
-                    {feature.title}
-                  </Typography>
-                  <Typography
-                    sx={{
-                      color: "rgba(203,213,225,.72)",
-                      fontSize: "0.65rem",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {feature.detail}
-                  </Typography>
-                </Box>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-
-        <Typography
-          sx={{
-            display: { xs: "none", sm: "block" },
-            position: "relative",
-            zIndex: 1,
-            color: "rgba(203,213,225,.65)",
-            fontSize: "0.7rem",
-            borderTop: "1px solid rgba(148,163,184,.18)",
-            pt: 2,
-          }}
-        >
-          A focused workspace for {SCHOOL_NAME}
-        </Typography>
-      </Box>
-
-      <Box
-        sx={{
           width: "100%",
+          maxWidth: 1180,
           minHeight: "100vh",
-          maxWidth: 500,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          px: { xs: 2, sm: 0 },
-          py: { xs: 2, sm: 4 },
-          zIndex: 1,
+          gap: { xs: 2, md: 4 },
+          px: { xs: 2, sm: 3, md: 5 },
+          py: { xs: 3, md: 5 },
         }}
       >
-        <Box sx={{ width: "100%", maxWidth: 470 }}>
+        <Box
+          sx={{
+            width: "100%",
+            maxWidth: 480,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+          }}
+        >
           <Box
             sx={{
-              bgcolor: "rgba(255,255,255,.96)",
-              border: "1px solid rgba(255,255,255,.95)",
-              borderRadius: { xs: 3, sm: 4 },
-              boxShadow:
-                "0 28px 70px rgba(30,64,175,.12), 0 4px 12px rgba(15,23,42,.04)",
-              p: { xs: 2.5, sm: 4.5 },
-              textAlign: "left",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1.5,
+              mb: 3,
+              px: 2,
             }}
           >
-            <Stack alignItems="center" sx={{ mb: 2.5 }}>
-              <Avatar
-                src={SCHOOL_LOGO}
-                alt={`${SCHOOL_NAME} logo`}
-                sx={{
-                  width: 62,
-                  height: 62,
-                  mb: 0.75,
-                  bgcolor: "#FFFFFF",
-                  boxShadow: "0 6px 18px rgba(30,64,175,.14)",
-                  "& img": { objectFit: "contain", p: 0.5 },
-                }}
-              />
+            <Avatar
+              src={SCHOOL_LOGO}
+              alt={`${SCHOOL_NAME} logo`}
+              sx={{
+                width: 62,
+                height: 62,
+                bgcolor: "#FFFFFF",
+                border: "1px solid rgba(37,99,235,0.15)",
+                boxShadow: "0 10px 24px rgba(30,64,175,0.08)",
+                "& img": { objectFit: "contain", p: 0.6 },
+              }}
+            />
+            <Typography
+              sx={{
+                color: "#173B82",
+                fontFamily: '"Segoe UI", "Poppins", "Trebuchet MS", sans-serif',
+                fontSize: { xs: "1.4rem", sm: "1.8rem" },
+                fontWeight: 700,
+                letterSpacing: "0.04em",
+                textAlign: "center",
+              }}
+            >
+              TVSM School
+            </Typography>
+          </Box>
 
-              <Typography
-                component="p"
-                sx={{
-                  color: "#173B82",
-                  fontFamily: '"Segoe UI", "Poppins", "Trebuchet MS", sans-serif',
-                  fontSize: { xs: "1.45rem", sm: "1.8rem" },
-                  lineHeight: 1.25,
-                  fontWeight: 700,
-                  letterSpacing: "0.03em",
-                  textAlign: "center",
-                  textTransform: "none",
-                  textShadow: "0 1px 0 rgba(23,59,130,0.12)",
-                }}
-              >
-                {SCHOOL_NAME}
-              </Typography>
-            </Stack>
-
+          <Box
+            sx={{
+              width: "100%",
+              bgcolor: "rgba(255,255,255,0.88)",
+              border: "1px solid rgba(148,163,184,0.2)",
+              borderRadius: { xs: 3, sm: 4 },
+              boxShadow:
+                "0 28px 60px rgba(30,64,175,0.08), 0 4px 14px rgba(15,23,42,0.04)",
+              p: { xs: 2.5, sm: 4.5 },
+              textAlign: "left",
+              backdropFilter: "blur(8px)",
+            }}
+          >
             <Typography
               sx={{
                 color: "#2563EB",
@@ -564,7 +345,7 @@ const LoginPage = () => {
                 textAlign: "center",
               }}
             >
-              TVSM School
+              Login
             </Typography>
 
             <Typography
@@ -575,7 +356,7 @@ const LoginPage = () => {
                 fontSize: { xs: "1.8rem", sm: "2.1rem" },
                 lineHeight: 1.15,
                 letterSpacing: "-0.045em",
-                mb: 0.8,
+                mb: 2,
                 textAlign: "center",
               }}
             >
@@ -876,71 +657,6 @@ const LoginPage = () => {
               </Typography>
             </Box>
           </Box>
-
-          <Stack
-            alignItems="center"
-            direction="row"
-            spacing={1.5}
-            sx={{
-              display: "none",
-              mt: { xs: 1.25, sm: 1.75 },
-              px: { xs: 1.5, sm: 2 },
-              py: { xs: 1.1, sm: 1.5 },
-              bgcolor: "rgba(255,255,255,.74)",
-              border: "1px solid rgba(255,255,255,.9)",
-              borderRadius: 3,
-              boxShadow: "0 10px 25px rgba(30,64,175,.07)",
-            }}
-          >
-            <Avatar
-              sx={{
-                width: { xs: 36, sm: 42 },
-                height: { xs: 36, sm: 42 },
-                bgcolor: "#1D4ED8",
-                fontSize: "0.85rem",
-                fontWeight: 800,
-              }}
-            >
-              AW
-            </Avatar>
-
-            <Box>
-              <Typography
-                sx={{
-                  display: "none",
-                  color: "#71809A",
-                  fontSize: "0.62rem",
-                  fontWeight: 800,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                }}
-              >
-                Designed and built by
-              </Typography>
-
-              <Typography
-                sx={{ color: "#1E2B47", fontSize: "0.85rem", fontWeight: 800 }}
-              >
-                Abhishek Wani
-              </Typography>
-
-              <Typography sx={{ color: "#2563EB", fontSize: "0.68rem" }}>
-                TVSM School Attendance System · v{APP_VERSION}
-              </Typography>
-            </Box>
-          </Stack>
-
-          <Typography
-            sx={{
-              display: "none",
-              mt: { xs: 1, sm: 1.5 },
-              color: "#71809A",
-              fontSize: "0.67rem",
-              textAlign: "center",
-            }}
-          >
-            {SCHOOL_NAME}
-          </Typography>
         </Box>
       </Box>
     </Box>
