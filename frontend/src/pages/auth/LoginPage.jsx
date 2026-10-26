@@ -297,11 +297,7 @@ const LoginPage = () => {
             }}
           />
           <Box>
-            <Typography
-              sx={{ fontSize: { xs: "0.9rem", sm: "1rem" }, fontWeight: 800 }}
-            >
-              TVSM School
-            </Typography>
+       
             <Typography
               sx={{
                 mt: 0.25,
