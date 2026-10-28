@@ -83,22 +83,53 @@ userSchema.virtual("isLocked").get(function () {
 });
 
 userSchema.methods.incrementLoginAttempts = async function () {
-  const MAX_ATTEMPTS = 5;
-  const LOCK_TIME = 2 * 60 * 60 * 1000;
+  const now = Date.now();
 
-  if (this.lockUntil && this.lockUntil < Date.now()) {
-    return this.updateOne({
-      $set: { loginAttempts: 1 },
-      $unset: { lockUntil: 1 },
-    });
-  }
-
-  const updates = { $inc: { loginAttempts: 1 } };
-  if (this.loginAttempts + 1 >= MAX_ATTEMPTS && !this.isLocked) {
-    updates.$set = { lockUntil: Date.now() + LOCK_TIME };
-  }
-
-  return this.updateOne(updates);
+  return this.constructor.updateOne(
+    {
+      _id: this._id,
+      $or: [{ lockUntil: null }, { lockUntil: { $lte: new Date(now) } }],
+    },
+    [
+      {
+        $set: {
+          loginAttempts: { $add: [{ $ifNull: ['$loginAttempts', 0] }, 1] },
+        },
+      },
+      {
+        $set: {
+          lockUntil: {
+            $cond: [
+              {
+                $and: [
+                  { $gte: ['$loginAttempts', 5] },
+                  { $eq: [{ $mod: ['$loginAttempts', 5] }, 0] },
+                ],
+              },
+              {
+                $add: [
+                  now,
+                  {
+                    $multiply: [
+                      {
+                        $min: [
+                          { $multiply: [{ $floor: { $divide: ['$loginAttempts', 5] } }, 5] },
+                          15,
+                        ],
+                      },
+                      60 * 1000,
+                    ],
+                  },
+                ],
+              },
+              '$$REMOVE',
+            ],
+          },
+        },
+      },
+    ],
+    { timestamps: false },
+  );
 };
 
 userSchema.methods.resetLoginAttempts = async function () {
