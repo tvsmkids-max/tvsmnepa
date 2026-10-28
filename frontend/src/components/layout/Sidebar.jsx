@@ -27,6 +27,7 @@ import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import ListAltOutlinedIcon from "@mui/icons-material/ListAltOutlined";
+import EventBusyOutlinedIcon from "@mui/icons-material/EventBusyOutlined";
 import useAuth from "../../hooks/useAuth";
 import useThemeMode from "../../hooks/useThemeMode";
 
@@ -63,6 +64,11 @@ const adminNav = [
     label: "Register",
     icon: <ListAltOutlinedIcon />,
     path: "/reports/register",
+  },
+  {
+    label: "Unmarked",
+    icon: <EventBusyOutlinedIcon />,
+    path: "/reports/unmarked",
   },
   { label: "Analytics", icon: <AnalyticsOutlinedIcon />, path: "/analytics" },
   { type: "section", label: "Admin" },

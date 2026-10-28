@@ -8,6 +8,7 @@ const { adminOnly, adminOrTeacher } = require("../middlewares/rbac.middleware");
 
 router.use(authenticate);
 
+router.get("/unmarked", adminOnly, reportController.getUnmarked);
 router.get("/daily", adminOrTeacher, reportController.getDaily);
 router.get("/monthly", adminOrTeacher, reportController.getMonthly);
 router.get(

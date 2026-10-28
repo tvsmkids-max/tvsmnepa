@@ -56,6 +56,9 @@ const DefaultersReportPage = lazy(
 const RegisterReportPage = lazy(
   () => import("../pages/reports/RegisterReportPage"),
 );
+const UnmarkedAttendancePage = lazy(
+  () => import("../pages/reports/UnmarkedAttendancePage"),
+);
 
 // ─── Analytics ───
 const AnalyticsDashboard = lazy(
@@ -210,6 +213,14 @@ const AppRouter = () => (
           <Route path="reports/monthly" element={<MonthlyReportPage />} />
           <Route path="reports/defaulters" element={<DefaultersReportPage />} />
           <Route path="reports/register" element={<RegisterReportPage />} />
+          <Route
+            path="reports/unmarked"
+            element={
+              <RoleRoute roles={["admin"]}>
+                <UnmarkedAttendancePage />
+              </RoleRoute>
+            }
+          />
 
           {/* ─── Analytics ─── */}
           <Route path="analytics" element={<AnalyticsDashboard />} />

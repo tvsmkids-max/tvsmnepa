@@ -13,6 +13,8 @@ const reportApi = {
   getClassTrend: (classId, params = {}) =>
     axiosInstance.get(`/reports/class-trend/${classId}`, { params }),
   getAnalytics: () => axiosInstance.get("/reports/analytics"),
+  getUnmarked: (params = {}) =>
+    axiosInstance.get("/reports/unmarked", { params }),
   getRegister: (params = {}) =>
     axiosInstance.get("/reports/register", { params }),
 };
