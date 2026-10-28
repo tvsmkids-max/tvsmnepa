@@ -15,7 +15,9 @@
     "fix-indexes": "node scripts/fixIndexes.js",
     "cleanup-orphans": "node scripts/cleanupOrphans.js",
     "diagnose": "node scripts/diagnose.js",
-    "check-teacher": "node scripts/checkTeacher.js"
+    "check-teacher": "node scripts/checkTeacher.js",
+    "deactivate-legacy-teachers": "node scripts/deactivateLegacyTeachers.js",
+    "recover-admin-password": "node scripts/recoverAdminPassword.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
