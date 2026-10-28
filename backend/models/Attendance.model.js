@@ -39,6 +39,11 @@ const attendanceSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    markedByName: {
+      type: String,
+      default: null,
+      trim: true,
+    },
     markedAt: {
       type: Date,
       default: Date.now,
@@ -47,6 +52,11 @@ const attendanceSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       default: null,
+    },
+    editedByName: {
+      type: String,
+      default: null,
+      trim: true,
     },
     editedAt: {
       type: Date,

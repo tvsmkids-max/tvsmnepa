@@ -97,13 +97,14 @@ class AttendanceRepository {
     return Attendance.bulkWrite(ops);
   }
 
-  async editAttendance(id, status, editedBy, editReason) {
+  async editAttendance(id, status, editedBy, editedByName, editReason) {
     return Attendance.findByIdAndUpdate(
       id,
       {
         $set: {
           status,
           editedBy,
+          editedByName,
           editedAt: new Date(),
           editReason: editReason || "",
         },

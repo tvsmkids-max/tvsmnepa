@@ -259,6 +259,7 @@ class AttendanceService {
       date: normalizedDate,
       status: r.status,
       markedBy: user._id,
+      markedByName: user.name,
     }));
 
     const result = await attendanceRepository.upsertMany(bulkRecords);
@@ -292,6 +293,7 @@ class AttendanceService {
       id,
       status,
       user._id,
+      user.name,
       editReason,
     );
 
