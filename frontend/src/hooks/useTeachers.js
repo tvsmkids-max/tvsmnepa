@@ -83,7 +83,7 @@ export const useDeleteTeacher = () => {
     mutationFn: (id) => teacherApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: teacherKeys.lists() });
-      enqueueSnackbar("Teacher deleted", { variant: "success" });
+      enqueueSnackbar("Teacher profile deleted; account deactivated and attendance preserved", { variant: "success" });
     },
     onError: (err) => {
       enqueueSnackbar(err.response?.data?.message || "Failed", {

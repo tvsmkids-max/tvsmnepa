@@ -210,7 +210,23 @@ class TeacherService {
     );
 
     const User = require("../models/User.model");
-    await User.findByIdAndDelete(teacher.user);
+    if (teacher.user) {
+      // Keep the linked User record so attendance markedBy/editedBy references
+      // remain valid. The teacher profile is removable, but the login account
+      // is deactivated as historical users must not authenticate.
+      await User.updateOne(
+        { _id: teacher.user },
+        {
+          $set: {
+            isActive: false,
+            loginAttempts: 0,
+            lockUntil: null,
+            refreshTokens: [],
+          },
+        },
+        { runValidators: false },
+      );
+    }
 
     await teacherRepository.deleteById(id);
 
@@ -218,7 +234,7 @@ class TeacherService {
       user,
       action: "DELETE",
       module: "Teacher",
-      description: `Deleted teacher ${teacher.name} (${teacher.employeeId})`,
+      description: `Deleted teacher profile ${teacher.name} (${teacher.employeeId}); preserved and deactivated the historical user account`,
       resourceId: id,
       resourceType: "Teacher",
       before: teacher,

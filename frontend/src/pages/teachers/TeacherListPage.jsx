@@ -331,7 +331,7 @@ const TeacherListPage = () => {
       <ConfirmDialog
         open={!!confirmDelete}
         title="Delete Teacher"
-        message={`Delete ${confirmDelete?.name}? User account will also be deleted permanently. This cannot be undone.`}
+        message={`Delete teacher profile ${confirmDelete?.name}? The linked account will be deactivated, while all attendance records and historical attribution will be preserved.`}
         confirmText="Delete"
         severity="error"
         loading={deleteMutation.isPending}
