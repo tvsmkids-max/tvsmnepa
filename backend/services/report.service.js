@@ -144,13 +144,13 @@ class ReportService {
           if (rec?.status === "Present") present++;
           else if (rec?.status === "Absent") absent++;
 
-          if (rec?.markedBy?.name && !markedByName) {
-            markedByName = rec.markedBy.name;
+          if (!markedByName && (rec?.markedBy?.name || rec?.markedByName)) {
+            markedByName = rec.markedBy?.name || rec.markedByName;
             markedAt = rec.markedAt || rec.createdAt;
           }
 
-          if (rec?.editedBy?.name) {
-            editedByName = rec.editedBy.name;
+          if (rec?.editedBy?.name || rec?.editedByName) {
+            editedByName = rec.editedBy?.name || rec.editedByName;
             editedAt = rec.editedAt;
             hasEdits = true;
           }
@@ -387,9 +387,9 @@ class ReportService {
     const lastRecordMap = {};
     lastRecords.forEach((r) => {
       lastRecordMap[r._id.toString()] = {
-        markedBy: r.markedByUser?.[0]?.name || null,
+        markedBy: r.markedByUser?.[0]?.name || r.markedByName || null,
         markedAt: r.lastMarkedAt,
-        editedBy: r.editedByUser?.[0]?.name || null,
+        editedBy: r.editedByUser?.[0]?.name || r.editedByName || null,
         editedAt: r.lastEditedAt,
         lastUpdatedAt: r.lastUpdatedAt,
       };

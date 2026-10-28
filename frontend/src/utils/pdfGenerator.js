@@ -1,5 +1,7 @@
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import { jsPDF } from "jspdf";
+import { applyPlugin } from "jspdf-autotable";
+
+applyPlugin(jsPDF);
 
 const SCHOOL_NAME =
   import.meta.env.VITE_SCHOOL_NAME || "Thakur Virendra Singh Memorial School";
@@ -626,7 +628,7 @@ export const generateStudentCertificatePdf = (
       }),
       new Date(r.date).toLocaleDateString("en-IN", { weekday: "long" }),
       r.status,
-      UP(r.markedBy?.name) || "—",
+      UP(r.markedBy?.name || r.markedByName) || "—",
     ]);
 
     doc.autoTable({
