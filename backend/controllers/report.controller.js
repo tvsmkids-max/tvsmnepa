@@ -85,8 +85,23 @@ const getMonthlyClassDetail = asyncHandler(async (req, res) => {
   });
 });
 
+// ─── Unmarked attendance (class-wise, whole month) ───
+const getUnmarked = asyncHandler(async (req, res) => {
+  const now = new Date();
+  const data = await reportService.getUnmarkedReport({
+    year: req.query.year ? parseInt(req.query.year, 10) : now.getFullYear(),
+    month: req.query.month ? parseInt(req.query.month, 10) : now.getMonth() + 1,
+    user: req.user,
+  });
+  return sendResponse(res).success({
+    message: "Unmarked attendance report",
+    data,
+  });
+});
+
 // Add to exports:
 module.exports = {
+  getUnmarked,
   getDaily,
   getMonthly,
   getMonthlyClassDetail,

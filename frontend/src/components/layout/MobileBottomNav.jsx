@@ -36,6 +36,7 @@ import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import ListAltOutlinedIcon from "@mui/icons-material/ListAltOutlined";
+import EventBusyOutlinedIcon from "@mui/icons-material/EventBusyOutlined";
 import useAuth from "../../hooks/useAuth";
 
 const MobileBottomNav = () => {
@@ -114,6 +115,11 @@ const MobileBottomNav = () => {
       label: "Register",
       icon: <ListAltOutlinedIcon />,
       path: "/reports/register",
+    },
+    {
+      label: "Unmarked Attendance",
+      icon: <EventBusyOutlinedIcon />,
+      path: "/reports/unmarked",
     },
     { label: "Analytics", icon: <AnalyticsOutlinedIcon />, path: "/analytics" },
 

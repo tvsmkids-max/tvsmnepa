@@ -1051,6 +1051,265 @@ class ReportService {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  //  UNMARKED ATTENDANCE REPORT (class-wise, whole month)
+  //  Shows, for every class, the school days in the month on which
+  //  the teacher did NOT mark attendance.
+  //
+  //  Rules:
+  //   • A class counts as "marked" on a day if it has ≥1 attendance
+  //     record for that date.
+  //   • Expected days = working days (Settings) − holidays that do not
+  //     allow attendance, limited to the active session, and only days
+  //     BEFORE today (IST) — today can still be marked.
+  //   • Classes with no active students are listed but not counted.
+  //   • All day keys are IST calendar days (YYYY-MM-DD), matching how
+  //     attendance dates are stored (UTC midnight of the IST day).
+  // ═══════════════════════════════════════════════════════════════
+  async getUnmarkedReport({ year, month, user }) {
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+      throwError("Invalid year", 400);
+    }
+    if (!Number.isInteger(month) || month < 1 || month > 12) {
+      throwError("Invalid month", 400);
+    }
+
+    const settings = await Settings.getSettings();
+    const session = settings?.activeSession;
+    const sessionId = session?._id || session;
+    if (!sessionId) throwError("No active session", 400);
+
+    const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+    const istKey = (d) =>
+      new Date(new Date(d).getTime() + IST_OFFSET_MS).toISOString().slice(0, 10);
+    const DAY_NAMES = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+
+    const todayKey = istKey(new Date());
+    const monthStart = new Date(Date.UTC(year, month - 1, 1));
+    const monthEnd = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+
+    const sessionStartKey = session?.startDate ? istKey(session.startDate) : null;
+    const sessionEndKey = session?.endDate ? istKey(session.endDate) : null;
+
+    // Working weekdays from settings (default Mon–Sat)
+    const workingDayNames = settings?.workingDays?.length
+      ? settings.workingDays.filter((d) => d.isWorking).map((d) => d.day)
+      : ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    // Holidays overlapping this month (single-day and multi-day)
+    const holidayDocs = await Holiday.find({
+      session: sessionId,
+      date: { $lte: monthEnd },
+      $or: [{ endDate: null }, { endDate: { $gte: monthStart } }],
+    }).lean();
+
+    const holidayByKey = new Map();
+    for (const h of holidayDocs) {
+      if (h.allowAttendance) continue; // attendance still expected
+      const fromKey = istKey(h.date);
+      const toKey = h.endDate ? istKey(h.endDate) : fromKey;
+      const cur = new Date(`${fromKey}T00:00:00.000Z`);
+      const end = new Date(`${toKey}T00:00:00.000Z`);
+      while (cur <= end) {
+        holidayByKey.set(cur.toISOString().slice(0, 10), h.name);
+        cur.setUTCDate(cur.getUTCDate() + 1);
+      }
+    }
+
+    // Build the day list for the month
+    const days = [];
+    const expectedKeys = [];
+    let pendingTodayExpected = false;
+    for (let n = 1; n <= lastDay; n++) {
+      const d = new Date(Date.UTC(year, month - 1, n));
+      const key = d.toISOString().slice(0, 10);
+      const dayName = DAY_NAMES[d.getUTCDay()];
+
+      let type = "working";
+      let holidayName = null;
+      if (
+        (sessionStartKey && key < sessionStartKey) ||
+        (sessionEndKey && key > sessionEndKey)
+      ) {
+        type = "outside-session";
+      } else if (holidayByKey.has(key)) {
+        type = "holiday";
+        holidayName = holidayByKey.get(key);
+      } else if (!workingDayNames.includes(dayName)) {
+        type = "off";
+      } else if (key > todayKey) {
+        type = "future";
+      } else if (key === todayKey) {
+        type = "today";
+        pendingTodayExpected = true;
+      } else {
+        expectedKeys.push(key);
+      }
+      days.push({ date: key, day: n, dayName, type, holidayName });
+    }
+    const expectedSet = new Set(expectedKeys);
+
+    // Classes (admin sees all; class user only their own)
+    let classFilter = { session: sessionId, isArchived: false };
+    classFilter = this._applyClassRoleFilter(classFilter, user, null);
+
+    const emptyResult = {
+      year,
+      month,
+      today: todayKey,
+      days,
+      expectedDays: expectedKeys.length,
+      classes: [],
+      summary: {
+        totalClasses: 0,
+        classesWithMisses: 0,
+        classesFullyMarked: 0,
+        totalMissedDays: 0,
+      },
+    };
+    if (!classFilter) return emptyResult;
+
+    const classes = await Class.find(classFilter).lean();
+    if (classes.length === 0) return emptyResult;
+    const classIds = classes.map((c) => c._id);
+
+    const [studentCounts, markedAgg] = await Promise.all([
+      Student.aggregate([
+        {
+          $match: {
+            class: { $in: classIds },
+            status: "Active",
+            isActive: true,
+          },
+        },
+        { $group: { _id: "$class", count: { $sum: 1 } } },
+      ]),
+      Attendance.aggregate([
+        {
+          $match: {
+            class: { $in: classIds },
+            // widen by a day each side; exact day is decided by IST key below
+            date: {
+              $gte: new Date(monthStart.getTime() - 24 * 60 * 60 * 1000),
+              $lte: new Date(monthEnd.getTime() + 24 * 60 * 60 * 1000),
+            },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              class: "$class",
+              day: {
+                $dateToString: {
+                  format: "%Y-%m-%d",
+                  date: "$date",
+                  timezone: "Asia/Kolkata",
+                },
+              },
+            },
+          },
+        },
+      ]),
+    ]);
+
+    const studentCountMap = {};
+    studentCounts.forEach((s) => {
+      studentCountMap[s._id.toString()] = s.count;
+    });
+
+    const markedMap = {}; // classId -> Set(day keys within the month)
+    markedAgg.forEach((r) => {
+      const cid = r._id.class.toString();
+      if (!markedMap[cid]) markedMap[cid] = new Set();
+      markedMap[cid].add(r._id.day);
+    });
+
+    const monthPrefix = `${year}-${String(month).padStart(2, "0")}-`;
+    const sortedClasses = [...classes].sort((a, b) => {
+      const rA = this._getClassRank(a.name);
+      const rB = this._getClassRank(b.name);
+      if (rA !== rB) return rA - rB;
+      return (a.section || "").localeCompare(b.section || "");
+    });
+
+    const classReports = sortedClasses.map((cls) => {
+      const cid = cls._id.toString();
+      const totalStudents = studentCountMap[cid] || 0;
+      const markedSet = markedMap[cid] || new Set();
+      const hasStudents = totalStudents > 0;
+
+      const markedDates = [];
+      const missedDates = [];
+      if (hasStudents) {
+        for (const key of expectedKeys) {
+          (markedSet.has(key) ? markedDates : missedDates).push(key);
+        }
+      }
+
+      const expectedDays = hasStudents ? expectedKeys.length : 0;
+      const completion =
+        expectedDays > 0
+          ? Math.round((markedDates.length / expectedDays) * 100)
+          : null;
+
+      let status = "complete";
+      if (!hasStudents) status = "no-students";
+      else if (expectedDays === 0) status = "no-working-days";
+      else if (missedDates.length === expectedDays) status = "none";
+      else if (missedDates.length > 0) status = "partial";
+
+      const lastMarkedDate =
+        [...markedSet].filter((k) => k.startsWith(monthPrefix)).sort().pop() ||
+        null;
+
+      return {
+        classId: cls._id,
+        name: cls.name,
+        section: cls.section,
+        fullName: `${cls.name} - ${cls.section}`,
+        teacherLabel: cls.teacherLabel || "",
+        totalStudents,
+        expectedDays,
+        markedDays: markedDates.length,
+        missedDays: missedDates.length,
+        completion,
+        missedDates,
+        lastMarkedDate,
+        todayPending:
+          hasStudents && pendingTodayExpected && !markedSet.has(todayKey),
+        status,
+      };
+    });
+
+    const counted = classReports.filter(
+      (c) => c.status !== "no-students" && c.status !== "no-working-days",
+    );
+
+    return {
+      year,
+      month,
+      today: todayKey,
+      days,
+      expectedDays: expectedKeys.length,
+      classes: classReports,
+      summary: {
+        totalClasses: classReports.length,
+        classesWithMisses: counted.filter((c) => c.missedDays > 0).length,
+        classesFullyMarked: counted.filter((c) => c.missedDays === 0).length,
+        totalMissedDays: counted.reduce((s, c) => s + c.missedDays, 0),
+      },
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   //  ATTENDANCE REGISTER
   // ═══════════════════════════════════════════════════════════════
   async getAttendanceRegister({ classId, dateFrom, dateTo, user }) {
