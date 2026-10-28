@@ -1,6 +1,10 @@
 "use strict";
 
+const mongoose = require("mongoose");
 const User = require("../models/User.model");
+const Attendance = require("../models/Attendance.model");
+const Teacher = require("../models/Teacher.model");
+const Class = require("../models/Class.model");
 const { hashPassword, validatePasswordStrength } = require("../utils/passwordHelper");
 const asyncHandler = require("../utils/asyncHandler");
 const { sendResponse } = require("../utils/apiResponse");
@@ -96,4 +100,86 @@ const unlock = asyncHandler(async (req, res) => {
   return sendResponse(res).success({ message: "Account lock cleared" });
 });
 
-module.exports = { list, setStatus, resetCredential, unlock };
+const updateDetails = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id);
+  if (!user) return sendResponse(res).notFound({ message: "User not found" });
+
+  const name = String(req.body.name ?? "").trim();
+  if (name.length < 2 || name.length > 100) {
+    return sendResponse(res).badRequest({ message: "Name must be between 2 and 100 characters" });
+  }
+
+  const updates = { name };
+  if (user.role === "class") {
+    const linkedClass = req.body.linkedClass || null;
+    if (linkedClass && !mongoose.isValidObjectId(linkedClass)) {
+      return sendResponse(res).badRequest({ message: "Invalid linked class" });
+    }
+    if (linkedClass) {
+      const classExists = await Class.exists({ _id: linkedClass });
+      if (!classExists) return sendResponse(res).badRequest({ message: "Linked class not found" });
+    }
+    updates.linkedClass = linkedClass;
+  }
+
+  const before = { name: user.name, linkedClass: user.linkedClass };
+  await User.updateOne({ _id: user._id }, { $set: updates }, { runValidators: false });
+  await createAuditLog({
+    user: req.user, action: "UPDATE", module: "User",
+    description: `Updated account details for ${name}`,
+    resourceId: user._id, resourceType: "User", before,
+    after: updates, req,
+  });
+
+  return sendResponse(res).success({ message: "User details updated" });
+});
+
+const remove = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id);
+  if (!user) return sendResponse(res).notFound({ message: "User not found" });
+  if (user._id.equals(req.user._id)) {
+    return sendResponse(res).badRequest({ message: "You cannot delete your currently logged-in admin account" });
+  }
+
+  if (user.role === "admin") {
+    const otherAdminCount = await User.countDocuments({ role: "admin", _id: { $ne: user._id } });
+    if (otherAdminCount === 0) {
+      return sendResponse(res).badRequest({ message: "At least one admin account must remain" });
+    }
+  }
+
+  const attendanceReferences = await Attendance.countDocuments({
+    $or: [{ markedBy: user._id }, { editedBy: user._id }],
+  });
+  // Preserve a permanent attribution snapshot before removing the account.
+  // Attendance documents themselves are never deleted.
+  await Attendance.updateMany(
+    { markedBy: user._id },
+    { $set: { markedByName: user.name } },
+  );
+  await Attendance.updateMany(
+    { editedBy: user._id },
+    { $set: { editedByName: user.name } },
+  );
+
+  const teacher = await Teacher.findOne({ user: user._id });
+  if (teacher) {
+    await Class.updateMany(
+      { $or: [{ classTeacher: teacher._id }, { assignedTeachers: teacher._id }] },
+      { $pull: { assignedTeachers: teacher._id }, $unset: { classTeacher: "" } },
+    );
+    await Teacher.deleteOne({ _id: teacher._id });
+  }
+
+  const before = user.toObject();
+  await User.deleteOne({ _id: user._id });
+  await createAuditLog({
+    user: req.user, action: "DELETE", module: "User",
+    description: `Deleted account ${user.name}`,
+    resourceId: user._id, resourceType: "User", before, req,
+  });
+
+  return sendResponse(res).success({ message: "User deleted successfully" });
+});
+
+module.exports = { list, setStatus, resetCredential, unlock, updateDetails, remove };

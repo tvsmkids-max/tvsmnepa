@@ -11,5 +11,7 @@ router.get("/", userController.list);
 router.patch("/:id/status", userController.setStatus);
 router.patch("/:id/reset-credential", userController.resetCredential);
 router.patch("/:id/unlock", userController.unlock);
+router.patch("/:id/details", userController.updateDetails);
+router.delete("/:id", userController.remove);
 
 module.exports = router;
