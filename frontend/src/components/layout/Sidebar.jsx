@@ -25,6 +25,7 @@ import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import ListAltOutlinedIcon from "@mui/icons-material/ListAltOutlined";
 import EventBusyOutlinedIcon from "@mui/icons-material/EventBusyOutlined";
@@ -75,6 +76,7 @@ const adminNav = [
   { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
   { label: "Sessions", icon: <SchoolOutlinedIcon />, path: "/sessions" },
   { label: "Promotions", icon: <SchoolOutlinedIcon />, path: "/promotion" },
+  { label: "User Management", icon: <ManageAccountsOutlinedIcon />, path: "/users" },
   {
     label: "Activity Logs",
     icon: <TimelineOutlinedIcon />,

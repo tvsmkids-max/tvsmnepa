@@ -72,6 +72,7 @@ const ManagementDashboard = lazy(
 
 // ─── Activity Logs ───
 const ActivityLogPage = lazy(() => import("../pages/activity/ActivityLogPage"));
+const UserManagementPage = lazy(() => import("../pages/users/UserManagementPage"));
 
 // ─── Promotion ───
 const PromotionPage = lazy(() => import("../pages/promotion/PromotionPage"));
@@ -231,6 +232,16 @@ const AppRouter = () => (
             element={
               <RoleRoute roles={["admin"]}>
                 <ActivityLogPage />
+              </RoleRoute>
+            }
+          />
+
+          {/* ─── User Management (Admin only) ─── */}
+          <Route
+            path="users"
+            element={
+              <RoleRoute roles={["admin"]}>
+                <UserManagementPage />
               </RoleRoute>
             }
           />

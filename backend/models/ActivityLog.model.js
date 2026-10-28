@@ -54,6 +54,7 @@ const activityLogSchema = new mongoose.Schema(
         "Report",
         "Backup",
         "Notification",
+        "User",
       ],
       required: true,
     },
