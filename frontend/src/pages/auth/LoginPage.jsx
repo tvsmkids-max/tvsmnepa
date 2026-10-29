@@ -491,7 +491,7 @@ const LoginPage = () => {
                 >
                   Developed by{" "}
                   <a
-                    href="https://www.linkedin.com/in/abhishekwani0904/"
+                    href="https://www.linkedin.com/in/abhishekwani18/"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: "#E0E7FF", textDecoration: "underline" }}
