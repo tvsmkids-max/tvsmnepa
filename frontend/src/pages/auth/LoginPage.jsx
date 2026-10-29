@@ -22,6 +22,8 @@ import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import ClassIcon from "@mui/icons-material/Class";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import { useSnackbar } from "notistack";
 import useAuth from "../../hooks/useAuth";
 import authApi from "../../api/authApi";
@@ -298,7 +300,7 @@ const LoginPage = () => {
         position: "relative",
         p: 0,
         background:
-          "radial-gradient(ellipse at top left, rgba(191,219,254,0.8), transparent 30%), radial-gradient(ellipse at bottom right, rgba(147,197,253,0.65), transparent 34%), linear-gradient(135deg, #f8fbff 0%, #edf4ff 38%, #eef6ff 100%)",
+          "linear-gradient(145deg, #eef5ff 0%, #e7f0ff 48%, #f7faff 100%)",
         color: "#101B38",
         overflow: "auto",
       }}
@@ -306,20 +308,18 @@ const LoginPage = () => {
       <Box
         sx={{
           width: "100%",
-          maxWidth: 1120,
           minHeight: "100vh",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: { xs: 2.5, md: 4 },
-          px: { xs: 2.2, sm: 3, md: 5 },
-          py: { xs: 3, md: 5 },
+          px: { xs: 0, sm: 3 },
+          py: { xs: 0, sm: 4 },
         }}
       >
         <Box
           sx={{
             width: "100%",
-            maxWidth: 480,
+            minHeight: { xs: "100vh", sm: "auto" },
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -327,14 +327,13 @@ const LoginPage = () => {
             position: "relative",
           }}
         >
-          {/* Responsive school branding */}
           <Box
             sx={{
-              display: "flex",
+              display: { xs: "none", sm: "flex" },
               alignItems: "center",
               justifyContent: "center",
               gap: { xs: 1.25, sm: 1.75 },
-              mb: { xs: 3, sm: 3.5 },
+              mb: { xs: 2, sm: 2.5 },
               px: 1,
               width: "100%",
               minWidth: 0,
@@ -401,66 +400,92 @@ const LoginPage = () => {
 
           <Box
             sx={{
+              display: { xs: "block", sm: "none" },
               width: "100%",
-              bgcolor: "rgba(255,255,255,0.62)",
-              border: "1px solid rgba(255,255,255,0.7)",
-              borderRadius: 4,
-              boxShadow:
-                "0 20px 50px rgba(30,64,175,0.10), 0 8px 16px rgba(15,23,42,0.04)",
-              p: { xs: 2.25, sm: 3.2 },
-              textAlign: "left",
-              backdropFilter: "blur(14px)",
-              WebkitBackdropFilter: "blur(14px)",
+              height: "58vh",
+              minHeight: 390,
+              maxHeight: 520,
+              flexShrink: 0,
+              backgroundColor: "#12316f",
+              backgroundImage:
+                "url('/mobile-login-illustration.png'), linear-gradient(180deg, #12316f 0%, #0b2150 100%)",
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "center top",
+              backgroundSize: "100% auto",
+            }}
+          />
+
+          <Box
+            sx={{
+              width: "100%",
+              maxWidth: { xs: "none", sm: 980 },
+              minHeight: { xs: "auto", sm: 520 },
+              mt: { xs: -4, sm: 0 },
+              bgcolor: "#FFFFFF",
+              borderRadius: { xs: "32px 32px 0 0", sm: 5 },
+              boxShadow: {
+                xs: "none",
+                sm: "0 28px 70px rgba(30,64,175,0.18), 0 8px 24px rgba(15,23,42,0.08)",
+              },
+              overflow: "hidden",
+              display: { xs: "block", md: "grid" },
+              gridTemplateColumns: "1fr 430px",
             }}
           >
-            <Typography
-              sx={{
-                color: "#2563EB",
-                fontSize: "0.68rem",
-                fontWeight: 850,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                mb: 0.8,
-                textAlign: "center",
-              }}
-            >
-              Login
-            </Typography>
-
-            <Typography
-              component="h2"
-              sx={{
-                color: "#101B38",
-                fontWeight: 850,
-                fontSize: { xs: "1.7rem", sm: "2rem" },
-                lineHeight: 1.12,
-                letterSpacing: "-0.045em",
-                mb: 1.75,
-                textAlign: "center",
-              }}
-            >
-              Welcome back
-            </Typography>
-
-            {error && (
-              <Alert
-                severity="error"
-                onClose={clearError}
-                sx={{ mb: 2, borderRadius: 2, textAlign: "left" }}
-              >
-                {error}
-              </Alert>
-            )}
-
             <Box
-              component="form"
-              onSubmit={handleSubmit}
-              noValidate
-              sx={{ textAlign: "left" }}
+              sx={{
+                display: { xs: "none", md: "flex" },
+                minHeight: 520,
+                position: "relative",
+                overflow: "hidden",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                p: 5,
+                color: "#FFFFFF",
+                background:
+                  "linear-gradient(145deg, #173F86 0%, #1D4ED8 58%, #2563EB 100%)",
+              }}
             >
-              <Typography variant="caption" fontWeight={700} sx={labelSx}>
-                Select account
+              <Box sx={{ position: "relative", zIndex: 1 }}>
+                <Typography sx={{ fontSize: "1rem", fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", opacity: 0.78 }}>
+                  TVSM School
+                </Typography>
+                <Typography component="h1" sx={{ mt: 1.4, maxWidth: 390, fontSize: "2.55rem", fontWeight: 850, lineHeight: 1.08, letterSpacing: "-0.035em" }}>
+                  School attendance, made simple.
+                </Typography>
+                <Typography sx={{ mt: 2, maxWidth: 380, color: "rgba(255,255,255,0.78)", lineHeight: 1.65 }}>
+                  A secure, easy-to-use portal for administrators and classes.
+                </Typography>
+              </Box>
+
+              <Box sx={{ position: "absolute", inset: 0, opacity: 0.16, backgroundImage: "radial-gradient(circle at 20% 20%, #fff 0 2px, transparent 3px), radial-gradient(circle at 80% 70%, #fff 0 2px, transparent 3px)", backgroundSize: "36px 36px, 44px 44px" }} />
+              <Box sx={{ position: "relative", zIndex: 1, height: 190, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Box sx={{ width: 235, height: 160, bgcolor: "#FFFFFF", borderRadius: 3, boxShadow: "0 24px 50px rgba(6,32,82,0.28)", position: "relative", transform: "rotate(-2deg)", p: 2 }}>
+                  <CalendarMonthOutlinedIcon sx={{ color: "#2563EB", fontSize: 38 }} />
+                  {[0, 1, 2, 3, 4, 5].map((item) => (
+                    <Box key={item} sx={{ position: "absolute", left: item % 2 === 0 ? 24 : 104, top: 58 + Math.floor(item / 2) * 31, width: 62, height: 18, borderRadius: 1, bgcolor: item === 5 ? "#60A5FA" : "#E7EFFC", "&::after": item === 5 ? { content: '"✓"', position: "absolute", right: 5, top: -2, color: "#fff", fontWeight: 900 } : {} }} />
+                  ))}
+                  <SchoolOutlinedIcon sx={{ position: "absolute", right: -24, bottom: -22, width: 72, height: 72, p: 1.2, bgcolor: "#60A5FA", borderRadius: "50%", border: "8px solid rgba(255,255,255,0.95)" }} />
+                </Box>
+              </Box>
+            </Box>
+
+            <Box sx={{ p: { xs: 2.25, sm: 4, md: 4.5 }, textAlign: "left" }}>
+              <Typography sx={{ display: { xs: "none", md: "block" }, color: "#2563EB", fontSize: "0.68rem", fontWeight: 850, letterSpacing: "0.18em", textTransform: "uppercase", mb: 0.8 }}>
+                Welcome
               </Typography>
+              <Typography component="h2" sx={{ color: "#101B38", fontWeight: 850, fontSize: { xs: "1.7rem", sm: "2rem" }, lineHeight: 1.12, letterSpacing: "-0.045em", mb: { xs: 2.2, md: 1.75 } }}>
+                Sign in to your account
+              </Typography>
+
+              {error && (
+                <Alert severity="error" onClose={clearError} sx={{ mb: 2, borderRadius: 2 }}>
+                  {error}
+                </Alert>
+              )}
+
+              <Box component="form" onSubmit={handleSubmit} noValidate>
+                <Typography variant="caption" fontWeight={700} sx={labelSx}>Select account</Typography>
 
               <FormControl
                 fullWidth
@@ -735,6 +760,7 @@ const LoginPage = () => {
               <Typography sx={{ fontSize: "0.72rem", lineHeight: 1.5 }}>
                 Contact the school administrator for account details.
               </Typography>
+            </Box>
             </Box>
           </Box>
         </Box>
