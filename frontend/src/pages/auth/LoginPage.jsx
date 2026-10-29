@@ -904,6 +904,20 @@ const LoginPage = () => {
                 <Typography sx={{ fontSize: "0.72rem", lineHeight: 1.5 }}>
                   Contact the school administrator for account details.
                 </Typography>
+    
+                <Typography sx={{ fontSize: "0.72rem", lineHeight: 1.5 }}>
+                      Developed by{" "}
+                  <a
+                    href="https://www.linkedin.com/in/abhishekwani18/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#E0E7FF", textDecoration: "underline" }}
+                  >
+                    Abhishek Wani
+                  </a>{" "}
+                  | Version {APP_VERSION}
+
+                </Typography>
               </Box>
             </Box>
           </Box>
