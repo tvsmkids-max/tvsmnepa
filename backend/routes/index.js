@@ -19,6 +19,7 @@ const promotionRoutes = require("./promotion.routes");
 const backupRoutes = require("./backup.routes");
 const shiftRoutes = require("./shift.routes");
 const managementRoutes = require("./management.routes");
+const externalApiRoutes = require("./externalApi.routes");
 const userRoutes = require("./user.routes");
 
 router.use("/auth", authRoutes);
@@ -37,6 +38,7 @@ router.use("/promotion", promotionRoutes);
 router.use("/backup", backupRoutes);
 router.use("/shift", shiftRoutes);
 router.use("/management", managementRoutes);
+router.use("/external", externalApiRoutes);
 router.use("/users", userRoutes);
 
 router.get("/health", (req, res) => {

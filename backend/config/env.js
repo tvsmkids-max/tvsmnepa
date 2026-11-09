@@ -49,6 +49,8 @@ const env = {
   DEFAULT_SCHOOL_NAME: process.env.DEFAULT_SCHOOL_NAME || "My School",
   DEFAULT_TIMEZONE: process.env.DEFAULT_TIMEZONE || "Asia/Kolkata",
 
+  EXTERNAL_READONLY_API_KEY: process.env.EXTERNAL_READONLY_API_KEY || "",
+
   IS_PRODUCTION: process.env.NODE_ENV === "production",
   IS_DEVELOPMENT: process.env.NODE_ENV === "development",
 };

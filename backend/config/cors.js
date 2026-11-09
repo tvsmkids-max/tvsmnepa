@@ -59,6 +59,7 @@ const corsOptions = {
   allowedHeaders: [
     "Content-Type",
     "Authorization",
+    "X-API-Key",
     "X-Requested-With",
     "Accept",
     "Origin",

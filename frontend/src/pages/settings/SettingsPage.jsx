@@ -34,6 +34,7 @@ import sessionApi from "../../api/sessionApi";
 
 // ✅ NEW: Import Management Access Section
 import ManagementAccessSection from "./components/ManagementAccessSection";
+import ExternalApiSection from "./components/ExternalApiSection";
 
 const TIMEZONES = [
   "Asia/Kolkata",
@@ -546,6 +547,7 @@ const SettingsPage = () => {
               (Positioned at the end, before save panel)
           ═══════════════════════════════════════════════════════ */}
           <ManagementAccessSection />
+          <ExternalApiSection />
         </Grid>
 
         {/* ── SAVE PANEL ── */}
