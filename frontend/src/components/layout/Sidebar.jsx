@@ -102,6 +102,8 @@ const teacherNav = [
   { label: "Mark", icon: <EventNoteOutlinedIcon />, path: "/attendance/mark" },
   { type: "section", label: "Students" },
   { label: "Students", icon: <PeopleOutlinedIcon />, path: "/students" },
+  { type: "section", label: "Examinations" },
+  { label: "My Examinations", icon: <QuizOutlinedIcon />, path: "/exams/mine" },
   { type: "section", label: "Reports" },
   { label: "Daily", icon: <TodayOutlinedIcon />, path: "/reports/daily" },
   {

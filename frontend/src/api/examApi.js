@@ -1,6 +1,7 @@
 import axiosInstance from "./axiosInstance";
 
 const examApi = {
+  mine: () => axiosInstance.get("/exams/mine"),
   list: (params = {}) => axiosInstance.get("/exams", { params }),
   getById: (id) => axiosInstance.get(`/exams/${id}`),
   create: (data) => axiosInstance.post("/exams", data),

@@ -1,6 +1,7 @@
 "use strict";
 
 const examService = require("../../services/exam/exam.service");
+const examAccess = require("../../services/exam/examAccess.service");
 const { sendResponse } = require("../../utils/apiResponse");
 const asyncHandler = require("../../utils/asyncHandler");
 const {
@@ -130,7 +131,25 @@ const listAudit = [
   }),
 ];
 
+const listMine = asyncHandler(async (req, res) => {
+  const data = await examAccess.listMine(req.user);
+  return sendResponse(res).success({
+    message: "Examinations fetched successfully",
+    data,
+  });
+});
+
+const getMine = asyncHandler(async (req, res) => {
+  const data = await examAccess.getMine(req.user, req.params.id);
+  return sendResponse(res).success({
+    message: "Examination fetched successfully",
+    data,
+  });
+});
+
 module.exports = {
+  listMine,
+  getMine,
   list,
   getById,
   create,
