@@ -1,6 +1,27 @@
 "use strict";
 
-const XLSX = require("xlsx");
+const ExcelJS = require("exceljs");
+
+// ─── LIMITS FOR UNTRUSTED WORKBOOKS ───────────────────────────
+// Uploads are capped at 10 MB by the route; these bound what a
+// (possibly malicious) 10 MB ZIP may expand to / contain.
+const XLSX_LIMITS = Object.freeze({
+  MAX_ZIP_ENTRIES: 500,
+  MAX_UNCOMPRESSED_BYTES: 50 * 1024 * 1024, // 50 MB expanded
+  MAX_ROWS: 20000, // physical rows scanned in sheet 1
+  MAX_COLUMNS: 100,
+  MAX_CELL_TEXT: 5000, // chars kept per text cell
+  MAX_REPORT_ROWS: 5000, // rows written to an error report
+  EXCEL_CELL_MAX: 32767, // Excel's own per-cell limit
+});
+
+const OLE_MAGIC = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+
+function xlsxError(message) {
+  const err = new Error(message);
+  err.statusCode = 400;
+  return err;
+}
 
 /* ═══════════════════════════════════════════════════════════
    CORE PRINCIPLE:
@@ -338,46 +359,167 @@ function parseIndianDate(value) {
 //  EXCEL READING (THE NEW APPROACH)
 // ═══════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════
+//  XLSX FILE VALIDATION (is it really an .xlsx ZIP package?)
+// ═══════════════════════════════════════════════════════════
+
 /**
- * Get value from a cell with rich type information.
- * Uses raw cell object (preserves type), not just .v
+ * Verify a buffer is a genuine .xlsx (OOXML ZIP) package BEFORE parsing.
+ * Pure structural check of the ZIP central directory — nothing is
+ * decompressed or executed. Throws an Error with statusCode 400.
+ *
+ *  - legacy .xls / password-protected files (OLE2 container) → rejected
+ *  - not a ZIP at all → rejected
+ *  - ZIP without [Content_Types].xml + xl/workbook.xml → rejected
+ *  - too many entries / too large when expanded (zip bomb) → rejected
  */
-function extractCellValue(cell) {
-  if (!cell) return null;
-
-  // Cell type indicators:
-  // s = string, n = number, d = date, b = boolean, e = error
-  switch (cell.t) {
-    case "s":
-      // String — use raw value
-      return cell.v != null ? String(cell.v) : "";
-
-    case "n":
-      // Number — could be date serial or actual number
-      // Check if format suggests date (z = format code)
-      if (cell.z && /[ymd]/i.test(cell.z) && !cell.z.includes("0")) {
-        // Looks like a date format
-        const date = excelSerialToDate(cell.v);
-        return date || cell.v;
-      }
-      return cell.v;
-
-    case "d":
-      // Date — already parsed
-      return cell.v instanceof Date ? cell.v : new Date(cell.v);
-
-    case "b":
-      // Boolean
-      return Boolean(cell.v);
-
-    case "e":
-      // Error cell
-      return null;
-
-    default:
-      // Use formatted value if available, else raw
-      return cell.w !== undefined ? cell.w : cell.v;
+function assertXlsxBuffer(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    throw xlsxError("The uploaded file is empty.");
   }
+
+  if (buffer.length >= 8 && buffer.subarray(0, 8).equals(OLE_MAGIC)) {
+    throw xlsxError(
+      "Legacy .xls (or password-protected) workbooks are not supported. " +
+        "Open the file in Excel and save it as .xlsx (Excel Workbook), then upload again.",
+    );
+  }
+
+  const notXlsx = () =>
+    xlsxError(
+      "The uploaded file is not a valid .xlsx workbook. Please upload an Excel (.xlsx) file.",
+    );
+
+  if (buffer.length < 22 || buffer.readUInt32LE(0) !== 0x04034b50) {
+    throw notXlsx();
+  }
+
+  // Find End Of Central Directory record (scan back over optional comment)
+  let eocd = -1;
+  const scanStart = buffer.length - 22;
+  const scanEnd = Math.max(0, buffer.length - 22 - 0xffff);
+  for (let i = scanStart; i >= scanEnd; i--) {
+    if (buffer.readUInt32LE(i) === 0x06054b50) {
+      eocd = i;
+      break;
+    }
+  }
+  if (eocd < 0) throw notXlsx();
+
+  const totalEntries = buffer.readUInt16LE(eocd + 10);
+  const cdSize = buffer.readUInt32LE(eocd + 12);
+  const cdOffset = buffer.readUInt32LE(eocd + 16);
+
+  if (totalEntries === 0xffff || cdSize === 0xffffffff || cdOffset === 0xffffffff) {
+    throw xlsxError("ZIP64 workbooks are not supported.");
+  }
+  if (totalEntries === 0 || totalEntries > XLSX_LIMITS.MAX_ZIP_ENTRIES) {
+    throw xlsxError("The workbook structure is invalid or too complex.");
+  }
+  if (cdOffset + cdSize > buffer.length) throw notXlsx();
+
+  const names = new Set();
+  let totalUncompressed = 0;
+  let pos = cdOffset;
+
+  for (let i = 0; i < totalEntries; i++) {
+    if (pos + 46 > buffer.length || buffer.readUInt32LE(pos) !== 0x02014b50) {
+      throw notXlsx();
+    }
+    const flags = buffer.readUInt16LE(pos + 8);
+    const compressedSize = buffer.readUInt32LE(pos + 20);
+    const uncompressedSize = buffer.readUInt32LE(pos + 24);
+    const nameLen = buffer.readUInt16LE(pos + 28);
+    const extraLen = buffer.readUInt16LE(pos + 30);
+    const commentLen = buffer.readUInt16LE(pos + 32);
+
+    if (pos + 46 + nameLen > buffer.length) throw notXlsx();
+    if (flags & 0x1) {
+      throw xlsxError("Encrypted workbooks are not supported.");
+    }
+    if (compressedSize === 0xffffffff || uncompressedSize === 0xffffffff) {
+      throw xlsxError("ZIP64 workbooks are not supported.");
+    }
+
+    const name = buffer.toString("utf8", pos + 46, pos + 46 + nameLen);
+    if (name.startsWith("/") || name.split("/").includes("..")) {
+      throw notXlsx();
+    }
+    names.add(name);
+
+    totalUncompressed += uncompressedSize;
+    if (totalUncompressed > XLSX_LIMITS.MAX_UNCOMPRESSED_BYTES) {
+      throw xlsxError(
+        "The workbook is too large when expanded and was rejected for safety.",
+      );
+    }
+
+    pos += 46 + nameLen + extraLen + commentLen;
+  }
+
+  if (!names.has("[Content_Types].xml") || !names.has("xl/workbook.xml")) {
+    throw notXlsx();
+  }
+}
+
+/**
+ * Normalise one ExcelJS cell value into a primitive (string | number |
+ * boolean | Date | null). Workbook content is untrusted:
+ *   - formulas are NEVER evaluated — only the cached result stored in
+ *     the file is read, and only if it is a plain value
+ *   - error cells, unknown object shapes → null
+ *   - text is length-capped
+ */
+function extractCellValue(value, depth = 0) {
+  if (value === null || value === undefined) return null;
+
+  if (typeof value === "string") {
+    return value.length > XLSX_LIMITS.MAX_CELL_TEXT
+      ? value.slice(0, XLSX_LIMITS.MAX_CELL_TEXT)
+      : value;
+  }
+
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+
+  if (typeof value === "boolean") return value;
+
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) return null;
+    // ExcelJS returns dates as UTC. Rebuild as a local-time Date with the
+    // same calendar fields so formatDateToDMY() (local getters) is correct
+    // in any server timezone.
+    return new Date(
+      value.getUTCFullYear(),
+      value.getUTCMonth(),
+      value.getUTCDate(),
+      value.getUTCHours(),
+      value.getUTCMinutes(),
+      value.getUTCSeconds(),
+    );
+  }
+
+  if (typeof value === "object" && depth < 2) {
+    if (value.error) return null; // {error: "#N/A"}
+
+    if (Array.isArray(value.richText)) {
+      return extractCellValue(
+        value.richText
+          .map((part) => (part && typeof part.text === "string" ? part.text : ""))
+          .join(""),
+        depth + 1,
+      );
+    }
+
+    // Formula cell: use cached result only, never the formula itself
+    if ("formula" in value || "sharedFormula" in value) {
+      return extractCellValue(value.result, depth + 1);
+    }
+
+    // Hyperlink cell: {text, hyperlink} → visible text only
+    if ("text" in value) return extractCellValue(value.text, depth + 1);
+  }
+
+  return null;
 }
 
 /**
@@ -432,32 +574,64 @@ function getCleaner(header) {
 }
 
 /**
- * Read Excel buffer and return cleaned rows.
+ * Read an .xlsx buffer and return cleaned rows.
  * Each row is an object with header → cleaned value mapping.
+ * First worksheet only; first non-empty row is the header row.
+ *
+ * Async (ExcelJS). Throws Error(statusCode 400) for anything that is not
+ * a valid .xlsx or that exceeds the workbook limits.
  */
-function readExcel(buffer) {
-  const workbook = XLSX.read(buffer, {
-    type: "buffer",
-    cellDates: true, // Parse dates into Date objects
-    cellNF: true, // Keep number format info (needed for date detection)
-    raw: false, // Get formatted values where appropriate
-  });
+async function readExcel(buffer) {
+  assertXlsxBuffer(buffer);
 
-  const sheetName = workbook.SheetNames[0];
-  if (!sheetName) return [];
+  const workbook = new ExcelJS.Workbook();
+  try {
+    await workbook.xlsx.load(buffer);
+  } catch (err) {
+    throw xlsxError(`Could not read the workbook: ${err.message}`);
+  }
 
-  const sheet = workbook.Sheets[sheetName];
-  const range = XLSX.utils.decode_range(sheet["!ref"] || "A1");
+  const sheet = workbook.worksheets[0];
+  if (!sheet) return [];
 
-  if (range.s.r === range.e.r) return []; // Only header row, no data
+  if (sheet.rowCount > XLSX_LIMITS.MAX_ROWS) {
+    throw xlsxError(
+      `The worksheet has too many rows (${sheet.rowCount}). Maximum ${XLSX_LIMITS.MAX_ROWS} rows allowed.`,
+    );
+  }
+  if (sheet.columnCount > XLSX_LIMITS.MAX_COLUMNS) {
+    throw xlsxError(
+      `The worksheet has too many columns (${sheet.columnCount}). Maximum ${XLSX_LIMITS.MAX_COLUMNS} columns allowed.`,
+    );
+  }
+
+  const lastRow = sheet.rowCount;
+  const lastCol = sheet.columnCount;
+
+  const isBlank = (v) => v === null || v === undefined || v === "";
+
+  // First row that has any value = header row
+  let headerRowNum = 0;
+  for (let r = 1; r <= lastRow && !headerRowNum; r++) {
+    const row = sheet.getRow(r);
+    for (let c = 1; c <= lastCol; c++) {
+      if (!isBlank(extractCellValue(row.getCell(c).value))) {
+        headerRowNum = r;
+        break;
+      }
+    }
+  }
+
+  if (!headerRowNum || headerRowNum >= lastRow) return []; // no data rows
 
   // Read header row
+  // Header text comes from an untrusted file and becomes an object key
+  const UNSAFE_KEYS = new Set(["__proto__"]);
+  const headerRow = sheet.getRow(headerRowNum);
   const headers = [];
-  for (let C = range.s.c; C <= range.e.c; ++C) {
-    const cellRef = XLSX.utils.encode_cell({ r: range.s.r, c: C });
-    const cell = sheet[cellRef];
-    const headerValue = cell ? toCleanString(extractCellValue(cell)) : "";
-    headers.push(headerValue);
+  for (let c = 1; c <= lastCol; c++) {
+    const h = toCleanString(extractCellValue(headerRow.getCell(c).value));
+    headers.push(UNSAFE_KEYS.has(h) ? "" : h);
   }
 
   // Build cleaners array (one per column)
@@ -465,19 +639,17 @@ function readExcel(buffer) {
 
   // Read data rows
   const rows = [];
-  for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+  for (let r = headerRowNum + 1; r <= lastRow; r++) {
+    const excelRow = sheet.getRow(r);
     const row = {};
     let hasData = false;
 
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const header = headers[C - range.s.c];
+    for (let c = 1; c <= lastCol; c++) {
+      const header = headers[c - 1];
       if (!header) continue;
 
-      const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
-      const cell = sheet[cellRef];
-
-      const rawValue = extractCellValue(cell);
-      const cleanedValue = cleaners[C - range.s.c](rawValue);
+      const rawValue = extractCellValue(excelRow.getCell(c).value);
+      const cleanedValue = cleaners[c - 1](rawValue);
 
       row[header] = cleanedValue;
 
@@ -503,7 +675,7 @@ function readExcel(buffer) {
 /**
  * Generate Excel template with proper text formatting on cells.
  */
-function generateStudentTemplate() {
+async function generateStudentTemplate() {
   const headers = [
     "Scholar Number*",
     "Student Name*",
@@ -688,55 +860,92 @@ function generateStudentTemplate() {
     },
   ];
 
-  const workbook = XLSX.utils.book_new();
+  const workbook = new ExcelJS.Workbook();
 
   // ─── Sheet 1: Data with sample ───
-  const dataSheet = XLSX.utils.json_to_sheet(sampleData, { header: headers });
+  const dataSheet = workbook.addWorksheet("Students");
+
+  // Header row + sample rows (json_to_sheet equivalent: empty string stays a text cell)
+  dataSheet.addRow(headers);
+  sampleData.forEach((sample) => {
+    dataSheet.addRow(headers.map((h) => (sample[h] === undefined ? "" : sample[h])));
+  });
 
   // Column widths
-  dataSheet["!cols"] = headers.map((h) => ({
-    wch: Math.max(h.length + 2, 18),
-  }));
+  headers.forEach((h, i) => {
+    dataSheet.getColumn(i + 1).width = Math.max(h.length + 2, 18);
+  });
 
   // ─── CRITICAL: Force ALL data cells to TEXT format ───
-  const range = XLSX.utils.decode_range(dataSheet["!ref"]);
-  for (let R = range.s.r + 1; R <= range.e.r; ++R) {
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
-      if (dataSheet[cellRef]) {
-        dataSheet[cellRef].t = "s"; // String type
-        dataSheet[cellRef].z = "@"; // Text format
-      }
+  // (scholar numbers, mobile, Aadhar must never become numbers/dates)
+  for (let r = 2; r <= dataSheet.rowCount; r++) {
+    const row = dataSheet.getRow(r);
+    for (let c = 1; c <= headers.length; c++) {
+      row.getCell(c).numFmt = "@";
     }
   }
 
-  XLSX.utils.book_append_sheet(workbook, dataSheet, "Students");
-
   // ─── Sheet 2: Instructions ───
-  const instructionsSheet = XLSX.utils.json_to_sheet(instructions);
-  instructionsSheet["!cols"] = [{ wch: 35 }, { wch: 12 }, { wch: 70 }];
-  XLSX.utils.book_append_sheet(workbook, instructionsSheet, "Instructions");
+  const instructionsSheet = workbook.addWorksheet("Instructions");
+  instructionsSheet.addRow(["Field", "Required", "Description"]);
+  instructions.forEach((item) => {
+    instructionsSheet.addRow([item.Field, item.Required, item.Description]);
+  });
+  [35, 12, 70].forEach((w, i) => {
+    instructionsSheet.getColumn(i + 1).width = w;
+  });
 
-  return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+  return Buffer.from(await workbook.xlsx.writeBuffer());
 }
 
 /**
  * Generate error report Excel.
  */
-function generateErrorReport(errors) {
+async function generateErrorReport(errors) {
   if (!Array.isArray(errors) || errors.length === 0) {
     errors = [
       { rowNum: "-", scholarNumber: "-", name: "-", errors: "No errors" },
     ];
   }
 
-  const workbook = XLSX.utils.book_new();
-  const sheet = XLSX.utils.json_to_sheet(errors);
+  // Bound the output (input comes from the request body)
+  const items = errors
+    .slice(0, XLSX_LIMITS.MAX_REPORT_ROWS)
+    .filter((e) => e && typeof e === "object" && !Array.isArray(e));
 
-  sheet["!cols"] = [{ wch: 8 }, { wch: 18 }, { wch: 25 }, { wch: 60 }];
+  // Header = union of keys in order of first appearance (json_to_sheet behaviour)
+  const keys = [];
+  const seen = new Set();
+  items.forEach((item) => {
+    Object.keys(item).forEach((k) => {
+      if (!seen.has(k) && k !== "__proto__") {
+        seen.add(k);
+        keys.push(k);
+      }
+    });
+  });
 
-  XLSX.utils.book_append_sheet(workbook, sheet, "Import Errors");
-  return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+  // Strings are written as plain text cells — never as formulas
+  const toCell = (v) => {
+    if (v === null || v === undefined) return null;
+    if (typeof v === "number") return Number.isFinite(v) ? v : null;
+    if (typeof v === "boolean") return v;
+    if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
+    return String(v).slice(0, XLSX_LIMITS.EXCEL_CELL_MAX);
+  };
+
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Import Errors");
+  sheet.addRow(keys);
+  items.forEach((item) => {
+    sheet.addRow(keys.map((k) => toCell(item[k])));
+  });
+
+  [8, 18, 25, 60].forEach((w, i) => {
+    sheet.getColumn(i + 1).width = w;
+  });
+
+  return Buffer.from(await workbook.xlsx.writeBuffer());
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -749,6 +958,8 @@ module.exports = {
   generateStudentTemplate,
   generateErrorReport,
   parseIndianDate,
+  assertXlsxBuffer,
+  XLSX_LIMITS,
 
   // Helpers (exported for testing & reuse)
   toCleanString,

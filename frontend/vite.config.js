@@ -218,7 +218,7 @@ export default defineConfig({
             ) {
               return "vendor-charts";
             }
-            if (id.includes("xlsx") || id.includes("file-saver")) {
+            if (id.includes("exceljs") || id.includes("file-saver")) {
               return "vendor-excel";
             }
             if (id.includes("jspdf")) {

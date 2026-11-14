@@ -104,7 +104,7 @@ class ImportService {
     // ─── Read Excel ───
     let rows;
     try {
-      rows = readExcel(fileBuffer);
+      rows = await readExcel(fileBuffer);
       logger.info(`[Import] Excel read: ${rows.length} rows`);
     } catch (err) {
       logger.error(`[Import] ❌ Excel parsing failed: ${err.message}`);

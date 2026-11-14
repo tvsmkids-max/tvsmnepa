@@ -208,7 +208,7 @@ const MonthlyReportPage = () => {
     return list;
   }, [monthlyReport, search, sortBy, hideEmpty]);
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!monthlyReport) return;
     const data = monthlyReport.classes.map((c) => ({
       Class: `${c.name}-${c.section}`,
@@ -219,12 +219,16 @@ const MonthlyReportPage = () => {
       "Absent Marks": c.absent,
       "Attendance %": `${c.percentage}%`,
     }));
-    exportToExcel(
-      data,
-      `monthly-summary-${monthlyReport.monthName}-${year}`,
-      "Monthly Summary",
-    );
-    enqueueSnackbar("Excel exported successfully", { variant: "success" });
+    try {
+      await exportToExcel(
+        data,
+        `monthly-summary-${monthlyReport.monthName}-${year}`,
+        "Monthly Summary",
+      );
+      enqueueSnackbar("Excel exported successfully", { variant: "success" });
+    } catch {
+      enqueueSnackbar("Excel export failed", { variant: "error" });
+    }
   };
 
   const summary = monthlyReport?.summary || {};

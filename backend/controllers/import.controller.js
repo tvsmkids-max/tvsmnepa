@@ -12,7 +12,7 @@ const {
  * Download Excel template for student import
  */
 const downloadTemplate = asyncHandler(async (req, res) => {
-  const buffer = generateStudentTemplate();
+  const buffer = await generateStudentTemplate();
 
   res.setHeader(
     "Content-Type",
@@ -81,7 +81,7 @@ const downloadErrorReport = asyncHandler(async (req, res) => {
     });
   }
 
-  const buffer = generateErrorReport(errors);
+  const buffer = await generateErrorReport(errors);
 
   res.setHeader(
     "Content-Type",

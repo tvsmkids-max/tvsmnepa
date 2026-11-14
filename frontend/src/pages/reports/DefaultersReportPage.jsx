@@ -126,7 +126,7 @@ const DefaultersReportPage = () => {
   }, [defaulterReport, search]);
 
   // Export Mappings (S.No used in place of Roll No)
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!defaulterReport) return;
     const data = defaulterReport.defaulters.map((s, idx) => ({
       "S.No": idx + 1,
@@ -140,8 +140,12 @@ const DefaultersReportPage = () => {
       "Total Marks": s.total,
       "Attendance %": `${s.percentage}%`,
     }));
-    exportToExcel(data, `defaulters-below-${threshold}`, "Defaulters");
-    enqueueSnackbar("Excel exported successfully", { variant: "success" });
+    try {
+      await exportToExcel(data, `defaulters-below-${threshold}`, "Defaulters");
+      enqueueSnackbar("Excel exported successfully", { variant: "success" });
+    } catch {
+      enqueueSnackbar("Excel export failed", { variant: "error" });
+    }
   };
 
   const handleExportPdf = () => {

@@ -165,11 +165,11 @@ const AttendanceRegisterTab = () => {
   const isInvalidRange = dateRangeDays < 1;
   const isLargeRange = dateRangeDays > 90;
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!register) return;
     try {
       const filename = `register_${register.class.name}-${register.class.section}_${dateFrom}_to_${dateTo}`;
-      exportRegisterToExcel(register, filename);
+      await exportRegisterToExcel(register, filename);
       enqueueSnackbar("Excel downloaded successfully", { variant: "success" });
     } catch (err) {
       enqueueSnackbar(`Export failed: ${err.message}`, { variant: "error" });
