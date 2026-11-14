@@ -4,6 +4,8 @@ const mongoose = require("mongoose");
 const Exam = require("../../models/exam/Exam.model");
 const ExamClassConfig = require("../../models/exam/ExamClassConfig.model");
 const ExamAuditLog = require("../../models/exam/ExamAuditLog.model");
+const ExamTimetableEntry = require("../../models/exam/ExamTimetableEntry.model");
+const examTimetable = require("./examTimetable.service");
 const AcademicSession = require("../../models/AcademicSession.model");
 const Class = require("../../models/Class.model");
 const {
@@ -208,6 +210,15 @@ class ExamService {
           409,
         );
       }
+      const incomplete = await examTimetable.incompleteClasses(exam._id);
+      if (incomplete.length > 0) {
+        throwError(
+          `Complete the timetable before scheduling. Missing: ${incomplete
+            .map((c) => `${c.label} (${c.have} of ${c.need} subjects)`)
+            .join(", ")}`,
+          409,
+        );
+      }
     }
 
     // Atomic compare-and-set: only applies if the status is still `from`.
@@ -260,6 +271,7 @@ class ExamService {
       throwError("The examination changed state; deletion cancelled", 409);
     }
     await ExamClassConfig.deleteMany({ exam: exam._id });
+    await ExamTimetableEntry.deleteMany({ exam: exam._id });
 
     await logExamAudit({
       exam: exam._id,
@@ -325,6 +337,23 @@ class ExamService {
       }
     }
 
+    // A subject that already has a timetable entry cannot be dropped or renamed
+    // here; the admin must remove its timetable entry first.
+    const keepKeys = cleanSubjects.map((x) => x.nameKey);
+    const orphaned = await ExamTimetableEntry.find({
+      exam: exam._id,
+      class: { $in: classIds },
+      subjectKey: { $nin: keepKeys },
+    }).lean();
+    if (orphaned.length > 0) {
+      throwError(
+        `Cannot remove or rename subjects that are already on the timetable: ${[
+          ...new Set(orphaned.map((o) => o.subjectName)),
+        ].join(", ")}. Remove them from the timetable first.`,
+        409,
+      );
+    }
+
     const results = [];
     for (const c of classes) {
       const existing = await ExamClassConfig.findOne({
@@ -362,6 +391,16 @@ class ExamService {
     if (!CONFIG_EDITABLE_STATUSES.includes(exam.status)) {
       throwError(
         `Class and subject configuration is locked while status is ${label(exam.status)}`,
+        409,
+      );
+    }
+    const hasTimetable = await ExamTimetableEntry.exists({
+      exam: exam._id,
+      class: classId,
+    });
+    if (hasTimetable) {
+      throwError(
+        "This class has timetable entries. Clear its timetable before removing it from the examination.",
         409,
       );
     }

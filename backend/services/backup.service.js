@@ -16,6 +16,7 @@ const ActivityLog = require("../models/ActivityLog.model");
 const Exam = require("../models/exam/Exam.model");
 const ExamClassConfig = require("../models/exam/ExamClassConfig.model");
 const ExamAuditLog = require("../models/exam/ExamAuditLog.model");
+const ExamTimetableEntry = require("../models/exam/ExamTimetableEntry.model");
 
 const { createAuditLog } = require("../middlewares/audit.middleware");
 
@@ -37,6 +38,7 @@ const BACKUP_MODELS = [
   { name: "holidays", model: Holiday, includeInRestore: true },
   { name: "exams", model: Exam, includeInRestore: true },
   { name: "examClassConfigs", model: ExamClassConfig, includeInRestore: true },
+  { name: "examTimetableEntries", model: ExamTimetableEntry, includeInRestore: true },
   // Append-only audit trail (no TTL, unlike activityLogs): kept in backups.
   { name: "examAuditLogs", model: ExamAuditLog, includeInRestore: true },
   { name: "activityLogs", model: ActivityLog, includeInRestore: false },
