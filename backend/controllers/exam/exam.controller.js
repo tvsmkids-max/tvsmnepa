@@ -2,6 +2,7 @@
 
 const examService = require("../../services/exam/exam.service");
 const examAccess = require("../../services/exam/examAccess.service");
+const examTimetable = require("../../services/exam/examTimetable.service");
 const { sendResponse } = require("../../utils/apiResponse");
 const asyncHandler = require("../../utils/asyncHandler");
 const {
@@ -15,6 +16,7 @@ const {
   changeStatusSchema,
   classConfigSchema,
   auditQuerySchema,
+  saveTimetableSchema,
 } = require("../../validators/exam/exam.validator");
 
 const list = [
@@ -147,7 +149,33 @@ const getMine = asyncHandler(async (req, res) => {
   });
 });
 
+const getTimetable = asyncHandler(async (req, res) => {
+  const data = await examTimetable.list(req.params.id, req.query.classId);
+  return sendResponse(res).success({ message: "Timetable fetched", data });
+});
+
+const saveClassTimetable = [
+  validateBody(saveTimetableSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examTimetable.saveClass(
+      req.params.id,
+      req.params.classId,
+      req.body.entries,
+      req.user,
+      req,
+    );
+    return sendResponse(res).success({
+      message: data.warnings.length
+        ? "Timetable saved with warnings"
+        : "Timetable saved",
+      data,
+    });
+  }),
+];
+
 module.exports = {
+  getTimetable,
+  saveClassTimetable,
   listMine,
   getMine,
   list,

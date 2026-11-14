@@ -58,7 +58,29 @@ const auditQuerySchema = Joi.object({
   limit: Joi.number().integer().min(1).max(200).default(50),
 });
 
+const timetableEntrySchema = Joi.object({
+  subjectName: Joi.string().trim().min(1).max(60).required(),
+  date: Joi.string()
+    .pattern(/^\d{4}-\d{2}-\d{2}$/)
+    .required()
+    .messages({ "string.pattern.base": "Date must be YYYY-MM-DD" }),
+  startTime: Joi.string()
+    .pattern(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .required()
+    .messages({ "string.pattern.base": "Time must be HH:mm (24-hour)" }),
+  endTime: Joi.string()
+    .pattern(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .required()
+    .messages({ "string.pattern.base": "Time must be HH:mm (24-hour)" }),
+  remarks: Joi.string().trim().max(300).allow(""),
+});
+
+const saveTimetableSchema = Joi.object({
+  entries: Joi.array().items(timetableEntrySchema).max(30).required(),
+});
+
 module.exports = {
+  saveTimetableSchema,
   createExamSchema,
   updateExamSchema,
   queryExamSchema,

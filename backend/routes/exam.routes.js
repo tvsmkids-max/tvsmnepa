@@ -26,6 +26,9 @@ router.delete("/:id", examController.remove);
 router.patch("/:id/status", examController.changeStatus);
 router.get("/:id/audit", examController.listAudit);
 
+router.get("/:id/timetable", examController.getTimetable);
+router.put("/:id/timetable/:classId", examController.saveClassTimetable);
+
 router.get("/:id/classes", examController.listClassConfigs);
 router.put("/:id/classes", examController.upsertClassConfigs);
 router.delete("/:id/classes/:classId", examController.removeClassConfig);

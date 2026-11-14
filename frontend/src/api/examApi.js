@@ -11,6 +11,10 @@ const examApi = {
   saveClassConfigs: (id, data) => axiosInstance.put(`/exams/${id}/classes`, data),
   removeClassConfig: (id, classId) =>
     axiosInstance.delete(`/exams/${id}/classes/${classId}`),
+  getTimetable: (id, params = {}) =>
+    axiosInstance.get(`/exams/${id}/timetable`, { params }),
+  saveTimetable: (id, classId, entries) =>
+    axiosInstance.put(`/exams/${id}/timetable/${classId}`, { entries }),
   audit: (id, params = {}) =>
     axiosInstance.get(`/exams/${id}/audit`, { params }),
 };

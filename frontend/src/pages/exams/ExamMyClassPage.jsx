@@ -96,6 +96,35 @@ const ExamMyClassPage = () => {
               {e.instructions}
             </Alert>
           )}
+          {e.timetable?.length > 0 && (
+            <>
+              <Typography variant="subtitle2" sx={{ mt: 1 }}>
+                Timetable
+              </Typography>
+              <Table size="small" sx={{ mb: 2 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Subject</TableCell>
+                    <TableCell>Time</TableCell>
+                    <TableCell>Remarks</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {e.timetable.map((t) => (
+                    <TableRow key={t._id}>
+                      <TableCell>{t.date}</TableCell>
+                      <TableCell>{t.subjectName}</TableCell>
+                      <TableCell>
+                        {t.startTime} - {t.endTime}
+                      </TableCell>
+                      <TableCell>{t.remarks || "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
+          )}
           <Table size="small">
             <TableHead>
               <TableRow>

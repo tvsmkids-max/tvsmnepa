@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const Class = require("../../models/Class.model");
 const Exam = require("../../models/exam/Exam.model");
 const ExamClassConfig = require("../../models/exam/ExamClassConfig.model");
+const ExamTimetableEntry = require("../../models/exam/ExamTimetableEntry.model");
 const { ROLES } = require("../../constants/roles");
 const { EXAM_STATUS } = require("../../constants/examStatus");
 
@@ -90,6 +91,20 @@ class ExamAccessService {
       .lean();
 
     const byExam = new Map(configs.map((c) => [String(c.exam), c]));
+    const entries = await ExamTimetableEntry.find({
+      class: classId,
+      exam: { $in: exams.map((e) => e._id) },
+    }).lean();
+    const ttByExam = new Map();
+    for (const t of entries) {
+      const k = String(t.exam);
+      if (!ttByExam.has(k)) ttByExam.set(k, []);
+      ttByExam.get(k).push(t);
+    }
+    const sortTt = (l = []) =>
+      l.sort((a, b) =>
+        `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`),
+      );
     return exams.map((e) => ({
       _id: e._id,
       name: e.name,
@@ -101,6 +116,7 @@ class ExamAccessService {
       instructions: e.instructions,
       class: classId,
       subjects: byExam.get(String(e._id)).subjects,
+      timetable: sortTt(ttByExam.get(String(e._id))),
     }));
   }
 
@@ -108,6 +124,13 @@ class ExamAccessService {
     const classId = await getTeacherClassId(user);
     const { exam, config } = await assertExamClassAccess(user, examId, classId);
     await exam.populate("session", "name");
+    const timetable = await ExamTimetableEntry.find({
+      exam: exam._id,
+      class: classId,
+    }).lean();
+    timetable.sort((a, b) =>
+      `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`),
+    );
     return {
       _id: exam._id,
       name: exam.name,
@@ -119,6 +142,7 @@ class ExamAccessService {
       instructions: exam.instructions,
       class: classId,
       subjects: config.subjects,
+      timetable,
     };
   }
 }
