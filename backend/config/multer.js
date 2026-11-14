@@ -16,17 +16,19 @@ const storage = multer.diskStorage({
 });
 
 const excelFilter = (req, file, cb) => {
-  const allowedMimes = [
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/vnd.ms-excel",
-  ];
-  const allowedExts = [".xlsx", ".xls"];
   const ext = path.extname(file.originalname).toLowerCase();
 
-  if (allowedMimes.includes(file.mimetype) || allowedExts.includes(ext)) {
+  if (ext === ".xlsx") {
     cb(null, true);
+  } else if (ext === ".xls") {
+    cb(
+      new Error(
+        "Legacy .xls files are no longer supported. Save the file as .xlsx and upload again.",
+      ),
+      false,
+    );
   } else {
-    cb(new Error("Only Excel files (.xlsx, .xls) are allowed"), false);
+    cb(new Error("Only Excel .xlsx files are allowed"), false);
   }
 };
 
