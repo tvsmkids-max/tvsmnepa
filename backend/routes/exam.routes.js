@@ -4,11 +4,19 @@ const express = require("express");
 const router = express.Router();
 const examController = require("../controllers/exam/exam.controller");
 const { authenticate } = require("../middlewares/auth.middleware");
-const { adminOnly } = require("../middlewares/rbac.middleware");
+const { adminOnly, authorize } = require("../middlewares/rbac.middleware");
+const { ROLES } = require("../constants/roles");
 
-// Phase 1: every examination route is Admin-only and enforced here on the
-// server. Class-teacher access is added in Phase 2 with per-class checks.
-router.use(authenticate, adminOnly);
+router.use(authenticate);
+
+// Class teacher (class login): read-only, own class only. The class is taken
+// from the account's linked class on the server, never from the request.
+// Registered BEFORE the admin routes so "/mine" is not read as an exam ID.
+router.get("/mine", authorize(ROLES.CLASS), examController.listMine);
+router.get("/mine/:id", authorize(ROLES.CLASS), examController.getMine);
+
+// Everything below is Admin-only, enforced on the server.
+router.use(adminOnly);
 
 router.get("/", examController.list);
 router.post("/", examController.create);
