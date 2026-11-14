@@ -60,6 +60,10 @@ const UnmarkedAttendancePage = lazy(
   () => import("../pages/reports/UnmarkedAttendancePage"),
 );
 
+// ─── Examinations (Admin) ───
+const ExamListPage = lazy(() => import("../pages/exams/ExamListPage"));
+const ExamDetailPage = lazy(() => import("../pages/exams/ExamDetailPage"));
+
 // ─── Analytics ───
 const AnalyticsDashboard = lazy(
   () => import("../pages/analytics/AnalyticsDashboard"),
@@ -219,6 +223,24 @@ const AppRouter = () => (
             element={
               <RoleRoute roles={["admin"]}>
                 <UnmarkedAttendancePage />
+              </RoleRoute>
+            }
+          />
+
+          {/* ─── Examinations (Admin only) ─── */}
+          <Route
+            path="exams"
+            element={
+              <RoleRoute roles={["admin"]}>
+                <ExamListPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="exams/:id"
+            element={
+              <RoleRoute roles={["admin"]}>
+                <ExamDetailPage />
               </RoleRoute>
             }
           />

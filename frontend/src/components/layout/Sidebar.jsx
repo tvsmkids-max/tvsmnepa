@@ -15,6 +15,7 @@ import {
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
+import QuizOutlinedIcon from "@mui/icons-material/QuizOutlined";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
@@ -72,6 +73,8 @@ const adminNav = [
     path: "/reports/unmarked",
   },
   { label: "Analytics", icon: <AnalyticsOutlinedIcon />, path: "/analytics" },
+  { type: "section", label: "Examinations" },
+  { label: "Examinations", icon: <QuizOutlinedIcon />, path: "/exams" },
   { type: "section", label: "Admin" },
   { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
   { label: "Sessions", icon: <SchoolOutlinedIcon />, path: "/sessions" },
