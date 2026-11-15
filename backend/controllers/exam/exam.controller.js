@@ -4,6 +4,7 @@ const examService = require("../../services/exam/exam.service");
 const examAccess = require("../../services/exam/examAccess.service");
 const examTimetable = require("../../services/exam/examTimetable.service");
 const examRoll = require("../../services/exam/examRollNumber.service");
+const examAdmit = require("../../services/exam/examAdmitCard.service");
 const { sendResponse } = require("../../utils/apiResponse");
 const asyncHandler = require("../../utils/asyncHandler");
 const {
@@ -19,6 +20,7 @@ const {
   auditQuerySchema,
   saveTimetableSchema,
   updateRollNumberSchema,
+  admitCardSchema,
 } = require("../../validators/exam/exam.validator");
 
 const list = [
@@ -214,7 +216,16 @@ const updateRollNumber = [
   }),
 ];
 
+const buildAdmitCards = [
+  validateBody(admitCardSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examAdmit.build(req.params.id, req.body, req.user, req);
+    return sendResponse(res).success({ message: "Admit card data ready", data });
+  }),
+];
+
 module.exports = {
+  buildAdmitCards,
   getRollNumbers,
   getMyRollNumbers,
   generateRollNumbers,
