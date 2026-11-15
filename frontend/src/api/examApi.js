@@ -21,6 +21,7 @@ const examApi = {
     axiosInstance.post(`/exams/${id}/roll-numbers/${classId}/generate`),
   updateRollNumber: (id, classId, studentId, data) =>
     axiosInstance.put(`/exams/${id}/roll-numbers/${classId}/${studentId}`, data),
+  buildAdmitCards: (id, data) => axiosInstance.post(`/exams/${id}/admit-cards`, data),
   audit: (id, params = {}) =>
     axiosInstance.get(`/exams/${id}/audit`, { params }),
 };

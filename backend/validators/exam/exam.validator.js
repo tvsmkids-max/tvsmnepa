@@ -84,7 +84,27 @@ const updateRollNumberSchema = Joi.object({
   reason: Joi.string().trim().min(3).max(300).required(),
 });
 
+const admitCardSchema = Joi.object({
+  scope: Joi.string().valid("all", "className", "class", "student").required(),
+  className: Joi.when("scope", {
+    is: "className",
+    then: Joi.string().trim().min(1).max(60).required(),
+    otherwise: Joi.forbidden(),
+  }),
+  classId: Joi.when("scope", {
+    is: Joi.valid("class", "student"),
+    then: objectId.required(),
+    otherwise: Joi.forbidden(),
+  }),
+  studentId: Joi.when("scope", {
+    is: "student",
+    then: objectId.required(),
+    otherwise: Joi.forbidden(),
+  }),
+});
+
 module.exports = {
+  admitCardSchema,
   updateRollNumberSchema,
   saveTimetableSchema,
   createExamSchema,

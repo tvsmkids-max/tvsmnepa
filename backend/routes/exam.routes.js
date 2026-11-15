@@ -31,6 +31,8 @@ router.delete("/:id", examController.remove);
 router.patch("/:id/status", examController.changeStatus);
 router.get("/:id/audit", examController.listAudit);
 
+router.post("/:id/admit-cards", examController.buildAdmitCards);
+
 router.get("/:id/roll-numbers", examController.getRollNumbers);
 router.post(
   "/:id/roll-numbers/:classId/generate",
