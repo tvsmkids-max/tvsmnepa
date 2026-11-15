@@ -14,6 +14,18 @@ router.use(authenticate);
 // Registered BEFORE the admin routes so "/mine" is not read as an exam ID.
 router.get("/mine", authorize(ROLES.CLASS), examController.listMine);
 router.get("/mine/:id", authorize(ROLES.CLASS), examController.getMine);
+router.get("/mine/:id/marks", authorize(ROLES.CLASS), examController.marksOverview);
+router.post("/mine/:id/marks/submit", authorize(ROLES.CLASS), examController.submitMarks);
+router.get(
+  "/mine/:id/marks/:subjectKey",
+  authorize(ROLES.CLASS),
+  examController.marksSheet,
+);
+router.put(
+  "/mine/:id/marks/:subjectKey",
+  authorize(ROLES.CLASS),
+  examController.saveMarks,
+);
 router.get(
   "/mine/:id/roll-numbers",
   authorize(ROLES.CLASS),
@@ -30,6 +42,8 @@ router.put("/:id", examController.update);
 router.delete("/:id", examController.remove);
 router.patch("/:id/status", examController.changeStatus);
 router.get("/:id/audit", examController.listAudit);
+
+router.post("/:id/marks/:classId/reopen", examController.reopenMarks);
 
 router.post("/:id/admit-cards", examController.buildAdmitCards);
 

@@ -5,6 +5,7 @@ const examAccess = require("../../services/exam/examAccess.service");
 const examTimetable = require("../../services/exam/examTimetable.service");
 const examRoll = require("../../services/exam/examRollNumber.service");
 const examAdmit = require("../../services/exam/examAdmitCard.service");
+const examMarks = require("../../services/exam/examMarks.service");
 const { sendResponse } = require("../../utils/apiResponse");
 const asyncHandler = require("../../utils/asyncHandler");
 const {
@@ -21,6 +22,8 @@ const {
   saveTimetableSchema,
   updateRollNumberSchema,
   admitCardSchema,
+  saveMarksSchema,
+  reopenMarksSchema,
 } = require("../../validators/exam/exam.validator");
 
 const list = [
@@ -224,7 +227,55 @@ const buildAdmitCards = [
   }),
 ];
 
+const marksOverview = asyncHandler(async (req, res) => {
+  const data = await examMarks.overview(req.user, req.params.id);
+  return sendResponse(res).success({ message: "Marks overview fetched", data });
+});
+
+const marksSheet = asyncHandler(async (req, res) => {
+  const data = await examMarks.sheet(req.user, req.params.id, req.params.subjectKey);
+  return sendResponse(res).success({ message: "Marks sheet fetched", data });
+});
+
+const saveMarks = [
+  validateBody(saveMarksSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examMarks.save(
+      req.user,
+      req.params.id,
+      req.params.subjectKey,
+      req.body.entries,
+      req,
+    );
+    return sendResponse(res).success({ message: "Marks saved as draft", data });
+  }),
+];
+
+const submitMarks = asyncHandler(async (req, res) => {
+  const data = await examMarks.submit(req.user, req.params.id, req);
+  return sendResponse(res).success({ message: "Marks submitted to Admin", data });
+});
+
+const reopenMarks = [
+  validateBody(reopenMarksSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examMarks.reopen(
+      req.params.id,
+      req.params.classId,
+      req.body,
+      req.user,
+      req,
+    );
+    return sendResponse(res).success({ message: "Marks entry reopened", data });
+  }),
+];
+
 module.exports = {
+  marksOverview,
+  marksSheet,
+  saveMarks,
+  submitMarks,
+  reopenMarks,
   buildAdmitCards,
   getRollNumbers,
   getMyRollNumbers,

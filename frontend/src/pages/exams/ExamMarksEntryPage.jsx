@@ -1,0 +1,456 @@
+import { useState, useEffect, useMemo, useRef } from "react";
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  LinearProgress,
+  Paper,
+  Stack,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Tabs,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+} from "@mui/material";
+import { useNavigate, useParams } from "react-router-dom";
+import { useSnackbar } from "notistack";
+import PageHeader from "../../components/common/PageHeader";
+import examApi from "../../api/examApi";
+import { EXAM_STATUS_LABELS, EXAM_STATUS_COLORS, examTypeLabel } from "./examConstants";
+
+const apiMsg = (err, fb) =>
+  err.response?.data?.errors?.[0]?.message || err.response?.data?.message || fb;
+
+// "" -> not entered. Otherwise a non-negative number with at most 2 decimals.
+const marksError = (row, max) => {
+  if (row.attendance === "absent") return "";
+  const t = String(row.marksText).trim();
+  if (t === "") return "";
+  if (!/^\d+(\.\d{1,2})?$/.test(t)) return "Enter a valid number";
+  if (Number(t) > max) return `Cannot exceed ${max}`;
+  return "";
+};
+
+const toRows = (sheet) =>
+  sheet.rows.map((r) => ({
+    studentId: r.studentId,
+    rollNumber: r.rollNumber,
+    scholarNumber: r.scholarNumber,
+    name: r.name,
+    studentStatus: r.studentStatus,
+    attendance: r.attendance,
+    marksText: r.marks === null || r.marks === undefined ? "" : String(r.marks),
+    remarks: r.remarks || "",
+  }));
+
+const ExamMarksEntryPage = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
+
+  const [reloadKey, setReloadKey] = useState(0);
+  const reload = () => setReloadKey((k) => k + 1);
+
+  const [overview, setOverview] = useState(null);
+  const [subjectKey, setSubjectKey] = useState("");
+  const [sheet, setSheet] = useState(null);
+  const [rows, setRows] = useState([]);
+  const [baseline, setBaseline] = useState("[]");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [submitOpen, setSubmitOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const inputRefs = useRef({});
+
+  const dirty = JSON.stringify(rows) !== baseline;
+
+  // Overview (dashboard)
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const res = await examApi.marksOverview(id);
+        if (cancelled) return;
+        const data = res.data.data;
+        setOverview(data);
+        setSubjectKey((k) => k || data.subjects[0]?.key || "");
+      } catch (err) {
+        if (cancelled) return;
+        enqueueSnackbar(apiMsg(err, "Failed to load marks entry"), { variant: "error" });
+        navigate("/exams/mine");
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, reloadKey, navigate, enqueueSnackbar]);
+
+  // Sheet for the selected subject
+  useEffect(() => {
+    if (!subjectKey) return;
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const res = await examApi.marksSheet(id, subjectKey);
+        if (cancelled) return;
+        const data = res.data.data;
+        const r = toRows(data);
+        setSheet(data);
+        setRows(r);
+        setBaseline(JSON.stringify(r));
+      } catch (err) {
+        if (!cancelled) enqueueSnackbar(apiMsg(err, "Failed to load marks"), { variant: "error" });
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, subjectKey, reloadKey, enqueueSnackbar]);
+
+  // Warn before closing the tab with unsaved changes.
+  useEffect(() => {
+    if (!dirty) return undefined;
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
+
+  const max = sheet?.subject.maxMarks ?? 0;
+  const errors = useMemo(() => rows.map((r) => marksError(r, max)), [rows, max]);
+  const hasErrors = errors.some(Boolean);
+
+  const confirmDiscard = () =>
+    !dirty || window.confirm("You have unsaved changes. Leave without saving?");
+
+  const switchSubject = (_, key) => {
+    if (key === subjectKey || !confirmDiscard()) return;
+    setSubjectKey(key);
+  };
+
+  const setRow = (i, patch) =>
+    setRows((list) => list.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+
+  const setAttendance = (i, value) => {
+    if (!value) return;
+    setRow(i, value === "absent" ? { attendance: "absent", marksText: "" } : { attendance: "present" });
+  };
+
+  const focusNext = (i) => (e) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    inputRefs.current[i + 1]?.focus();
+  };
+
+  const save = async () => {
+    if (hasErrors) {
+      enqueueSnackbar("Fix the highlighted marks first", { variant: "warning" });
+      return false;
+    }
+    setSaving(true);
+    try {
+      await examApi.saveMarks(
+        id,
+        subjectKey,
+        rows.map((r) => ({
+          studentId: r.studentId,
+          attendance: r.attendance,
+          marks: r.attendance === "absent" || r.marksText.trim() === "" ? null : Number(r.marksText),
+          remarks: r.remarks,
+        })),
+      );
+      enqueueSnackbar("Draft saved", { variant: "success" });
+      setBaseline(JSON.stringify(rows));
+      reload();
+      return true;
+    } catch (err) {
+      enqueueSnackbar(apiMsg(err, "Failed to save marks"), { variant: "error" });
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const submit = async () => {
+    setSubmitting(true);
+    try {
+      await examApi.submitMarks(id);
+      enqueueSnackbar("Marks submitted to Admin", { variant: "success" });
+      setSubmitOpen(false);
+      reload();
+    } catch (err) {
+      enqueueSnackbar(apiMsg(err, "Submission failed"), { variant: "error" });
+      setSubmitOpen(false);
+      reload();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading || !overview || !sheet) return <LinearProgress />;
+
+  const { exam } = overview;
+  const submitted = overview.submission.status === "submitted";
+  const totalPending = overview.subjects.reduce((a, s) => a + s.pending, 0);
+  const canSubmit =
+    overview.canEdit && !dirty && totalPending === 0 && overview.missingRoll.length === 0;
+  const editable = overview.canEdit;
+  const cls = overview.class;
+
+  return (
+    <Box>
+      <PageHeader
+        title="Marks Entry"
+        subtitle={`${exam.name} · ${examTypeLabel(exam.examType)} · Session ${exam.session?.name} · Class ${cls.name} - ${cls.section}`}
+      />
+
+      <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap" alignItems="center">
+        <Chip size="small" label={EXAM_STATUS_LABELS[exam.status]} color={EXAM_STATUS_COLORS[exam.status]} />
+        <Chip
+          size="small"
+          label={submitted ? "Submitted to Admin" : "Not submitted"}
+          color={submitted ? "success" : "warning"}
+        />
+        {overview.submission.reopenCount > 0 && (
+          <Chip size="small" variant="outlined" label={`Reopened ${overview.submission.reopenCount}×`} />
+        )}
+        <Button size="small" onClick={() => confirmDiscard() && navigate("/exams/mine")}>
+          Back to examinations
+        </Button>
+      </Stack>
+
+      {submitted && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          These marks are submitted and locked. Only the Admin can reopen marks entry.
+        </Alert>
+      )}
+      {!overview.entryOpen && !submitted && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Marks entry opens once the Admin marks the examination as Completed.
+        </Alert>
+      )}
+      {overview.missingRoll.length > 0 && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {overview.missingRoll.length} student(s) have no roll number yet:{" "}
+          {overview.missingRoll.map((s) => s.name).join(", ")}. Ask the Admin to assign roll
+          numbers before you submit.
+        </Alert>
+      )}
+
+      <Paper sx={{ mb: 2, overflowX: "auto" }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Subject</TableCell>
+              <TableCell align="right">Max marks</TableCell>
+              <TableCell align="right">Passing marks</TableCell>
+              <TableCell align="right">Students</TableCell>
+              <TableCell align="right">Entered</TableCell>
+              <TableCell align="right">Absent</TableCell>
+              <TableCell align="right">Pending</TableCell>
+              <TableCell>Entry status</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {overview.subjects.map((s) => (
+              <TableRow
+                key={s.key}
+                hover
+                selected={s.key === subjectKey}
+                sx={{ cursor: "pointer" }}
+                onClick={() => switchSubject(null, s.key)}
+              >
+                <TableCell sx={{ fontWeight: 600 }}>{s.name}</TableCell>
+                <TableCell align="right">{s.maxMarks}</TableCell>
+                <TableCell align="right">{s.passingMarks}</TableCell>
+                <TableCell align="right">{s.totalStudents}</TableCell>
+                <TableCell align="right">{s.entered}</TableCell>
+                <TableCell align="right">{s.absent}</TableCell>
+                <TableCell align="right">{s.pending}</TableCell>
+                <TableCell>
+                  <Chip
+                    size="small"
+                    color={s.pending === 0 ? "success" : s.entered > 0 ? "warning" : "default"}
+                    label={s.pending === 0 ? "Complete" : s.entered > 0 ? "In progress" : "Not started"}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Paper>
+
+      <Paper>
+        <Tabs value={subjectKey} onChange={switchSubject} variant="scrollable">
+          {overview.subjects.map((s) => (
+            <Tab key={s.key} value={s.key} label={s.name} />
+          ))}
+        </Tabs>
+
+        <Box sx={{ p: 2 }}>
+          <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+            {sheet.subject.name} — maximum {sheet.subject.maxMarks}, passing {sheet.subject.passingMarks}
+          </Typography>
+          {dirty && editable && (
+            <Alert severity="warning" sx={{ mb: 1 }}>
+              You have unsaved changes. Use “Save draft” before leaving this subject.
+            </Alert>
+          )}
+
+          <Box sx={{ overflowX: "auto" }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Roll</TableCell>
+                  <TableCell>Admission no.</TableCell>
+                  <TableCell>Student</TableCell>
+                  <TableCell align="right">Max</TableCell>
+                  <TableCell>Obtained</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Remarks</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rows.map((r, i) => (
+                  <TableRow key={r.studentId}>
+                    <TableCell>{r.rollNumber}</TableCell>
+                    <TableCell>{r.scholarNumber}</TableCell>
+                    <TableCell>
+                      {r.name}
+                      {r.studentStatus !== "Active" && (
+                        <Chip size="small" label={r.studentStatus} sx={{ ml: 1 }} />
+                      )}
+                    </TableCell>
+                    <TableCell align="right">{max}</TableCell>
+                    <TableCell sx={{ minWidth: 110 }}>
+                      <TextField
+                        size="small"
+                        value={r.attendance === "absent" ? "" : r.marksText}
+                        placeholder={r.attendance === "absent" ? "Absent" : ""}
+                        disabled={!editable || r.attendance === "absent"}
+                        error={!!errors[i]}
+                        helperText={errors[i]}
+                        onChange={(e) => setRow(i, { marksText: e.target.value })}
+                        onKeyDown={focusNext(i)}
+                        inputRef={(el) => {
+                          inputRefs.current[i] = el;
+                        }}
+                        inputProps={{ inputMode: "decimal", "aria-label": `Marks for ${r.name}` }}
+                        sx={{ width: 100 }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <ToggleButtonGroup
+                        size="small"
+                        exclusive
+                        value={r.attendance}
+                        disabled={!editable}
+                        onChange={(_, v) => setAttendance(i, v)}
+                      >
+                        <ToggleButton value="present" color="success">Present</ToggleButton>
+                        <ToggleButton value="absent" color="error">Absent</ToggleButton>
+                      </ToggleButtonGroup>
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 160 }}>
+                      <TextField
+                        size="small"
+                        value={r.remarks}
+                        disabled={!editable}
+                        onChange={(e) => setRow(i, { remarks: e.target.value })}
+                        inputProps={{ maxLength: 200 }}
+                        fullWidth
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {rows.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7}>
+                      <Alert severity="info">
+                        No numbered students in this class yet. Ask the Admin to generate roll
+                        numbers.
+                      </Alert>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Box>
+
+          {editable && (
+            <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+              <Button variant="contained" onClick={save} disabled={saving || !dirty}>
+                Save draft
+              </Button>
+              <Button variant="outlined" onClick={() => setSubmitOpen(true)} disabled={!canSubmit}>
+                Review &amp; submit to Admin
+              </Button>
+              {!canSubmit && (
+                <Typography variant="caption" color="text.secondary" sx={{ alignSelf: "center" }}>
+                  {dirty
+                    ? "Save your draft first."
+                    : totalPending > 0
+                      ? `${totalPending} entr${totalPending === 1 ? "y" : "ies"} still pending across all subjects.`
+                      : ""}
+                </Typography>
+              )}
+            </Stack>
+          )}
+        </Box>
+      </Paper>
+
+      <Dialog open={submitOpen} onClose={() => setSubmitOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Submit marks to Admin?</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            After submission you cannot change these marks. Only the Admin can reopen marks entry,
+            and must give a reason.
+          </Alert>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Subject</TableCell>
+                <TableCell align="right">Entered</TableCell>
+                <TableCell align="right">Absent</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {overview.subjects.map((s) => (
+                <TableRow key={s.key}>
+                  <TableCell>{s.name}</TableCell>
+                  <TableCell align="right">{s.entered} of {s.totalStudents}</TableCell>
+                  <TableCell align="right">{s.absent}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSubmitOpen(false)}>Go back and review</Button>
+          <Button variant="contained" color="warning" onClick={submit} disabled={submitting}>
+            Submit final marks
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};
+
+export default ExamMarksEntryPage;

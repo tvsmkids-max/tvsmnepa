@@ -22,6 +22,14 @@ const examApi = {
   updateRollNumber: (id, classId, studentId, data) =>
     axiosInstance.put(`/exams/${id}/roll-numbers/${classId}/${studentId}`, data),
   buildAdmitCards: (id, data) => axiosInstance.post(`/exams/${id}/admit-cards`, data),
+  marksOverview: (id) => axiosInstance.get(`/exams/mine/${id}/marks`),
+  marksSheet: (id, subjectKey) =>
+    axiosInstance.get(`/exams/mine/${id}/marks/${encodeURIComponent(subjectKey)}`),
+  saveMarks: (id, subjectKey, entries) =>
+    axiosInstance.put(`/exams/mine/${id}/marks/${encodeURIComponent(subjectKey)}`, { entries }),
+  submitMarks: (id) => axiosInstance.post(`/exams/mine/${id}/marks/submit`),
+  reopenMarks: (id, classId, reason) =>
+    axiosInstance.post(`/exams/${id}/marks/${classId}/reopen`, { reason }),
   audit: (id, params = {}) =>
     axiosInstance.get(`/exams/${id}/audit`, { params }),
 };
