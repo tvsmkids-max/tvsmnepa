@@ -1,21 +1,21 @@
 import { jsPDF } from "jspdf";
 import { downloadPdf, printPdf } from "./pdfGenerator"; // also registers autotable
 
-// Simple admit card: 6 cards per A4 page (2 columns x 3 rows), a new page for
+// Simple admit card: 6 cards per landscape A4 page (2 columns x 3 rows), a new page for
 // every class. No fee information is ever shown or used. No photo, no timetable.
 const SCHOOL_LINE_1 = "TH. VIRENDRA SINGH MEMORIAL SCHOOL,";
 const SCHOOL_LINE_2 = "NEPANAGAR";
 const DEFAULT_NOTE =
   "Note: Students must carry this Hall Ticket every day. Reach the exam room 10 minutes before the scheduled time.";
 
-const PAGE_W = 210;
-const PAGE_H = 297;
-const MARGIN = 10;
+const PAGE_W = 297;
+const PAGE_H = 210;
+const MARGIN = 8;
 const GAP_X = 6;
 const COLS = 2;
 const ROWS = 3;
 const CARD_W = (PAGE_W - MARGIN * 2 - GAP_X * (COLS - 1)) / COLS;
-const CARD_H = 82;
+const CARD_H = 62;
 const GAP_Y = (PAGE_H - MARGIN * 2 - CARD_H * ROWS) / (ROWS - 1);
 const PER_PAGE = COLS * ROWS;
 
@@ -72,21 +72,21 @@ const fitOrTrim = (doc, text, maxW, size, min) => {
 const drawCard = (doc, x, y, card, ctx) => {
   const { exam, cls, logo, signature } = ctx;
   const w = CARD_W;
-  const rows = { header: 20, title: 8, student: 10, father: 10, klass: 10 };
+  const rows = { header: 16.5, title: 7.5, student: 9.5, father: 9.5, klass: 9.5 };
   const yTitle = y + rows.header;
   const yStudent = yTitle + rows.title;
   const yFather = yStudent + rows.student;
   const yClass = yFather + rows.father;
   const yBottom = yClass + rows.klass;
-  const labelW = 38;
+  const labelW = 36;
 
   // Faint background logo (drawn first so text stays crisp on top).
   if (logo) {
-    const h = 50;
+    const h = 40;
     const lw = (logo.w / logo.h) * h;
     try {
       doc.setGState(new doc.GState({ opacity: 0.07 }));
-      doc.addImage(logo.dataUrl, imgType(logo), x + (w - lw) / 2, y + (CARD_H - h) / 2 + 4, lw, h);
+      doc.addImage(logo.dataUrl, imgType(logo), x + (w - lw) / 2, y + (CARD_H - h) / 2 + 3, lw, h);
     } finally {
       doc.setGState(new doc.GState({ opacity: 1 }));
     }
@@ -102,26 +102,26 @@ const drawCard = (doc, x, y, card, ctx) => {
 
   // Header
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11.5);
-  doc.text(SCHOOL_LINE_1, x + w / 2, y + 8.5, { align: "center" });
-  doc.text(SCHOOL_LINE_2, x + w / 2, y + 15, { align: "center" });
+  doc.setFontSize(12.5);
+  doc.text(SCHOOL_LINE_1, x + w / 2, y + 7, { align: "center" });
+  doc.text(SCHOOL_LINE_2, x + w / 2, y + 13.5, { align: "center" });
 
   // Title: ADMIT CARD - <EXAM> <SESSION>
   const session = String(exam.session?.name || "").replace(/\s*-\s*/g, " - ");
   const title = `ADMIT CARD - ${exam.name.toUpperCase()} ${session}`.trim();
   doc.setFont("helvetica", "normal");
   fitText(doc, title, w - 4, 8.5);
-  doc.text(title, x + w / 2, yTitle + 5.4, { align: "center" });
+  doc.text(title, x + w / 2, yTitle + 5, { align: "center" });
 
   // Student rows
   const label = (text, ly) => {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.5);
-    doc.text(text, x + 2, ly + 6.4);
+    doc.text(text, x + 2, ly + 6.2);
   };
   const value = (text, ly, maxW) => {
     doc.setFont("helvetica", "bold");
-    doc.text(fitOrTrim(doc, text, maxW, 9.5, 5.5), x + labelW + 2, ly + 6.4);
+    doc.text(fitOrTrim(doc, text, maxW, 9.5, 5.5), x + labelW + 2, ly + 6.2);
   };
   label("STUDENT NAME:", yStudent);
   value(String(card.student.name || "").toUpperCase(), yStudent, w - labelW - 4);
@@ -135,42 +135,52 @@ const drawCard = (doc, x, y, card, ctx) => {
   doc.line(rollLabelX - 1, yClass, rollLabelX - 1, yClass + rows.klass);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
-  doc.text("ROLL NO.:", rollLabelX + 1, yClass + 6.4);
+  doc.text("ROLL NO.:", rollLabelX + 1, yClass + 6.2);
   const rollBoxX = rollLabelX + 18;
   doc.line(rollBoxX, yClass, rollBoxX, yClass + rows.klass);
   if (card.rollNumber !== null && card.rollNumber !== undefined) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.text(String(card.rollNumber), rollBoxX + (x + w - rollBoxX) / 2, yClass + 6.6, {
+    doc.text(String(card.rollNumber), rollBoxX + (x + w - rollBoxX) / 2, yClass + 6.4, {
       align: "center",
     });
   }
 
   // Note + principal signature
-  const noteW = w * 0.56 - 4;
+  const noteW = w * 0.6 - 4;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.8);
+  doc.setFontSize(6.5);
   let lines = doc.splitTextToSize(exam.instructions?.trim() || DEFAULT_NOTE, noteW);
-  const maxLines = Math.floor((CARD_H - (yBottom - y) - 3) / 2.8);
+  const maxLines = Math.max(1, Math.floor((CARD_H - (yBottom - y) - 1.5) / 2.6));
   if (lines.length > maxLines) {
     lines = lines.slice(0, maxLines);
     lines[maxLines - 1] = `${lines[maxLines - 1].replace(/\s+\S*$/, "")}…`;
   }
-  doc.text(lines, x + 2, yBottom + 4.5);
+  doc.text(lines, x + 2, yBottom + 3.6);
 
   const sigRight = x + w - 3;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  const labelWidth = doc.getTextWidth("PRINCIPAL SIGN.:");
   if (signature) {
-    const sh = 11;
-    const sw = Math.min(34, (signature.w / signature.h) * sh);
+    // Kept inside the bottom strip, to the left of the label, so it never
+    // covers the roll number box above.
+    const sh = 9;
+    const sw = Math.min(30, (signature.w / signature.h) * sh);
     try {
-      doc.addImage(signature.dataUrl, imgType(signature), sigRight - sw - 2, y + CARD_H - 8 - sh, sw, sh);
+      doc.addImage(
+        signature.dataUrl,
+        imgType(signature),
+        sigRight - labelWidth - 2 - sw,
+        y + CARD_H - sh - 0.8,
+        sw,
+        sh,
+      );
     } catch {
       /* signature is optional */
     }
   }
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.text("PRINCIPAL SIGN.:", sigRight, y + CARD_H - 3, { align: "right" });
+  doc.text("PRINCIPAL SIGN.:", sigRight, y + CARD_H - 2.4, { align: "right" });
 };
 
 /**
@@ -178,7 +188,7 @@ const drawCard = (doc, x, y, card, ctx) => {
  * (already ordered by class). Six per page; a new page starts for each class.
  */
 export const buildAdmitCardPdf = ({ data, cards, logo, signature }) => {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   let slot = PER_PAGE; // forces a first page
   let lastClass = null;
   let first = true;
