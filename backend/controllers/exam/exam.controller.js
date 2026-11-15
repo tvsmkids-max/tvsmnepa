@@ -3,6 +3,7 @@
 const examService = require("../../services/exam/exam.service");
 const examAccess = require("../../services/exam/examAccess.service");
 const examTimetable = require("../../services/exam/examTimetable.service");
+const examRoll = require("../../services/exam/examRollNumber.service");
 const { sendResponse } = require("../../utils/apiResponse");
 const asyncHandler = require("../../utils/asyncHandler");
 const {
@@ -17,6 +18,7 @@ const {
   classConfigSchema,
   auditQuerySchema,
   saveTimetableSchema,
+  updateRollNumberSchema,
 } = require("../../validators/exam/exam.validator");
 
 const list = [
@@ -173,7 +175,50 @@ const saveClassTimetable = [
   }),
 ];
 
+const getRollNumbers = asyncHandler(async (req, res) => {
+  const { classId } = req.query;
+  if (!classId) {
+    return sendResponse(res).badRequest({ message: "classId is required" });
+  }
+  const data = await examRoll.list(req.params.id, classId);
+  return sendResponse(res).success({ message: "Roll numbers fetched", data });
+});
+
+const getMyRollNumbers = asyncHandler(async (req, res) => {
+  const data = await examRoll.listForTeacher(req.user, req.params.id);
+  return sendResponse(res).success({ message: "Roll numbers fetched", data });
+});
+
+const generateRollNumbers = asyncHandler(async (req, res) => {
+  const data = await examRoll.generate(
+    req.params.id,
+    req.params.classId,
+    req.user,
+    req,
+  );
+  return sendResponse(res).success({ message: "Roll numbers assigned", data });
+});
+
+const updateRollNumber = [
+  validateBody(updateRollNumberSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examRoll.updateManual(
+      req.params.id,
+      req.params.classId,
+      req.params.studentId,
+      req.body,
+      req.user,
+      req,
+    );
+    return sendResponse(res).success({ message: "Roll number updated", data });
+  }),
+];
+
 module.exports = {
+  getRollNumbers,
+  getMyRollNumbers,
+  generateRollNumbers,
+  updateRollNumber,
   getTimetable,
   saveClassTimetable,
   listMine,

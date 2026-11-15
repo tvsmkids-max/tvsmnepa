@@ -15,6 +15,12 @@ const examApi = {
     axiosInstance.get(`/exams/${id}/timetable`, { params }),
   saveTimetable: (id, classId, entries) =>
     axiosInstance.put(`/exams/${id}/timetable/${classId}`, { entries }),
+  getRollNumbers: (id, classId) =>
+    axiosInstance.get(`/exams/${id}/roll-numbers`, { params: { classId } }),
+  generateRollNumbers: (id, classId) =>
+    axiosInstance.post(`/exams/${id}/roll-numbers/${classId}/generate`),
+  updateRollNumber: (id, classId, studentId, data) =>
+    axiosInstance.put(`/exams/${id}/roll-numbers/${classId}/${studentId}`, data),
   audit: (id, params = {}) =>
     axiosInstance.get(`/exams/${id}/audit`, { params }),
 };
