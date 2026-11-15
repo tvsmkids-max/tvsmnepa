@@ -31,6 +31,7 @@ import { useSnackbar } from "notistack";
 import PageHeader from "../../components/common/PageHeader";
 import examApi from "../../api/examApi";
 import ExamTimetableTab from "./ExamTimetableTab";
+import ExamRollNumberTab from "./ExamRollNumberTab";
 import classApi from "../../api/classApi";
 import {
   EXAM_STATUS_LABELS,
@@ -105,7 +106,7 @@ const ExamDetailPage = () => {
   }, [id, reloadKey, navigate, enqueueSnackbar]);
 
   useEffect(() => {
-    if (tab !== 3) return;
+    if (tab !== 4) return;
     let cancelled = false;
     const run = async () => {
       try {
@@ -301,6 +302,7 @@ const ExamDetailPage = () => {
         <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable">
           <Tab label="Classes & Subjects" />
           <Tab label="Timetable" />
+          <Tab label="Roll Numbers" />
           <Tab label="Details" />
           <Tab label="Audit History" />
         </Tabs>
@@ -365,7 +367,9 @@ const ExamDetailPage = () => {
 
         {tab === 1 && <ExamTimetableTab exam={exam} />}
 
-        {tab === 2 && details && (
+        {tab === 2 && <ExamRollNumberTab exam={exam} />}
+
+        {tab === 3 && details && (
           <Stack spacing={2} sx={{ p: 2, maxWidth: 560 }}>
             <TextField label="Name" value={details.name} onChange={setField("name")} disabled={!editable} />
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -383,7 +387,7 @@ const ExamDetailPage = () => {
           </Stack>
         )}
 
-        {tab === 3 && (
+        {tab === 4 && (
           <Box sx={{ p: 2, overflowX: "auto" }}>
             <Table size="small">
               <TableHead>

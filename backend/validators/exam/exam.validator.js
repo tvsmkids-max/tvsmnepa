@@ -79,7 +79,13 @@ const saveTimetableSchema = Joi.object({
   entries: Joi.array().items(timetableEntrySchema).max(30).required(),
 });
 
+const updateRollNumberSchema = Joi.object({
+  rollNumber: Joi.number().integer().min(1).max(9999).required(),
+  reason: Joi.string().trim().min(3).max(300).required(),
+});
+
 module.exports = {
+  updateRollNumberSchema,
   saveTimetableSchema,
   createExamSchema,
   updateExamSchema,
