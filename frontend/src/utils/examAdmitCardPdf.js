@@ -1,22 +1,32 @@
 import { jsPDF } from "jspdf";
 import { downloadPdf, printPdf } from "./pdfGenerator"; // also registers autotable
-import { examTypeLabel } from "../pages/exams/examConstants";
 
-const SCHOOL_NAME =
-  import.meta.env.VITE_SCHOOL_NAME || "Thakur Virendra Singh Memorial School";
+// Simple admit card: 6 cards per A4 page (2 columns x 3 rows), a new page for
+// every class. No fee information is ever shown or used. No photo, no timetable.
+const SCHOOL_LINE_1 = "TH. VIRENDRA SINGH MEMORIAL SCHOOL,";
+const SCHOOL_LINE_2 = "NEPANAGAR";
+const DEFAULT_NOTE =
+  "Note: Students must carry this Hall Ticket every day. Reach the exam room 10 minutes before the scheduled time.";
 
-const fmtDate = (key) => {
-  const [y, m, d] = key.split("-");
-  const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  return `${d}-${m}-${y} (${names[new Date(Date.UTC(+y, +m - 1, +d)).getUTCDay()]})`;
-};
+const PAGE_W = 210;
+const PAGE_H = 297;
+const MARGIN = 10;
+const GAP_X = 6;
+const COLS = 2;
+const ROWS = 3;
+const CARD_W = (PAGE_W - MARGIN * 2 - GAP_X * (COLS - 1)) / COLS;
+const CARD_H = 82;
+const GAP_Y = (PAGE_H - MARGIN * 2 - CARD_H * ROWS) / (ROWS - 1);
+const PER_PAGE = COLS * ROWS;
 
-// Existing application asset (public/logo.png). A missing logo never blocks a card.
-export const loadLogo = async () => {
+// Existing application assets in /public. A missing file never blocks a card.
+// (A host's SPA fallback can answer 200 with HTML, so the type must be an image.)
+const loadImage = async (url) => {
   try {
-    const res = await fetch("/logo.png");
+    const res = await fetch(url);
     if (!res.ok) return null;
     const blob = await res.blob();
+    if (!blob.type.startsWith("image/")) return null;
     const dataUrl = await new Promise((resolve, reject) => {
       const fr = new FileReader();
       fr.onload = () => resolve(fr.result);
@@ -34,105 +44,162 @@ export const loadLogo = async () => {
     return null;
   }
 };
+export const loadLogo = () => loadImage("/logo.png");
+export const loadSignature = () => loadImage("/principal-signature.png");
+
+const imgType = (img) => (img.dataUrl.startsWith("data:image/jpeg") ? "JPEG" : "PNG");
+
+const fitText = (doc, text, maxW, size, min = 6) => {
+  let s = size;
+  doc.setFontSize(s);
+  while (doc.getTextWidth(text) > maxW && s > min) {
+    s -= 0.5;
+    doc.setFontSize(s);
+  }
+  return s;
+};
+
+// Shrinks first; only if the text still cannot fit at the smallest size is it cut.
+const fitOrTrim = (doc, text, maxW, size, min) => {
+  fitText(doc, text, maxW, size, min);
+  let t = text;
+  while (doc.getTextWidth(`${t}…`) > maxW && t.length > 1 && doc.getTextWidth(t) > maxW) {
+    t = t.slice(0, -1);
+  }
+  return t === text ? text : `${t.trimEnd()}…`;
+};
+
+const drawCard = (doc, x, y, card, ctx) => {
+  const { exam, cls, logo, signature } = ctx;
+  const w = CARD_W;
+  const rows = { header: 20, title: 8, student: 10, father: 10, klass: 10 };
+  const yTitle = y + rows.header;
+  const yStudent = yTitle + rows.title;
+  const yFather = yStudent + rows.student;
+  const yClass = yFather + rows.father;
+  const yBottom = yClass + rows.klass;
+  const labelW = 38;
+
+  // Faint background logo (drawn first so text stays crisp on top).
+  if (logo) {
+    const h = 50;
+    const lw = (logo.w / logo.h) * h;
+    try {
+      doc.setGState(new doc.GState({ opacity: 0.07 }));
+      doc.addImage(logo.dataUrl, imgType(logo), x + (w - lw) / 2, y + (CARD_H - h) / 2 + 4, lw, h);
+    } finally {
+      doc.setGState(new doc.GState({ opacity: 1 }));
+    }
+  }
+
+  doc.setDrawColor(0);
+  doc.setTextColor(0);
+  doc.setLineWidth(0.5);
+  doc.rect(x, y, w, CARD_H);
+  doc.setLineWidth(0.25);
+  [yTitle, yStudent, yFather, yClass, yBottom].forEach((ly) => doc.line(x, ly, x + w, ly));
+  doc.line(x + labelW, yStudent, x + labelW, yClass + rows.klass); // label | value
+
+  // Header
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11.5);
+  doc.text(SCHOOL_LINE_1, x + w / 2, y + 8.5, { align: "center" });
+  doc.text(SCHOOL_LINE_2, x + w / 2, y + 15, { align: "center" });
+
+  // Title: ADMIT CARD - <EXAM> <SESSION>
+  const session = String(exam.session?.name || "").replace(/\s*-\s*/g, " - ");
+  const title = `ADMIT CARD - ${exam.name.toUpperCase()} ${session}`.trim();
+  doc.setFont("helvetica", "normal");
+  fitText(doc, title, w - 4, 8.5);
+  doc.text(title, x + w / 2, yTitle + 5.4, { align: "center" });
+
+  // Student rows
+  const label = (text, ly) => {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.text(text, x + 2, ly + 6.4);
+  };
+  const value = (text, ly, maxW) => {
+    doc.setFont("helvetica", "bold");
+    doc.text(fitOrTrim(doc, text, maxW, 9.5, 5.5), x + labelW + 2, ly + 6.4);
+  };
+  label("STUDENT NAME:", yStudent);
+  value(String(card.student.name || "").toUpperCase(), yStudent, w - labelW - 4);
+  label("FATHER NAME:", yFather);
+  value(String(card.student.fatherName || "").toUpperCase(), yFather, w - labelW - 4);
+
+  // Class / section and roll number
+  const rollLabelX = x + labelW + (w - labelW) * 0.48;
+  label("CLASS / SECTION:", yClass);
+  value(`${cls.name} / ${cls.section}`.toUpperCase(), yClass, rollLabelX - x - labelW - 3);
+  doc.line(rollLabelX - 1, yClass, rollLabelX - 1, yClass + rows.klass);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.text("ROLL NO.:", rollLabelX + 1, yClass + 6.4);
+  const rollBoxX = rollLabelX + 18;
+  doc.line(rollBoxX, yClass, rollBoxX, yClass + rows.klass);
+  if (card.rollNumber !== null && card.rollNumber !== undefined) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(String(card.rollNumber), rollBoxX + (x + w - rollBoxX) / 2, yClass + 6.6, {
+      align: "center",
+    });
+  }
+
+  // Note + principal signature
+  const noteW = w * 0.56 - 4;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.8);
+  let lines = doc.splitTextToSize(exam.instructions?.trim() || DEFAULT_NOTE, noteW);
+  const maxLines = Math.floor((CARD_H - (yBottom - y) - 3) / 2.8);
+  if (lines.length > maxLines) {
+    lines = lines.slice(0, maxLines);
+    lines[maxLines - 1] = `${lines[maxLines - 1].replace(/\s+\S*$/, "")}…`;
+  }
+  doc.text(lines, x + 2, yBottom + 4.5);
+
+  const sigRight = x + w - 3;
+  if (signature) {
+    const sh = 11;
+    const sw = Math.min(34, (signature.w / signature.h) * sh);
+    try {
+      doc.addImage(signature.dataUrl, imgType(signature), sigRight - sw - 2, y + CARD_H - 8 - sh, sw, sh);
+    } catch {
+      /* signature is optional */
+    }
+  }
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.text("PRINCIPAL SIGN.:", sigRight, y + CARD_H - 3, { align: "right" });
+};
 
 /**
- * data = response of POST /exams/:id/admit-cards; cards = subset to print.
- * One admit card per A4 page. No fee information is ever shown or used.
+ * data = response of POST /exams/:id/admit-cards; cards = the cards to print
+ * (already ordered by class). Six per page; a new page starts for each class.
  */
-export const buildAdmitCardPdf = ({ data, cards, logo }) => {
+export const buildAdmitCardPdf = ({ data, cards, logo, signature }) => {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const W = doc.internal.pageSize.getWidth();
-  const H = doc.internal.pageSize.getHeight();
-  const { exam } = data;
+  let slot = PER_PAGE; // forces a first page
+  let lastClass = null;
+  let first = true;
 
-  cards.forEach((card, i) => {
-    if (i > 0) doc.addPage();
-    const cls = data.classes[card.classId];
-
-    doc.setDrawColor(13, 27, 62);
-    doc.setLineWidth(0.6);
-    doc.rect(8, 8, W - 16, H - 16);
-
-    if (logo) {
-      const h = 24;
-      const w = Math.min(34, (logo.w / logo.h) * h);
-      try {
-        doc.addImage(logo.dataUrl, "PNG", 14, 13, w, h);
-      } catch {
-        /* logo is optional */
-      }
+  cards.forEach((card) => {
+    if (slot >= PER_PAGE || card.classId !== lastClass) {
+      if (!first) doc.addPage();
+      first = false;
+      slot = 0;
+      lastClass = card.classId;
     }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(15);
-    doc.setTextColor(13, 27, 62);
-    doc.text(SCHOOL_NAME.toUpperCase(), W / 2 + 6, 21, { align: "center" });
-    doc.setFontSize(13);
-    doc.text("ADMIT CARD", W / 2 + 6, 29, { align: "center" });
-    doc.setFontSize(11);
-    doc.setTextColor(0);
-    doc.text(`${exam.name} (${examTypeLabel(exam.examType)})`, W / 2 + 6, 36, {
-      align: "center",
-    });
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text(`Academic Session: ${exam.session?.name || ""}`, W / 2 + 6, 42, {
-      align: "center",
-    });
-
-    doc.autoTable({
-      startY: 50,
-      body: [
-        ["Student Name", card.student.name, "Roll No.", card.rollNumber ?? "—"],
-        ["Admission No.", card.student.scholarNumber || "—", "Class", cls.name],
-        ["Section", cls.section, "Session", exam.session?.name || ""],
-      ],
-      theme: "grid",
-      styles: { fontSize: 10, cellPadding: 2.5 },
-      columnStyles: {
-        0: { fontStyle: "bold", cellWidth: 32, fillColor: [238, 241, 247] },
-        2: { fontStyle: "bold", cellWidth: 28, fillColor: [238, 241, 247] },
-      },
-      margin: { left: 14, right: 14 },
-    });
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text("Examination Timetable", 14, doc.lastAutoTable.finalY + 9);
-    doc.autoTable({
-      startY: doc.lastAutoTable.finalY + 12,
-      head: [["Date", "Subject", "Time"]],
-      body: cls.timetable.length
-        ? cls.timetable.map((t) => [
-            fmtDate(t.date),
-            t.subjectName,
-            `${t.startTime} - ${t.endTime}`,
-          ])
-        : [["Timetable not yet available", "", ""]],
-      styles: { fontSize: 10, cellPadding: 2.5 },
-      headStyles: { fillColor: [13, 27, 62] },
-      margin: { left: 14, right: 14 },
-    });
-
-    let y = doc.lastAutoTable.finalY + 10;
-    if (exam.instructions) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.text("Instructions", 14, y);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
-      const lines = doc.splitTextToSize(exam.instructions, W - 28);
-      doc.text(lines, 14, y + 6);
-      y += 6 + lines.length * 4.5;
-    }
-
-    // Authorized signature area, pinned near the bottom of the card.
-    const sigY = Math.max(y + 18, H - 32);
-    doc.setDrawColor(0);
-    doc.setLineWidth(0.3);
-    doc.line(W - 70, sigY, W - 14, sigY);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text("Authorized Signature", W - 42, sigY + 5, { align: "center" });
+    const col = slot % COLS;
+    const row = Math.floor(slot / COLS);
+    drawCard(
+      doc,
+      MARGIN + col * (CARD_W + GAP_X),
+      MARGIN + row * (CARD_H + GAP_Y),
+      card,
+      { exam: data.exam, cls: data.classes[card.classId], logo, signature },
+    );
+    slot += 1;
   });
   return doc;
 };

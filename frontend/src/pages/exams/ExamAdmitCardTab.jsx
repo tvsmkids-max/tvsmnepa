@@ -24,6 +24,7 @@ import { useSnackbar } from "notistack";
 import examApi from "../../api/examApi";
 import {
   loadLogo,
+  loadSignature,
   downloadAdmitCardPdf,
   printAdmitCardPdf,
 } from "../../utils/examAdmitCardPdf";
@@ -71,8 +72,8 @@ const ExamAdmitCardTab = ({ exam }) => {
 
   const output = async (cards, mode, name) => {
     if (!data || cards.length === 0) return;
-    const logo = await loadLogo();
-    const args = { data, cards, logo };
+    const [logo, signature] = await Promise.all([loadLogo(), loadSignature()]);
+    const args = { data, cards, logo, signature };
     if (mode === "print") printAdmitCardPdf(args);
     else downloadAdmitCardPdf(args, name);
   };
@@ -82,8 +83,9 @@ const ExamAdmitCardTab = ({ exam }) => {
   return (
     <Box sx={{ p: 2 }}>
       <Alert severity="info" sx={{ mb: 2 }}>
-        Admit cards are available to every active student. Fee status is never checked. Missing
-        information is shown as a warning and does not stop you from generating a card.
+        Cards print six per A4 page, starting a new page for each class. Admit cards are available
+        to every active student: fee status is never checked, and missing information is shown as
+        a warning that does not stop you from generating a card.
       </Alert>
 
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 2 }} alignItems={{ sm: "center" }}>
