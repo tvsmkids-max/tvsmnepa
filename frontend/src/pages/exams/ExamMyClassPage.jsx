@@ -12,7 +12,9 @@ import {
   TableRow,
   LinearProgress,
   Alert,
+  Button,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import PageHeader from "../../components/common/PageHeader";
 import EmptyState from "../../components/common/EmptyState";
@@ -23,9 +25,18 @@ import {
   examTypeLabel,
 } from "./examConstants";
 
+const MARKS_STATUSES = [
+  "completed",
+  "marks_entry_in_progress",
+  "marks_submitted",
+  "results_prepared",
+  "results_published",
+];
+
 const fmt = (d) => (d ? String(d).slice(0, 10) : "—");
 
 const ExamMyClassPage = () => {
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,12 +95,24 @@ const ExamMyClassPage = () => {
                 {fmt(e.endDate)}
               </Typography>
             </Box>
-            <Chip
-              size="small"
-              label={EXAM_STATUS_LABELS[e.status]}
-              color={EXAM_STATUS_COLORS[e.status]}
-              sx={{ alignSelf: { sm: "flex-start" } }}
-            />
+            <Stack direction="row" spacing={1} alignItems="flex-start">
+              {MARKS_STATUSES.includes(e.status) && (
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={() => navigate(`/exams/mine/${e._id}/marks`)}
+                >
+                  {e.status === "marks_entry_in_progress" || e.status === "completed"
+                    ? "Enter marks"
+                    : "View marks"}
+                </Button>
+              )}
+              <Chip
+                size="small"
+                label={EXAM_STATUS_LABELS[e.status]}
+                color={EXAM_STATUS_COLORS[e.status]}
+              />
+            </Stack>
           </Stack>
           {e.instructions && (
             <Alert severity="info" sx={{ mb: 1.5, whiteSpace: "pre-line" }}>

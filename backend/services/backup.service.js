@@ -16,6 +16,8 @@ const ActivityLog = require("../models/ActivityLog.model");
 const Exam = require("../models/exam/Exam.model");
 const ExamClassConfig = require("../models/exam/ExamClassConfig.model");
 const ExamAuditLog = require("../models/exam/ExamAuditLog.model");
+const ExamMarks = require("../models/exam/ExamMarks.model");
+const ExamMarksSubmission = require("../models/exam/ExamMarksSubmission.model");
 const ExamRollNumber = require("../models/exam/ExamRollNumber.model");
 const ExamTimetableEntry = require("../models/exam/ExamTimetableEntry.model");
 
@@ -41,6 +43,8 @@ const BACKUP_MODELS = [
   { name: "examClassConfigs", model: ExamClassConfig, includeInRestore: true },
   { name: "examTimetableEntries", model: ExamTimetableEntry, includeInRestore: true },
   { name: "examRollNumbers", model: ExamRollNumber, includeInRestore: true },
+  { name: "examMarks", model: ExamMarks, includeInRestore: true },
+  { name: "examMarksSubmissions", model: ExamMarksSubmission, includeInRestore: true },
   // Append-only audit trail (no TTL, unlike activityLogs): kept in backups.
   { name: "examAuditLogs", model: ExamAuditLog, includeInRestore: true },
   { name: "activityLogs", model: ActivityLog, includeInRestore: false },
