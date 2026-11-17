@@ -38,6 +38,10 @@ const examMarksSchema = new mongoose.Schema(
 
     status: { type: String, enum: ["draft", "submitted"], default: "draft" },
     enteredBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    // Set when the Admin corrects a submitted value.
+    correctedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    correctedAt: { type: Date, default: null },
+    correctionCount: { type: Number, default: 0 },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true },

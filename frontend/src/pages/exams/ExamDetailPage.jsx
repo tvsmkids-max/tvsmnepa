@@ -33,6 +33,7 @@ import examApi from "../../api/examApi";
 import ExamTimetableTab from "./ExamTimetableTab";
 import ExamRollNumberTab from "./ExamRollNumberTab";
 import ExamAdmitCardTab from "./ExamAdmitCardTab";
+import ExamMarksMonitorTab from "./ExamMarksMonitorTab";
 import classApi from "../../api/classApi";
 import {
   EXAM_STATUS_LABELS,
@@ -107,7 +108,7 @@ const ExamDetailPage = () => {
   }, [id, reloadKey, navigate, enqueueSnackbar]);
 
   useEffect(() => {
-    if (tab !== 5) return;
+    if (tab !== 6) return;
     let cancelled = false;
     const run = async () => {
       try {
@@ -305,6 +306,7 @@ const ExamDetailPage = () => {
           <Tab label="Timetable" />
           <Tab label="Roll Numbers" />
           <Tab label="Admit Cards" />
+          <Tab label="Marks" />
           <Tab label="Details" />
           <Tab label="Audit History" />
         </Tabs>
@@ -373,7 +375,9 @@ const ExamDetailPage = () => {
 
         {tab === 3 && <ExamAdmitCardTab exam={exam} />}
 
-        {tab === 4 && details && (
+        {tab === 4 && <ExamMarksMonitorTab exam={exam} onChanged={() => setReloadKey((k) => k + 1)} />}
+
+        {tab === 5 && details && (
           <Stack spacing={2} sx={{ p: 2, maxWidth: 560 }}>
             <TextField label="Name" value={details.name} onChange={setField("name")} disabled={!editable} />
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -391,7 +395,7 @@ const ExamDetailPage = () => {
           </Stack>
         )}
 
-        {tab === 5 && (
+        {tab === 6 && (
           <Box sx={{ p: 2, overflowX: "auto" }}>
             <Table size="small">
               <TableHead>

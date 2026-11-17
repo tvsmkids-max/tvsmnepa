@@ -43,7 +43,12 @@ router.delete("/:id", examController.remove);
 router.patch("/:id/status", examController.changeStatus);
 router.get("/:id/audit", examController.listAudit);
 
+router.get("/:id/marks/monitor", examController.monitorMarks);
+router.get("/:id/marks/:classId/:subjectKey", examController.adminMarksSheet);
+router.put("/:id/marks/:classId/:subjectKey", examController.correctMarks);
 router.post("/:id/marks/:classId/reopen", examController.reopenMarks);
+router.post("/:id/marks/:classId/lock", examController.lockMarks);
+router.post("/:id/marks/:classId/unlock", examController.unlockMarks);
 
 router.post("/:id/admit-cards", examController.buildAdmitCards);
 

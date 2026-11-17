@@ -5,7 +5,11 @@ const mongoose = require("mongoose");
 // Marks-entry state of one class in one examination (all subjects together).
 const historySchema = new mongoose.Schema(
   {
-    action: { type: String, enum: ["submitted", "reopened"], required: true },
+    action: {
+      type: String,
+      enum: ["submitted", "reopened", "locked", "unlocked"],
+      required: true,
+    },
     at: { type: Date, default: Date.now },
     by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     byName: { type: String, default: "" },
@@ -23,9 +27,16 @@ const examMarksSubmissionSchema = new mongoose.Schema(
       ref: "AcademicSession",
       required: true,
     },
-    status: { type: String, enum: ["draft", "submitted"], default: "draft" },
+    // draft = teacher editing; submitted = waiting for Admin; locked = approved by Admin
+    status: {
+      type: String,
+      enum: ["draft", "submitted", "locked"],
+      default: "draft",
+    },
     submittedAt: { type: Date, default: null },
     submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    lockedAt: { type: Date, default: null },
+    lockedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     reopenCount: { type: Number, default: 0 },
     history: { type: [historySchema], default: [] },
   },
