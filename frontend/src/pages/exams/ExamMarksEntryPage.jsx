@@ -207,7 +207,8 @@ const ExamMarksEntryPage = () => {
   if (loading || !overview || !sheet) return <LinearProgress />;
 
   const { exam } = overview;
-  const submitted = overview.submission.status === "submitted";
+  const submitted = overview.submission.status !== "draft";
+  const locked = overview.submission.status === "locked";
   const totalPending = overview.subjects.reduce((a, s) => a + s.pending, 0);
   const canSubmit =
     overview.canEdit && !dirty && totalPending === 0 && overview.missingRoll.length === 0;
@@ -225,7 +226,7 @@ const ExamMarksEntryPage = () => {
         <Chip size="small" label={EXAM_STATUS_LABELS[exam.status]} color={EXAM_STATUS_COLORS[exam.status]} />
         <Chip
           size="small"
-          label={submitted ? "Submitted to Admin" : "Not submitted"}
+          label={locked ? "Approved & locked by Admin" : submitted ? "Submitted to Admin" : "Not submitted"}
           color={submitted ? "success" : "warning"}
         />
         {overview.submission.reopenCount > 0 && (
@@ -238,7 +239,9 @@ const ExamMarksEntryPage = () => {
 
       {submitted && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          These marks are submitted and locked. Only the Admin can reopen marks entry.
+          {locked
+            ? "These marks are approved and locked by the Admin. They cannot be changed."
+            : "These marks are submitted and locked. Only the Admin can reopen marks entry."}
         </Alert>
       )}
       {!overview.entryOpen && !submitted && (

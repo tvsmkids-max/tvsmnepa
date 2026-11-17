@@ -122,7 +122,29 @@ const reopenMarksSchema = Joi.object({
   reason: Joi.string().trim().min(3).max(500).required(),
 });
 
+const correctMarksSchema = Joi.object({
+  entries: Joi.array()
+    .items(
+      Joi.object({
+        studentId: objectId.required(),
+        attendance: Joi.string().valid("present", "absent").required(),
+        marks: Joi.number().min(0).max(1000).precision(2).allow(null),
+        remarks: Joi.string().trim().max(200).allow(""),
+      }),
+    )
+    .min(1)
+    .max(300)
+    .required(),
+  reason: Joi.string().trim().min(3).max(500).required(),
+});
+
+const unlockMarksSchema = Joi.object({
+  reason: Joi.string().trim().min(3).max(500).required(),
+});
+
 module.exports = {
+  correctMarksSchema,
+  unlockMarksSchema,
   saveMarksSchema,
   reopenMarksSchema,
   admitCardSchema,

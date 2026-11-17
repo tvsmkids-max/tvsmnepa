@@ -24,6 +24,8 @@ const {
   admitCardSchema,
   saveMarksSchema,
   reopenMarksSchema,
+  correctMarksSchema,
+  unlockMarksSchema,
 } = require("../../validators/exam/exam.validator");
 
 const list = [
@@ -270,7 +272,60 @@ const reopenMarks = [
   }),
 ];
 
+const monitorMarks = asyncHandler(async (req, res) => {
+  const data = await examMarks.monitor(req.params.id);
+  return sendResponse(res).success({ message: "Marks monitoring fetched", data });
+});
+
+const adminMarksSheet = asyncHandler(async (req, res) => {
+  const data = await examMarks.adminSheet(
+    req.params.id,
+    req.params.classId,
+    req.params.subjectKey,
+  );
+  return sendResponse(res).success({ message: "Marks sheet fetched", data });
+});
+
+const correctMarks = [
+  validateBody(correctMarksSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examMarks.correct(
+      req.params.id,
+      req.params.classId,
+      req.params.subjectKey,
+      req.body,
+      req.user,
+      req,
+    );
+    return sendResponse(res).success({ message: "Marks corrected", data });
+  }),
+];
+
+const lockMarks = asyncHandler(async (req, res) => {
+  const data = await examMarks.lock(req.params.id, req.params.classId, req.user, req);
+  return sendResponse(res).success({ message: "Marks locked", data });
+});
+
+const unlockMarks = [
+  validateBody(unlockMarksSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examMarks.unlock(
+      req.params.id,
+      req.params.classId,
+      req.body,
+      req.user,
+      req,
+    );
+    return sendResponse(res).success({ message: "Marks unlocked", data });
+  }),
+];
+
 module.exports = {
+  monitorMarks,
+  adminMarksSheet,
+  correctMarks,
+  lockMarks,
+  unlockMarks,
   marksOverview,
   marksSheet,
   saveMarks,

@@ -26,6 +26,12 @@ const MARKS_ENTRY_STATUSES = Object.freeze([
   EXAM_STATUS.MARKS_ENTRY_IN_PROGRESS,
 ]);
 
+// Statuses in which the Admin may review, correct, lock or unlock marks.
+const ADMIN_REVIEW_STATUSES = Object.freeze([
+  EXAM_STATUS.MARKS_ENTRY_IN_PROGRESS,
+  EXAM_STATUS.MARKS_SUBMITTED,
+]);
+
 const sameValue = (a, b) =>
   a === b || (a !== null && b !== null && Math.abs(a - b) < 1e-9);
 
@@ -86,7 +92,7 @@ class ExamMarksService {
   _canEdit(exam, submission) {
     return (
       MARKS_ENTRY_STATUSES.includes(exam.status) &&
-      (submission?.status || "draft") !== "submitted"
+      (submission?.status || "draft") === "draft"
     );
   }
 
@@ -152,6 +158,10 @@ class ExamMarksService {
   async sheet(user, examId, subjectKey) {
     const { exam, config, classId } = await this._context(user, examId);
     const subject = this._subject(config, subjectKey);
+    return this._buildSheet(exam, classId, subject);
+  }
+
+  async _buildSheet(exam, classId, subject) {
     await exam.populate("session", "name");
     const [roster, submission, docs] = await Promise.all([
       this._roster(exam, classId),
@@ -179,6 +189,9 @@ class ExamMarksService {
           attendance: d?.attendance || "present",
           marks: d ? d.marks : null,
           remarks: d?.remarks || "",
+          rowStatus: d?.status || "not_entered",
+          correctionCount: d?.correctionCount || 0,
+          correctedAt: d?.correctedAt || null,
         };
       });
 
@@ -191,8 +204,15 @@ class ExamMarksService {
         maxMarks: subject.maxMarks,
         passingMarks: subject.passingMarks,
       },
-      submission: { status: submission?.status || "draft" },
+      submission: {
+        status: submission?.status || "draft",
+        submittedAt: submission?.submittedAt || null,
+        lockedAt: submission?.lockedAt || null,
+        reopenCount: submission?.reopenCount || 0,
+      },
       canEdit: this._canEdit(exam, submission),
+      canCorrect:
+        submission?.status === "submitted" && ADMIN_REVIEW_STATUSES.includes(exam.status),
       rows,
       missingRoll: roster.missingRoll,
     };
@@ -210,7 +230,7 @@ class ExamMarksService {
       );
     }
     const submission = await this._submission(exam, classId);
-    if (submission?.status === "submitted") {
+    if (submission && submission.status !== "draft") {
       throwError(
         "Marks for this class are submitted and locked. Ask the Admin to reopen marks entry.",
         409,
@@ -419,7 +439,7 @@ class ExamMarksService {
       );
     }
     const submission = await this._submission(exam, classId);
-    if (submission?.status === "submitted") {
+    if (submission && submission.status !== "draft") {
       throwError("Marks for this class are already submitted", 409);
     }
 
@@ -484,7 +504,10 @@ class ExamMarksService {
     // Every configured class submitted → Marks Submitted.
     const [total, submitted] = await Promise.all([
       ExamClassConfig.countDocuments({ exam: exam._id }),
-      ExamMarksSubmission.countDocuments({ exam: exam._id, status: "submitted" }),
+      ExamMarksSubmission.countDocuments({
+        exam: exam._id,
+        status: { $in: ["submitted", "locked"] },
+      }),
     ]);
     let examStatus = exam.status;
     if (submitted >= total && exam.status === EXAM_STATUS.MARKS_ENTRY_IN_PROGRESS) {
@@ -548,6 +571,9 @@ class ExamMarksService {
       );
     }
     const submission = await ExamMarksSubmission.findOne({ exam: exam._id, class: classId });
+    if (submission && submission.status === "locked") {
+      throwError("These marks are locked. Unlock them first, with a reason.", 409);
+    }
     if (!submission || submission.status !== "submitted") {
       throwError("This class has no submitted marks to reopen", 409);
     }
@@ -606,10 +632,329 @@ class ExamMarksService {
       user,
       req,
       reason: reason.trim(),
-      before: { submittedMarks: snapshot },
-      after: { status: "draft" },
+      before: {
+        submissionStatus: "submitted",
+        examStatus: exam.status,
+        submittedMarks: snapshot,
+      },
+      after: {
+        submissionStatus: "draft",
+        examStatus:
+          exam.status === EXAM_STATUS.MARKS_SUBMITTED
+            ? EXAM_STATUS.MARKS_ENTRY_IN_PROGRESS
+            : exam.status,
+      },
     });
     return { status: "draft" };
+  }
+
+  // ════════════════════════ ADMIN: monitoring, review, correction, lock ═════
+  async _adminContext(examId, classId) {
+    if (!mongoose.isValidObjectId(examId)) throwError("Invalid examination ID", 400);
+    if (!mongoose.isValidObjectId(classId)) throwError("Invalid class ID", 400);
+    const exam = await Exam.findById(examId);
+    if (!exam) throwError("Examination not found", 404);
+    const config = await ExamClassConfig.findOne({ exam: exam._id, class: classId }).lean();
+    if (!config) throwError("Class is not configured for this examination", 404);
+    return { exam, config };
+  }
+
+  async monitor(examId) {
+    if (!mongoose.isValidObjectId(examId)) throwError("Invalid examination ID", 400);
+    const exam = await Exam.findById(examId).populate("session", "name");
+    if (!exam) throwError("Examination not found", 404);
+
+    const configs = (
+      await ExamClassConfig.find({ exam: exam._id })
+        .populate("class", "name section displayOrder")
+        .lean()
+    ).filter((c) => c.class);
+    const classIds = configs.map((c) => c.class._id);
+
+    const [rolls, activeStudents, subs, marks] = await Promise.all([
+      ExamRollNumber.find({ session: exam.session._id, class: { $in: classIds } })
+        .select("class student")
+        .lean(),
+      Student.find({
+        class: { $in: classIds },
+        session: exam.session._id,
+        status: STUDENT_STATUS.ACTIVE,
+      })
+        .select("class")
+        .lean(),
+      ExamMarksSubmission.find({ exam: exam._id }).lean(),
+      ExamMarks.find({ exam: exam._id })
+        .select("class subjectKey student attendance marks status")
+        .lean(),
+    ]);
+
+    const subByClass = new Map(subs.map((x) => [String(x.class), x]));
+    const classes = configs
+      .sort(
+        (a, b) =>
+          (a.class.displayOrder ?? 0) - (b.class.displayOrder ?? 0) ||
+          `${a.class.name}${a.class.section}`.localeCompare(`${b.class.name}${b.class.section}`),
+      )
+      .map((c) => {
+        const cid = String(c.class._id);
+        const active = new Set(
+          activeStudents.filter((s) => String(s.class) === cid).map((s) => String(s._id)),
+        );
+        const numbered = new Set(
+          rolls
+            .filter((r) => String(r.class) === cid && active.has(String(r.student)))
+            .map((r) => String(r.student)),
+        );
+        const total = numbered.size;
+        const classMarks = marks.filter(
+          (m) => String(m.class) === cid && numbered.has(String(m.student)),
+        );
+
+        const subjects = c.subjects.map((s) => {
+          const mine = classMarks.filter((m) => m.subjectKey === s.nameKey);
+          const entered = mine.filter((m) => m.attendance === "absent" || m.marks !== null);
+          return {
+            key: s.nameKey,
+            name: s.name,
+            maxMarks: s.maxMarks,
+            passingMarks: s.passingMarks,
+            totalStudents: total,
+            entered: entered.length,
+            pending: total - entered.length,
+            absent: mine.filter((m) => m.attendance === "absent").length,
+            draft: entered.filter((m) => m.status === "draft").length,
+            submitted: entered.filter((m) => m.status === "submitted").length,
+            completion: total ? Math.round((entered.length / total) * 100) : 0,
+          };
+        });
+        const need = total * subjects.length;
+        const have = subjects.reduce((a, s) => a + s.entered, 0);
+        const sub = subByClass.get(cid);
+        return {
+          class: { _id: c.class._id, name: c.class.name, section: c.class.section },
+          submission: {
+            status: sub?.status || "not_started",
+            submittedAt: sub?.submittedAt || null,
+            lockedAt: sub?.lockedAt || null,
+            reopenCount: sub?.reopenCount || 0,
+          },
+          totalStudents: total,
+          missingRoll: active.size - total,
+          subjects,
+          completion: need ? Math.round((have / need) * 100) : 0,
+        };
+      });
+
+    return {
+      exam: {
+        _id: exam._id,
+        name: exam.name,
+        examType: exam.examType,
+        status: exam.status,
+        session: exam.session,
+      },
+      classes,
+      summary: {
+        classes: classes.length,
+        submitted: classes.filter((c) => c.submission.status === "submitted").length,
+        locked: classes.filter((c) => c.submission.status === "locked").length,
+        inProgress: classes.filter((c) => c.submission.status === "draft").length,
+        notStarted: classes.filter((c) => c.submission.status === "not_started").length,
+      },
+    };
+  }
+
+  async adminSheet(examId, classId, subjectKey) {
+    const { exam, config } = await this._adminContext(examId, classId);
+    const subject = this._subject(config, subjectKey);
+    return this._buildSheet(exam, classId, subject);
+  }
+
+  // Admin correction of SUBMITTED (not locked) marks. Reason mandatory; every
+  // change is audited with before/after values.
+  async correct(examId, classId, subjectKey, { entries, reason }, user, req) {
+    const { exam, config } = await this._adminContext(examId, classId);
+    const subject = this._subject(config, subjectKey);
+    if (!ADMIN_REVIEW_STATUSES.includes(exam.status)) {
+      throwError(
+        `Marks cannot be corrected while the examination is ${EXAM_STATUS_LABELS[exam.status]}`,
+        409,
+      );
+    }
+    const submission = await this._submission(exam, classId);
+    if (!submission || submission.status === "draft") {
+      throwError("These marks are not submitted yet. The class teacher is still entering them.", 409);
+    }
+    if (submission.status === "locked") {
+      throwError("These marks are locked. Unlock them first, with a reason.", 409);
+    }
+
+    const existing = await ExamMarks.find({
+      exam: exam._id,
+      class: classId,
+      subjectKey: subject.nameKey,
+    }).lean();
+    const byStudent = new Map(existing.map((d) => [String(d.student), d]));
+
+    const problems = [];
+    const seen = new Set();
+    for (const e of entries) {
+      const sid = String(e.studentId);
+      const row = byStudent.get(sid);
+      if (seen.has(sid)) {
+        problems.push(`Duplicate entry for student ${row?.studentName || sid}`);
+        continue;
+      }
+      seen.add(sid);
+      if (!row) {
+        problems.push(`No submitted marks exist for student ${sid}`);
+        continue;
+      }
+      const hasMarks = e.marks !== null && e.marks !== undefined;
+      if (e.attendance === "absent" && hasMarks) {
+        problems.push(`${row.studentName}: an absent student cannot have marks`);
+      } else if (e.attendance === "present") {
+        if (!hasMarks) problems.push(`${row.studentName}: marks are required for a present student`);
+        else if (e.marks > subject.maxMarks) {
+          problems.push(`${row.studentName}: marks ${e.marks} exceed the maximum (${subject.maxMarks})`);
+        }
+      }
+    }
+    if (problems.length) {
+      throwError(
+        problems.slice(0, 5).join("; ") +
+          (problems.length > 5 ? `; and ${problems.length - 5} more` : ""),
+        400,
+      );
+    }
+
+    const changes = [];
+    const ops = [];
+    for (const e of entries) {
+      const row = byStudent.get(String(e.studentId));
+      const after = {
+        attendance: e.attendance,
+        marks: e.attendance === "absent" ? null : e.marks,
+        remarks: e.remarks || "",
+      };
+      const prev = { attendance: row.attendance, marks: row.marks, remarks: row.remarks || "" };
+      if (
+        prev.attendance === after.attendance &&
+        sameValue(prev.marks, after.marks) &&
+        prev.remarks === after.remarks
+      ) {
+        continue;
+      }
+      changes.push({
+        student: row.studentName,
+        scholarNumber: row.scholarNumber,
+        rollNumber: row.rollNumber,
+        before: prev,
+        after,
+      });
+      ops.push({
+        updateOne: {
+          filter: {
+            _id: row._id,
+            status: "submitted",
+            attendance: row.attendance,
+            marks: row.marks,
+          },
+          update: {
+            $set: { ...after, updatedBy: user._id, correctedBy: user._id, correctedAt: new Date() },
+            $inc: { correctionCount: 1 },
+          },
+        },
+      });
+    }
+    if (ops.length === 0) throwError("No changes to save", 400);
+
+    const res = await ExamMarks.bulkWrite(ops, { ordered: true });
+    if ((res.modifiedCount ?? res.nModified ?? ops.length) !== ops.length) {
+      throwError("Some marks changed while you were correcting them. Reload and try again.", 409);
+    }
+
+    await logExamAudit({
+      exam: exam._id,
+      classId,
+      action: "MARKS_CORRECTED_BY_ADMIN",
+      user,
+      req,
+      reason: reason.trim(),
+      after: { subject: subject.name, changes },
+    });
+    return { corrected: changes.length };
+  }
+
+  // Approve and lock a submitted class. Locked marks cannot be corrected or
+  // reopened until the Admin unlocks them with a reason.
+  async lock(examId, classId, user, req) {
+    const { exam } = await this._adminContext(examId, classId);
+    if (!ADMIN_REVIEW_STATUSES.includes(exam.status)) {
+      throwError(
+        `Marks cannot be locked while the examination is ${EXAM_STATUS_LABELS[exam.status]}`,
+        409,
+      );
+    }
+    const locked = await ExamMarksSubmission.findOneAndUpdate(
+      { exam: exam._id, class: classId, status: "submitted" },
+      {
+        $set: { status: "locked", lockedAt: new Date(), lockedBy: user._id },
+        $push: { history: { action: "locked", at: new Date(), by: user._id, byName: user.name } },
+      },
+      { new: true },
+    );
+    if (!locked) throwError("Only submitted marks can be locked", 409);
+
+    await logExamAudit({
+      exam: exam._id,
+      classId,
+      action: "MARKS_LOCKED",
+      user,
+      req,
+      before: { submissionStatus: "submitted" },
+      after: { submissionStatus: "locked" },
+    });
+    return { status: "locked" };
+  }
+
+  async unlock(examId, classId, { reason }, user, req) {
+    const { exam } = await this._adminContext(examId, classId);
+    if (!ADMIN_REVIEW_STATUSES.includes(exam.status)) {
+      throwError(
+        `Marks cannot be unlocked while the examination is ${EXAM_STATUS_LABELS[exam.status]}`,
+        409,
+      );
+    }
+    const unlocked = await ExamMarksSubmission.findOneAndUpdate(
+      { exam: exam._id, class: classId, status: "locked" },
+      {
+        $set: { status: "submitted", lockedAt: null },
+        $push: {
+          history: {
+            action: "unlocked",
+            at: new Date(),
+            by: user._id,
+            byName: user.name,
+            reason: reason.trim(),
+          },
+        },
+      },
+      { new: true },
+    );
+    if (!unlocked) throwError("These marks are not locked", 409);
+
+    await logExamAudit({
+      exam: exam._id,
+      classId,
+      action: "MARKS_UNLOCKED",
+      user,
+      req,
+      reason: reason.trim(),
+      before: { submissionStatus: "locked" },
+      after: { submissionStatus: "submitted" },
+    });
+    return { status: "submitted" };
   }
 }
 

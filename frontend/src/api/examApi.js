@@ -30,6 +30,17 @@ const examApi = {
   submitMarks: (id) => axiosInstance.post(`/exams/mine/${id}/marks/submit`),
   reopenMarks: (id, classId, reason) =>
     axiosInstance.post(`/exams/${id}/marks/${classId}/reopen`, { reason }),
+  monitorMarks: (id) => axiosInstance.get(`/exams/${id}/marks/monitor`),
+  adminMarksSheet: (id, classId, subjectKey) =>
+    axiosInstance.get(`/exams/${id}/marks/${classId}/${encodeURIComponent(subjectKey)}`),
+  correctMarks: (id, classId, subjectKey, entries, reason) =>
+    axiosInstance.put(`/exams/${id}/marks/${classId}/${encodeURIComponent(subjectKey)}`, {
+      entries,
+      reason,
+    }),
+  lockMarks: (id, classId) => axiosInstance.post(`/exams/${id}/marks/${classId}/lock`),
+  unlockMarks: (id, classId, reason) =>
+    axiosInstance.post(`/exams/${id}/marks/${classId}/unlock`, { reason }),
   audit: (id, params = {}) =>
     axiosInstance.get(`/exams/${id}/audit`, { params }),
 };
