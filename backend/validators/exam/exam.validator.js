@@ -142,7 +142,17 @@ const unlockMarksSchema = Joi.object({
   reason: Joi.string().trim().min(3).max(500).required(),
 });
 
+const withdrawResultsSchema = Joi.object({
+  reason: Joi.string().trim().min(3).max(500).required(),
+});
+
+const publishResultsSchema = Joi.object({
+  confirm: Joi.boolean().valid(true).required(),
+});
+
 module.exports = {
+  withdrawResultsSchema,
+  publishResultsSchema,
   correctMarksSchema,
   unlockMarksSchema,
   saveMarksSchema,

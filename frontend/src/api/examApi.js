@@ -41,6 +41,14 @@ const examApi = {
   lockMarks: (id, classId) => axiosInstance.post(`/exams/${id}/marks/${classId}/lock`),
   unlockMarks: (id, classId, reason) =>
     axiosInstance.post(`/exams/${id}/marks/${classId}/unlock`, { reason }),
+  validateResults: (id) => axiosInstance.get(`/exams/${id}/results/validate`),
+  calculateResults: (id) => axiosInstance.post(`/exams/${id}/results/calculate`),
+  listResults: (id, classId) =>
+    axiosInstance.get(`/exams/${id}/results`, { params: classId ? { classId } : {} }),
+  publishSummary: (id) => axiosInstance.get(`/exams/${id}/results/publish-summary`),
+  publishResults: (id) => axiosInstance.post(`/exams/${id}/results/publish`, { confirm: true }),
+  withdrawResults: (id, reason) => axiosInstance.post(`/exams/${id}/results/withdraw`, { reason }),
+  myResults: (id) => axiosInstance.get(`/exams/mine/${id}/results`),
   audit: (id, params = {}) =>
     axiosInstance.get(`/exams/${id}/audit`, { params }),
 };

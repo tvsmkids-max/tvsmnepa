@@ -96,6 +96,15 @@ const ExamMyClassPage = () => {
               </Typography>
             </Box>
             <Stack direction="row" spacing={1} alignItems="flex-start">
+              {e.status === "results_published" && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => navigate(`/exams/mine/${e._id}/results`)}
+                >
+                  View results
+                </Button>
+              )}
               {MARKS_STATUSES.includes(e.status) && (
                 <Button
                   size="small"

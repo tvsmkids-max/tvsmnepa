@@ -42,7 +42,9 @@ const EXAM_TRANSITIONS = Object.freeze({
   [S.MARKS_ENTRY_IN_PROGRESS]: [S.MARKS_SUBMITTED],
   [S.MARKS_SUBMITTED]: [S.MARKS_ENTRY_IN_PROGRESS, S.RESULTS_PREPARED],
   [S.RESULTS_PREPARED]: [S.MARKS_SUBMITTED, S.RESULTS_PUBLISHED],
-  [S.RESULTS_PUBLISHED]: [],
+  // Published results can only be withdrawn through the audited admin
+  // "withdraw" action (reason required), never by a manual status change.
+  [S.RESULTS_PUBLISHED]: [S.MARKS_SUBMITTED],
 });
 
 // Statuses an admin may set by hand in Phase 1. The marks/result statuses are
