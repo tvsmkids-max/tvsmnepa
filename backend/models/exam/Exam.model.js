@@ -50,6 +50,10 @@ const examSchema = new mongoose.Schema(
       default: EXAM_STATUS.DRAFT,
     },
     statusHistory: { type: [statusHistorySchema], default: [] },
+    // Incremented on every result calculation; only this version is current.
+    resultsVersion: { type: Number, default: 0 },
+    resultsPublishedAt: { type: Date, default: null },
+    resultsPublishedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },

@@ -6,6 +6,7 @@ const examTimetable = require("../../services/exam/examTimetable.service");
 const examRoll = require("../../services/exam/examRollNumber.service");
 const examAdmit = require("../../services/exam/examAdmitCard.service");
 const examMarks = require("../../services/exam/examMarks.service");
+const examResult = require("../../services/exam/examResult.service");
 const { sendResponse } = require("../../utils/apiResponse");
 const asyncHandler = require("../../utils/asyncHandler");
 const {
@@ -26,6 +27,8 @@ const {
   reopenMarksSchema,
   correctMarksSchema,
   unlockMarksSchema,
+  withdrawResultsSchema,
+  publishResultsSchema,
 } = require("../../validators/exam/exam.validator");
 
 const list = [
@@ -320,7 +323,55 @@ const unlockMarks = [
   }),
 ];
 
+const validateResults = asyncHandler(async (req, res) => {
+  const data = await examResult.validate(req.params.id);
+  return sendResponse(res).success({ message: "Results validation completed", data });
+});
+
+const calculateResults = asyncHandler(async (req, res) => {
+  const data = await examResult.calculate(req.params.id, req.user, req);
+  return sendResponse(res).success({ message: "Results calculated", data });
+});
+
+const listResults = asyncHandler(async (req, res) => {
+  const data = await examResult.list(req.params.id, req.query.classId);
+  return sendResponse(res).success({ message: "Results fetched", data });
+});
+
+const publishSummary = asyncHandler(async (req, res) => {
+  const data = await examResult.publishSummary(req.params.id);
+  return sendResponse(res).success({ message: "Publication summary fetched", data });
+});
+
+const publishResults = [
+  validateBody(publishResultsSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examResult.publish(req.params.id, req.user, req);
+    return sendResponse(res).success({ message: "Results published", data });
+  }),
+];
+
+const withdrawResults = [
+  validateBody(withdrawResultsSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examResult.withdraw(req.params.id, req.body, req.user, req);
+    return sendResponse(res).success({ message: "Results withdrawn", data });
+  }),
+];
+
+const myResults = asyncHandler(async (req, res) => {
+  const data = await examResult.mine(req.user, req.params.id);
+  return sendResponse(res).success({ message: "Results fetched", data });
+});
+
 module.exports = {
+  validateResults,
+  calculateResults,
+  listResults,
+  publishSummary,
+  publishResults,
+  withdrawResults,
+  myResults,
   monitorMarks,
   adminMarksSheet,
   correctMarks,
