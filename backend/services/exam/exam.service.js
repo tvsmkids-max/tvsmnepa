@@ -306,6 +306,10 @@ class ExamService {
         throwError(`Duplicate subject name: ${s.name.trim()}`, 400);
       }
       seen.add(nameKey);
+      const internalMax = s.gradeOnly ? 0 : s.internalMax || 0;
+      if (internalMax >= s.maxMarks && !s.gradeOnly) {
+        throwError(`Internal marks must be less than the maximum marks for ${s.name.trim()}`, 400);
+      }
       if (s.passingMarks > s.maxMarks) {
         throwError(
           `Passing marks (${s.passingMarks}) cannot exceed maximum marks (${s.maxMarks}) for ${s.name.trim()}`,
@@ -315,8 +319,10 @@ class ExamService {
       return {
         name: s.name.trim(),
         nameKey,
-        maxMarks: s.maxMarks,
-        passingMarks: s.passingMarks,
+        maxMarks: s.gradeOnly ? 0 : s.maxMarks,
+        passingMarks: s.gradeOnly ? 0 : s.passingMarks,
+        internalMax,
+        gradeOnly: !!s.gradeOnly,
         displayOrder: i,
       };
     });

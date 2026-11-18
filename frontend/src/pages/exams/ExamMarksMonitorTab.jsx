@@ -5,6 +5,7 @@ import {
   Button,
   Chip,
   Dialog,
+  MenuItem,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -33,6 +34,13 @@ const SUB_LABEL = {
 };
 
 const pct = (v) => `${v}%`;
+const GRADES = ["A+", "A", "B", "C", "D"];
+const baseOf = (r, parts) => ({
+  attendance: r.attendance,
+  marks: parts ? r.writtenMarks : r.marks,
+  internalMarks: r.internalMarks ?? null,
+  grade: r.grade ?? null,
+});
 
 // Admin review sheet: read-only, or editable (with a mandatory reason) when the
 // class's marks are submitted but not locked.
@@ -67,14 +75,24 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
     };
   }, [examId, classId, subject.key, reloadKey, enqueueSnackbar, onClose]);
 
-  const view = (r) => ({ attendance: r.attendance, marks: r.marks, ...(edits[r.studentId] || {}) });
+  const gradeOnly = !!sheet?.subject.gradeOnly;
+  const parts = (sheet?.subject.internalMax ?? 0) > 0;
+  const writtenMax = parts ? sheet.subject.writtenMax : subject.maxMarks;
+  const view = (r) => ({ ...baseOf(r, parts), ...(edits[r.studentId] || {}) });
   const changed = Object.keys(edits).length;
 
   const setRow = (r, patch) =>
     setEdits((e) => {
-      const next = { ...(e[r.studentId] || { attendance: r.attendance, marks: r.marks }), ...patch };
-      if (next.attendance === "absent") next.marks = null;
-      const same = next.attendance === r.attendance && (next.marks ?? null) === (r.marks ?? null);
+      const base = baseOf(r, parts);
+      const next = { ...base, ...(e[r.studentId] || {}), ...patch };
+      if (next.attendance === "absent") {
+        next.marks = null;
+        next.internalMarks = null;
+        next.grade = null;
+      }
+      const same = ["attendance", "marks", "internalMarks", "grade"].every(
+        (k) => (next[k] ?? null) === (base[k] ?? null),
+      );
       const copy = { ...e };
       if (same) delete copy[r.studentId];
       else copy[r.studentId] = next;
@@ -89,7 +107,9 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
         .map((r) => ({
           studentId: r.studentId,
           attendance: edits[r.studentId].attendance,
-          marks: edits[r.studentId].attendance === "absent" ? null : edits[r.studentId].marks,
+          marks: gradeOnly || edits[r.studentId].attendance === "absent" ? null : edits[r.studentId].marks,
+          internalMarks: parts && edits[r.studentId].attendance !== "absent" ? edits[r.studentId].internalMarks : null,
+          grade: gradeOnly && edits[r.studentId].attendance !== "absent" ? edits[r.studentId].grade : null,
           remarks: r.remarks || "",
         }));
       await examApi.correctMarks(examId, classId, subject.key, entries, reason.trim());
@@ -106,10 +126,10 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
   const canCorrect = sheet?.canCorrect;
   const invalid = sheet?.rows.some((r) => {
     const v = view(r);
-    return (
-      v.attendance === "present" &&
-      (v.marks === null || v.marks === undefined || v.marks === "" || Number(v.marks) < 0 || Number(v.marks) > subject.maxMarks)
-    );
+    if (v.attendance !== "present") return false;
+    if (gradeOnly) return !v.grade;
+    const bad = (x, max) => x === null || x === undefined || x === "" || Number(x) < 0 || Number(x) > max;
+    return bad(v.marks, writtenMax) || (parts && bad(v.internalMarks, sheet.subject.internalMax));
   });
 
   return (
@@ -138,7 +158,9 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
                     <TableCell>Scholar No.</TableCell>
                     <TableCell>Student</TableCell>
                     <TableCell>Attendance</TableCell>
-                    <TableCell>Marks</TableCell>
+                    <TableCell>{gradeOnly ? "Grade" : parts ? `Written (max ${writtenMax})` : "Marks"}</TableCell>
+                    {parts && <TableCell>Internal (max {sheet.subject.internalMax})</TableCell>}
+                    {parts && <TableCell align="right">Total</TableCell>}
                     <TableCell>Status</TableCell>
                   </TableRow>
                 </TableHead>
@@ -176,7 +198,31 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
                           )}
                         </TableCell>
                         <TableCell>
-                          {canCorrect && v.attendance === "present" ? (
+                          {gradeOnly ? (
+                            canCorrect && v.attendance === "present" ? (
+                              <TextField
+                                select
+                                size="small"
+                                value={v.grade ?? ""}
+                                onChange={(e) => setRow(r, { grade: e.target.value || null })}
+                                SelectProps={{ displayEmpty: true }}
+                                sx={{ width: 90 }}
+                              >
+                                <MenuItem value="">
+                                  <em>—</em>
+                                </MenuItem>
+                                {GRADES.map((g) => (
+                                  <MenuItem key={g} value={g}>
+                                    {g}
+                                  </MenuItem>
+                                ))}
+                              </TextField>
+                            ) : v.attendance === "absent" ? (
+                              "—"
+                            ) : (
+                              (r.grade ?? "Not entered")
+                            )
+                          ) : canCorrect && v.attendance === "present" ? (
                             <TextField
                               size="small"
                               type="number"
@@ -184,15 +230,42 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
                               onChange={(e) =>
                                 setRow(r, { marks: e.target.value === "" ? null : Number(e.target.value) })
                               }
-                              slotProps={{ htmlInput: { min: 0, max: subject.maxMarks, step: "any" } }}
+                              slotProps={{ htmlInput: { min: 0, max: writtenMax, step: "any" } }}
                               sx={{ width: 100 }}
                             />
                           ) : v.attendance === "absent" ? (
                             "—"
                           ) : (
-                            (r.marks ?? "Not entered")
+                            ((parts ? r.writtenMarks : r.marks) ?? "Not entered")
                           )}
                         </TableCell>
+                        {parts && (
+                          <TableCell>
+                            {canCorrect && v.attendance === "present" ? (
+                              <TextField
+                                size="small"
+                                type="number"
+                                value={v.internalMarks ?? ""}
+                                onChange={(e) =>
+                                  setRow(r, { internalMarks: e.target.value === "" ? null : Number(e.target.value) })
+                                }
+                                slotProps={{ htmlInput: { min: 0, max: sheet.subject.internalMax, step: "any" } }}
+                                sx={{ width: 100 }}
+                              />
+                            ) : v.attendance === "absent" ? (
+                              "—"
+                            ) : (
+                              (r.internalMarks ?? "Not entered")
+                            )}
+                          </TableCell>
+                        )}
+                        {parts && (
+                          <TableCell align="right">
+                            {v.attendance === "absent" || v.marks == null || v.internalMarks == null
+                              ? "—"
+                              : Math.round((Number(v.marks) + Number(v.internalMarks)) * 100) / 100}
+                          </TableCell>
+                        )}
                         <TableCell>
                           {r.rowStatus === "not_entered" ? "Missing" : r.rowStatus}
                           {r.correctionCount > 0 && ` · corrected ${r.correctionCount}×`}

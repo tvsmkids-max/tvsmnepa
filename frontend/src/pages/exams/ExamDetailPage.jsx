@@ -51,7 +51,7 @@ const apiMsg = (err, fallback) =>
   err.response?.data?.message ||
   fallback;
 
-const blankSubject = () => ({ name: "", maxMarks: "", passingMarks: "" });
+const blankSubject = () => ({ name: "", maxMarks: "", passingMarks: "", internalMax: "", gradeOnly: false });
 
 const ExamDetailPage = () => {
   const { id } = useParams();
@@ -167,8 +167,10 @@ const ExamDetailPage = () => {
       setSubjects(
         cfg.subjects.map((s) => ({
           name: s.name,
-          maxMarks: s.maxMarks,
-          passingMarks: s.passingMarks,
+          maxMarks: s.gradeOnly ? "" : s.maxMarks,
+          passingMarks: s.gradeOnly ? "" : s.passingMarks,
+          internalMax: s.internalMax > 0 ? s.internalMax : "",
+          gradeOnly: !!s.gradeOnly,
         })),
       );
     } else {
@@ -185,8 +187,12 @@ const ExamDetailPage = () => {
       if (!n) return "Every subject needs a name";
       if (names.has(n)) return `Duplicate subject: ${s.name.trim()}`;
       names.add(n);
+      if (s.gradeOnly) continue;
       const max = Number(s.maxMarks);
       const pass = Number(s.passingMarks);
+      const internal = s.internalMax === "" ? 0 : Number(s.internalMax);
+      if (!(internal >= 0) || internal >= max)
+        return `${s.name}: internal marks must be less than the maximum marks`;
       if (!(max >= 1)) return `${s.name}: maximum marks must be at least 1`;
       if (s.passingMarks === "" || !(pass >= 0))
         return `${s.name}: enter passing marks`;
@@ -202,8 +208,14 @@ const ExamDetailPage = () => {
         classIds: pickedClasses,
         subjects: subjects.map((s) => ({
           name: s.name.trim(),
-          maxMarks: Number(s.maxMarks),
-          passingMarks: Number(s.passingMarks),
+          gradeOnly: !!s.gradeOnly,
+          ...(s.gradeOnly
+            ? {}
+            : {
+                maxMarks: Number(s.maxMarks),
+                passingMarks: Number(s.passingMarks),
+                internalMax: s.internalMax === "" ? 0 : Number(s.internalMax),
+              }),
         })),
       });
       enqueueSnackbar("Configuration saved", { variant: "success" });
@@ -359,8 +371,14 @@ const ExamDetailPage = () => {
                       {cfg.subjects.map((s) => (
                         <TableRow key={s._id}>
                           <TableCell>{s.name}</TableCell>
-                          <TableCell align="right">{s.maxMarks}</TableCell>
-                          <TableCell align="right">{s.passingMarks}</TableCell>
+                          <TableCell align="right">
+                            {s.gradeOnly
+                              ? "Grade only"
+                              : s.internalMax > 0
+                                ? `${s.maxMarks} (${s.maxMarks - s.internalMax} written + ${s.internalMax} internal)`
+                                : s.maxMarks}
+                          </TableCell>
+                          <TableCell align="right">{s.gradeOnly ? "—" : s.passingMarks}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -460,8 +478,22 @@ const ExamDetailPage = () => {
           {subjects.map((s, i) => (
             <Stack key={i} direction="row" spacing={1} sx={{ mb: 1 }}>
               <TextField size="small" label="Subject" value={s.name} onChange={setSubject(i, "name")} sx={{ flex: 2 }} />
-              <TextField size="small" label="Max marks" type="number" value={s.maxMarks} onChange={setSubject(i, "maxMarks")} sx={{ flex: 1 }} />
-              <TextField size="small" label="Passing marks" type="number" value={s.passingMarks} onChange={setSubject(i, "passingMarks")} sx={{ flex: 1 }} />
+              <TextField size="small" label="Max marks (total)" type="number" value={s.maxMarks} disabled={s.gradeOnly} onChange={setSubject(i, "maxMarks")} sx={{ flex: 1 }} />
+              <TextField size="small" label="Internal part" type="number" value={s.internalMax} disabled={s.gradeOnly} onChange={setSubject(i, "internalMax")} helperText="optional" sx={{ flex: 1 }} />
+              <TextField size="small" label="Passing marks" type="number" value={s.passingMarks} disabled={s.gradeOnly} onChange={setSubject(i, "passingMarks")} sx={{ flex: 1 }} />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={!!s.gradeOnly}
+                    onChange={(e) =>
+                      setSubjects((l) =>
+                        l.map((x, idx) => (idx === i ? { ...x, gradeOnly: e.target.checked } : x)),
+                      )
+                    }
+                  />
+                }
+                label="Grade only"
+              />
               <IconButton
                 aria-label="Remove subject"
                 disabled={subjects.length === 1}

@@ -1,6 +1,6 @@
 import { Box, Chip, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 
-const RESULT_COLOR = { pass: "success", fail: "error", absent: "warning" };
+const RESULT_COLOR = { pass: "success", fail: "error", absent: "warning", graded: "default" };
 const RESULT_LABEL = { pass: "Pass", fail: "Fail", absent: "Absent" };
 
 // Subject-wise results. No overall pass/fail, grade or rank is shown.
@@ -19,7 +19,9 @@ export default function ResultsTable({ students }) {
               <TableCell key={s.subjectKey} align="center">
                 {s.subjectName}
                 <Typography variant="caption" display="block" color="text.secondary">
-                  max {s.maxMarks} · pass {s.passingMarks}
+                  {s.gradeOnly
+                    ? "grade"
+                    : `max ${s.maxMarks}${s.internalMax > 0 ? ` (${s.maxMarks - s.internalMax}+${s.internalMax})` : ""} · pass ${s.passingMarks}`}
                 </Typography>
               </TableCell>
             ))}
@@ -35,8 +37,20 @@ export default function ResultsTable({ students }) {
               <TableCell>{r.studentName}</TableCell>
               {r.subjects.map((s) => (
                 <TableCell key={s.subjectKey} align="center">
-                  {s.result === "absent" ? "—" : s.marks}{" "}
-                  <Chip size="small" label={RESULT_LABEL[s.result]} color={RESULT_COLOR[s.result]} />
+                  {s.result === "graded" ? (
+                    <Chip size="small" label={s.grade || "—"} />
+                  ) : (
+                    <>
+                      {s.result === "absent" ? "—" : s.marks}
+                      {s.result !== "absent" && s.internalMax > 0 && s.writtenMarks != null && (
+                        <Typography component="span" variant="caption" color="text.secondary">
+                          {" "}
+                          ({s.writtenMarks}+{s.internalMarks})
+                        </Typography>
+                      )}{" "}
+                      <Chip size="small" label={RESULT_LABEL[s.result]} color={RESULT_COLOR[s.result]} />
+                    </>
+                  )}
                 </TableCell>
               ))}
               <TableCell align="right">
