@@ -75,6 +75,7 @@ const adminNav = [
   { label: "Analytics", icon: <AnalyticsOutlinedIcon />, path: "/analytics" },
   { type: "section", label: "Examinations" },
   { label: "Examinations", icon: <QuizOutlinedIcon />, path: "/exams" },
+  { label: "Report Cards", icon: <QuizOutlinedIcon />, path: "/exams/report-cards" },
   { type: "section", label: "Admin" },
   { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
   { label: "Sessions", icon: <SchoolOutlinedIcon />, path: "/sessions" },
@@ -104,6 +105,7 @@ const teacherNav = [
   { label: "Students", icon: <PeopleOutlinedIcon />, path: "/students" },
   { type: "section", label: "Examinations" },
   { label: "My Examinations", icon: <QuizOutlinedIcon />, path: "/exams/mine" },
+  { label: "Report Cards", icon: <QuizOutlinedIcon />, path: "/exams/mine/report-cards" },
   { type: "section", label: "Reports" },
   { label: "Daily", icon: <TodayOutlinedIcon />, path: "/reports/daily" },
   {

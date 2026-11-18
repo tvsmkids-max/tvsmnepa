@@ -49,6 +49,18 @@ const examApi = {
   publishResults: (id) => axiosInstance.post(`/exams/${id}/results/publish`, { confirm: true }),
   withdrawResults: (id, reason) => axiosInstance.post(`/exams/${id}/results/withdraw`, { reason }),
   myResults: (id) => axiosInstance.get(`/exams/mine/${id}/results`),
+  reportCards: (sessionId, classId) =>
+    axiosInstance.get("/exams/report-cards", { params: { sessionId, classId } }),
+  saveReportCardFields: (sessionId, classId, entries) =>
+    axiosInstance.put("/exams/report-cards/fields", { sessionId, classId, entries }),
+  approveRanks: (sessionId, classId) =>
+    axiosInstance.post("/exams/report-cards/ranks/approve", { sessionId, classId }),
+  revokeRanks: (sessionId, classId) =>
+    axiosInstance.post("/exams/report-cards/ranks/revoke", { sessionId, classId }),
+  myReportCards: (sessionId) =>
+    axiosInstance.get("/exams/mine/report-cards", { params: { sessionId } }),
+  saveMyRemarks: (sessionId, entries) =>
+    axiosInstance.put("/exams/mine/report-cards/remarks", { sessionId, entries }),
   audit: (id, params = {}) =>
     axiosInstance.get(`/exams/${id}/audit`, { params }),
 };

@@ -13,6 +13,8 @@ router.use(authenticate);
 // from the account's linked class on the server, never from the request.
 // Registered BEFORE the admin routes so "/mine" is not read as an exam ID.
 router.get("/mine", authorize(ROLES.CLASS), examController.listMine);
+router.get("/mine/report-cards", authorize(ROLES.CLASS), examController.myReportCards);
+router.put("/mine/report-cards/remarks", authorize(ROLES.CLASS), examController.saveMyRemarks);
 router.get("/mine/:id", authorize(ROLES.CLASS), examController.getMine);
 router.get("/mine/:id/results", authorize(ROLES.CLASS), examController.myResults);
 router.get("/mine/:id/marks", authorize(ROLES.CLASS), examController.marksOverview);
@@ -35,6 +37,12 @@ router.get(
 
 // Everything below is Admin-only, enforced on the server.
 router.use(adminOnly);
+
+// Report cards (registered before "/:id" so "report-cards" is not read as an ID).
+router.get("/report-cards", examController.reportCardData);
+router.put("/report-cards/fields", examController.saveReportCardFields);
+router.post("/report-cards/ranks/approve", examController.approveRanks);
+router.post("/report-cards/ranks/revoke", examController.revokeRanks);
 
 router.get("/", examController.list);
 router.post("/", examController.create);
