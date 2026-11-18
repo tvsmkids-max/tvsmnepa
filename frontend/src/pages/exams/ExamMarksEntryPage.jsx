@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import {
+  MenuItem,
   Alert,
   Box,
   Button,
@@ -33,9 +34,11 @@ const apiMsg = (err, fb) =>
   err.response?.data?.errors?.[0]?.message || err.response?.data?.message || fb;
 
 // "" -> not entered. Otherwise a non-negative number with at most 2 decimals.
-const marksError = (row, max) => {
+const GRADES = ["A+", "A", "B", "C", "D"];
+
+const marksError = (row, max, text = row.marksText) => {
   if (row.attendance === "absent") return "";
-  const t = String(row.marksText).trim();
+  const t = String(text).trim();
   if (t === "") return "";
   if (!/^\d+(\.\d{1,2})?$/.test(t)) return "Enter a valid number";
   if (Number(t) > max) return `Cannot exceed ${max}`;
@@ -50,7 +53,12 @@ const toRows = (sheet) =>
     name: r.name,
     studentStatus: r.studentStatus,
     attendance: r.attendance,
-    marksText: r.marks === null || r.marks === undefined ? "" : String(r.marks),
+    marksText: (() => {
+      const v = sheet.subject.internalMax > 0 ? r.writtenMarks : r.marks;
+      return v === null || v === undefined ? "" : String(v);
+    })(),
+    internalText: r.internalMarks === null || r.internalMarks === undefined ? "" : String(r.internalMarks),
+    grade: r.grade || "",
     remarks: r.remarks || "",
   }));
 
@@ -133,9 +141,23 @@ const ExamMarksEntryPage = () => {
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
 
-  const max = sheet?.subject.maxMarks ?? 0;
-  const errors = useMemo(() => rows.map((r) => marksError(r, max)), [rows, max]);
-  const hasErrors = errors.some(Boolean);
+  const subj = sheet?.subject;
+  const gradeOnly = !!subj?.gradeOnly;
+  const hasParts = (subj?.internalMax ?? 0) > 0;
+  const max = hasParts ? subj.writtenMax : (subj?.maxMarks ?? 0);
+  const errors = useMemo(
+    () => rows.map((r) => (gradeOnly ? "" : marksError(r, max))),
+    [rows, max, gradeOnly],
+  );
+  const internalErrors = useMemo(
+    () => rows.map((r) => (hasParts ? marksError(r, subj.internalMax, r.internalText) : "")),
+    [rows, hasParts, subj],
+  );
+  const hasErrors = errors.some(Boolean) || internalErrors.some(Boolean);
+  const totalOf = (r) =>
+    r.marksText.trim() === "" || r.internalText.trim() === ""
+      ? "—"
+      : String(Math.round((Number(r.marksText) + Number(r.internalText)) * 100) / 100);
 
   const confirmDiscard = () =>
     !dirty || window.confirm("You have unsaved changes. Leave without saving?");
@@ -150,7 +172,12 @@ const ExamMarksEntryPage = () => {
 
   const setAttendance = (i, value) => {
     if (!value) return;
-    setRow(i, value === "absent" ? { attendance: "absent", marksText: "" } : { attendance: "present" });
+    setRow(
+      i,
+      value === "absent"
+        ? { attendance: "absent", marksText: "", internalText: "", grade: "" }
+        : { attendance: "present" },
+    );
   };
 
   const focusNext = (i) => (e) => {
@@ -172,7 +199,15 @@ const ExamMarksEntryPage = () => {
         rows.map((r) => ({
           studentId: r.studentId,
           attendance: r.attendance,
-          marks: r.attendance === "absent" || r.marksText.trim() === "" ? null : Number(r.marksText),
+          marks:
+            gradeOnly || r.attendance === "absent" || r.marksText.trim() === ""
+              ? null
+              : Number(r.marksText),
+          internalMarks:
+            !hasParts || r.attendance === "absent" || r.internalText.trim() === ""
+              ? null
+              : Number(r.internalText),
+          grade: gradeOnly && r.attendance !== "absent" && r.grade ? r.grade : null,
           remarks: r.remarks,
         })),
       );
@@ -281,8 +316,8 @@ const ExamMarksEntryPage = () => {
                 onClick={() => switchSubject(null, s.key)}
               >
                 <TableCell sx={{ fontWeight: 600 }}>{s.name}</TableCell>
-                <TableCell align="right">{s.maxMarks}</TableCell>
-                <TableCell align="right">{s.passingMarks}</TableCell>
+                <TableCell align="right">{s.gradeOnly ? "Grade" : s.internalMax > 0 ? `${s.maxMarks} (${s.maxMarks - s.internalMax} + ${s.internalMax})` : s.maxMarks}</TableCell>
+                <TableCell align="right">{s.gradeOnly ? "—" : s.passingMarks}</TableCell>
                 <TableCell align="right">{s.totalStudents}</TableCell>
                 <TableCell align="right">{s.entered}</TableCell>
                 <TableCell align="right">{s.absent}</TableCell>
@@ -324,8 +359,20 @@ const ExamMarksEntryPage = () => {
                   <TableCell>Roll</TableCell>
                   <TableCell>Admission no.</TableCell>
                   <TableCell>Student</TableCell>
-                  <TableCell align="right">Max</TableCell>
-                  <TableCell>Obtained</TableCell>
+                  {gradeOnly ? (
+                    <TableCell>Grade</TableCell>
+                  ) : hasParts ? (
+                    <>
+                      <TableCell>Written (max {max})</TableCell>
+                      <TableCell>Internal (max {subj.internalMax})</TableCell>
+                      <TableCell align="right">Total / {subj.maxMarks}</TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell align="right">Max</TableCell>
+                      <TableCell>Obtained</TableCell>
+                    </>
+                  )}
                   <TableCell>Status</TableCell>
                   <TableCell>Remarks</TableCell>
                 </TableRow>
@@ -341,24 +388,67 @@ const ExamMarksEntryPage = () => {
                         <Chip size="small" label={r.studentStatus} sx={{ ml: 1 }} />
                       )}
                     </TableCell>
-                    <TableCell align="right">{max}</TableCell>
-                    <TableCell sx={{ minWidth: 110 }}>
-                      <TextField
-                        size="small"
-                        value={r.attendance === "absent" ? "" : r.marksText}
-                        placeholder={r.attendance === "absent" ? "Absent" : ""}
-                        disabled={!editable || r.attendance === "absent"}
-                        error={!!errors[i]}
-                        helperText={errors[i]}
-                        onChange={(e) => setRow(i, { marksText: e.target.value })}
-                        onKeyDown={focusNext(i)}
-                        inputRef={(el) => {
-                          inputRefs.current[i] = el;
-                        }}
-                        inputProps={{ inputMode: "decimal", "aria-label": `Marks for ${r.name}` }}
-                        sx={{ width: 100 }}
-                      />
-                    </TableCell>
+                    {gradeOnly ? (
+                      <TableCell sx={{ minWidth: 110 }}>
+                        <TextField
+                          select
+                          size="small"
+                          value={r.attendance === "absent" ? "" : r.grade}
+                          disabled={!editable || r.attendance === "absent"}
+                          onChange={(e) => setRow(i, { grade: e.target.value })}
+                          inputProps={{ "aria-label": `Grade for ${r.name}` }}
+                          SelectProps={{ displayEmpty: true }}
+                          sx={{ width: 100 }}
+                        >
+                          <MenuItem value="">
+                            <em>—</em>
+                          </MenuItem>
+                          {GRADES.map((g) => (
+                            <MenuItem key={g} value={g}>
+                              {g}
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                      </TableCell>
+                    ) : (
+                      <>
+                        {!hasParts && <TableCell align="right">{max}</TableCell>}
+                        <TableCell sx={{ minWidth: 110 }}>
+                          <TextField
+                            size="small"
+                            value={r.attendance === "absent" ? "" : r.marksText}
+                            placeholder={r.attendance === "absent" ? "Absent" : ""}
+                            disabled={!editable || r.attendance === "absent"}
+                            error={!!errors[i]}
+                            helperText={errors[i]}
+                            onChange={(e) => setRow(i, { marksText: e.target.value })}
+                            onKeyDown={focusNext(i)}
+                            inputRef={(el) => {
+                              inputRefs.current[i] = el;
+                            }}
+                            inputProps={{ inputMode: "decimal", "aria-label": `Marks for ${r.name}` }}
+                            sx={{ width: 100 }}
+                          />
+                        </TableCell>
+                        {hasParts && (
+                          <>
+                            <TableCell sx={{ minWidth: 110 }}>
+                              <TextField
+                                size="small"
+                                value={r.attendance === "absent" ? "" : r.internalText}
+                                disabled={!editable || r.attendance === "absent"}
+                                error={!!internalErrors[i]}
+                                helperText={internalErrors[i]}
+                                onChange={(e) => setRow(i, { internalText: e.target.value })}
+                                inputProps={{ inputMode: "decimal", "aria-label": `Internal marks for ${r.name}` }}
+                                sx={{ width: 100 }}
+                              />
+                            </TableCell>
+                            <TableCell align="right">{r.attendance === "absent" ? "—" : totalOf(r)}</TableCell>
+                          </>
+                        )}
+                      </>
+                    )}
                     <TableCell>
                       <ToggleButtonGroup
                         size="small"
@@ -385,7 +475,7 @@ const ExamMarksEntryPage = () => {
                 ))}
                 {rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7}>
+                    <TableCell colSpan={9}>
                       <Alert severity="info">
                         No numbered students in this class yet. Ask the Admin to generate roll
                         numbers.

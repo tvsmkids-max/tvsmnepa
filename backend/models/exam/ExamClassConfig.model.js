@@ -7,8 +7,13 @@ const subjectSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true, maxlength: 60 },
     // Lower-cased name for duplicate detection inside one configuration.
     nameKey: { type: String, required: true },
-    maxMarks: { type: Number, required: true, min: 1, max: 1000 },
+    // Total maximum (Written + Internal). 0 for a grade-only subject.
+    maxMarks: { type: Number, required: true, min: 0, max: 1000 },
     passingMarks: { type: Number, required: true, min: 0 },
+    // Internal-assessment part of maxMarks (0 = single mark subject).
+    internalMax: { type: Number, default: 0, min: 0 },
+    // Grade-only subject (e.g. Computer): grade A+..D, no marks/pass-fail.
+    gradeOnly: { type: Boolean, default: false },
     displayOrder: { type: Number, default: 0 },
   },
   { _id: true },

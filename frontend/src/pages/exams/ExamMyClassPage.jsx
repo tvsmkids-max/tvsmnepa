@@ -169,8 +169,8 @@ const ExamMyClassPage = () => {
               {e.subjects.map((s) => (
                 <TableRow key={s._id}>
                   <TableCell>{s.name}</TableCell>
-                  <TableCell align="right">{s.maxMarks}</TableCell>
-                  <TableCell align="right">{s.passingMarks}</TableCell>
+                  <TableCell align="right">{s.gradeOnly ? "Grade" : s.internalMax > 0 ? `${s.maxMarks} (${s.maxMarks - s.internalMax} + ${s.internalMax})` : s.maxMarks}</TableCell>
+                  <TableCell align="right">{s.gradeOnly ? "—" : s.passingMarks}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

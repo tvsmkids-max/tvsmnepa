@@ -11,7 +11,13 @@ const subjectResultSchema = new mongoose.Schema(
     attendance: { type: String, enum: ["present", "absent"], required: true },
     // null when absent. Absent is never stored as zero.
     marks: { type: Number, default: null },
-    result: { type: String, enum: ["pass", "fail", "absent"], required: true },
+    writtenMarks: { type: Number, default: null },
+    internalMarks: { type: Number, default: null },
+    internalMax: { type: Number, default: 0 },
+    gradeOnly: { type: Boolean, default: false },
+    grade: { type: String, default: null },
+    // "graded" = grade-only subject (no pass/fail).
+    result: { type: String, enum: ["pass", "fail", "absent", "graded"], required: true },
     // Subject percentage; null when absent.
     percentage: { type: Number, default: null },
   },

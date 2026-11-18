@@ -44,8 +44,18 @@ const changeStatusSchema = Joi.object({
 
 const subjectSchema = Joi.object({
   name: Joi.string().trim().min(1).max(60).required(),
-  maxMarks: Joi.number().min(1).max(1000).precision(2).required(),
-  passingMarks: Joi.number().min(0).max(1000).precision(2).required(),
+  gradeOnly: Joi.boolean().default(false),
+  maxMarks: Joi.when("gradeOnly", {
+    is: true,
+    then: Joi.number().valid(0).default(0),
+    otherwise: Joi.number().min(1).max(1000).precision(2).required(),
+  }),
+  passingMarks: Joi.when("gradeOnly", {
+    is: true,
+    then: Joi.number().valid(0).default(0),
+    otherwise: Joi.number().min(0).max(1000).precision(2).required(),
+  }),
+  internalMax: Joi.number().min(0).max(1000).precision(2).default(0),
 });
 
 const classConfigSchema = Joi.object({
@@ -110,6 +120,8 @@ const saveMarksSchema = Joi.object({
         studentId: objectId.required(),
         attendance: Joi.string().valid("present", "absent").required(),
         marks: Joi.number().min(0).max(1000).precision(2).allow(null),
+        internalMarks: Joi.number().min(0).max(1000).precision(2).allow(null),
+        grade: Joi.string().valid("A+", "A", "B", "C", "D").allow(null),
         remarks: Joi.string().trim().max(200).allow(""),
       }),
     )
@@ -129,6 +141,8 @@ const correctMarksSchema = Joi.object({
         studentId: objectId.required(),
         attendance: Joi.string().valid("present", "absent").required(),
         marks: Joi.number().min(0).max(1000).precision(2).allow(null),
+        internalMarks: Joi.number().min(0).max(1000).precision(2).allow(null),
+        grade: Joi.string().valid("A+", "A", "B", "C", "D").allow(null),
         remarks: Joi.string().trim().max(200).allow(""),
       }),
     )

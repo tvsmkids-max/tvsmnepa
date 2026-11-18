@@ -11,6 +11,7 @@ const Student = require("../../models/Student.model");
 const { STUDENT_STATUS } = require("../../constants/studentStatus");
 const { EXAM_STATUS, EXAM_STATUS_LABELS } = require("../../constants/examStatus");
 const { logExamAudit } = require("./examAudit.service");
+const { componentMax, isEntered, normalizeEntry, snapshot, sameSnapshot } = require("./examMarksRules");
 const {
   assertExamClassAccess,
   getTeacherClassId,
@@ -31,9 +32,6 @@ const ADMIN_REVIEW_STATUSES = Object.freeze([
   EXAM_STATUS.MARKS_ENTRY_IN_PROGRESS,
   EXAM_STATUS.MARKS_SUBMITTED,
 ]);
-
-const sameValue = (a, b) =>
-  a === b || (a !== null && b !== null && Math.abs(a - b) < 1e-9);
 
 class ExamMarksService {
   // ── context & helpers ───────────────────────────────────────────────────
@@ -118,7 +116,7 @@ class ExamMarksService {
     const roster = await this._roster(exam, classId);
     const submission = await this._submission(exam, classId);
     const marks = await ExamMarks.find({ exam: exam._id, class: classId })
-      .select("subjectKey student attendance marks")
+      .select("subjectKey student attendance marks grade")
       .lean();
     const activeIds = new Set(roster.active.map((r) => String(r.student)));
 
@@ -126,12 +124,14 @@ class ExamMarksService {
       const mine = marks.filter(
         (m) => m.subjectKey === s.nameKey && activeIds.has(String(m.student)),
       );
-      const done = mine.filter((m) => m.attendance === "absent" || m.marks !== null);
+      const done = mine.filter(isEntered);
       return {
         key: s.nameKey,
         name: s.name,
         maxMarks: s.maxMarks,
         passingMarks: s.passingMarks,
+        internalMax: s.internalMax || 0,
+        gradeOnly: !!s.gradeOnly,
         totalStudents: roster.active.length,
         entered: done.length,
         absent: mine.filter((m) => m.attendance === "absent").length,
@@ -188,6 +188,9 @@ class ExamMarksService {
           studentStatus: statusOf.get(String(r.student)) || "Unknown",
           attendance: d?.attendance || "present",
           marks: d ? d.marks : null,
+          writtenMarks: d ? d.writtenMarks ?? null : null,
+          internalMarks: d ? d.internalMarks ?? null : null,
+          grade: d ? d.grade ?? null : null,
           remarks: d?.remarks || "",
           rowStatus: d?.status || "not_entered",
           correctionCount: d?.correctionCount || 0,
@@ -203,6 +206,9 @@ class ExamMarksService {
         name: subject.name,
         maxMarks: subject.maxMarks,
         passingMarks: subject.passingMarks,
+        internalMax: subject.internalMax || 0,
+        gradeOnly: !!subject.gradeOnly,
+        writtenMax: componentMax(subject).written,
       },
       submission: {
         status: submission?.status || "draft",
@@ -242,6 +248,7 @@ class ExamMarksService {
 
     // ── server-side validation (all problems reported together)
     const problems = [];
+    const normalized = new Map();
     const seen = new Set();
     for (const e of entries) {
       const sid = String(e.studentId);
@@ -255,19 +262,9 @@ class ExamMarksService {
         problems.push(`A student is not an active, numbered student of this class (${sid})`);
         continue;
       }
-      const hasMarks = e.marks !== null && e.marks !== undefined;
-      if (e.attendance === "absent" && hasMarks) {
-        problems.push(`${roll.studentName}: an absent student cannot have marks`);
-      }
-      if (hasMarks) {
-        if (!Number.isFinite(e.marks)) problems.push(`${roll.studentName}: marks must be a number`);
-        else if (e.marks < 0) problems.push(`${roll.studentName}: marks cannot be negative`);
-        else if (e.marks > subject.maxMarks) {
-          problems.push(
-            `${roll.studentName}: marks ${e.marks} exceed the maximum (${subject.maxMarks})`,
-          );
-        }
-      }
+      const norm = normalizeEntry(subject, e, roll.studentName);
+      problems.push(...norm.problems);
+      normalized.set(sid, norm.value);
     }
     if (problems.length) {
       throwError(
@@ -288,7 +285,7 @@ class ExamMarksService {
 
     const ops = entries.map((e) => {
       const roll = rollOf.get(String(e.studentId));
-      const marks = e.attendance === "absent" || e.marks === undefined ? null : e.marks;
+      const v = normalized.get(String(e.studentId));
       return {
         updateOne: {
           // A submitted row does not match, so the upsert would try to insert a
@@ -309,9 +306,9 @@ class ExamMarksService {
               studentName: roll.studentName,
               maxMarks: subject.maxMarks,
               passingMarks: subject.passingMarks,
-              attendance: e.attendance,
-              marks,
-              remarks: e.remarks || "",
+              internalMax: subject.internalMax || 0,
+              gradeOnly: !!subject.gradeOnly,
+              ...v,
               updatedBy: user._id,
             },
             $setOnInsert: { status: "draft", enteredBy: user._id },
@@ -376,17 +373,9 @@ class ExamMarksService {
     for (const e of entries) {
       const roll = rollOf.get(String(e.studentId));
       const b = before.get(String(e.studentId));
-      const afterMarks = e.attendance === "absent" || e.marks === undefined ? null : e.marks;
-      const after = { attendance: e.attendance, marks: afterMarks, remarks: e.remarks || "" };
-      const prev = b
-        ? { attendance: b.attendance, marks: b.marks, remarks: b.remarks || "" }
-        : null;
-      if (
-        !prev ||
-        prev.attendance !== after.attendance ||
-        !sameValue(prev.marks, after.marks) ||
-        prev.remarks !== after.remarks
-      ) {
+      const after = normalized.get(String(e.studentId));
+      const prev = b ? snapshot(b) : null;
+      if (!prev || !sameSnapshot(prev, after)) {
         changes.push({
           student: roll.studentName,
           scholarNumber: roll.scholarNumber,
@@ -412,11 +401,11 @@ class ExamMarksService {
   // ── completeness (used before submission) ───────────────────────────────
   async _pending(exam, config, classId, roster) {
     const docs = await ExamMarks.find({ exam: exam._id, class: classId })
-      .select("subjectKey student attendance marks")
+      .select("subjectKey student attendance marks grade")
       .lean();
     const done = new Set(
       docs
-        .filter((d) => d.attendance === "absent" || d.marks !== null)
+        .filter(isEntered)
         .map((d) => `${d.subjectKey}|${d.student}`),
     );
     const pending = [];
@@ -579,8 +568,8 @@ class ExamMarksService {
     }
 
     // Keep the submitted values in the audit trail before anything changes.
-    const snapshot = await ExamMarks.find({ exam: exam._id, class: classId })
-      .select("subjectName rollNumber scholarNumber studentName attendance marks remarks")
+    const submittedRows = await ExamMarks.find({ exam: exam._id, class: classId })
+      .select("subjectName rollNumber scholarNumber studentName attendance marks writtenMarks internalMarks grade remarks")
       .lean();
 
     const reopened = await ExamMarksSubmission.findOneAndUpdate(
@@ -635,7 +624,7 @@ class ExamMarksService {
       before: {
         submissionStatus: "submitted",
         examStatus: exam.status,
-        submittedMarks: snapshot,
+        submittedMarks: submittedRows,
       },
       after: {
         submissionStatus: "draft",
@@ -684,7 +673,7 @@ class ExamMarksService {
         .lean(),
       ExamMarksSubmission.find({ exam: exam._id }).lean(),
       ExamMarks.find({ exam: exam._id })
-        .select("class subjectKey student attendance marks status")
+        .select("class subjectKey student attendance marks grade status")
         .lean(),
     ]);
 
@@ -712,12 +701,14 @@ class ExamMarksService {
 
         const subjects = c.subjects.map((s) => {
           const mine = classMarks.filter((m) => m.subjectKey === s.nameKey);
-          const entered = mine.filter((m) => m.attendance === "absent" || m.marks !== null);
+          const entered = mine.filter(isEntered);
           return {
             key: s.nameKey,
             name: s.name,
             maxMarks: s.maxMarks,
             passingMarks: s.passingMarks,
+            internalMax: s.internalMax || 0,
+            gradeOnly: !!s.gradeOnly,
             totalStudents: total,
             entered: entered.length,
             pending: total - entered.length,
@@ -797,6 +788,7 @@ class ExamMarksService {
     const byStudent = new Map(existing.map((d) => [String(d.student), d]));
 
     const problems = [];
+    const normalized = new Map();
     const seen = new Set();
     for (const e of entries) {
       const sid = String(e.studentId);
@@ -810,15 +802,14 @@ class ExamMarksService {
         problems.push(`No submitted marks exist for student ${sid}`);
         continue;
       }
-      const hasMarks = e.marks !== null && e.marks !== undefined;
-      if (e.attendance === "absent" && hasMarks) {
-        problems.push(`${row.studentName}: an absent student cannot have marks`);
-      } else if (e.attendance === "present") {
-        if (!hasMarks) problems.push(`${row.studentName}: marks are required for a present student`);
-        else if (e.marks > subject.maxMarks) {
-          problems.push(`${row.studentName}: marks ${e.marks} exceed the maximum (${subject.maxMarks})`);
-        }
+      const norm = normalizeEntry(subject, e, row.studentName);
+      problems.push(...norm.problems);
+      if (e.attendance === "present" && norm.value.marks === null && norm.value.grade === null) {
+        problems.push(
+          `${row.studentName}: ${subject.gradeOnly ? "a grade" : "complete marks"} required for a present student`,
+        );
       }
+      normalized.set(sid, norm.value);
     }
     if (problems.length) {
       throwError(
@@ -832,19 +823,9 @@ class ExamMarksService {
     const ops = [];
     for (const e of entries) {
       const row = byStudent.get(String(e.studentId));
-      const after = {
-        attendance: e.attendance,
-        marks: e.attendance === "absent" ? null : e.marks,
-        remarks: e.remarks || "",
-      };
-      const prev = { attendance: row.attendance, marks: row.marks, remarks: row.remarks || "" };
-      if (
-        prev.attendance === after.attendance &&
-        sameValue(prev.marks, after.marks) &&
-        prev.remarks === after.remarks
-      ) {
-        continue;
-      }
+      const after = normalized.get(String(e.studentId));
+      const prev = snapshot(row);
+      if (sameSnapshot(prev, after)) continue;
       changes.push({
         student: row.studentName,
         scholarNumber: row.scholarNumber,
@@ -858,7 +839,10 @@ class ExamMarksService {
             _id: row._id,
             status: "submitted",
             attendance: row.attendance,
-            marks: row.marks,
+            marks: row.marks ?? null,
+            writtenMarks: row.writtenMarks ?? null,
+            internalMarks: row.internalMarks ?? null,
+            grade: row.grade ?? null,
           },
           update: {
             $set: { ...after, updatedBy: user._id, correctedBy: user._id, correctedAt: new Date() },

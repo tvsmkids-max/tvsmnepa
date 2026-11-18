@@ -12,6 +12,7 @@ const { STUDENT_STATUS } = require("../../constants/studentStatus");
 const { EXAM_STATUS, EXAM_STATUS_LABELS } = require("../../constants/examStatus");
 const { logExamAudit } = require("./examAudit.service");
 const { getTeacherClassId } = require("./examAccess.service");
+const { GRADES, componentMax } = require("./examMarksRules");
 
 const throwError = (message, statusCode = 400) => {
   throw Object.assign(new Error(message), { statusCode });
@@ -105,10 +106,27 @@ class ExamResultService {
           if (m.attendance === "absent") {
             abs++;
             missing--;
-            if (m.marks !== null && m.marks !== undefined) invalid++;
+            if (isNum(m.marks) || (m.grade ?? null) !== null) invalid++;
+          } else if (s.gradeOnly) {
+            if ((m.grade ?? null) !== null) {
+              missing--;
+              if (!GRADES.includes(m.grade) || isNum(m.marks)) invalid++;
+            }
           } else if (isNum(m.marks)) {
             missing--;
-            if (m.marks < 0 || m.marks > s.maxMarks) invalid++;
+            const { written, internal } = componentMax(s);
+            const parts = internal > 0;
+            if (
+              m.marks < 0 ||
+              m.marks > s.maxMarks ||
+              (parts &&
+                (!isNum(m.writtenMarks) ||
+                  !isNum(m.internalMarks) ||
+                  m.writtenMarks > written ||
+                  m.internalMarks > internal))
+            ) {
+              invalid++;
+            }
           }
           // present + no marks stays counted as missing
         }
@@ -164,18 +182,26 @@ class ExamResultService {
           const m = g.marks.find(
             (x) => String(x.class) === cid && x.subjectKey === s.nameKey && String(x.student) === String(r.student),
           );
+          const base = {
+            subjectKey: s.nameKey, subjectName: s.name, maxMarks: s.maxMarks, passingMarks: s.passingMarks,
+            internalMax: s.internalMax || 0, gradeOnly: !!s.gradeOnly,
+          };
+          const absent = m.attendance === "absent";
+          if (s.gradeOnly) {
+            // Grade-only: never part of totals, percentage or the Incomplete rule.
+            return absent
+              ? { ...base, attendance: "absent", marks: null, grade: null, result: "absent", percentage: null }
+              : { ...base, attendance: "present", marks: null, grade: m.grade, result: "graded", percentage: null };
+          }
           max += s.maxMarks;
-          if (m.attendance === "absent") {
+          if (absent) {
             absentCount++;
-            return {
-              subjectKey: s.nameKey, subjectName: s.name, maxMarks: s.maxMarks, passingMarks: s.passingMarks,
-              attendance: "absent", marks: null, result: "absent", percentage: null,
-            };
+            return { ...base, attendance: "absent", marks: null, result: "absent", percentage: null };
           }
           obtained += m.marks;
           return {
-            subjectKey: s.nameKey, subjectName: s.name, maxMarks: s.maxMarks, passingMarks: s.passingMarks,
-            attendance: "present", marks: m.marks,
+            ...base, attendance: "present", marks: m.marks,
+            writtenMarks: m.writtenMarks ?? null, internalMarks: m.internalMarks ?? null,
             result: m.marks >= s.passingMarks ? "pass" : "fail",
             percentage: s.maxMarks ? round2((m.marks / s.maxMarks) * 100) : null,
           };
@@ -251,7 +277,7 @@ class ExamResultService {
       if (!d.overallComplete) incomplete++;
       for (const s of d.subjects) {
         const e = subj.get(s.subjectKey) || { key: s.subjectKey, name: s.subjectName, pass: 0, fail: 0, absent: 0 };
-        e[s.result]++;
+        if (s.result in e) e[s.result]++;
         subj.set(s.subjectKey, e);
       }
     }
