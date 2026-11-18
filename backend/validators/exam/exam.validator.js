@@ -164,7 +164,42 @@ const publishResultsSchema = Joi.object({
   confirm: Joi.boolean().valid(true).required(),
 });
 
+const reportCardQuerySchema = Joi.object({
+  sessionId: objectId.required(),
+  classId: objectId.required(),
+});
+
+const reportCardTeacherQuerySchema = Joi.object({ sessionId: objectId.required() });
+
+const reportCardEntries = (extra) =>
+  Joi.array()
+    .items(Joi.object({ studentId: objectId.required(), ...extra }))
+    .min(1)
+    .max(300)
+    .required();
+
+const saveReportCardAdminSchema = Joi.object({
+  sessionId: objectId.required(),
+  classId: objectId.required(),
+  entries: reportCardEntries({
+    remark: Joi.string().trim().allow("").max(120),
+    promotedTo: Joi.string().trim().allow("").max(60),
+  }),
+});
+
+const saveReportCardRemarksSchema = Joi.object({
+  sessionId: objectId.required(),
+  entries: reportCardEntries({ remark: Joi.string().trim().allow("").max(120).required() }),
+});
+
+const rankApprovalSchema = Joi.object({ sessionId: objectId.required(), classId: objectId.required() });
+
 module.exports = {
+  reportCardQuerySchema,
+  reportCardTeacherQuerySchema,
+  saveReportCardAdminSchema,
+  saveReportCardRemarksSchema,
+  rankApprovalSchema,
   withdrawResultsSchema,
   publishResultsSchema,
   correctMarksSchema,

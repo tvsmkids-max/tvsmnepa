@@ -7,6 +7,7 @@ const examRoll = require("../../services/exam/examRollNumber.service");
 const examAdmit = require("../../services/exam/examAdmitCard.service");
 const examMarks = require("../../services/exam/examMarks.service");
 const examResult = require("../../services/exam/examResult.service");
+const examReportCard = require("../../services/exam/examReportCard.service");
 const { sendResponse } = require("../../utils/apiResponse");
 const asyncHandler = require("../../utils/asyncHandler");
 const {
@@ -29,6 +30,11 @@ const {
   unlockMarksSchema,
   withdrawResultsSchema,
   publishResultsSchema,
+  reportCardQuerySchema,
+  reportCardTeacherQuerySchema,
+  saveReportCardAdminSchema,
+  saveReportCardRemarksSchema,
+  rankApprovalSchema,
 } = require("../../validators/exam/exam.validator");
 
 const list = [
@@ -364,7 +370,62 @@ const myResults = asyncHandler(async (req, res) => {
   return sendResponse(res).success({ message: "Results fetched", data });
 });
 
+const reportCardData = [
+  validateQuery(reportCardQuerySchema),
+  asyncHandler(async (req, res) => {
+    const data = await examReportCard.data(req.query.sessionId, req.query.classId);
+    return sendResponse(res).success({ message: "Report cards fetched", data });
+  }),
+];
+
+const saveReportCardFields = [
+  validateBody(saveReportCardAdminSchema),
+  asyncHandler(async (req, res) => {
+    const { sessionId, classId, entries } = req.body;
+    const data = await examReportCard.saveAdmin(sessionId, classId, entries, req.user, req);
+    return sendResponse(res).success({ message: "Report card fields saved", data });
+  }),
+];
+
+const approveRanks = [
+  validateBody(rankApprovalSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examReportCard.approveRanks(req.body.sessionId, req.body.classId, req.user, req);
+    return sendResponse(res).success({ message: "Ranks approved", data });
+  }),
+];
+
+const revokeRanks = [
+  validateBody(rankApprovalSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examReportCard.revokeRanks(req.body.sessionId, req.body.classId, req.user, req);
+    return sendResponse(res).success({ message: "Ranks revoked", data });
+  }),
+];
+
+const myReportCards = [
+  validateQuery(reportCardTeacherQuerySchema),
+  asyncHandler(async (req, res) => {
+    const data = await examReportCard.dataForTeacher(req.user, req.query.sessionId);
+    return sendResponse(res).success({ message: "Report cards fetched", data });
+  }),
+];
+
+const saveMyRemarks = [
+  validateBody(saveReportCardRemarksSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examReportCard.saveRemarks(req.user, req.body.sessionId, req.body.entries, req);
+    return sendResponse(res).success({ message: "Remarks saved", data });
+  }),
+];
+
 module.exports = {
+  reportCardData,
+  saveReportCardFields,
+  approveRanks,
+  revokeRanks,
+  myReportCards,
+  saveMyRemarks,
   validateResults,
   calculateResults,
   listResults,
