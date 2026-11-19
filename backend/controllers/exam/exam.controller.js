@@ -8,6 +8,7 @@ const examAdmit = require("../../services/exam/examAdmitCard.service");
 const examMarks = require("../../services/exam/examMarks.service");
 const examResult = require("../../services/exam/examResult.service");
 const examReportCard = require("../../services/exam/examReportCard.service");
+const examReport = require("../../services/exam/examReport.service");
 const { sendResponse } = require("../../utils/apiResponse");
 const asyncHandler = require("../../utils/asyncHandler");
 const {
@@ -31,6 +32,7 @@ const {
   withdrawResultsSchema,
   publishResultsSchema,
   reportCardQuerySchema,
+  reportQuerySchema,
   reportCardTeacherQuerySchema,
   saveReportCardAdminSchema,
   saveReportCardRemarksSchema,
@@ -390,6 +392,14 @@ const myResults = asyncHandler(async (req, res) => {
   return sendResponse(res).success({ message: "Results fetched", data });
 });
 
+const runReport = [
+  validateQuery(reportQuerySchema),
+  asyncHandler(async (req, res) => {
+    const data = await examReport.run(req.params.type, req.query);
+    return sendResponse(res).success({ message: "Report generated", data });
+  }),
+];
+
 const reportCardData = [
   validateQuery(reportCardQuerySchema),
   asyncHandler(async (req, res) => {
@@ -443,6 +453,7 @@ module.exports = {
   adminSaveMarks,
   adminSubmitMarks,
   reportCardData,
+  runReport,
   saveReportCardFields,
   approveRanks,
   revokeRanks,
