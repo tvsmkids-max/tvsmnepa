@@ -1,8 +1,8 @@
 import { jsPDF } from "jspdf";
 import { downloadPdf, printPdf } from "./pdfGenerator"; // also registers autotable
-import { loadLogo } from "./examAdmitCardPdf";
+import { loadLogo, loadWatermark } from "./examAdmitCardPdf";
 
-export { loadLogo };
+export { loadLogo, loadWatermark };
 
 // Progress report card: one A4 portrait page per student. Quarterly, Half
 // Yearly and Annual are combined on one card; an unpublished exam prints "—".
@@ -58,17 +58,18 @@ const subjectHeaderLabels = (data, type) => {
 };
 
 const drawCard = (doc, card, ctx) => {
-  const { data, logo, sessionName } = ctx;
+  const { data, logo, watermark, sessionName } = ctx;
   const school = data.school;
 
   // Border + faint watermark first, so the tables sit on top of it.
   doc.setDrawColor(0);
   doc.setLineWidth(0.6);
   doc.rect(M, M, PAGE_W - 2 * M, PAGE_H - 2 * M);
-  if (logo) {
+  if (watermark || logo) {
+    const wm = watermark || logo;
     const size = 120;
     doc.setGState(new doc.GState({ opacity: 0.07 }));
-    doc.addImage(logo.dataUrl, imgType(logo), (PAGE_W - size) / 2, 118, size, size * (logo.h / logo.w), undefined, "FAST");
+    doc.addImage(wm.dataUrl, imgType(wm), (PAGE_W - size) / 2, 118, size, size * (wm.h / wm.w), undefined, "FAST");
     doc.setGState(new doc.GState({ opacity: 1 }));
   }
 
@@ -234,11 +235,11 @@ const drawCard = (doc, card, ctx) => {
 };
 
 /** data = GET /exams/report-cards response; cards = the students to print. */
-export const buildReportCardPdf = ({ data, cards, logo, sessionName }) => {
+export const buildReportCardPdf = ({ data, cards, logo, watermark, sessionName }) => {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   cards.forEach((card, i) => {
     if (i > 0) doc.addPage();
-    drawCard(doc, card, { data, logo, sessionName });
+    drawCard(doc, card, { data, logo, watermark, sessionName });
   });
   return doc;
 };

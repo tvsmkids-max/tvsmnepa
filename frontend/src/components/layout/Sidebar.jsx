@@ -17,6 +17,11 @@ import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
 import QuizOutlinedIcon from "@mui/icons-material/QuizOutlined";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
+import FormatListNumberedOutlinedIcon from "@mui/icons-material/FormatListNumberedOutlined";
+import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
+import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
+import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
@@ -74,8 +79,13 @@ const adminNav = [
   },
   { label: "Analytics", icon: <AnalyticsOutlinedIcon />, path: "/analytics" },
   { type: "section", label: "Examinations" },
-  { label: "Examinations", icon: <QuizOutlinedIcon />, path: "/exams" },
-  { label: "Report Cards", icon: <QuizOutlinedIcon />, path: "/exams/report-cards" },
+  { label: "All Examinations", icon: <QuizOutlinedIcon />, path: "/exams" },
+  { label: "Exam Timetable", icon: <EventNoteOutlinedIcon />, path: "/exams/section/timetable" },
+  { label: "Roll Numbers", icon: <FormatListNumberedOutlinedIcon />, path: "/exams/section/roll-numbers" },
+  { label: "Admit Cards", icon: <BadgeOutlinedIcon />, path: "/exams/section/admit-cards" },
+  { label: "Marks Monitoring", icon: <EditNoteOutlinedIcon />, path: "/exams/section/marks" },
+  { label: "Results", icon: <EmojiEventsOutlinedIcon />, path: "/exams/section/results" },
+  { label: "Report Cards", icon: <DescriptionOutlinedIcon />, path: "/exams/report-cards" },
   { type: "section", label: "Admin" },
   { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
   { label: "Sessions", icon: <SchoolOutlinedIcon />, path: "/sessions" },

@@ -112,8 +112,9 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
           grade: gradeOnly && edits[r.studentId].attendance !== "absent" ? edits[r.studentId].grade : null,
           remarks: r.remarks || "",
         }));
-      await examApi.correctMarks(examId, classId, subject.key, entries, reason.trim());
-      enqueueSnackbar("Marks corrected", { variant: "success" });
+      if (enterMode) await examApi.adminSaveMarks(examId, classId, subject.key, entries);
+      else await examApi.correctMarks(examId, classId, subject.key, entries, reason.trim());
+      enqueueSnackbar(enterMode ? "Marks saved as draft" : "Marks corrected", { variant: "success" });
       setReloadKey((k) => k + 1);
       onChanged();
     } catch (err) {
@@ -124,11 +125,15 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
   };
 
   const canCorrect = sheet?.canCorrect;
+  const enterMode = !canCorrect && !!sheet?.canEdit; // Admin entering draft marks
+  const editable = canCorrect || enterMode;
   const invalid = sheet?.rows.some((r) => {
     const v = view(r);
     if (v.attendance !== "present") return false;
-    if (gradeOnly) return !v.grade;
-    const bad = (x, max) => x === null || x === undefined || x === "" || Number(x) < 0 || Number(x) > max;
+    const empty = (x) => x === null || x === undefined || x === "";
+    // Draft entry may be partial; a correction to submitted marks must be complete.
+    if (gradeOnly) return !enterMode && !v.grade;
+    const bad = (x, max) => (empty(x) ? !enterMode : Number(x) < 0 || Number(x) > max);
     return bad(v.marks, writtenMax) || (parts && bad(v.internalMarks, sheet.subject.internalMax));
   });
 
@@ -143,8 +148,10 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
           <LinearProgress />
         ) : (
           <>
-            <Alert severity={canCorrect ? "warning" : "info"} sx={{ mb: 2 }}>
-              {canCorrect
+            <Alert severity={canCorrect ? "warning" : enterMode ? "info" : "info"} sx={{ mb: 2 }}>
+              {enterMode
+                ? "You are entering marks on behalf of the class teacher. Changes are saved as a draft and recorded in the audit history under your name."
+                : canCorrect
                 ? "Submitted marks. Any correction needs a reason and is recorded in the audit history."
                 : sheet.submission.status === "locked"
                   ? "These marks are locked. Unlock them to make corrections."
@@ -174,7 +181,7 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
                         <TableCell>{r.scholarNumber}</TableCell>
                         <TableCell>{r.name}</TableCell>
                         <TableCell>
-                          {canCorrect ? (
+                          {editable ? (
                             <Stack direction="row" spacing={0.5}>
                               <Chip
                                 size="small"
@@ -199,7 +206,7 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
                         </TableCell>
                         <TableCell>
                           {gradeOnly ? (
-                            canCorrect && v.attendance === "present" ? (
+                            editable && v.attendance === "present" ? (
                               <TextField
                                 select
                                 size="small"
@@ -222,7 +229,7 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
                             ) : (
                               (r.grade ?? "Not entered")
                             )
-                          ) : canCorrect && v.attendance === "present" ? (
+                          ) : editable && v.attendance === "present" ? (
                             <TextField
                               size="small"
                               type="number"
@@ -241,7 +248,7 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
                         </TableCell>
                         {parts && (
                           <TableCell>
-                            {canCorrect && v.attendance === "present" ? (
+                            {editable && v.attendance === "present" ? (
                               <TextField
                                 size="small"
                                 type="number"
@@ -294,13 +301,14 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
         <Button onClick={onClose} disabled={saving}>
           Close
         </Button>
-        {canCorrect && (
+        {editable && (
           <Button
             variant="contained"
             onClick={save}
-            disabled={saving || changed === 0 || reason.trim().length < 3 || invalid}
+            disabled={saving || changed === 0 || (canCorrect && reason.trim().length < 3) || invalid}
           >
-            Save correction{changed ? ` (${changed})` : ""}
+            {enterMode ? "Save draft" : "Save correction"}
+            {changed ? ` (${changed})` : ""}
           </Button>
         )}
       </DialogActions>
@@ -393,9 +401,10 @@ export default function ExamMarksMonitorTab({ exam, onChanged }) {
     try {
       if (type === "reopen") await examApi.reopenMarks(exam._id, cls.class._id, reason);
       if (type === "lock") await examApi.lockMarks(exam._id, cls.class._id);
+      if (type === "submit") await examApi.adminSubmitMarks(exam._id, cls.class._id);
       if (type === "unlock") await examApi.unlockMarks(exam._id, cls.class._id, reason);
       enqueueSnackbar(
-        type === "reopen" ? "Marks reopened" : type === "lock" ? "Marks locked" : "Marks unlocked",
+        { reopen: "Marks reopened", lock: "Marks locked", unlock: "Marks unlocked", submit: "Marks submitted" }[type],
         { variant: "success" },
       );
       setAction(null);
@@ -409,6 +418,7 @@ export default function ExamMarksMonitorTab({ exam, onChanged }) {
   if (!data) return null;
 
   const reviewable = ["marks_entry_in_progress", "marks_submitted"].includes(data.exam.status);
+  const entryOpen = ["ongoing", "completed", "marks_entry_in_progress"].includes(data.exam.status);
   const s = data.summary;
 
   return (
@@ -441,6 +451,11 @@ export default function ExamMarksMonitorTab({ exam, onChanged }) {
                 <Chip size="small" variant="outlined" label={`Reopened ${c.submission.reopenCount}×`} />
               )}
               <Box sx={{ flexGrow: 1 }} />
+              {entryOpen && (st === "draft" || st === "not_started") && (
+                <Button size="small" variant="outlined" onClick={() => setAction({ type: "submit", cls: c })}>
+                  Submit for class
+                </Button>
+              )}
               {reviewable && st === "submitted" && (
                 <>
                   <Button size="small" onClick={() => setAction({ type: "reopen", cls: c })}>
@@ -514,21 +529,18 @@ export default function ExamMarksMonitorTab({ exam, onChanged }) {
       {action && (
         <ReasonDialog
           title={
-            action.type === "reopen"
-              ? "Reopen marks entry"
-              : action.type === "lock"
-                ? "Approve and lock marks"
-                : "Unlock marks"
+            { reopen: "Reopen marks entry", lock: "Approve and lock marks", unlock: "Unlock marks", submit: "Submit marks on behalf of the class" }[action.type]
           }
           text={
-            action.type === "reopen"
-              ? "The class teacher will be able to edit and resubmit. All current marks are kept in the audit history."
-              : action.type === "lock"
-                ? "Locked marks cannot be edited, corrected or reopened until you unlock them."
-                : "Marks return to Submitted status so they can be corrected or reopened."
+            {
+              reopen: "The class teacher will be able to edit and resubmit. All current marks are kept in the audit history.",
+              lock: "Locked marks cannot be edited, corrected or reopened until you unlock them.",
+              unlock: "Marks return to Submitted status so they can be corrected or reopened.",
+              submit: "Every subject must be complete. After submitting, the class teacher can no longer edit these marks unless you reopen them.",
+            }[action.type]
           }
-          confirmLabel={action.type === "reopen" ? "Reopen" : action.type === "lock" ? "Lock" : "Unlock"}
-          requireReason={action.type !== "lock"}
+          confirmLabel={{ reopen: "Reopen", lock: "Lock", unlock: "Unlock", submit: "Submit" }[action.type]}
+          requireReason={["reopen", "unlock"].includes(action.type)}
           onCancel={() => setAction(null)}
           onConfirm={runAction}
         />

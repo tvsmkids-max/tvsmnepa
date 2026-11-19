@@ -61,6 +61,8 @@ router.post("/:id/results/withdraw", examController.withdrawResults);
 router.get("/:id/marks/monitor", examController.monitorMarks);
 router.get("/:id/marks/:classId/:subjectKey", examController.adminMarksSheet);
 router.put("/:id/marks/:classId/:subjectKey", examController.correctMarks);
+router.put("/:id/marks/:classId/:subjectKey/entry", examController.adminSaveMarks);
+router.post("/:id/marks/:classId/submit", examController.adminSubmitMarks);
 router.post("/:id/marks/:classId/reopen", examController.reopenMarks);
 router.post("/:id/marks/:classId/lock", examController.lockMarks);
 router.post("/:id/marks/:classId/unlock", examController.unlockMarks);

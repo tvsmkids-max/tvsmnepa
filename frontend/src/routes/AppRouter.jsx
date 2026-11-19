@@ -66,6 +66,7 @@ const ExamDetailPage = lazy(() => import("../pages/exams/ExamDetailPage"));
 const ExamMyClassPage = lazy(() => import("../pages/exams/ExamMyClassPage"));
 const ExamMarksEntryPage = lazy(() => import("../pages/exams/ExamMarksEntryPage"));
 const ExamMyResultsPage = lazy(() => import("../pages/exams/ExamMyResultsPage"));
+const ExamSectionPage = lazy(() => import("../pages/exams/ExamSectionPage"));
 const ExamReportCardsPage = lazy(() => import("../pages/exams/ExamReportCardsPage"));
 const ExamMyReportCardsPage = lazy(() => import("../pages/exams/ExamMyReportCardsPage"));
 
@@ -254,6 +255,14 @@ const AppRouter = () => (
             element={
               <RoleRoute roles={["class"]}>
                 <ExamMarksEntryPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="exams/section/:section"
+            element={
+              <RoleRoute roles={["admin"]}>
+                <ExamSectionPage />
               </RoleRoute>
             }
           />

@@ -6,7 +6,11 @@ import { downloadPdf, printPdf } from "./pdfGenerator"; // also registers autota
 const SCHOOL_LINE_1 = "TH. VIRENDRA SINGH MEMORIAL SCHOOL,";
 const SCHOOL_LINE_2 = "NEPANAGAR";
 const DEFAULT_NOTE =
-  "Note: Students must carry this Hall Ticket every day. Reach the exam room 10 minutes before the scheduled time.";
+  "Note: Bring this Admit Card to every paper and reach the examination hall 10 minutes early. Mobile phones and unfair means are strictly prohibited.";
+// Light highlight colours (RGB).
+const TINT_TITLE = [221, 235, 247];
+const TINT_LABEL = [237, 241, 247];
+const TINT_NAME = [255, 242, 186];
 
 const PAGE_W = 297;
 const PAGE_H = 210;
@@ -45,6 +49,8 @@ const loadImage = async (url) => {
   }
 };
 export const loadLogo = () => loadImage("/logo.png");
+// Faint background logo: the white-background JPG, falling back to the PNG.
+export const loadWatermark = async () => (await loadImage("/logo.jpg")) || loadImage("/logo.png");
 export const loadSignature = () => loadImage("/principal-signature.png");
 
 const imgType = (img) => (img.dataUrl.startsWith("data:image/jpeg") ? "JPEG" : "PNG");
@@ -72,7 +78,7 @@ const fitOrTrim = (doc, text, maxW, size, min) => {
 const drawCard = (doc, x, y, card, ctx) => {
   const { exam, cls, logo, signature } = ctx;
   const w = CARD_W;
-  const rows = { header: 16.5, title: 7.5, student: 9.5, father: 9.5, klass: 9.5 };
+  const rows = { header: 16.5, title: 7.5, student: 7.8, father: 7.5, klass: 7.5 };
   const yTitle = y + rows.header;
   const yStudent = yTitle + rows.title;
   const yFather = yStudent + rows.student;
@@ -92,6 +98,20 @@ const drawCard = (doc, x, y, card, ctx) => {
     }
   }
 
+  // Light tints (semi-transparent so the watermark still shows through).
+  const tint = (rgb, rx, ry, rw, rh) => {
+    try {
+      doc.setGState(new doc.GState({ opacity: 0.85 }));
+      doc.setFillColor(...rgb);
+      doc.rect(rx, ry, rw, rh, "F");
+    } finally {
+      doc.setGState(new doc.GState({ opacity: 1 }));
+    }
+  };
+  tint(TINT_TITLE, x, yTitle, w, rows.title);
+  tint(TINT_LABEL, x, yStudent, labelW, rows.student + rows.father + rows.klass);
+  tint(TINT_NAME, x + labelW, yStudent, w - labelW, rows.student);
+
   doc.setDrawColor(0);
   doc.setTextColor(0);
   doc.setLineWidth(0.5);
@@ -101,7 +121,7 @@ const drawCard = (doc, x, y, card, ctx) => {
   doc.line(x + labelW, yStudent, x + labelW, yClass + rows.klass); // label | value
 
   // Header
-  doc.setFont("helvetica", "bold");
+  doc.setFont("times", "bold");
   doc.setFontSize(12.5);
   doc.text(SCHOOL_LINE_1, x + w / 2, y + 7, { align: "center" });
   doc.text(SCHOOL_LINE_2, x + w / 2, y + 13.5, { align: "center" });
@@ -109,22 +129,22 @@ const drawCard = (doc, x, y, card, ctx) => {
   // Title: ADMIT CARD - <EXAM> <SESSION>
   const session = String(exam.session?.name || "").replace(/\s*-\s*/g, " - ");
   const title = `ADMIT CARD - ${exam.name.toUpperCase()} ${session}`.trim();
-  doc.setFont("helvetica", "normal");
-  fitText(doc, title, w - 4, 8.5);
-  doc.text(title, x + w / 2, yTitle + 5, { align: "center" });
+  doc.setFont("times", "bold");
+  fitText(doc, title, w - 4, 9.5);
+  doc.text(title, x + w / 2, yTitle + 5.2, { align: "center" });
 
   // Student rows
   const label = (text, ly) => {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.text(text, x + 2, ly + 6.2);
+    doc.setFont("times", "bold");
+    doc.setFontSize(9);
+    doc.text(text, x + 2, ly + 5.2);
   };
-  const value = (text, ly, maxW) => {
-    doc.setFont("helvetica", "bold");
-    doc.text(fitOrTrim(doc, text, maxW, 9.5, 5.5), x + labelW + 2, ly + 6.2);
+  const value = (text, ly, maxW, size = 10) => {
+    doc.setFont("times", "bold");
+    doc.text(fitOrTrim(doc, text, maxW, size, 5.5), x + labelW + 2, ly + 5.2);
   };
   label("STUDENT NAME:", yStudent);
-  value(String(card.student.name || "").toUpperCase(), yStudent, w - labelW - 4);
+  value(String(card.student.name || "").toUpperCase(), yStudent, w - labelW - 4, 11.5);
   label("FATHER NAME:", yFather);
   value(String(card.student.fatherName || "").toUpperCase(), yFather, w - labelW - 4);
 
@@ -133,25 +153,25 @@ const drawCard = (doc, x, y, card, ctx) => {
   label("CLASS / SECTION:", yClass);
   value(`${cls.name} / ${cls.section}`.toUpperCase(), yClass, rollLabelX - x - labelW - 3);
   doc.line(rollLabelX - 1, yClass, rollLabelX - 1, yClass + rows.klass);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.text("ROLL NO.:", rollLabelX + 1, yClass + 6.2);
+  doc.setFont("times", "bold");
+  doc.setFontSize(9);
+  doc.text("ROLL NO.:", rollLabelX + 1, yClass + 5.2);
   const rollBoxX = rollLabelX + 18;
   doc.line(rollBoxX, yClass, rollBoxX, yClass + rows.klass);
   if (card.rollNumber !== null && card.rollNumber !== undefined) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text(String(card.rollNumber), rollBoxX + (x + w - rollBoxX) / 2, yClass + 6.4, {
+    doc.setFont("times", "bold");
+    doc.setFontSize(11);
+    doc.text(String(card.rollNumber), rollBoxX + (x + w - rollBoxX) / 2, yClass + 5.4, {
       align: "center",
     });
   }
 
   // Note + principal signature
   const noteW = w * 0.6 - 4;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
+  doc.setFont("times", "bold");
+  doc.setFontSize(7.2);
   let lines = doc.splitTextToSize(exam.instructions?.trim() || DEFAULT_NOTE, noteW);
-  const maxLines = Math.max(1, Math.floor((CARD_H - (yBottom - y) - 1.5) / 2.6));
+  const maxLines = Math.max(1, Math.floor((CARD_H - (yBottom - y) - 1.5) / 2.9));
   if (lines.length > maxLines) {
     lines = lines.slice(0, maxLines);
     lines[maxLines - 1] = `${lines[maxLines - 1].replace(/\s+\S*$/, "")}…`;
@@ -159,14 +179,14 @@ const drawCard = (doc, x, y, card, ctx) => {
   doc.text(lines, x + 2, yBottom + 3.6);
 
   const sigRight = x + w - 3;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
+  doc.setFont("times", "bold");
+  doc.setFontSize(9);
   const labelWidth = doc.getTextWidth("PRINCIPAL SIGN.:");
   if (signature) {
     // Kept inside the bottom strip, to the left of the label, so it never
     // covers the roll number box above.
-    const sh = 9;
-    const sw = Math.min(30, (signature.w / signature.h) * sh);
+    const sh = 15;
+    const sw = Math.min(36, (signature.w / signature.h) * sh);
     try {
       doc.addImage(
         signature.dataUrl,

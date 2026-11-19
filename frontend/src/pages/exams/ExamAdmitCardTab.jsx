@@ -23,7 +23,7 @@ import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 import { useSnackbar } from "notistack";
 import examApi from "../../api/examApi";
 import {
-  loadLogo,
+  loadWatermark,
   loadSignature,
   downloadAdmitCardPdf,
   printAdmitCardPdf,
@@ -72,7 +72,7 @@ const ExamAdmitCardTab = ({ exam }) => {
 
   const output = async (cards, mode, name) => {
     if (!data || cards.length === 0) return;
-    const [logo, signature] = await Promise.all([loadLogo(), loadSignature()]);
+    const [logo, signature] = await Promise.all([loadWatermark(), loadSignature()]);
     const args = { data, cards, logo, signature };
     if (mode === "print") printAdmitCardPdf(args);
     else downloadAdmitCardPdf(args, name);
