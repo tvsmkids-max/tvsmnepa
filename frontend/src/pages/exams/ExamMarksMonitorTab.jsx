@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import examApi from "../../api/examApi";
+import { EXAM_STATUS_LABELS } from "./examConstants";
 
 const errMsg = (err, fb) =>
   err.response?.data?.errors?.[0]?.message || err.response?.data?.message || fb;
@@ -155,7 +156,9 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
                 ? "Submitted marks. Any correction needs a reason and is recorded in the audit history."
                 : sheet.submission.status === "locked"
                   ? "These marks are locked. Unlock them to make corrections."
-                  : "Read-only. The class teacher is still entering marks."}
+                  : sheet.entryOpen === false
+                    ? `Marks entry is not open yet: the examination is ${EXAM_STATUS_LABELS[sheet.examStatus] || sheet.examStatus}. Set the examination to Ongoing or Completed to enter marks.`
+                    : "Read-only."}
             </Alert>
             <Box sx={{ overflowX: "auto" }}>
               <Table size="small">
@@ -505,7 +508,7 @@ export default function ExamMarksMonitorTab({ exam, onChanged }) {
                       <TableCell align="right">{pct(sub.completion)}</TableCell>
                       <TableCell align="right">
                         <Button size="small" onClick={() => setReview({ classId: c.class._id, subject: sub })}>
-                          View
+                          {entryOpen && st !== "locked" && st !== "submitted" ? "Enter / View" : st === "submitted" ? "View / Correct" : "View"}
                         </Button>
                       </TableCell>
                     </TableRow>
