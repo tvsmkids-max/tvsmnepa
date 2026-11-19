@@ -262,6 +262,26 @@ const saveMarks = [
   }),
 ];
 
+const adminSaveMarks = [
+  validateBody(saveMarksSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examMarks.adminSave(
+      req.user,
+      req.params.id,
+      req.params.classId,
+      req.params.subjectKey,
+      req.body.entries,
+      req,
+    );
+    return sendResponse(res).success({ message: "Marks saved as draft", data });
+  }),
+];
+
+const adminSubmitMarks = asyncHandler(async (req, res) => {
+  const data = await examMarks.adminSubmit(req.user, req.params.id, req.params.classId, req);
+  return sendResponse(res).success({ message: "Marks submitted", data });
+});
+
 const submitMarks = asyncHandler(async (req, res) => {
   const data = await examMarks.submit(req.user, req.params.id, req);
   return sendResponse(res).success({ message: "Marks submitted to Admin", data });
@@ -420,6 +440,8 @@ const saveMyRemarks = [
 ];
 
 module.exports = {
+  adminSaveMarks,
+  adminSubmitMarks,
   reportCardData,
   saveReportCardFields,
   approveRanks,

@@ -20,7 +20,7 @@ import { useSnackbar } from "notistack";
 import examApi from "../../api/examApi";
 import sessionApi from "../../api/sessionApi";
 import classApi from "../../api/classApi";
-import { downloadReportCardPdf, loadLogo, printReportCardPdf } from "../../utils/examReportCardPdf";
+import { downloadReportCardPdf, loadLogo, loadWatermark, printReportCardPdf } from "../../utils/examReportCardPdf";
 
 const errMsg = (err, fb) =>
   err.response?.data?.errors?.[0]?.message || err.response?.data?.message || fb;
@@ -161,6 +161,7 @@ export default function ReportCardsPanel({ mode }) {
     data,
     cards: cards.map((c) => ({ ...c, remark: val(c, "remark"), promotedTo: val(c, "promotedTo") })),
     logo: await loadLogo(),
+    watermark: await loadWatermark(),
     sessionName,
   });
   const run = async (fn, cards, name) => {

@@ -34,7 +34,7 @@ export const NEXT_STATUSES = {
   draft: ["configuration_pending"],
   configuration_pending: ["draft", "scheduled"],
   scheduled: ["configuration_pending", "ongoing"],
-  ongoing: ["completed"],
+  ongoing: ["completed"], // marks entry also moves it on automatically
 };
 
 export const BACKWARD = {

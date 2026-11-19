@@ -38,6 +38,9 @@ const examApi = {
       entries,
       reason,
     }),
+  adminSaveMarks: (id, classId, subjectKey, entries) =>
+    axiosInstance.put(`/exams/${id}/marks/${classId}/${encodeURIComponent(subjectKey)}/entry`, { entries }),
+  adminSubmitMarks: (id, classId) => axiosInstance.post(`/exams/${id}/marks/${classId}/submit`),
   lockMarks: (id, classId) => axiosInstance.post(`/exams/${id}/marks/${classId}/lock`),
   unlockMarks: (id, classId, reason) =>
     axiosInstance.post(`/exams/${id}/marks/${classId}/unlock`, { reason }),

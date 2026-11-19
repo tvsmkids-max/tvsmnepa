@@ -21,8 +21,11 @@ const throwError = (message, statusCode = 400) => {
   throw Object.assign(new Error(message), { statusCode });
 };
 
-// Marks can be entered only once the examination has been completed.
+// Marks can be entered while the examination is ongoing or completed (papers
+// finish at different times, so subject marks may be entered as soon as that
+// paper is over).
 const MARKS_ENTRY_STATUSES = Object.freeze([
+  EXAM_STATUS.ONGOING,
   EXAM_STATUS.COMPLETED,
   EXAM_STATUS.MARKS_ENTRY_IN_PROGRESS,
 ]);
@@ -35,7 +38,13 @@ const ADMIN_REVIEW_STATUSES = Object.freeze([
 
 class ExamMarksService {
   // ── context & helpers ───────────────────────────────────────────────────
-  async _context(user, examId) {
+  // `classIdOverride` is set only by the admin entry routes; the class teacher
+  // is always tied to their own linked class.
+  async _context(user, examId, classIdOverride) {
+    if (classIdOverride) {
+      const { exam, config } = await this._adminContext(examId, classIdOverride);
+      return { exam, config, classId: classIdOverride };
+    }
     const classId = await getTeacherClassId(user);
     const { exam, config } = await assertExamClassAccess(user, examId, classId);
     return { exam, config, classId };
@@ -225,8 +234,8 @@ class ExamMarksService {
   }
 
   // ── save draft ──────────────────────────────────────────────────────────
-  async save(user, examId, subjectKey, entries, req) {
-    const { exam, config, classId } = await this._context(user, examId);
+  async save(user, examId, subjectKey, entries, req, classIdOverride) {
+    const { exam, config, classId } = await this._context(user, examId, classIdOverride);
     const subject = this._subject(config, subjectKey);
 
     if (!MARKS_ENTRY_STATUSES.includes(exam.status)) {
@@ -339,14 +348,15 @@ class ExamMarksService {
     });
 
     // First saved marks move the examination to "Marks Entry In Progress".
-    if (exam.status === EXAM_STATUS.COMPLETED) {
+    if ([EXAM_STATUS.ONGOING, EXAM_STATUS.COMPLETED].includes(exam.status)) {
+      const from = exam.status;
       const moved = await Exam.findOneAndUpdate(
-        { _id: exam._id, status: EXAM_STATUS.COMPLETED },
+        { _id: exam._id, status: from },
         {
           $set: { status: EXAM_STATUS.MARKS_ENTRY_IN_PROGRESS },
           $push: {
             statusHistory: {
-              from: EXAM_STATUS.COMPLETED,
+              from,
               to: EXAM_STATUS.MARKS_ENTRY_IN_PROGRESS,
               by: user._id,
               byName: user.name,
@@ -363,7 +373,7 @@ class ExamMarksService {
           user,
           req,
           reason: "First marks saved",
-          before: { status: EXAM_STATUS.COMPLETED },
+          before: { status: from },
           after: { status: EXAM_STATUS.MARKS_ENTRY_IN_PROGRESS },
         });
       }
@@ -419,8 +429,8 @@ class ExamMarksService {
   }
 
   // ── submit to admin ─────────────────────────────────────────────────────
-  async submit(user, examId, req) {
-    const { exam, config, classId } = await this._context(user, examId);
+  async submit(user, examId, req, classIdOverride) {
+    const { exam, config, classId } = await this._context(user, examId, classIdOverride);
     if (!MARKS_ENTRY_STATUSES.includes(exam.status)) {
       throwError(
         `Marks entry is not open (examination status: ${EXAM_STATUS_LABELS[exam.status]})`,
@@ -753,6 +763,16 @@ class ExamMarksService {
         notStarted: classes.filter((c) => c.submission.status === "not_started").length,
       },
     };
+  }
+
+  // Admin entering marks on behalf of a class (draft marks only). Same rules and
+  // audit trail as the class teacher; the audit actor is the Admin.
+  adminSave(user, examId, classId, subjectKey, entries, req) {
+    return this.save(user, examId, subjectKey, entries, req, classId);
+  }
+
+  adminSubmit(user, examId, classId, req) {
+    return this.submit(user, examId, req, classId);
   }
 
   async adminSheet(examId, classId, subjectKey) {

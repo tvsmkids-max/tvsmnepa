@@ -26,7 +26,7 @@ import {
 } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AddIcon from "@mui/icons-material/Add";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import PageHeader from "../../components/common/PageHeader";
 import examApi from "../../api/examApi";
@@ -60,7 +60,10 @@ const ExamDetailPage = () => {
 
   const [exam, setExam] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState(0);
+  const [searchParams] = useSearchParams();
+  // Sidebar shortcuts open a specific tab: /exams/:id?tab=marks
+  const TAB_KEYS = ["classes", "timetable", "rolls", "admit", "marks", "results", "details", "audit"];
+  const [tab, setTab] = useState(() => Math.max(0, TAB_KEYS.indexOf(searchParams.get("tab") || "")));
   const [audit, setAudit] = useState([]);
 
   const [details, setDetails] = useState(null);

@@ -26,6 +26,7 @@ import {
 } from "./examConstants";
 
 const MARKS_STATUSES = [
+  "ongoing",
   "completed",
   "marks_entry_in_progress",
   "marks_submitted",
@@ -111,7 +112,7 @@ const ExamMyClassPage = () => {
                   variant="contained"
                   onClick={() => navigate(`/exams/mine/${e._id}/marks`)}
                 >
-                  {e.status === "marks_entry_in_progress" || e.status === "completed"
+                  {["ongoing", "completed", "marks_entry_in_progress"].includes(e.status)
                     ? "Enter marks"
                     : "View marks"}
                 </Button>
