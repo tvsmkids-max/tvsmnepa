@@ -169,6 +169,14 @@ const reportCardQuerySchema = Joi.object({
   classId: objectId.required(),
 });
 
+const reportQuerySchema = Joi.object({
+  examId: objectId,
+  classId: objectId,
+  subjectKey: Joi.string().trim().max(80),
+  result: Joi.string().valid("pass", "fail", "absent"),
+  scholarNumber: Joi.string().trim().max(40),
+});
+
 const reportCardTeacherQuerySchema = Joi.object({ sessionId: objectId.required() });
 
 const reportCardEntries = (extra) =>
@@ -195,6 +203,7 @@ const saveReportCardRemarksSchema = Joi.object({
 const rankApprovalSchema = Joi.object({ sessionId: objectId.required(), classId: objectId.required() });
 
 module.exports = {
+  reportQuerySchema,
   reportCardQuerySchema,
   reportCardTeacherQuerySchema,
   saveReportCardAdminSchema,

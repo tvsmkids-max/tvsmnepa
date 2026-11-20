@@ -52,6 +52,7 @@ const examApi = {
   publishResults: (id) => axiosInstance.post(`/exams/${id}/results/publish`, { confirm: true }),
   withdrawResults: (id, reason) => axiosInstance.post(`/exams/${id}/results/withdraw`, { reason }),
   myResults: (id) => axiosInstance.get(`/exams/mine/${id}/results`),
+  runReport: (type, params = {}) => axiosInstance.get(`/exams/reports/${type}`, { params }),
   reportCards: (sessionId, classId) =>
     axiosInstance.get("/exams/report-cards", { params: { sessionId, classId } }),
   saveReportCardFields: (sessionId, classId, entries) =>

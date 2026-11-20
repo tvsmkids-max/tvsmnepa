@@ -38,6 +38,8 @@ router.get(
 // Everything below is Admin-only, enforced on the server.
 router.use(adminOnly);
 
+router.get("/reports/:type", examController.runReport);
+
 // Report cards (registered before "/:id" so "report-cards" is not read as an ID).
 router.get("/report-cards", examController.reportCardData);
 router.put("/report-cards/fields", examController.saveReportCardFields);

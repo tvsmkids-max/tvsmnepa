@@ -68,6 +68,7 @@ const ExamMarksEntryPage = lazy(() => import("../pages/exams/ExamMarksEntryPage"
 const ExamMyResultsPage = lazy(() => import("../pages/exams/ExamMyResultsPage"));
 const ExamSectionPage = lazy(() => import("../pages/exams/ExamSectionPage"));
 const ExamReportCardsPage = lazy(() => import("../pages/exams/ExamReportCardsPage"));
+const ExamReportsPage = lazy(() => import("../pages/exams/ExamReportsPage"));
 const ExamMyReportCardsPage = lazy(() => import("../pages/exams/ExamMyReportCardsPage"));
 
 // ─── Analytics ───
@@ -271,6 +272,14 @@ const AppRouter = () => (
             element={
               <RoleRoute roles={["admin"]}>
                 <ExamReportCardsPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="exams/reports"
+            element={
+              <RoleRoute roles={["admin"]}>
+                <ExamReportsPage />
               </RoleRoute>
             }
           />

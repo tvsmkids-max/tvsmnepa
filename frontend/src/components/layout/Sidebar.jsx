@@ -86,6 +86,7 @@ const adminNav = [
   { label: "Marks Monitoring", icon: <EditNoteOutlinedIcon />, path: "/exams/section/marks" },
   { label: "Results", icon: <EmojiEventsOutlinedIcon />, path: "/exams/section/results" },
   { label: "Report Cards", icon: <DescriptionOutlinedIcon />, path: "/exams/report-cards" },
+  { label: "Exam Reports", icon: <AnalyticsOutlinedIcon />, path: "/exams/reports" },
   { type: "section", label: "Admin" },
   { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
   { label: "Sessions", icon: <SchoolOutlinedIcon />, path: "/sessions" },
