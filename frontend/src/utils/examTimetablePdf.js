@@ -1,5 +1,8 @@
 import { jsPDF } from "jspdf";
 import { downloadPdf, printPdf } from "./pdfGenerator"; // also registers autotable
+import { loadLogo } from "./examAdmitCardPdf";
+
+const imgType = (img) => (img.dataUrl.startsWith("data:image/jpeg") ? "JPEG" : "PNG");
 
 const SCHOOL_NAME =
   import.meta.env.VITE_SCHOOL_NAME || "Thakur Virendra Singh Memorial School";
@@ -13,14 +16,18 @@ const fmtDate = (key) => {
 
 /**
  * groups: [{ label: "10TH - A", entries: [{subjectName,date,startTime,endTime,remarks}] }]
- * One page section per class. No logo yet (supplied later).
+ * One page section per class. `logo` ({dataUrl,w,h}) is optional.
  */
-export const buildTimetablePdf = ({ exam, groups }) => {
+export const buildTimetablePdf = ({ exam, groups, logo }) => {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
 
   groups.forEach((g, i) => {
     if (i > 0) doc.addPage();
+    if (logo) {
+      const lh = 20;
+      doc.addImage(logo.dataUrl, imgType(logo), 14, 8, lh * (logo.w / logo.h), lh, undefined, "FAST");
+    }
     doc.setFont("helvetica", "bold");
     doc.setFontSize(15);
     doc.text(SCHOOL_NAME.toUpperCase(), W / 2, 16, { align: "center" });
@@ -60,6 +67,7 @@ export const buildTimetablePdf = ({ exam, groups }) => {
   return doc;
 };
 
-export const downloadTimetablePdf = (args, filename) =>
-  downloadPdf(buildTimetablePdf(args), filename);
-export const printTimetablePdf = (args) => printPdf(buildTimetablePdf(args));
+export const downloadTimetablePdf = async (args, filename) =>
+  downloadPdf(buildTimetablePdf({ ...args, logo: await loadLogo() }), filename);
+export const printTimetablePdf = async (args) =>
+  printPdf(buildTimetablePdf({ ...args, logo: await loadLogo() }));
