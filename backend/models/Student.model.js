@@ -8,7 +8,6 @@ const studentSchema = new mongoose.Schema(
     scholarNumber: {
       type: String,
       required: [true, "Scholar number is required"],
-      unique: true,
       trim: true,
       uppercase: true,
       maxlength: [30],
@@ -139,7 +138,9 @@ const studentSchema = new mongoose.Schema(
 // ═══════════════════════════════════════════════════════════════════
 //  INDEXES (rollNumber indexes completely removed)
 // ═══════════════════════════════════════════════════════════════════
-studentSchema.index({ scholarNumber: 1 });
+// A scholar number is unique WITHIN a session, so a promoted student keeps the
+// same scholar number in the next session's record. (Was globally unique.)
+studentSchema.index({ scholarNumber: 1, session: 1 }, { unique: true });
 studentSchema.index({ class: 1, session: 1, status: 1 });
 studentSchema.index({
   name: "text",

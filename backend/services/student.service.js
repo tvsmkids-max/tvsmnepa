@@ -128,9 +128,10 @@ class StudentService {
   async create(data, user, req) {
     const existing = await studentRepository.findByScholarNumber(
       data.scholarNumber,
+      data.session,
     );
     if (existing) {
-      throwError(`Scholar number "${data.scholarNumber}" already exists`, 409);
+      throwError(`Scholar number "${data.scholarNumber}" already exists in this session`, 409);
     }
 
     const cls = await classRepository.findById(data.class);
@@ -167,7 +168,7 @@ class StudentService {
     ) {
       const formattedScholar = data.scholarNumber.trim().toUpperCase();
       const duplicate =
-        await studentRepository.findByScholarNumber(formattedScholar);
+        await studentRepository.findByScholarNumber(formattedScholar, data.session || existing.session);
       if (duplicate && duplicate._id.toString() !== id) {
         throwError(
           `Scholar number "${formattedScholar}" is already assigned to another student`,

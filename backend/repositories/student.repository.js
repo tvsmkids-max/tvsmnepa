@@ -32,9 +32,10 @@ class StudentRepository {
     return Student.findById(id).populate(populate).lean();
   }
 
-  async findByScholarNumber(scholarNumber) {
+  async findByScholarNumber(scholarNumber, sessionId) {
     return Student.findOne({
       scholarNumber: scholarNumber.toUpperCase(),
+      session: sessionId,
     }).lean();
   }
 
