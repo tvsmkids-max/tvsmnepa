@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf";
 import { applyPlugin } from "jspdf-autotable";
 import { exportToExcel } from "./exportUtils";
 import { downloadPdf, printPdf } from "./pdfGenerator";
+import { loadLogo } from "./examAdmitCardPdf";
 
 applyPlugin(jsPDF);
 
@@ -17,14 +18,16 @@ export const exportReportExcel = async (report) => {
   await exportToExcel(data, reportFileName(report), "Report");
 };
 
-export const buildReportPdf = (report) => {
+export const buildReportPdf = (report, logo) => {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const tx = logo ? 14 + 14 * (logo.w / logo.h) + 4 : 14;
+  if (logo) doc.addImage(logo.dataUrl, logo.dataUrl.startsWith("data:image/jpeg") ? "JPEG" : "PNG", 14, 6, 14 * (logo.w / logo.h), 14, undefined, "FAST");
   doc.setFont("times", "bold");
   doc.setFontSize(14);
-  doc.text(report.title, 14, 14);
+  doc.text(report.title, tx, 13);
   doc.setFont("times", "normal");
   doc.setFontSize(10);
-  doc.text(report.subtitle || "", 14, 20);
+  doc.text(report.subtitle || "", tx, 19);
   doc.autoTable({
     startY: 25,
     head: [report.columns.map((c) => c.label)],
@@ -42,5 +45,6 @@ export const buildReportPdf = (report) => {
   return doc;
 };
 
-export const downloadReportPdf = (report) => downloadPdf(buildReportPdf(report), reportFileName(report));
-export const printReportPdf = (report) => printPdf(buildReportPdf(report));
+export const downloadReportPdf = async (report) =>
+  downloadPdf(buildReportPdf(report, await loadLogo()), reportFileName(report));
+export const printReportPdf = async (report) => printPdf(buildReportPdf(report, await loadLogo()));

@@ -196,6 +196,11 @@ export const AuthProvider = ({ children }) => {
       // ignore
     } finally {
       storage.clearAuth();
+      try {
+        sessionStorage.removeItem("sams_picked_session");
+      } catch {
+        /* ignore */
+      }
       storage.broadcastLogout();
       dispatch({ type: "LOGOUT" });
       setShowSplash(false);

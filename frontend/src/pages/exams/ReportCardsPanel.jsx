@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import examApi from "../../api/examApi";
-import sessionApi from "../../api/sessionApi";
+import useSessionSelection from "../../hooks/useSessionSelection";
 import classApi from "../../api/classApi";
 import { downloadReportCardPdf, loadLogo, loadWatermark, printReportCardPdf } from "../../utils/examReportCardPdf";
 
@@ -34,8 +34,7 @@ const EXAM_LABEL = { quarterly: "Quarterly", half_yearly: "Half Yearly", annual:
 export default function ReportCardsPanel({ mode }) {
   const admin = mode === "admin";
   const { enqueueSnackbar } = useSnackbar();
-  const [sessions, setSessions] = useState([]);
-  const [sessionId, setSessionId] = useState("");
+  const { sessions, sessionId, setSessionId } = useSessionSelection((m) => enqueueSnackbar(m, { variant: "error" }));
   const [classes, setClasses] = useState([]);
   const [classId, setClassId] = useState("");
   const [data, setData] = useState(null);
@@ -43,25 +42,6 @@ export default function ReportCardsPanel({ mode }) {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await sessionApi.list();
-        const list = res.data?.data || [];
-        if (cancelled) return;
-        setSessions(list);
-        const active = list.find((s) => s.isActive) || list[0];
-        if (active) setSessionId(active._id);
-      } catch {
-        if (!cancelled) enqueueSnackbar("Failed to load sessions", { variant: "error" });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [enqueueSnackbar]);
 
   useEffect(() => {
     if (!admin || !sessionId) return undefined;
