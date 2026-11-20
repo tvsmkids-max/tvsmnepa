@@ -138,7 +138,7 @@ class ImportService {
     }
 
     // ─── Load existing scholars (for duplicate check) ───
-    const existingScholars = await Student.find({})
+    const existingScholars = await Student.find({ session: sessionId })
       .select("scholarNumber")
       .lean();
     const existingScholarSet = new Set(
