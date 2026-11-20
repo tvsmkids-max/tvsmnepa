@@ -42,6 +42,8 @@ import {
   dashboardKeys,
 } from "../../hooks/useDashboard";
 import HolidayBanner from "../../components/common/HolidayBanner";
+import TeacherQuickActions from "./components/TeacherQuickActions";
+import TeacherExamCard from "./components/TeacherExamCard";
 
 // ✅ Correct function import
 import { getDailyQuoteForUser } from "../../utils/quoteUtils";
@@ -313,6 +315,9 @@ const TeacherDashboard = () => {
           />
         </IconButton>
       </Stack>
+
+      <TeacherQuickActions />
+      <TeacherExamCard />
 
       {/* ── CONDITIONAL RENDERING FOR EMPTY / LOADING / NON-WORKING ── */}
       {loading ? (

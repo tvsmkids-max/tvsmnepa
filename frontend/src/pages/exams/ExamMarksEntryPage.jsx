@@ -24,6 +24,7 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
+import { useTheme, useMediaQuery } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import PageHeader from "../../components/common/PageHeader";
@@ -65,6 +66,8 @@ const toRows = (sheet) =>
 const ExamMarksEntryPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { enqueueSnackbar } = useSnackbar();
 
   const [reloadKey, setReloadKey] = useState(0);
@@ -298,10 +301,10 @@ const ExamMarksEntryPage = () => {
             <TableRow>
               <TableCell>Subject</TableCell>
               <TableCell align="right">Max marks</TableCell>
-              <TableCell align="right">Passing marks</TableCell>
-              <TableCell align="right">Students</TableCell>
+              <TableCell align="right" sx={{ display: { xs: "none", sm: "table-cell" } }}>Passing marks</TableCell>
+              <TableCell align="right" sx={{ display: { xs: "none", sm: "table-cell" } }}>Students</TableCell>
               <TableCell align="right">Entered</TableCell>
-              <TableCell align="right">Absent</TableCell>
+              <TableCell align="right" sx={{ display: { xs: "none", sm: "table-cell" } }}>Absent</TableCell>
               <TableCell align="right">Pending</TableCell>
               <TableCell>Entry status</TableCell>
             </TableRow>
@@ -317,10 +320,10 @@ const ExamMarksEntryPage = () => {
               >
                 <TableCell sx={{ fontWeight: 600 }}>{s.name}</TableCell>
                 <TableCell align="right">{s.gradeOnly ? "Grade" : s.internalMax > 0 ? `${s.maxMarks} (${s.maxMarks - s.internalMax} + ${s.internalMax})` : s.maxMarks}</TableCell>
-                <TableCell align="right">{s.gradeOnly ? "—" : s.passingMarks}</TableCell>
-                <TableCell align="right">{s.totalStudents}</TableCell>
+                <TableCell align="right" sx={{ display: { xs: "none", sm: "table-cell" } }}>{s.gradeOnly ? "—" : s.passingMarks}</TableCell>
+                <TableCell align="right" sx={{ display: { xs: "none", sm: "table-cell" } }}>{s.totalStudents}</TableCell>
                 <TableCell align="right">{s.entered}</TableCell>
-                <TableCell align="right">{s.absent}</TableCell>
+                <TableCell align="right" sx={{ display: { xs: "none", sm: "table-cell" } }}>{s.absent}</TableCell>
                 <TableCell align="right">{s.pending}</TableCell>
                 <TableCell>
                   <Chip
@@ -352,6 +355,7 @@ const ExamMarksEntryPage = () => {
             </Alert>
           )}
 
+          {!isMobile ? (
           <Box sx={{ overflowX: "auto" }}>
             <Table size="small">
               <TableHead>
@@ -486,17 +490,136 @@ const ExamMarksEntryPage = () => {
               </TableBody>
             </Table>
           </Box>
+          ) : (
+            <Stack spacing={1.25}>
+              {rows.length === 0 && (
+                <Alert severity="info">
+                  No numbered students in this class yet. Ask the Admin to generate roll numbers.
+                </Alert>
+              )}
+              {rows.map((r, i) => {
+                const absent = r.attendance === "absent";
+                return (
+                  <Paper key={r.studentId} variant="outlined" sx={{ p: 1.5, opacity: absent ? 0.85 : 1 }}>
+                    <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "flex-start", mb: 1 }}>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ fontWeight: 700, lineHeight: 1.25 }}>
+                          {r.rollNumber}. {r.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Adm. {r.scholarNumber}
+                          {r.studentStatus !== "Active" ? ` · ${r.studentStatus}` : ""}
+                        </Typography>
+                      </Box>
+                      <ToggleButtonGroup
+                        size="small"
+                        exclusive
+                        value={r.attendance}
+                        disabled={!editable}
+                        onChange={(_, v) => setAttendance(i, v)}
+                      >
+                        <ToggleButton value="present" color="success" sx={{ px: 1.25 }}>P</ToggleButton>
+                        <ToggleButton value="absent" color="error" sx={{ px: 1.25 }}>A</ToggleButton>
+                      </ToggleButtonGroup>
+                    </Stack>
+                    {gradeOnly ? (
+                      <TextField
+                        select
+                        fullWidth
+                        size="small"
+                        label="Grade"
+                        value={absent ? "" : r.grade}
+                        disabled={!editable || absent}
+                        onChange={(e) => setRow(i, { grade: e.target.value })}
+                        SelectProps={{ displayEmpty: true }}
+                        slotProps={{ inputLabel: { shrink: true } }}
+                      >
+                        <MenuItem value="">
+                          <em>—</em>
+                        </MenuItem>
+                        {GRADES.map((g) => (
+                          <MenuItem key={g} value={g}>
+                            {g}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    ) : (
+                      <Stack direction="row" spacing={1}>
+                        <TextField
+                          size="small"
+                          fullWidth
+                          label={hasParts ? `Written (max ${max})` : `Marks (max ${max})`}
+                          value={absent ? "" : r.marksText}
+                          placeholder={absent ? "Absent" : ""}
+                          disabled={!editable || absent}
+                          error={!!errors[i]}
+                          helperText={errors[i]}
+                          onChange={(e) => setRow(i, { marksText: e.target.value })}
+                          onKeyDown={focusNext(i)}
+                          inputRef={(el) => {
+                            inputRefs.current[i] = el;
+                          }}
+                          inputProps={{ inputMode: "decimal", enterKeyHint: "next" }}
+                          slotProps={{ inputLabel: { shrink: true } }}
+                        />
+                        {hasParts && (
+                          <>
+                            <TextField
+                              size="small"
+                              fullWidth
+                              label={`Internal (max ${subj.internalMax})`}
+                              value={absent ? "" : r.internalText}
+                              disabled={!editable || absent}
+                              error={!!internalErrors[i]}
+                              helperText={internalErrors[i]}
+                              onChange={(e) => setRow(i, { internalText: e.target.value })}
+                              inputProps={{ inputMode: "decimal" }}
+                              slotProps={{ inputLabel: { shrink: true } }}
+                            />
+                            <Box sx={{ minWidth: 52, textAlign: "center", alignSelf: "center" }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                                Total
+                              </Typography>
+                              <Typography sx={{ fontWeight: 700 }}>{absent ? "—" : totalOf(r)}</Typography>
+                            </Box>
+                          </>
+                        )}
+                      </Stack>
+                    )}
+                  </Paper>
+                );
+              })}
+            </Stack>
+          )}
 
           {editable && (
-            <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                mt: 2,
+                ...(isMobile && {
+                  position: "sticky",
+                  bottom: "calc(64px + env(safe-area-inset-bottom))",
+                  zIndex: 5,
+                  bgcolor: "background.paper",
+                  borderTop: "1px solid",
+                  borderColor: "divider",
+                  mx: -2,
+                  px: 2,
+                  py: 1,
+                  "& .MuiButton-root": { flex: 1, whiteSpace: "nowrap" },
+                }),
+              }}
+            >
               <Button variant="contained" onClick={save} disabled={saving || !dirty}>
                 Save draft
               </Button>
               <Button variant="outlined" onClick={() => setSubmitOpen(true)} disabled={!canSubmit}>
-                Review &amp; submit to Admin
+                {isMobile ? "Submit" : "Review & submit to Admin"}
               </Button>
               {!canSubmit && (
-                <Typography variant="caption" color="text.secondary" sx={{ alignSelf: "center" }}>
+                <Typography variant="caption" color="text.secondary" sx={{ alignSelf: "center", display: { xs: "none", sm: "block" } }}>
                   {dirty
                     ? "Save your draft first."
                     : totalPending > 0
