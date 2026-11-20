@@ -225,6 +225,8 @@ class ExamMarksService {
         lockedAt: submission?.lockedAt || null,
         reopenCount: submission?.reopenCount || 0,
       },
+      entryOpen: MARKS_ENTRY_STATUSES.includes(exam.status),
+      examStatus: exam.status,
       canEdit: this._canEdit(exam, submission),
       canCorrect:
         submission?.status === "submitted" && ADMIN_REVIEW_STATUSES.includes(exam.status),

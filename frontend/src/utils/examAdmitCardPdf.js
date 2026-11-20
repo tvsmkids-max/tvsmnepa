@@ -7,10 +7,12 @@ const SCHOOL_LINE_1 = "TH. VIRENDRA SINGH MEMORIAL SCHOOL,";
 const SCHOOL_LINE_2 = "NEPANAGAR";
 const DEFAULT_NOTE =
   "Note: Bring this Admit Card to every paper and reach the examination hall 10 minutes early. Mobile phones and unfair means are strictly prohibited.";
-// Light highlight colours (RGB).
-const TINT_TITLE = [221, 235, 247];
-const TINT_LABEL = [237, 241, 247];
-const TINT_NAME = [255, 242, 186];
+// Admit cards are printed on a black-and-white printer, so the highlights are
+// very light greys (text stays solid black and fully readable) and the student
+// name is also set apart by a heavier box, not by colour alone.
+const TINT_TITLE = [236, 236, 236];
+const TINT_LABEL = [243, 243, 243];
+const TINT_NAME = [226, 226, 226];
 
 const PAGE_W = 297;
 const PAGE_H = 210;
@@ -51,7 +53,35 @@ const loadImage = async (url) => {
 export const loadLogo = () => loadImage("/logo.png");
 // Faint background logo: the white-background JPG, falling back to the PNG.
 export const loadWatermark = async () => (await loadImage("/logo.jpg")) || loadImage("/logo.png");
-export const loadSignature = () => loadImage("/principal-signature.png");
+// The signature is darkened (alpha kept) so a light-coloured pen still prints
+// clearly on a black-and-white printer.
+export const loadSignature = async () => {
+  const img = await loadImage("/principal-signature.png");
+  if (!img || typeof document === "undefined") return img;
+  try {
+    const el = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = img.dataUrl;
+    });
+    const c = document.createElement("canvas");
+    c.width = img.w;
+    c.height = img.h;
+    const g = c.getContext("2d");
+    g.drawImage(el, 0, 0);
+    const d = g.getImageData(0, 0, c.width, c.height);
+    for (let k = 0; k < d.data.length; k += 4) {
+      d.data[k] *= 0.25;
+      d.data[k + 1] *= 0.25;
+      d.data[k + 2] *= 0.25;
+    }
+    g.putImageData(d, 0, 0);
+    return { ...img, dataUrl: c.toDataURL("image/png") };
+  } catch {
+    return img;
+  }
+};
 
 const imgType = (img) => (img.dataUrl.startsWith("data:image/jpeg") ? "JPEG" : "PNG");
 
@@ -91,7 +121,7 @@ const drawCard = (doc, x, y, card, ctx) => {
     const h = 40;
     const lw = (logo.w / logo.h) * h;
     try {
-      doc.setGState(new doc.GState({ opacity: 0.07 }));
+      doc.setGState(new doc.GState({ opacity: 0.05 }));
       doc.addImage(logo.dataUrl, imgType(logo), x + (w - lw) / 2, y + (CARD_H - h) / 2 + 3, lw, h);
     } finally {
       doc.setGState(new doc.GState({ opacity: 1 }));
@@ -101,7 +131,7 @@ const drawCard = (doc, x, y, card, ctx) => {
   // Light tints (semi-transparent so the watermark still shows through).
   const tint = (rgb, rx, ry, rw, rh) => {
     try {
-      doc.setGState(new doc.GState({ opacity: 0.85 }));
+      doc.setGState(new doc.GState({ opacity: 1 }));
       doc.setFillColor(...rgb);
       doc.rect(rx, ry, rw, rh, "F");
     } finally {
@@ -119,6 +149,9 @@ const drawCard = (doc, x, y, card, ctx) => {
   doc.setLineWidth(0.25);
   [yTitle, yStudent, yFather, yClass, yBottom].forEach((ly) => doc.line(x, ly, x + w, ly));
   doc.line(x + labelW, yStudent, x + labelW, yClass + rows.klass); // label | value
+  doc.setLineWidth(0.7);
+  doc.rect(x, yStudent, w, rows.student); // heavier box around the student name
+  doc.setLineWidth(0.25);
 
   // Header
   doc.setFont("times", "bold");
@@ -178,29 +211,30 @@ const drawCard = (doc, x, y, card, ctx) => {
   }
   doc.text(lines, x + 2, yBottom + 3.6);
 
-  const sigRight = x + w - 3;
+  // Principal signature: centred on the "PRINCIPAL SIGN.:" label, sitting just
+  // above its text so the signature appears to be signed on that line.
+  const labelCx = x + w - 20;
+  const labelBase = y + CARD_H - 2.6;
   doc.setFont("times", "bold");
   doc.setFontSize(9);
-  const labelWidth = doc.getTextWidth("PRINCIPAL SIGN.:");
   if (signature) {
-    // Kept inside the bottom strip, to the left of the label, so it never
-    // covers the roll number box above.
-    const sh = 15;
-    const sw = Math.min(36, (signature.w / signature.h) * sh);
+    const sh = 12;
+    const sw = Math.min(34, (signature.w / signature.h) * sh);
+    const shFit = (sw / (signature.w / signature.h)) || sh;
     try {
       doc.addImage(
         signature.dataUrl,
         imgType(signature),
-        sigRight - labelWidth - 2 - sw,
-        y + CARD_H - sh - 0.8,
+        labelCx - sw / 2,
+        labelBase - 1.8 - shFit, // sits on the label text
         sw,
-        sh,
+        shFit,
       );
     } catch {
       /* signature is optional */
     }
   }
-  doc.text("PRINCIPAL SIGN.:", sigRight, y + CARD_H - 2.4, { align: "right" });
+  doc.text("PRINCIPAL SIGN.:", labelCx, labelBase, { align: "center" });
 };
 
 /**
