@@ -90,13 +90,6 @@ const IdleTimeoutProvider = ({ children }) => {
     }
   }, [logout, navigate]);
 
-  useEffect(() => {
-    if (!idleEnabled && warningOpen) {
-      setWarningOpen(false);
-      setCountdownEnd(null);
-    }
-  }, [idleEnabled, warningOpen]);
-
   // Debug helper (remove later): log effective timings once settings load
   useEffect(() => {
     if (!idleEnabled || !settings) return;
@@ -118,7 +111,7 @@ const IdleTimeoutProvider = ({ children }) => {
       {children}
       {idleEnabled && (
         <IdleWarningDialog
-          open={warningOpen}
+          open={warningOpen && idleEnabled}
           countdownEnd={countdownEnd}
           totalWarningMs={warningMs}
           onStayLoggedIn={handleStayLoggedIn}

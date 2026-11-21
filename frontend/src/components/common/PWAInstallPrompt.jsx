@@ -37,13 +37,11 @@ const PWAInstallPrompt = () => {
     // - Can't install (no prompt available)
     // - Recently dismissed (within 7 days)
     if (!isAuthenticated || !canInstall || isStandalone) {
-      setShow(false);
       return;
     }
 
     const dismissedAt = storage.getPwaInstallDismissed();
     if (dismissedAt && Date.now() - dismissedAt < DISMISS_DURATION_MS) {
-      setShow(false);
       return;
     }
 
@@ -69,11 +67,12 @@ const PWAInstallPrompt = () => {
     storage.setPwaInstallDismissed();
   };
 
-  if (!show) return null;
+  const eligible = isAuthenticated && canInstall && !isStandalone;
+  if (!show || !eligible) return null;
 
   return (
     <Snackbar
-      open={show}
+      open={show && eligible}
       anchorOrigin={{
         vertical: "bottom",
         horizontal: isMobile ? "center" : "right",
