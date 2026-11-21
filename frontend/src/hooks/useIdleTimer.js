@@ -24,12 +24,12 @@ const useIdleTimer = ({
   onIdle,
   onActivity,
 }) => {
-  const lastActivityRef = useRef(Date.now());
+  const lastActivityRef = useRef(0);
   const lastMouseMoveRef = useRef(0);
   const warnTimerRef = useRef(null);
   const idleTimerRef = useRef(null);
   const isWarningActiveRef = useRef(false);
-  const [lastActivity, setLastActivity] = useState(Date.now());
+  const [lastActivity, setLastActivity] = useState(() => Date.now());
 
   // Keep latest callbacks without re-binding window listeners every render
   const onWarnRef = useRef(onWarn);
@@ -87,22 +87,32 @@ const useIdleTimer = ({
     }, idleMs);
   }, [enabled, clearTimers]);
 
+  // Records activity and restarts timers. React state is only updated for
+  // real user activity (see `reset`), never synchronously from an effect.
+  const touch = useCallback(
+    () => {
+      if (!enabled) return null;
+      const now = Date.now();
+      lastActivityRef.current = now;
+      try {
+        storage.setLastActivity?.(now);
+      } catch {
+        // ignore storage errors
+      }
+      isWarningActiveRef.current = false;
+      scheduleTimers();
+      if (typeof onActivityRef.current === "function") {
+        onActivityRef.current();
+      }
+      return now;
+    },
+    [enabled, scheduleTimers],
+  );
+
   const reset = useCallback(() => {
-    if (!enabled) return;
-    const now = Date.now();
-    lastActivityRef.current = now;
-    setLastActivity(now);
-    try {
-      storage.setLastActivity?.(now);
-    } catch {
-      // ignore storage errors
-    }
-    isWarningActiveRef.current = false;
-    scheduleTimers();
-    if (typeof onActivityRef.current === "function") {
-      onActivityRef.current();
-    }
-  }, [enabled, scheduleTimers]);
+    const now = touch();
+    if (now) setLastActivity(now);
+  }, [touch]);
 
   const handleActivity = useCallback(
     (event) => {
@@ -129,7 +139,7 @@ const useIdleTimer = ({
       return undefined;
     }
 
-    reset();
+    touch();
 
     ACTIVITY_EVENTS.forEach((evt) => {
       window.addEventListener(evt, handleActivity, { passive: true });
@@ -141,7 +151,7 @@ const useIdleTimer = ({
       });
       clearTimers();
     };
-  }, [enabled, handleActivity, reset, clearTimers]);
+  }, [enabled, handleActivity, touch, clearTimers]);
 
   // Re-schedule when timeout settings change (without relying on unstable callbacks)
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Table,
   TableHead,
@@ -16,7 +16,6 @@ import {
   ListItemText,
   Divider,
   Typography,
-  Box,
   Chip,
   Tooltip,
   alpha,
@@ -286,7 +285,7 @@ const StudentTable = ({
   };
 
   // ✅ Sortable header (compact)
-  const SortableHeader = ({
+  const renderSortableHeader = ({
     field,
     label,
     width,
@@ -354,26 +353,14 @@ const StudentTable = ({
                 S. NO.
               </TableCell>
 
-              <SortableHeader
-                field="scholarNumber"
-                label="SCHOLAR NO."
-                width={80}
-              />
-              <SortableHeader field="name" label="NAME" minWidth={140} />
-              <SortableHeader
-                field="fatherName"
-                label="FATHER NAME"
-                minWidth={130}
-              />
-              <SortableHeader
-                field="motherName"
-                label="MOTHER NAME"
-                minWidth={130}
-              />
-              <SortableHeader field="dob" label="DOB" width={80} />
-              <SortableHeader field="mobile" label="MOBILE" width={100} />
-              <SortableHeader field="class" label="CLASS" width={70} />
-              <SortableHeader field="status" label="STATUS" width={75} />
+              {renderSortableHeader({ field: "scholarNumber", label: "SCHOLAR NO.", width: 80 })}
+              {renderSortableHeader({ field: "name", label: "NAME", minWidth: 140 })}
+              {renderSortableHeader({ field: "fatherName", label: "FATHER NAME", minWidth: 130 })}
+              {renderSortableHeader({ field: "motherName", label: "MOTHER NAME", minWidth: 130 })}
+              {renderSortableHeader({ field: "dob", label: "DOB", width: 80 })}
+              {renderSortableHeader({ field: "mobile", label: "MOBILE", width: 100 })}
+              {renderSortableHeader({ field: "class", label: "CLASS", width: 70 })}
+              {renderSortableHeader({ field: "status", label: "STATUS", width: 75 })}
 
               <TableCell
                 sx={{
