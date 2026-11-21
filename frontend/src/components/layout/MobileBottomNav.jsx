@@ -21,6 +21,8 @@ import { alpha } from "@mui/material/styles";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
+import QuizOutlinedIcon from "@mui/icons-material/QuizOutlined";
 import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
@@ -60,6 +62,7 @@ const MobileBottomNav = () => {
       return "home";
     }
     if (path.startsWith("/attendance/mark")) return "mark";
+    if (path.startsWith("/exams")) return "marks";
     if (path.startsWith("/reports/daily")) return "daily";
     if (path.startsWith("/students")) return "students";
     return false;
@@ -73,6 +76,7 @@ const MobileBottomNav = () => {
     const routes = {
       home: homeRoute,
       mark: "/attendance/mark",
+      marks: "/exams/mine",
       daily: "/reports/daily",
       students: "/students",
     };
@@ -160,6 +164,12 @@ const MobileBottomNav = () => {
       icon: <ListAltOutlinedIcon />,
       path: "/reports/register",
     },
+    { divider: true, label: "Examinations" },
+    {
+      label: "Report Cards",
+      icon: <QuizOutlinedIcon />,
+      path: "/exams/mine/report-cards",
+    },
     { divider: true, label: "Info" },
     { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
   ];
@@ -234,15 +244,23 @@ const MobileBottomNav = () => {
             icon={<HomeOutlinedIcon sx={{ fontSize: 22 }} />}
           />
           <BottomNavigationAction
-            label="Mark"
+            label={isAdmin ? "Mark" : "Attendance"}
             value="mark"
             icon={<EventNoteOutlinedIcon sx={{ fontSize: 22 }} />}
           />
-          <BottomNavigationAction
-            label="Daily"
-            value="daily"
-            icon={<TodayOutlinedIcon sx={{ fontSize: 22 }} />}
-          />
+          {isAdmin ? (
+            <BottomNavigationAction
+              label="Daily"
+              value="daily"
+              icon={<TodayOutlinedIcon sx={{ fontSize: 22 }} />}
+            />
+          ) : (
+            <BottomNavigationAction
+              label="Marks"
+              value="marks"
+              icon={<EditNoteOutlinedIcon sx={{ fontSize: 22 }} />}
+            />
+          )}
           {/* ✅ Students icon active on mobile bottom bar */}
           <BottomNavigationAction
             label="Students"

@@ -17,7 +17,7 @@ import { useSnackbar } from "notistack";
 import PageHeader from "../../components/common/PageHeader";
 import EmptyState from "../../components/common/EmptyState";
 import examApi from "../../api/examApi";
-import sessionApi from "../../api/sessionApi";
+import useSessionSelection from "../../hooks/useSessionSelection";
 import { EXAM_STATUS_COLORS, EXAM_STATUS_LABELS } from "./examConstants";
 
 // Sidebar shortcut pages: pick an examination, jump straight to one of its tabs.
@@ -33,28 +33,8 @@ export default function ExamSectionPage() {
   const cfg = SECTIONS[section];
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
-  const [sessions, setSessions] = useState([]);
-  const [sessionId, setSessionId] = useState("");
+  const { sessions, sessionId, setSessionId } = useSessionSelection((m) => enqueueSnackbar(m, { variant: "error" }));
   const [exams, setExams] = useState([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await sessionApi.list();
-        const list = res.data?.data || [];
-        if (cancelled) return;
-        setSessions(list);
-        const active = list.find((s) => s.isActive) || list[0];
-        if (active) setSessionId(active._id);
-      } catch {
-        if (!cancelled) enqueueSnackbar("Failed to load sessions", { variant: "error" });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [enqueueSnackbar]);
 
   useEffect(() => {
     if (!sessionId) return undefined;
