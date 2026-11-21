@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   Box,
@@ -71,7 +71,7 @@ const LoginPage = () => {
 
           setLoadingOptions(false);
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) {
           setLoadingOptions(false);
           enqueueSnackbar("Failed to load login accounts", {
@@ -140,15 +140,16 @@ const LoginPage = () => {
 
   useEffect(() => () => clearError(), [clearError]);
 
-  useEffect(() => {
-    setPassword("");
-    setPinDigits(["", "", "", "", ""]);
-  }, [selectedUserId]);
-
   const selectedUserObj = loginOptions.find((o) => o._id === selectedUserId);
   const isAdminLogin = selectedUserObj?.role === "admin";
   const isClassLogin = selectedUserObj?.role === "class";
   const classPin = pinDigits.join("");
+
+  const handleAccountChange = (event) => {
+    setSelectedUserId(event.target.value);
+    setPassword("");
+    setPinDigits(["", "", "", "", ""]);
+  };
 
   const handlePinChange = (index, value) => {
     const digit = value.replace(/\D/g, "").slice(-1);
@@ -630,7 +631,7 @@ const LoginPage = () => {
                 >
                   <Select
                     value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
+                    onChange={handleAccountChange}
                     displayEmpty
                     sx={{
                       bgcolor: inputBg,
