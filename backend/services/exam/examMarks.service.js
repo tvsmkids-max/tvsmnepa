@@ -6,6 +6,9 @@ const ExamClassConfig = require("../../models/exam/ExamClassConfig.model");
 const ExamRollNumber = require("../../models/exam/ExamRollNumber.model");
 const ExamMarks = require("../../models/exam/ExamMarks.model");
 const ExamMarksSubmission = require("../../models/exam/ExamMarksSubmission.model");
+const ExamTimetableEntry = require("../../models/exam/ExamTimetableEntry.model");
+const Attendance = require("../../models/Attendance.model");
+const { ATTENDANCE_STATUS } = require("../../constants/attendanceStatus");
 const Class = require("../../models/Class.model");
 const Student = require("../../models/Student.model");
 const { STUDENT_STATUS } = require("../../constants/studentStatus");
@@ -163,6 +166,40 @@ class ExamMarksService {
     };
   }
 
+  /**
+   * Absence in marks entry comes from the system attendance of the subject's
+   * exam date (never typed by hand).
+   *  date    - the subject's timetable date ("YYYY-MM-DD") or null when not set
+   *  marked  - true when attendance exists for the class on that date
+   *  absent  - Set of student ids marked Absent that day
+   */
+  async _attendanceSync(exam, classId, subject) {
+    const entry = await ExamTimetableEntry.findOne({
+      exam: exam._id,
+      class: classId,
+      subjectKey: subject.nameKey,
+    })
+      .select("date")
+      .lean();
+    const date = entry?.date || null;
+    if (!date) return { date: null, marked: false, absent: new Set() };
+    const docs = await Attendance.find({
+      class: classId,
+      date: { $gte: new Date(`${date}T00:00:00.000Z`), $lte: new Date(`${date}T23:59:59.999Z`) },
+    })
+      .select("student status")
+      .lean();
+    return {
+      date,
+      marked: docs.length > 0,
+      absent: new Set(docs.filter((d) => d.status === ATTENDANCE_STATUS.ABSENT).map((d) => String(d.student))),
+    };
+  }
+
+  _attendanceMessage(sync, subject) {
+    return `Attendance for ${sync.date} (${subject.name} exam date) has not been marked yet. Mark attendance for that date first, then enter marks.`;
+  }
+
   // ── marks sheet for one subject ─────────────────────────────────────────
   async sheet(user, examId, subjectKey) {
     const { exam, config, classId } = await this._context(user, examId);
@@ -185,6 +222,8 @@ class ExamMarksService {
       .lean();
     const statusOf = new Map(studentInfo.map((s) => [String(s._id), s.status]));
 
+    const sync = await this._attendanceSync(exam, classId, subject);
+    const draft = !submission || submission.status === "draft";
     const rows = roster.rolls
       .filter((r) => statusOf.get(String(r.student)) === STUDENT_STATUS.ACTIVE || byStudent.has(String(r.student)))
       .map((r) => {
@@ -195,7 +234,11 @@ class ExamMarksService {
           scholarNumber: r.scholarNumber,
           name: r.studentName,
           studentStatus: statusOf.get(String(r.student)) || "Unknown",
-          attendance: d?.attendance || "present",
+          // Draft rows follow the system attendance; submitted/locked rows keep what was saved.
+          attendance: draft
+            ? sync.absent.has(String(r.student)) ? "absent" : "present"
+            : d?.attendance || "present",
+          needsSave: draft && !!d && d.attendance !== (sync.absent.has(String(r.student)) ? "absent" : "present"),
           marks: d ? d.marks : null,
           writtenMarks: d ? d.writtenMarks ?? null : null,
           internalMarks: d ? d.internalMarks ?? null : null,
@@ -227,6 +270,12 @@ class ExamMarksService {
       },
       entryOpen: MARKS_ENTRY_STATUSES.includes(exam.status),
       examStatus: exam.status,
+      attendance: {
+        date: sync.date,
+        marked: sync.marked,
+        blocked: !!sync.date && !sync.marked,
+        message: sync.date && !sync.marked ? this._attendanceMessage(sync, subject) : "",
+      },
       canEdit: this._canEdit(exam, submission),
       canCorrect:
         submission?.status === "submitted" && ADMIN_REVIEW_STATUSES.includes(exam.status),
@@ -253,6 +302,15 @@ class ExamMarksService {
         409,
       );
     }
+
+    const sync = await this._attendanceSync(exam, classId, subject);
+    if (sync.date && !sync.marked) throwError(this._attendanceMessage(sync, subject), 409);
+    // The client's present/absent is ignored: absence is the system attendance.
+    entries = entries.map((e) =>
+      sync.absent.has(String(e.studentId))
+        ? { ...e, attendance: "absent", marks: null, internalMarks: null, grade: null }
+        : { ...e, attendance: "present" },
+    );
 
     const roster = await this._roster(exam, classId);
     const rollOf = new Map(roster.active.map((r) => [String(r.student), r]));
@@ -455,6 +513,23 @@ class ExamMarksService {
           .join(", ")}. Ask the Admin to assign roll numbers.`,
         409,
       );
+    }
+    // Attendance must be marked, and saved marks must match it (it may have changed since saving).
+    for (const subj of config.subjects) {
+      const sync = await this._attendanceSync(exam, classId, subj);
+      if (sync.date && !sync.marked) throwError(this._attendanceMessage(sync, subj), 409);
+      const saved = await ExamMarks.find({ exam: exam._id, class: classId, subjectKey: subj.nameKey })
+        .select("student attendance")
+        .lean();
+      const stale = saved.filter(
+        (d) => d.attendance !== (sync.absent.has(String(d.student)) ? "absent" : "present"),
+      );
+      if (stale.length) {
+        throwError(
+          `Attendance changed for ${subj.name} after marks were saved. Open ${subj.name}, review and save again.`,
+          409,
+        );
+      }
     }
     const pending = await this._pending(exam, config, classId, roster);
     if (pending.length > 0) {
