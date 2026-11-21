@@ -22,30 +22,23 @@ const DISMISS_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 const WeeklyBackupBanner = () => {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      const dismissedAt = localStorage.getItem(DISMISS_KEY);
+      if (!dismissedAt) return false;
+      if (Date.now() - parseInt(dismissedAt, 10) < DISMISS_DURATION_MS) return true;
+      localStorage.removeItem(DISMISS_KEY);
+    } catch {
+      // localStorage unavailable
+    }
+    return false;
+  });
 
   // Only fetch stats if user is admin
   const { data: stats } = useBackupStats({
     enabled: isAdmin,
     refetchOnMount: false,
   });
-
-  // Check dismissal on mount
-  useEffect(() => {
-    try {
-      const dismissedAt = localStorage.getItem(DISMISS_KEY);
-      if (dismissedAt) {
-        const elapsedMs = Date.now() - parseInt(dismissedAt, 10);
-        if (elapsedMs < DISMISS_DURATION_MS) {
-          setDismissed(true);
-        } else {
-          localStorage.removeItem(DISMISS_KEY);
-        }
-      }
-    } catch {
-      // localStorage unavailable
-    }
-  }, []);
 
   const handleDismiss = () => {
     setDismissed(true);
