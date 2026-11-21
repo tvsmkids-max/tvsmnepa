@@ -143,7 +143,7 @@ class ExamReportCardService {
         ? Object.fromEntries(
             cfg.subjects.map((s) => [
               s.nameKey,
-              { max: s.maxMarks, internalMax: s.internalMax || 0, written: s.maxMarks - (s.internalMax || 0) },
+              { max: s.maxMarks, internalMax: s.internalMax || 0, oralMax: s.oralMax || 0, written: s.maxMarks - (s.internalMax || 0) - (s.oralMax || 0) },
             ]),
           )
         : {};
@@ -190,6 +190,7 @@ class ExamReportCardService {
             marks: sub.marks,
             writtenMarks: sub.writtenMarks ?? null,
             internalMarks: sub.internalMarks ?? null,
+            oralMarks: sub.oralMarks ?? null,
             grade: sub.grade ?? null,
           };
         };

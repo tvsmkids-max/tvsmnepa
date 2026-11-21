@@ -103,7 +103,7 @@ class ExamAccessService {
     }
     const sortTt = (l = []) =>
       l.sort((a, b) =>
-        `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`),
+        `${a.date} ${a.subjectName}`.localeCompare(`${b.date} ${b.subjectName}`),
       );
     return exams.map((e) => ({
       _id: e._id,
@@ -129,7 +129,7 @@ class ExamAccessService {
       class: classId,
     }).lean();
     timetable.sort((a, b) =>
-      `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`),
+      `${a.date} ${a.subjectName}`.localeCompare(`${b.date} ${b.subjectName}`),
     );
     return {
       _id: exam._id,

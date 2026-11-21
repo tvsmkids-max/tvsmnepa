@@ -23,6 +23,7 @@ import {
   Alert,
   Tabs,
   Tab,
+  Autocomplete,
 } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AddIcon from "@mui/icons-material/Add";
@@ -31,8 +32,8 @@ import { useSnackbar } from "notistack";
 import PageHeader from "../../components/common/PageHeader";
 import examApi from "../../api/examApi";
 import ExamTimetableTab from "./ExamTimetableTab";
-import ExamRollNumberTab from "./ExamRollNumberTab";
 import ExamAdmitCardTab from "./ExamAdmitCardTab";
+import ExamSubjectsDialog from "./ExamSubjectsDialog";
 import ExamMarksMonitorTab from "./ExamMarksMonitorTab";
 import ExamResultsTab from "./ExamResultsTab";
 import classApi from "../../api/classApi";
@@ -51,7 +52,9 @@ const apiMsg = (err, fallback) =>
   err.response?.data?.message ||
   fallback;
 
-const blankSubject = () => ({ name: "", maxMarks: "", passingMarks: "", internalMax: "", gradeOnly: false });
+const blankSubject = () => ({ name: "", writtenMax: "", internalMax: "", oralMax: "", passingMarks: "", gradeOnly: false });
+const num = (v) => (v === "" || v === null || v === undefined ? 0 : Number(v));
+const totalOf = (s) => num(s.writtenMax) + num(s.internalMax) + num(s.oralMax);
 
 const ExamDetailPage = () => {
   const { id } = useParams();
@@ -62,7 +65,7 @@ const ExamDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
   // Sidebar shortcuts open a specific tab: /exams/:id?tab=marks
-  const TAB_KEYS = ["classes", "timetable", "rolls", "admit", "marks", "results", "details", "audit"];
+  const TAB_KEYS = ["classes", "timetable", "admit", "marks", "results", "details", "audit"];
   const [tab, setTab] = useState(() => Math.max(0, TAB_KEYS.indexOf(searchParams.get("tab") || "")));
   const [audit, setAudit] = useState([]);
 
@@ -70,6 +73,9 @@ const ExamDetailPage = () => {
   const [savingDetails, setSavingDetails] = useState(false);
 
   const [cfgOpen, setCfgOpen] = useState(false);
+  const [subjectsOpen, setSubjectsOpen] = useState(false);
+  const [catalog, setCatalog] = useState([]);
+  const [catalogKey, setCatalogKey] = useState(0);
   const [allClasses, setAllClasses] = useState([]);
   const [pickedClasses, setPickedClasses] = useState([]);
   const [subjects, setSubjects] = useState([blankSubject()]);
@@ -80,6 +86,21 @@ const ExamDetailPage = () => {
 
   const [reloadKey, setReloadKey] = useState(0);
   const load = () => setReloadKey((k) => k + 1);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await examApi.listSubjects();
+        if (!cancelled) setCatalog(res.data?.data || []);
+      } catch {
+        /* the dropdown simply stays empty; typing still works */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [catalogKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -170,9 +191,10 @@ const ExamDetailPage = () => {
       setSubjects(
         cfg.subjects.map((s) => ({
           name: s.name,
-          maxMarks: s.gradeOnly ? "" : s.maxMarks,
+          writtenMax: s.gradeOnly ? "" : s.maxMarks - (s.internalMax || 0) - (s.oralMax || 0),
           passingMarks: s.gradeOnly ? "" : s.passingMarks,
           internalMax: s.internalMax > 0 ? s.internalMax : "",
+          oralMax: s.oralMax > 0 ? s.oralMax : "",
           gradeOnly: !!s.gradeOnly,
         })),
       );
@@ -191,11 +213,10 @@ const ExamDetailPage = () => {
       if (names.has(n)) return `Duplicate subject: ${s.name.trim()}`;
       names.add(n);
       if (s.gradeOnly) continue;
-      const max = Number(s.maxMarks);
+      const max = totalOf(s);
       const pass = Number(s.passingMarks);
-      const internal = s.internalMax === "" ? 0 : Number(s.internalMax);
-      if (!(internal >= 0) || internal >= max)
-        return `${s.name}: internal marks must be less than the maximum marks`;
+      if (!(num(s.writtenMax) >= 1)) return `${s.name}: enter the written marks`;
+      if (num(s.internalMax) < 0 || num(s.oralMax) < 0) return `${s.name}: marks cannot be negative`;
       if (!(max >= 1)) return `${s.name}: maximum marks must be at least 1`;
       if (s.passingMarks === "" || !(pass >= 0))
         return `${s.name}: enter passing marks`;
@@ -215,9 +236,10 @@ const ExamDetailPage = () => {
           ...(s.gradeOnly
             ? {}
             : {
-                maxMarks: Number(s.maxMarks),
+                maxMarks: totalOf(s),
                 passingMarks: Number(s.passingMarks),
-                internalMax: s.internalMax === "" ? 0 : Number(s.internalMax),
+                internalMax: num(s.internalMax),
+                oralMax: num(s.oralMax),
               }),
         })),
       });
@@ -320,7 +342,6 @@ const ExamDetailPage = () => {
         <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable">
           <Tab label="Classes & Subjects" />
           <Tab label="Timetable" />
-          <Tab label="Roll Numbers" />
           <Tab label="Admit Cards" />
           <Tab label="Marks" />
           <Tab label="Results" />
@@ -377,8 +398,14 @@ const ExamDetailPage = () => {
                           <TableCell align="right">
                             {s.gradeOnly
                               ? "Grade only"
-                              : s.internalMax > 0
-                                ? `${s.maxMarks} (${s.maxMarks - s.internalMax} written + ${s.internalMax} internal)`
+                              : s.internalMax > 0 || s.oralMax > 0
+                                ? `${s.maxMarks} (${[
+                                    `${s.maxMarks - (s.internalMax || 0) - (s.oralMax || 0)} written`,
+                                    s.internalMax > 0 && `${s.internalMax} internal`,
+                                    s.oralMax > 0 && `${s.oralMax} oral`,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" + ")})`
                                 : s.maxMarks}
                           </TableCell>
                           <TableCell align="right">{s.gradeOnly ? "—" : s.passingMarks}</TableCell>
@@ -394,15 +421,13 @@ const ExamDetailPage = () => {
 
         {tab === 1 && <ExamTimetableTab exam={exam} />}
 
-        {tab === 2 && <ExamRollNumberTab exam={exam} />}
+        {tab === 2 && <ExamAdmitCardTab exam={exam} />}
 
-        {tab === 3 && <ExamAdmitCardTab exam={exam} />}
+        {tab === 2 && <ExamMarksMonitorTab exam={exam} onChanged={() => setReloadKey((k) => k + 1)} />}
 
-        {tab === 4 && <ExamMarksMonitorTab exam={exam} onChanged={() => setReloadKey((k) => k + 1)} />}
+        {tab === 2 && <ExamResultsTab exam={exam} onChanged={load} />}
 
-        {tab === 5 && <ExamResultsTab exam={exam} onChanged={load} />}
-
-        {tab === 6 && details && (
+        {tab === 2 && details && (
           <Stack spacing={2} sx={{ p: 2, maxWidth: 560 }}>
             <TextField label="Name" value={details.name} onChange={setField("name")} disabled={!editable} />
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -420,7 +445,7 @@ const ExamDetailPage = () => {
           </Stack>
         )}
 
-        {tab === 7 && (
+        {tab === 2 && (
           <Box sx={{ p: 2, overflowX: "auto" }}>
             <Table size="small">
               <TableHead>
@@ -454,6 +479,16 @@ const ExamDetailPage = () => {
           <Typography variant="subtitle2" sx={{ mt: 1 }}>
             Apply to classes
           </Typography>
+          <Button
+            size="small"
+            sx={{ mb: 0.5 }}
+            onClick={() => {
+              const ids = allClasses.filter((c) => !c.isArchived).map((c) => c._id);
+              setPickedClasses((p) => (p.length === ids.length ? [] : ids));
+            }}
+          >
+            Select / clear all
+          </Button>
           <Box sx={{ display: "flex", flexWrap: "wrap", mb: 2 }}>
             {allClasses
               .filter((c) => !c.isArchived)
@@ -475,36 +510,58 @@ const ExamDetailPage = () => {
                 />
               ))}
           </Box>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Subjects (the same list is saved for every selected class)
-          </Typography>
+          <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+            <Typography variant="subtitle2">
+              Subjects (the same list is saved for every selected class)
+            </Typography>
+            <Button size="small" onClick={() => setSubjectsOpen(true)}>
+              Manage subject list
+            </Button>
+          </Stack>
           {subjects.map((s, i) => (
-            <Stack key={i} direction="row" spacing={1} sx={{ mb: 1 }}>
-              <TextField size="small" label="Subject" value={s.name} onChange={setSubject(i, "name")} sx={{ flex: 2 }} />
-              <TextField size="small" label="Max marks (total)" type="number" value={s.maxMarks} disabled={s.gradeOnly} onChange={setSubject(i, "maxMarks")} sx={{ flex: 1 }} />
-              <TextField size="small" label="Internal part" type="number" value={s.internalMax} disabled={s.gradeOnly} onChange={setSubject(i, "internalMax")} helperText="optional" sx={{ flex: 1 }} />
-              <TextField size="small" label="Passing marks" type="number" value={s.passingMarks} disabled={s.gradeOnly} onChange={setSubject(i, "passingMarks")} sx={{ flex: 1 }} />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={!!s.gradeOnly}
-                    onChange={(e) =>
-                      setSubjects((l) =>
-                        l.map((x, idx) => (idx === i ? { ...x, gradeOnly: e.target.checked } : x)),
-                      )
-                    }
-                  />
-                }
-                label="Grade only"
-              />
-              <IconButton
-                aria-label="Remove subject"
-                disabled={subjects.length === 1}
-                onClick={() => setSubjects((l) => l.filter((_, idx) => idx !== i))}
-              >
-                <DeleteOutlineIcon />
-              </IconButton>
-            </Stack>
+            <Paper key={i} variant="outlined" sx={{ p: 1.25, mb: 1 }}>
+              <Stack direction={{ xs: "column", md: "row" }} spacing={1} sx={{ alignItems: { md: "flex-start" } }}>
+                <Autocomplete
+                  freeSolo
+                  size="small"
+                  options={catalog.map((c) => c.name)}
+                  value={s.name}
+                  inputValue={s.name}
+                  onInputChange={(_, v) =>
+                    setSubjects((l) => l.map((x, idx) => (idx === i ? { ...x, name: v } : x)))
+                  }
+                  sx={{ flex: 2, minWidth: 180 }}
+                  renderInput={(params) => <TextField {...params} label="Subject" />}
+                />
+                <Stack direction="row" spacing={1} sx={{ flex: 4, flexWrap: "wrap" }} useFlexGap>
+                  <TextField size="small" label="Written" type="number" value={s.writtenMax} disabled={s.gradeOnly} onChange={setSubject(i, "writtenMax")} sx={{ width: 88 }} />
+                  <TextField size="small" label="Internal" type="number" value={s.internalMax} disabled={s.gradeOnly} onChange={setSubject(i, "internalMax")} sx={{ width: 88 }} />
+                  <TextField size="small" label="Oral" type="number" value={s.oralMax} disabled={s.gradeOnly} onChange={setSubject(i, "oralMax")} sx={{ width: 88 }} />
+                  <TextField size="small" label="Total" value={s.gradeOnly ? "—" : totalOf(s)} disabled sx={{ width: 80 }} />
+                  <TextField size="small" label="Passing" type="number" value={s.passingMarks} disabled={s.gradeOnly} onChange={setSubject(i, "passingMarks")} sx={{ width: 96 }} />
+                </Stack>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={!!s.gradeOnly}
+                      onChange={(e) =>
+                        setSubjects((l) =>
+                          l.map((x, idx) => (idx === i ? { ...x, gradeOnly: e.target.checked } : x)),
+                        )
+                      }
+                    />
+                  }
+                  label="Grade only"
+                />
+                <IconButton
+                  aria-label="Remove subject"
+                  disabled={subjects.length === 1}
+                  onClick={() => setSubjects((l) => l.filter((_, idx) => idx !== i))}
+                >
+                  <DeleteOutlineIcon />
+                </IconButton>
+              </Stack>
+            </Paper>
           ))}
           <Button size="small" startIcon={<AddIcon />} onClick={() => setSubjects((l) => [...l, blankSubject()])}>
             Add subject
@@ -526,6 +583,14 @@ const ExamDetailPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ExamSubjectsDialog
+        open={subjectsOpen}
+        onClose={() => {
+          setSubjectsOpen(false);
+          setCatalogKey((k) => k + 1);
+        }}
+      />
 
       <Dialog open={!!statusTarget} onClose={() => setStatusTarget(null)} fullWidth maxWidth="xs">
         <DialogTitle>

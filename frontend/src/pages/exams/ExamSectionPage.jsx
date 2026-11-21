@@ -23,7 +23,6 @@ import { EXAM_STATUS_COLORS, EXAM_STATUS_LABELS } from "./examConstants";
 // Sidebar shortcut pages: pick an examination, jump straight to one of its tabs.
 export const SECTIONS = {
   timetable: { title: "Exam Timetable", tab: "timetable", button: "Open timetable" },
-  "roll-numbers": { title: "Roll Numbers", tab: "rolls", button: "Open roll numbers" },
   "admit-cards": { title: "Admit Cards", tab: "admit", button: "Open admit cards" },
   marks: { title: "Marks Monitoring", tab: "marks", button: "Open marks" },
   results: { title: "Results & Publication", tab: "results", button: "Open results" },

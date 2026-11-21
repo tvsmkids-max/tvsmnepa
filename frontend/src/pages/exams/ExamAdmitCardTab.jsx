@@ -172,7 +172,7 @@ const ExamAdmitCardTab = ({ exam }) => {
                   return (
                     <TableRow key={c.student._id}>
                       <TableCell>{cls.name} - {cls.section}</TableCell>
-                      <TableCell>{c.rollNumber ?? "—"}</TableCell>
+                      <TableCell>{c.rollCode || c.rollNumber || "—"}</TableCell>
                       <TableCell>{c.student.name}</TableCell>
                       <TableCell>{c.student.scholarNumber}</TableCell>
                       <TableCell>

@@ -22,6 +22,7 @@ const ExamResult = require("../models/exam/ExamResult.model");
 const ExamReportCardMeta = require("../models/exam/ExamReportCardMeta.model");
 const ExamRankApproval = require("../models/exam/ExamRankApproval.model");
 const ExamRollNumber = require("../models/exam/ExamRollNumber.model");
+const ExamSubject = require("../models/exam/ExamSubject.model");
 const ExamTimetableEntry = require("../models/exam/ExamTimetableEntry.model");
 
 const { createAuditLog } = require("../middlewares/audit.middleware");
@@ -46,6 +47,7 @@ const BACKUP_MODELS = [
   { name: "examClassConfigs", model: ExamClassConfig, includeInRestore: true },
   { name: "examTimetableEntries", model: ExamTimetableEntry, includeInRestore: true },
   { name: "examRollNumbers", model: ExamRollNumber, includeInRestore: true },
+  { name: "examSubjects", model: ExamSubject, includeInRestore: true },
   { name: "examMarks", model: ExamMarks, includeInRestore: true },
   { name: "examMarksSubmissions", model: ExamMarksSubmission, includeInRestore: true },
   { name: "examResults", model: ExamResult, includeInRestore: true },

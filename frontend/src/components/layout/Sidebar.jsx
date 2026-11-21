@@ -17,7 +17,6 @@ import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
 import QuizOutlinedIcon from "@mui/icons-material/QuizOutlined";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
-import FormatListNumberedOutlinedIcon from "@mui/icons-material/FormatListNumberedOutlined";
 import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
@@ -81,7 +80,6 @@ const adminNav = [
   { type: "section", label: "Examinations" },
   { label: "All Examinations", icon: <QuizOutlinedIcon />, path: "/exams" },
   { label: "Exam Timetable", icon: <EventNoteOutlinedIcon />, path: "/exams/section/timetable" },
-  { label: "Roll Numbers", icon: <FormatListNumberedOutlinedIcon />, path: "/exams/section/roll-numbers" },
   { label: "Admit Cards", icon: <BadgeOutlinedIcon />, path: "/exams/section/admit-cards" },
   { label: "Marks Monitoring", icon: <EditNoteOutlinedIcon />, path: "/exams/section/marks" },
   { label: "Results", icon: <EmojiEventsOutlinedIcon />, path: "/exams/section/results" },

@@ -9,6 +9,9 @@ const { STUDENT_STATUS } = require("../../constants/studentStatus");
 const { EXAM_STATUS } = require("../../constants/examStatus");
 const { logExamAudit } = require("./examAudit.service");
 
+const examRollNumber = require("./examRollNumber.service");
+const { rollCode } = require("../../utils/rollCode");
+
 const throwError = (message, statusCode = 400) => {
   throw Object.assign(new Error(message), { statusCode });
 };
@@ -63,6 +66,7 @@ class ExamAdmitCardService {
       studentFilter._id = scope.studentId;
     }
 
+    for (const c of configs) await examRollNumber.ensureForClass(exam, c.class._id);
     const [students, rolls] = await Promise.all([
       Student.find(studentFilter)
         .select("name fatherName scholarNumber class")
@@ -105,6 +109,7 @@ class ExamAdmitCardService {
           },
           classId,
           rollNumber,
+          rollCode: rollNumber === null ? "" : rollCode(classes[classId], rollNumber),
           warnings,
         };
       })

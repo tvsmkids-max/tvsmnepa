@@ -26,12 +26,11 @@ const isRealDate = (s) => {
   const d = new Date(`${s}T00:00:00Z`);
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
 };
-const overlaps = (a, b) => a.startTime < b.endTime && b.startTime < a.endTime;
 const dayKey = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null);
 
 const sortEntries = (list) =>
   [...list].sort((a, b) =>
-    `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`),
+    `${a.date} ${a.subjectName}`.localeCompare(`${b.date} ${b.subjectName}`),
   );
 
 class ExamTimetableService {
@@ -93,31 +92,13 @@ class ExamTimetableService {
       }
       seen.add(key);
       if (!isRealDate(e.date)) throwError(`${subject.name}: invalid date ${e.date}`, 400);
-      if (e.endTime <= e.startTime) {
-        throwError(`${subject.name}: end time must be after start time`, 400);
-      }
       return {
         subjectKey: key,
         subjectName: subject.name,
         date: e.date,
-        startTime: e.startTime,
-        endTime: e.endTime,
         remarks: e.remarks || "",
       };
     });
-
-    // Hard conflict: two subjects of the same class overlapping on the same day.
-    const sorted = sortEntries(rows);
-    for (let i = 1; i < sorted.length; i++) {
-      const prev = sorted[i - 1];
-      const cur = sorted[i];
-      if (prev.date === cur.date && overlaps(prev, cur)) {
-        throwError(
-          `Schedule conflict on ${cur.date}: ${prev.subjectName} (${prev.startTime}-${prev.endTime}) overlaps ${cur.subjectName} (${cur.startTime}-${cur.endTime})`,
-          409,
-        );
-      }
-    }
 
     // Soft conflicts → warnings (saved anyway; admin can correct).
     const warnings = [];
@@ -132,9 +113,9 @@ class ExamTimetableService {
         .lean();
       for (const r of rows) {
         for (const o of others) {
-          if (o.date === r.date && overlaps(r, o)) {
+          if (o.date === r.date) {
             warnings.push(
-              `${r.subjectName} on ${r.date} ${r.startTime}-${r.endTime} overlaps ${o.subjectName} of "${o.exam?.name || "another examination"}"`,
+              `${r.subjectName} on ${r.date} falls on the same day as ${o.subjectName} of "${o.exam?.name || "another examination"}"`,
             );
           }
         }
@@ -181,14 +162,82 @@ class ExamTimetableService {
       action: "EXAM_TIMETABLE_SAVED",
       user,
       req,
-      before: before.map(({ subjectName, date, startTime, endTime, remarks }) => ({
-        subjectName, date, startTime, endTime, remarks,
-      })),
-      after: after.map(({ subjectName, date, startTime, endTime, remarks }) => ({
-        subjectName, date, startTime, endTime, remarks,
-      })),
+      before: before.map(({ subjectName, date, remarks }) => ({ subjectName, date, remarks })),
+      after: after.map(({ subjectName, date, remarks }) => ({ subjectName, date, remarks })),
     });
     return { entries: after, warnings };
+  }
+
+  /**
+   * One date per subject applied to every selected class that has that subject.
+   * Existing entries of those subjects are overwritten; other subjects untouched.
+   */
+  async saveBulk(examId, classIds, subjects, user, req) {
+    const exam = await this._exam(examId);
+    if (!TIMETABLE_EDITABLE.includes(exam.status)) {
+      throwError(
+        `The timetable is locked while status is ${EXAM_STATUS_LABELS[exam.status]}`,
+        409,
+      );
+    }
+    const wanted = new Map();
+    for (const s of subjects) {
+      if (!isRealDate(s.date)) throwError(`${s.subjectName}: invalid date ${s.date}`, 400);
+      wanted.set(s.subjectName.trim().toLowerCase(), s.date);
+    }
+    const configs = await ExamClassConfig.find({ exam: exam._id, class: { $in: classIds } })
+      .populate("class", "name section")
+      .lean();
+    if (configs.length === 0) throwError("None of the selected classes are configured for this examination", 404);
+
+    const ops = [];
+    const applied = [];
+    const skipped = [];
+    for (const c of configs) {
+      for (const subj of c.subjects) {
+        const date = wanted.get(subj.nameKey);
+        if (!date) continue;
+        ops.push({
+          updateOne: {
+            filter: { exam: exam._id, class: c.class._id, subjectKey: subj.nameKey },
+            update: {
+              $set: {
+                subjectName: subj.name,
+                date,
+                session: exam.session,
+                updatedBy: user._id,
+              },
+              $unset: { startTime: "", endTime: "" },
+            },
+            upsert: true,
+          },
+        });
+        applied.push({ class: `${c.class.name}${c.class.section ? ` - ${c.class.section}` : ""}`, subject: subj.name, date });
+      }
+    }
+    for (const [key] of wanted) {
+      if (!configs.some((c) => c.subjects.some((s) => s.nameKey === key))) skipped.push(key);
+    }
+    if (ops.length === 0) throwError("No selected class has any of these subjects", 400);
+    await ExamTimetableEntry.bulkWrite(ops, { ordered: true });
+
+    const start = dayKey(exam.startDate);
+    const end = dayKey(exam.endDate);
+    const warnings = [];
+    for (const [key, date] of wanted) {
+      if ((start && date < start) || (end && date > end)) {
+        warnings.push(`${key} on ${date} is outside the examination dates (${start || "?"} to ${end || "?"})`);
+      }
+    }
+    await logExamAudit({
+      exam: exam._id,
+      action: "EXAM_TIMETABLE_BULK_SAVED",
+      user,
+      req,
+      before: null,
+      after: { classes: configs.length, entries: applied.length, subjects: [...wanted.entries()] },
+    });
+    return { applied: applied.length, classes: configs.length, skipped, warnings };
   }
 
   // Per-class completeness: every configured subject must have an entry.

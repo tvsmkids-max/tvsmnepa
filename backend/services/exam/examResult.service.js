@@ -114,16 +114,16 @@ class ExamResultService {
             }
           } else if (isNum(m.marks)) {
             missing--;
-            const { written, internal } = componentMax(s);
-            const parts = internal > 0;
+            const { written, internal, oral } = componentMax(s);
+            const parts = internal > 0 || oral > 0;
             if (
               m.marks < 0 ||
               m.marks > s.maxMarks ||
               (parts &&
                 (!isNum(m.writtenMarks) ||
-                  !isNum(m.internalMarks) ||
-                  m.writtenMarks > written ||
-                  m.internalMarks > internal))
+                  (internal > 0 && (!isNum(m.internalMarks) || m.internalMarks > internal)) ||
+                  (oral > 0 && (!isNum(m.oralMarks) || m.oralMarks > oral)) ||
+                  m.writtenMarks > written))
             ) {
               invalid++;
             }
@@ -184,7 +184,7 @@ class ExamResultService {
           );
           const base = {
             subjectKey: s.nameKey, subjectName: s.name, maxMarks: s.maxMarks, passingMarks: s.passingMarks,
-            internalMax: s.internalMax || 0, gradeOnly: !!s.gradeOnly,
+            internalMax: s.internalMax || 0, oralMax: s.oralMax || 0, gradeOnly: !!s.gradeOnly,
           };
           const absent = m.attendance === "absent";
           if (s.gradeOnly) {
@@ -201,7 +201,7 @@ class ExamResultService {
           obtained += m.marks;
           return {
             ...base, attendance: "present", marks: m.marks,
-            writtenMarks: m.writtenMarks ?? null, internalMarks: m.internalMarks ?? null,
+            writtenMarks: m.writtenMarks ?? null, internalMarks: m.internalMarks ?? null, oralMarks: m.oralMarks ?? null,
             result: m.marks >= s.passingMarks ? "pass" : "fail",
             percentage: s.maxMarks ? round2((m.marks / s.maxMarks) * 100) : null,
           };

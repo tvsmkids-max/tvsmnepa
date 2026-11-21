@@ -9,6 +9,7 @@ const examMarks = require("../../services/exam/examMarks.service");
 const examResult = require("../../services/exam/examResult.service");
 const examReportCard = require("../../services/exam/examReportCard.service");
 const examReport = require("../../services/exam/examReport.service");
+const examSubject = require("../../services/exam/examSubject.service");
 const { sendResponse } = require("../../utils/apiResponse");
 const asyncHandler = require("../../utils/asyncHandler");
 const {
@@ -23,6 +24,7 @@ const {
   classConfigSchema,
   auditQuerySchema,
   saveTimetableSchema,
+  bulkTimetableSchema,
   updateRollNumberSchema,
   admitCardSchema,
   saveMarksSchema,
@@ -33,6 +35,7 @@ const {
   publishResultsSchema,
   reportCardQuerySchema,
   reportQuerySchema,
+  subjectNameSchema,
   reportCardTeacherQuerySchema,
   saveReportCardAdminSchema,
   saveReportCardRemarksSchema,
@@ -173,6 +176,23 @@ const getTimetable = asyncHandler(async (req, res) => {
   const data = await examTimetable.list(req.params.id, req.query.classId);
   return sendResponse(res).success({ message: "Timetable fetched", data });
 });
+
+const saveBulkTimetable = [
+  validateBody(bulkTimetableSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examTimetable.saveBulk(
+      req.params.id,
+      req.body.classIds,
+      req.body.subjects,
+      req.user,
+      req,
+    );
+    return sendResponse(res).success({
+      message: `Dates applied to ${data.classes} class(es)`,
+      data,
+    });
+  }),
+];
 
 const saveClassTimetable = [
   validateBody(saveTimetableSchema),
@@ -392,6 +412,25 @@ const myResults = asyncHandler(async (req, res) => {
   return sendResponse(res).success({ message: "Results fetched", data });
 });
 
+const listSubjects = asyncHandler(async (req, res) =>
+  sendResponse(res).success({ message: "Subjects", data: await examSubject.list() }),
+);
+const addSubject = [
+  validateBody(subjectNameSchema),
+  asyncHandler(async (req, res) =>
+    sendResponse(res).created({ message: "Subject added", data: await examSubject.create(req.body.name, req.user, req) }),
+  ),
+];
+const renameSubject = [
+  validateBody(subjectNameSchema),
+  asyncHandler(async (req, res) =>
+    sendResponse(res).success({ message: "Subject renamed", data: await examSubject.rename(req.params.subjectId, req.body.name, req.user, req) }),
+  ),
+];
+const removeSubject = asyncHandler(async (req, res) =>
+  sendResponse(res).success({ message: "Subject removed", data: await examSubject.remove(req.params.subjectId, req.user, req) }),
+);
+
 const runReport = [
   validateQuery(reportQuerySchema),
   asyncHandler(async (req, res) => {
@@ -454,6 +493,10 @@ module.exports = {
   adminSubmitMarks,
   reportCardData,
   runReport,
+  listSubjects,
+  addSubject,
+  renameSubject,
+  removeSubject,
   saveReportCardFields,
   approveRanks,
   revokeRanks,
@@ -483,6 +526,7 @@ module.exports = {
   updateRollNumber,
   getTimetable,
   saveClassTimetable,
+  saveBulkTimetable,
   listMine,
   getMine,
   list,

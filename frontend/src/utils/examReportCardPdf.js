@@ -52,8 +52,10 @@ const subjectHeaderLabels = (data, type) => {
   const first = data.subjects.find((s) => !s.gradeOnly);
   const m = first && data.maxima?.[type]?.[first.key];
   if (!m) return ["Written\nMarks", "Int. Ass.\nMarks", "Total\nMarks"];
-  return m.internalMax > 0
-    ? [`Written\nMarks (${m.written})`, `Int. Ass.\nMarks (${m.internalMax})`, `Total Marks\n(${m.max})`]
+  const ioMax = (m.internalMax || 0) + (m.oralMax || 0);
+  const ioLabel = m.oralMax > 0 ? (m.internalMax > 0 ? "Int. + Oral" : "Oral") : "Int. Ass.";
+  return ioMax > 0
+    ? [`Written\nMarks (${m.written})`, `${ioLabel}\nMarks (${ioMax})`, `Total Marks\n(${m.max})`]
     : [dash, dash, `Total Marks\n(${m.max})`];
 };
 
@@ -136,10 +138,11 @@ const drawCard = (doc, card, ctx) => {
       } else if (c.result === "absent") {
         row.push({ content: "ABSENT", colSpan: 3, styles: { halign: "center", fontSize: 8 } });
       } else {
-        const hasParts = c.internalMarks !== null && c.writtenMarks !== null;
+        const hasParts = c.writtenMarks !== null && (c.internalMarks !== null || c.oralMarks != null);
+        const io = (c.internalMarks || 0) + (c.oralMarks || 0);
         row.push(
           { content: hasParts ? num(c.writtenMarks) : dash, styles: { halign: "center" } },
-          { content: hasParts ? num(c.internalMarks) : dash, styles: { halign: "center" } },
+          { content: hasParts ? num(io) : dash, styles: { halign: "center" } },
           { content: num(c.marks), styles: { halign: "center", fontStyle: "bold" } },
         );
       }

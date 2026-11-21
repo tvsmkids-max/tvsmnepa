@@ -12,6 +12,8 @@ const subjectSchema = new mongoose.Schema(
     passingMarks: { type: Number, required: true, min: 0 },
     // Internal-assessment part of maxMarks (0 = single mark subject).
     internalMax: { type: Number, default: 0, min: 0 },
+    // Oral/practical part of maxMarks (0 = none). Written = max - internal - oral.
+    oralMax: { type: Number, default: 0, min: 0 },
     // Grade-only subject (e.g. Computer): grade A+..D, no marks/pass-fail.
     gradeOnly: { type: Boolean, default: false },
     displayOrder: { type: Number, default: 0 },

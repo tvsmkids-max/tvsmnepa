@@ -8,6 +8,11 @@ const examApi = {
   update: (id, data) => axiosInstance.put(`/exams/${id}`, data),
   remove: (id) => axiosInstance.delete(`/exams/${id}`),
   changeStatus: (id, data) => axiosInstance.patch(`/exams/${id}/status`, data),
+  listSubjects: () => axiosInstance.get("/exams/subjects"),
+  addSubject: (name) => axiosInstance.post("/exams/subjects", { name }),
+  renameSubject: (id, name) => axiosInstance.put(`/exams/subjects/${id}`, { name }),
+  removeSubject: (id) => axiosInstance.delete(`/exams/subjects/${id}`),
+  saveBulkTimetable: (id, data) => axiosInstance.put(`/exams/${id}/timetable-bulk`, data),
   saveClassConfigs: (id, data) => axiosInstance.put(`/exams/${id}/classes`, data),
   removeClassConfig: (id, classId) =>
     axiosInstance.delete(`/exams/${id}/classes/${classId}`),
@@ -15,12 +20,6 @@ const examApi = {
     axiosInstance.get(`/exams/${id}/timetable`, { params }),
   saveTimetable: (id, classId, entries) =>
     axiosInstance.put(`/exams/${id}/timetable/${classId}`, { entries }),
-  getRollNumbers: (id, classId) =>
-    axiosInstance.get(`/exams/${id}/roll-numbers`, { params: { classId } }),
-  generateRollNumbers: (id, classId) =>
-    axiosInstance.post(`/exams/${id}/roll-numbers/${classId}/generate`),
-  updateRollNumber: (id, classId, studentId, data) =>
-    axiosInstance.put(`/exams/${id}/roll-numbers/${classId}/${studentId}`, data),
   buildAdmitCards: (id, data) => axiosInstance.post(`/exams/${id}/admit-cards`, data),
   marksOverview: (id) => axiosInstance.get(`/exams/mine/${id}/marks`),
   marksSheet: (id, subjectKey) =>

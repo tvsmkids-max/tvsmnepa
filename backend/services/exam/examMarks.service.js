@@ -6,7 +6,12 @@ const ExamClassConfig = require("../../models/exam/ExamClassConfig.model");
 const ExamRollNumber = require("../../models/exam/ExamRollNumber.model");
 const ExamMarks = require("../../models/exam/ExamMarks.model");
 const ExamMarksSubmission = require("../../models/exam/ExamMarksSubmission.model");
+const ExamTimetableEntry = require("../../models/exam/ExamTimetableEntry.model");
+const Attendance = require("../../models/Attendance.model");
+const { ATTENDANCE_STATUS } = require("../../constants/attendanceStatus");
 const Class = require("../../models/Class.model");
+const examRollNumber = require("./examRollNumber.service");
+const { rollCode } = require("../../utils/rollCode");
 const Student = require("../../models/Student.model");
 const { STUDENT_STATUS } = require("../../constants/studentStatus");
 const { EXAM_STATUS, EXAM_STATUS_LABELS } = require("../../constants/examStatus");
@@ -69,6 +74,7 @@ class ExamMarksService {
    * number are reported separately (they must be numbered by the Admin first).
    */
   async _roster(exam, classId) {
+    await examRollNumber.ensureForClass(exam, classId);
     const [rolls, activeStudents] = await Promise.all([
       ExamRollNumber.find({ session: exam.session, class: classId })
         .sort({ rollNumber: 1 })
@@ -140,6 +146,7 @@ class ExamMarksService {
         maxMarks: s.maxMarks,
         passingMarks: s.passingMarks,
         internalMax: s.internalMax || 0,
+        oralMax: s.oralMax || 0,
         gradeOnly: !!s.gradeOnly,
         totalStudents: roster.active.length,
         entered: done.length,
@@ -161,6 +168,42 @@ class ExamMarksService {
       missingRoll: roster.missingRoll,
       entryOpen: MARKS_ENTRY_STATUSES.includes(exam.status),
     };
+  }
+
+  /**
+   * Absence in marks entry comes from the system attendance of the subject's
+   * exam date (never typed by hand).
+   *  date    - the subject's timetable date ("YYYY-MM-DD") or null when not set
+   *  marked  - true when attendance exists for the class on that date
+   *  absent  - Set of student ids marked Absent that day
+   */
+  async _attendanceSync(exam, classId, subject) {
+    const entry = await ExamTimetableEntry.findOne({
+      exam: exam._id,
+      class: classId,
+      subjectKey: subject.nameKey,
+    })
+      .select("date")
+      .lean();
+    const date = entry?.date || null;
+    if (!date) return { date: null, marked: false, absent: new Set() };
+    const docs = await Attendance.find({
+      class: classId,
+      date: { $gte: new Date(`${date}T00:00:00.000Z`), $lte: new Date(`${date}T23:59:59.999Z`) },
+    })
+      .select("student status")
+      .lean();
+    return {
+      date,
+      marked: docs.length > 0,
+      absent: new Set(docs.filter((d) => d.status === ATTENDANCE_STATUS.ABSENT).map((d) => String(d.student))),
+    };
+  }
+
+  _attendanceMessage(sync, subject) {
+    return sync.date
+      ? `Attendance for ${sync.date} (${subject.name} exam date) has not been marked yet. Mark attendance for that date first, then enter marks.`
+      : `The exam date of ${subject.name} is not set. Ask the Admin to set the timetable, then enter marks.`;
   }
 
   // ── marks sheet for one subject ─────────────────────────────────────────
@@ -185,6 +228,9 @@ class ExamMarksService {
       .lean();
     const statusOf = new Map(studentInfo.map((s) => [String(s._id), s.status]));
 
+    const cls = await Class.findById(classId).select("name section").lean();
+    const sync = await this._attendanceSync(exam, classId, subject);
+    const draft = !submission || submission.status === "draft";
     const rows = roster.rolls
       .filter((r) => statusOf.get(String(r.student)) === STUDENT_STATUS.ACTIVE || byStudent.has(String(r.student)))
       .map((r) => {
@@ -192,13 +238,19 @@ class ExamMarksService {
         return {
           studentId: r.student,
           rollNumber: r.rollNumber,
+          rollCode: rollCode(cls, r.rollNumber),
           scholarNumber: r.scholarNumber,
           name: r.studentName,
           studentStatus: statusOf.get(String(r.student)) || "Unknown",
-          attendance: d?.attendance || "present",
+          // Draft rows follow the system attendance; submitted/locked rows keep what was saved.
+          attendance: draft
+            ? sync.absent.has(String(r.student)) ? "absent" : "present"
+            : d?.attendance || "present",
+          needsSave: draft && !!d && d.attendance !== (sync.absent.has(String(r.student)) ? "absent" : "present"),
           marks: d ? d.marks : null,
           writtenMarks: d ? d.writtenMarks ?? null : null,
           internalMarks: d ? d.internalMarks ?? null : null,
+          oralMarks: d ? d.oralMarks ?? null : null,
           grade: d ? d.grade ?? null : null,
           remarks: d?.remarks || "",
           rowStatus: d?.status || "not_entered",
@@ -216,6 +268,7 @@ class ExamMarksService {
         maxMarks: subject.maxMarks,
         passingMarks: subject.passingMarks,
         internalMax: subject.internalMax || 0,
+        oralMax: subject.oralMax || 0,
         gradeOnly: !!subject.gradeOnly,
         writtenMax: componentMax(subject).written,
       },
@@ -227,6 +280,12 @@ class ExamMarksService {
       },
       entryOpen: MARKS_ENTRY_STATUSES.includes(exam.status),
       examStatus: exam.status,
+      attendance: {
+        date: sync.date,
+        marked: sync.marked,
+        blocked: !sync.date || !sync.marked,
+        message: !sync.date || !sync.marked ? this._attendanceMessage(sync, subject) : "",
+      },
       canEdit: this._canEdit(exam, submission),
       canCorrect:
         submission?.status === "submitted" && ADMIN_REVIEW_STATUSES.includes(exam.status),
@@ -253,6 +312,15 @@ class ExamMarksService {
         409,
       );
     }
+
+    const sync = await this._attendanceSync(exam, classId, subject);
+    if (!sync.date || !sync.marked) throwError(this._attendanceMessage(sync, subject), 409);
+    // The client's present/absent is ignored: absence is the system attendance.
+    entries = entries.map((e) =>
+      sync.absent.has(String(e.studentId))
+        ? { ...e, attendance: "absent", marks: null, internalMarks: null, oralMarks: null, grade: null }
+        : { ...e, attendance: "present" },
+    );
 
     const roster = await this._roster(exam, classId);
     const rollOf = new Map(roster.active.map((r) => [String(r.student), r]));
@@ -318,6 +386,7 @@ class ExamMarksService {
               maxMarks: subject.maxMarks,
               passingMarks: subject.passingMarks,
               internalMax: subject.internalMax || 0,
+              oralMax: subject.oralMax || 0,
               gradeOnly: !!subject.gradeOnly,
               ...v,
               updatedBy: user._id,
@@ -456,6 +525,23 @@ class ExamMarksService {
         409,
       );
     }
+    // Attendance must be marked, and saved marks must match it (it may have changed since saving).
+    for (const subj of config.subjects) {
+      const sync = await this._attendanceSync(exam, classId, subj);
+      if (!sync.date || !sync.marked) throwError(this._attendanceMessage(sync, subj), 409);
+      const saved = await ExamMarks.find({ exam: exam._id, class: classId, subjectKey: subj.nameKey })
+        .select("student attendance")
+        .lean();
+      const stale = saved.filter(
+        (d) => d.attendance !== (sync.absent.has(String(d.student)) ? "absent" : "present"),
+      );
+      if (stale.length) {
+        throwError(
+          `Attendance changed for ${subj.name} after marks were saved. Open ${subj.name}, review and save again.`,
+          409,
+        );
+      }
+    }
     const pending = await this._pending(exam, config, classId, roster);
     if (pending.length > 0) {
       throwError(
@@ -581,7 +667,7 @@ class ExamMarksService {
 
     // Keep the submitted values in the audit trail before anything changes.
     const submittedRows = await ExamMarks.find({ exam: exam._id, class: classId })
-      .select("subjectName rollNumber scholarNumber studentName attendance marks writtenMarks internalMarks grade remarks")
+      .select("subjectName rollNumber scholarNumber studentName attendance marks writtenMarks internalMarks oralMarks grade remarks")
       .lean();
 
     const reopened = await ExamMarksSubmission.findOneAndUpdate(
@@ -720,6 +806,7 @@ class ExamMarksService {
             maxMarks: s.maxMarks,
             passingMarks: s.passingMarks,
             internalMax: s.internalMax || 0,
+        oralMax: s.oralMax || 0,
             gradeOnly: !!s.gradeOnly,
             totalStudents: total,
             entered: entered.length,
@@ -864,6 +951,7 @@ class ExamMarksService {
             marks: row.marks ?? null,
             writtenMarks: row.writtenMarks ?? null,
             internalMarks: row.internalMarks ?? null,
+            oralMarks: row.oralMarks ?? null,
             grade: row.grade ?? null,
           },
           update: {

@@ -11,6 +11,7 @@ const { STUDENT_STATUS } = require("../../constants/studentStatus");
 const { EXAM_STATUS, EXAM_STATUS_LABELS } = require("../../constants/examStatus");
 const { isEntered } = require("./examMarksRules");
 const examMarks = require("./examMarks.service");
+const { rollCode } = require("../../utils/rollCode");
 
 const throwError = (message, statusCode = 400) => {
   throw Object.assign(new Error(message), { statusCode });
@@ -112,7 +113,7 @@ class ExamReportService {
       { key: "percentage", label: "%", align: "right" },
     ];
     const rows = docs.map((d) => ({
-      roll: d.rollNumber,
+      roll: rollCode(d.class, d.rollNumber),
       scholar: d.scholarNumber,
       student: d.studentName,
       ...Object.fromEntries(d.subjects.map((s) => [s.subjectKey, this._cell(s)])),
@@ -147,7 +148,7 @@ class ExamReportService {
       ],
       rows: docs.map((d) => ({
         class: classLabel(d.class),
-        roll: d.rollNumber,
+        roll: rollCode(d.class, d.rollNumber),
         scholar: d.scholarNumber,
         student: d.studentName,
         total: d.overallComplete ? d.totalObtained : "—",
@@ -176,7 +177,7 @@ class ExamReportService {
         rows.push({
           class: classLabel(d.class),
           subject: s.subjectName,
-          roll: d.rollNumber,
+          roll: rollCode(d.class, d.rollNumber),
           scholar: d.scholarNumber,
           student: d.studentName,
           marks: s.result === "absent" ? "AB" : s.result === "graded" ? s.grade || "—" : s.marks,
@@ -307,7 +308,7 @@ class ExamReportService {
         session: e.session?.name || "",
         exam: e.name,
         class: classLabel(d.class),
-        roll: d.rollNumber,
+        roll: rollCode(d.class, d.rollNumber),
         subjects: d.subjects
           .map((s) => `${s.subjectName}: ${s.result === "absent" ? "AB" : s.result === "graded" ? s.grade : `${s.marks}/${s.maxMarks}`}`)
           .join(", "),
@@ -371,7 +372,7 @@ class ExamReportService {
               rows.push({
                 class: classLabel(c.class),
                 subject: s.name,
-                roll: rollOf.get(String(st._id))?.rollNumber ?? "—",
+                roll: rollOf.has(String(st._id)) ? rollCode(c.class, rollOf.get(String(st._id)).rollNumber) : "—",
                 scholar: st.scholarNumber,
                 student: st.name,
                 reason: rollOf.has(String(st._id)) ? "Marks not entered" : "No roll number",
