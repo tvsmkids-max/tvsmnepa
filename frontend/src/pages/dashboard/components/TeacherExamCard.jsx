@@ -16,7 +16,7 @@ export default function TeacherExamCard() {
     staleTime: 60 * 1000,
   });
 
-  if (isLoading) return <Skeleton variant="rounded" height={96} sx={{ mb: 3, borderRadius: 3 }} />;
+  if (isLoading) return <Skeleton variant="rounded" height={96} sx={{ mb: 3, borderRadius: 1.5 }} />;
   const exams = (data || []).filter((e) => SHOW.includes(e.status));
   if (exams.length === 0) return null;
 
@@ -28,9 +28,9 @@ export default function TeacherExamCard() {
   };
 
   return (
-    <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2 }, mb: 3, borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
+    <Paper variant="outlined" sx={{ p: { xs: 1.5, sm: 2 }, mb: 3, borderRadius: 1.5 }}>
       <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 1 }}>
-        <Typography sx={{ fontWeight: 800 }}>Examinations</Typography>
+        <Typography sx={{ fontWeight: 700, fontSize: "0.95rem" }}>Examinations</Typography>
         <Button size="small" onClick={() => navigate("/exams/mine")}>
           All
         </Button>
