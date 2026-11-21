@@ -95,7 +95,18 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
 
   // ─── STEP 2: File Upload via Dropzone ──────────────────
   const onDrop = useCallback(
-    (acceptedFiles) => {
+    (acceptedFiles, fileRejections = []) => {
+      if (fileRejections.length > 0) {
+        const rejectedName = String(fileRejections[0]?.file?.name || "");
+        enqueueSnackbar(
+          /\.xls$/i.test(rejectedName)
+            ? "Legacy .xls files are not supported. Open the file in Excel, save it as .xlsx, and upload again."
+            : "Only Excel .xlsx files are supported.",
+          { variant: "error" },
+        );
+        return;
+      }
+
       const f = acceptedFiles[0];
       if (!f) return;
 
@@ -118,7 +129,6 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
         ".xlsx",
       ],
-      "application/vnd.ms-excel": [".xls"],
     },
     maxFiles: 1,
     disabled: validating,
@@ -338,7 +348,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                 Step 2: Upload Your Filled Excel File
               </Typography>
               <Typography variant="caption">
-                Drag & drop or click to select your .xlsx or .xls file (Max
+                Drag & drop or click to select your .xlsx file (Max
                 10MB, 1000 rows max)
               </Typography>
             </Alert>
@@ -381,7 +391,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                   or click anywhere to browse files
                 </Typography>
                 <Chip
-                  label=".xlsx, .xls only • Max 10MB"
+                  label=".xlsx only • Max 10MB"
                   size="small"
                   sx={{ fontWeight: 600 }}
                 />

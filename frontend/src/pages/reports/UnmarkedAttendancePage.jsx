@@ -135,7 +135,7 @@ const UnmarkedAttendancePage = () => {
     [report],
   );
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!report?.classes?.length) return;
     const data = report.classes.map((c) => ({
       Class: c.fullName,
@@ -148,11 +148,15 @@ const UnmarkedAttendancePage = () => {
       Status: STATUS_LABEL[c.status]?.label || c.status,
       "Missed Dates": c.missedDates.map(dayLabel).join(", "),
     }));
-    exportToExcel(
-      data,
-      `unmarked-attendance-${year}-${String(month).padStart(2, "0")}`,
-      "Unmarked Attendance",
-    );
+    try {
+      await exportToExcel(
+        data,
+        `unmarked-attendance-${year}-${String(month).padStart(2, "0")}`,
+        "Unmarked Attendance",
+      );
+    } catch {
+      enqueueSnackbar("Excel export failed", { variant: "error" });
+    }
   };
 
   const missedChips = (c) =>

@@ -250,7 +250,7 @@ const DailyReportPage = () => {
     return list;
   }, [dailyReport, search, sortBy, statusFilter, hideEmpty]);
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!dailyReport) return;
     const data = [];
     const exportClasses =
@@ -269,9 +269,14 @@ const DailyReportPage = () => {
         });
       });
     });
-    exportToExcel(data, `daily-report-${date}`, "Daily Attendance");
-    enqueueSnackbar("Excel exported successfully", { variant: "success" });
-    setExportAnchor(null);
+    try {
+      await exportToExcel(data, `daily-report-${date}`, "Daily Attendance");
+      enqueueSnackbar("Excel exported successfully", { variant: "success" });
+    } catch {
+      enqueueSnackbar("Excel export failed", { variant: "error" });
+    } finally {
+      setExportAnchor(null);
+    }
   };
 
   const handleExportPdf = () => {

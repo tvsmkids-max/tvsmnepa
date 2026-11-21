@@ -4,6 +4,7 @@ const classRepository = require("../repositories/class.repository");
 const studentRepository = require("../repositories/student.repository");
 const Settings = require("../models/Settings.model");
 const User = require("../models/User.model");
+const ExamClassConfig = require("../models/exam/ExamClassConfig.model");
 const { hashPassword } = require("../utils/passwordHelper");
 const { createAuditLog } = require("../middlewares/audit.middleware");
 
@@ -213,6 +214,13 @@ class ClassService {
       );
     }
 
+    const examCount = await ExamClassConfig.countDocuments({ class: id });
+    if (examCount > 0) {
+      throwError(
+        `Cannot delete class. It is used in ${examCount} examination(s). Archive instead.`,
+        409,
+      );
+    }
     await classRepository.deleteById(id);
     await User.deleteOne({ linkedClass: id, role: "class" });
 

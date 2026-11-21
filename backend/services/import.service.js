@@ -104,7 +104,7 @@ class ImportService {
     // ─── Read Excel ───
     let rows;
     try {
-      rows = readExcel(fileBuffer);
+      rows = await readExcel(fileBuffer);
       logger.info(`[Import] Excel read: ${rows.length} rows`);
     } catch (err) {
       logger.error(`[Import] ❌ Excel parsing failed: ${err.message}`);
@@ -138,7 +138,7 @@ class ImportService {
     }
 
     // ─── Load existing scholars (for duplicate check) ───
-    const existingScholars = await Student.find({})
+    const existingScholars = await Student.find({ session: sessionId })
       .select("scholarNumber")
       .lean();
     const existingScholarSet = new Set(

@@ -247,10 +247,10 @@ const MonthlyClassDialog = ({
   }, [detail, search, filter, sortBy]);
 
   // ─── Export ───
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!detail) return;
     try {
-      exportMonthlyClassToExcel(
+      await exportMonthlyClassToExcel(
         detail,
         `${detail.class.name}-${detail.class.section}-${detail.monthName}-${year}`,
       );

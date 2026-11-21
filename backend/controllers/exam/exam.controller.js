@@ -1,0 +1,542 @@
+"use strict";
+
+const examService = require("../../services/exam/exam.service");
+const examAccess = require("../../services/exam/examAccess.service");
+const examTimetable = require("../../services/exam/examTimetable.service");
+const examRoll = require("../../services/exam/examRollNumber.service");
+const examAdmit = require("../../services/exam/examAdmitCard.service");
+const examMarks = require("../../services/exam/examMarks.service");
+const examResult = require("../../services/exam/examResult.service");
+const examReportCard = require("../../services/exam/examReportCard.service");
+const examReport = require("../../services/exam/examReport.service");
+const examSubject = require("../../services/exam/examSubject.service");
+const { sendResponse } = require("../../utils/apiResponse");
+const asyncHandler = require("../../utils/asyncHandler");
+const {
+  validateBody,
+  validateQuery,
+} = require("../../middlewares/validate.middleware");
+const {
+  createExamSchema,
+  updateExamSchema,
+  queryExamSchema,
+  changeStatusSchema,
+  classConfigSchema,
+  auditQuerySchema,
+  saveTimetableSchema,
+  bulkTimetableSchema,
+  updateRollNumberSchema,
+  admitCardSchema,
+  saveMarksSchema,
+  reopenMarksSchema,
+  correctMarksSchema,
+  unlockMarksSchema,
+  withdrawResultsSchema,
+  publishResultsSchema,
+  reportCardQuerySchema,
+  reportQuerySchema,
+  subjectNameSchema,
+  reportCardTeacherQuerySchema,
+  saveReportCardAdminSchema,
+  saveReportCardRemarksSchema,
+  rankApprovalSchema,
+} = require("../../validators/exam/exam.validator");
+
+const list = [
+  validateQuery(queryExamSchema),
+  asyncHandler(async (req, res) => {
+    const result = await examService.list(req.query);
+    return sendResponse(res).success({
+      message: "Examinations fetched successfully",
+      data: result.data,
+      pagination: result.pagination,
+    });
+  }),
+];
+
+const getById = asyncHandler(async (req, res) => {
+  const data = await examService.getById(req.params.id);
+  return sendResponse(res).success({
+    message: "Examination fetched successfully",
+    data,
+  });
+});
+
+const create = [
+  validateBody(createExamSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examService.create(req.body, req.user, req);
+    return sendResponse(res).created({
+      message: "Examination created successfully",
+      data,
+    });
+  }),
+];
+
+const update = [
+  validateBody(updateExamSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examService.update(
+      req.params.id,
+      req.body,
+      req.user,
+      req,
+    );
+    return sendResponse(res).success({
+      message: "Examination updated successfully",
+      data,
+    });
+  }),
+];
+
+const changeStatus = [
+  validateBody(changeStatusSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examService.changeStatus(
+      req.params.id,
+      req.body,
+      req.user,
+      req,
+    );
+    return sendResponse(res).success({
+      message: "Examination status updated",
+      data,
+    });
+  }),
+];
+
+const remove = asyncHandler(async (req, res) => {
+  await examService.remove(req.params.id, req.user, req);
+  return sendResponse(res).success({ message: "Examination deleted" });
+});
+
+const listClassConfigs = asyncHandler(async (req, res) => {
+  const data = await examService.listClassConfigs(req.params.id);
+  return sendResponse(res).success({
+    message: "Class configurations fetched",
+    data,
+  });
+});
+
+const upsertClassConfigs = [
+  validateBody(classConfigSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examService.upsertClassConfigs(
+      req.params.id,
+      req.body,
+      req.user,
+      req,
+    );
+    return sendResponse(res).success({
+      message: `Configuration saved for ${data.length} class${data.length !== 1 ? "es" : ""}`,
+      data,
+    });
+  }),
+];
+
+const removeClassConfig = asyncHandler(async (req, res) => {
+  await examService.removeClassConfig(
+    req.params.id,
+    req.params.classId,
+    req.user,
+    req,
+  );
+  return sendResponse(res).success({ message: "Class removed from examination" });
+});
+
+const listAudit = [
+  validateQuery(auditQuerySchema),
+  asyncHandler(async (req, res) => {
+    const result = await examService.listAudit(req.params.id, req.query);
+    return sendResponse(res).success({
+      message: "Audit history fetched",
+      data: result.data,
+      pagination: result.pagination,
+    });
+  }),
+];
+
+const listMine = asyncHandler(async (req, res) => {
+  const data = await examAccess.listMine(req.user);
+  return sendResponse(res).success({
+    message: "Examinations fetched successfully",
+    data,
+  });
+});
+
+const getMine = asyncHandler(async (req, res) => {
+  const data = await examAccess.getMine(req.user, req.params.id);
+  return sendResponse(res).success({
+    message: "Examination fetched successfully",
+    data,
+  });
+});
+
+const getTimetable = asyncHandler(async (req, res) => {
+  const data = await examTimetable.list(req.params.id, req.query.classId);
+  return sendResponse(res).success({ message: "Timetable fetched", data });
+});
+
+const saveBulkTimetable = [
+  validateBody(bulkTimetableSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examTimetable.saveBulk(
+      req.params.id,
+      req.body.classIds,
+      req.body.subjects,
+      req.user,
+      req,
+    );
+    return sendResponse(res).success({
+      message: `Dates applied to ${data.classes} class(es)`,
+      data,
+    });
+  }),
+];
+
+const saveClassTimetable = [
+  validateBody(saveTimetableSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examTimetable.saveClass(
+      req.params.id,
+      req.params.classId,
+      req.body.entries,
+      req.user,
+      req,
+    );
+    return sendResponse(res).success({
+      message: data.warnings.length
+        ? "Timetable saved with warnings"
+        : "Timetable saved",
+      data,
+    });
+  }),
+];
+
+const getRollNumbers = asyncHandler(async (req, res) => {
+  const { classId } = req.query;
+  if (!classId) {
+    return sendResponse(res).badRequest({ message: "classId is required" });
+  }
+  const data = await examRoll.list(req.params.id, classId);
+  return sendResponse(res).success({ message: "Roll numbers fetched", data });
+});
+
+const getMyRollNumbers = asyncHandler(async (req, res) => {
+  const data = await examRoll.listForTeacher(req.user, req.params.id);
+  return sendResponse(res).success({ message: "Roll numbers fetched", data });
+});
+
+const generateRollNumbers = asyncHandler(async (req, res) => {
+  const data = await examRoll.generate(
+    req.params.id,
+    req.params.classId,
+    req.user,
+    req,
+  );
+  return sendResponse(res).success({ message: "Roll numbers assigned", data });
+});
+
+const updateRollNumber = [
+  validateBody(updateRollNumberSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examRoll.updateManual(
+      req.params.id,
+      req.params.classId,
+      req.params.studentId,
+      req.body,
+      req.user,
+      req,
+    );
+    return sendResponse(res).success({ message: "Roll number updated", data });
+  }),
+];
+
+const buildAdmitCards = [
+  validateBody(admitCardSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examAdmit.build(req.params.id, req.body, req.user, req);
+    return sendResponse(res).success({ message: "Admit card data ready", data });
+  }),
+];
+
+const marksOverview = asyncHandler(async (req, res) => {
+  const data = await examMarks.overview(req.user, req.params.id);
+  return sendResponse(res).success({ message: "Marks overview fetched", data });
+});
+
+const marksSheet = asyncHandler(async (req, res) => {
+  const data = await examMarks.sheet(req.user, req.params.id, req.params.subjectKey);
+  return sendResponse(res).success({ message: "Marks sheet fetched", data });
+});
+
+const saveMarks = [
+  validateBody(saveMarksSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examMarks.save(
+      req.user,
+      req.params.id,
+      req.params.subjectKey,
+      req.body.entries,
+      req,
+    );
+    return sendResponse(res).success({ message: "Marks saved as draft", data });
+  }),
+];
+
+const adminSaveMarks = [
+  validateBody(saveMarksSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examMarks.adminSave(
+      req.user,
+      req.params.id,
+      req.params.classId,
+      req.params.subjectKey,
+      req.body.entries,
+      req,
+    );
+    return sendResponse(res).success({ message: "Marks saved as draft", data });
+  }),
+];
+
+const adminSubmitMarks = asyncHandler(async (req, res) => {
+  const data = await examMarks.adminSubmit(req.user, req.params.id, req.params.classId, req);
+  return sendResponse(res).success({ message: "Marks submitted", data });
+});
+
+const submitMarks = asyncHandler(async (req, res) => {
+  const data = await examMarks.submit(req.user, req.params.id, req);
+  return sendResponse(res).success({ message: "Marks submitted to Admin", data });
+});
+
+const reopenMarks = [
+  validateBody(reopenMarksSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examMarks.reopen(
+      req.params.id,
+      req.params.classId,
+      req.body,
+      req.user,
+      req,
+    );
+    return sendResponse(res).success({ message: "Marks entry reopened", data });
+  }),
+];
+
+const monitorMarks = asyncHandler(async (req, res) => {
+  const data = await examMarks.monitor(req.params.id);
+  return sendResponse(res).success({ message: "Marks monitoring fetched", data });
+});
+
+const adminMarksSheet = asyncHandler(async (req, res) => {
+  const data = await examMarks.adminSheet(
+    req.params.id,
+    req.params.classId,
+    req.params.subjectKey,
+  );
+  return sendResponse(res).success({ message: "Marks sheet fetched", data });
+});
+
+const correctMarks = [
+  validateBody(correctMarksSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examMarks.correct(
+      req.params.id,
+      req.params.classId,
+      req.params.subjectKey,
+      req.body,
+      req.user,
+      req,
+    );
+    return sendResponse(res).success({ message: "Marks corrected", data });
+  }),
+];
+
+const lockMarks = asyncHandler(async (req, res) => {
+  const data = await examMarks.lock(req.params.id, req.params.classId, req.user, req);
+  return sendResponse(res).success({ message: "Marks locked", data });
+});
+
+const unlockMarks = [
+  validateBody(unlockMarksSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examMarks.unlock(
+      req.params.id,
+      req.params.classId,
+      req.body,
+      req.user,
+      req,
+    );
+    return sendResponse(res).success({ message: "Marks unlocked", data });
+  }),
+];
+
+const validateResults = asyncHandler(async (req, res) => {
+  const data = await examResult.validate(req.params.id);
+  return sendResponse(res).success({ message: "Results validation completed", data });
+});
+
+const calculateResults = asyncHandler(async (req, res) => {
+  const data = await examResult.calculate(req.params.id, req.user, req);
+  return sendResponse(res).success({ message: "Results calculated", data });
+});
+
+const listResults = asyncHandler(async (req, res) => {
+  const data = await examResult.list(req.params.id, req.query.classId);
+  return sendResponse(res).success({ message: "Results fetched", data });
+});
+
+const publishSummary = asyncHandler(async (req, res) => {
+  const data = await examResult.publishSummary(req.params.id);
+  return sendResponse(res).success({ message: "Publication summary fetched", data });
+});
+
+const publishResults = [
+  validateBody(publishResultsSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examResult.publish(req.params.id, req.user, req);
+    return sendResponse(res).success({ message: "Results published", data });
+  }),
+];
+
+const withdrawResults = [
+  validateBody(withdrawResultsSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examResult.withdraw(req.params.id, req.body, req.user, req);
+    return sendResponse(res).success({ message: "Results withdrawn", data });
+  }),
+];
+
+const myResults = asyncHandler(async (req, res) => {
+  const data = await examResult.mine(req.user, req.params.id);
+  return sendResponse(res).success({ message: "Results fetched", data });
+});
+
+const listSubjects = asyncHandler(async (req, res) =>
+  sendResponse(res).success({ message: "Subjects", data: await examSubject.list() }),
+);
+const addSubject = [
+  validateBody(subjectNameSchema),
+  asyncHandler(async (req, res) =>
+    sendResponse(res).created({ message: "Subject added", data: await examSubject.create(req.body.name, req.user, req) }),
+  ),
+];
+const renameSubject = [
+  validateBody(subjectNameSchema),
+  asyncHandler(async (req, res) =>
+    sendResponse(res).success({ message: "Subject renamed", data: await examSubject.rename(req.params.subjectId, req.body.name, req.user, req) }),
+  ),
+];
+const removeSubject = asyncHandler(async (req, res) =>
+  sendResponse(res).success({ message: "Subject removed", data: await examSubject.remove(req.params.subjectId, req.user, req) }),
+);
+
+const runReport = [
+  validateQuery(reportQuerySchema),
+  asyncHandler(async (req, res) => {
+    const data = await examReport.run(req.params.type, req.query);
+    return sendResponse(res).success({ message: "Report generated", data });
+  }),
+];
+
+const reportCardData = [
+  validateQuery(reportCardQuerySchema),
+  asyncHandler(async (req, res) => {
+    const data = await examReportCard.data(req.query.sessionId, req.query.classId);
+    return sendResponse(res).success({ message: "Report cards fetched", data });
+  }),
+];
+
+const saveReportCardFields = [
+  validateBody(saveReportCardAdminSchema),
+  asyncHandler(async (req, res) => {
+    const { sessionId, classId, entries } = req.body;
+    const data = await examReportCard.saveAdmin(sessionId, classId, entries, req.user, req);
+    return sendResponse(res).success({ message: "Report card fields saved", data });
+  }),
+];
+
+const approveRanks = [
+  validateBody(rankApprovalSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examReportCard.approveRanks(req.body.sessionId, req.body.classId, req.user, req);
+    return sendResponse(res).success({ message: "Ranks approved", data });
+  }),
+];
+
+const revokeRanks = [
+  validateBody(rankApprovalSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examReportCard.revokeRanks(req.body.sessionId, req.body.classId, req.user, req);
+    return sendResponse(res).success({ message: "Ranks revoked", data });
+  }),
+];
+
+const myReportCards = [
+  validateQuery(reportCardTeacherQuerySchema),
+  asyncHandler(async (req, res) => {
+    const data = await examReportCard.dataForTeacher(req.user, req.query.sessionId);
+    return sendResponse(res).success({ message: "Report cards fetched", data });
+  }),
+];
+
+const saveMyRemarks = [
+  validateBody(saveReportCardRemarksSchema),
+  asyncHandler(async (req, res) => {
+    const data = await examReportCard.saveRemarks(req.user, req.body.sessionId, req.body.entries, req);
+    return sendResponse(res).success({ message: "Remarks saved", data });
+  }),
+];
+
+module.exports = {
+  adminSaveMarks,
+  adminSubmitMarks,
+  reportCardData,
+  runReport,
+  listSubjects,
+  addSubject,
+  renameSubject,
+  removeSubject,
+  saveReportCardFields,
+  approveRanks,
+  revokeRanks,
+  myReportCards,
+  saveMyRemarks,
+  validateResults,
+  calculateResults,
+  listResults,
+  publishSummary,
+  publishResults,
+  withdrawResults,
+  myResults,
+  monitorMarks,
+  adminMarksSheet,
+  correctMarks,
+  lockMarks,
+  unlockMarks,
+  marksOverview,
+  marksSheet,
+  saveMarks,
+  submitMarks,
+  reopenMarks,
+  buildAdmitCards,
+  getRollNumbers,
+  getMyRollNumbers,
+  generateRollNumbers,
+  updateRollNumber,
+  getTimetable,
+  saveClassTimetable,
+  saveBulkTimetable,
+  listMine,
+  getMine,
+  list,
+  getById,
+  create,
+  update,
+  changeStatus,
+  remove,
+  listClassConfigs,
+  upsertClassConfigs,
+  removeClassConfig,
+  listAudit,
+};

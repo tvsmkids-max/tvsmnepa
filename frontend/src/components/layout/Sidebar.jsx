@@ -15,7 +15,12 @@ import {
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
+import QuizOutlinedIcon from "@mui/icons-material/QuizOutlined";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
+import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
+import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
+import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
@@ -72,6 +77,14 @@ const adminNav = [
     path: "/reports/unmarked",
   },
   { label: "Analytics", icon: <AnalyticsOutlinedIcon />, path: "/analytics" },
+  { type: "section", label: "Examinations" },
+  { label: "All Examinations", icon: <QuizOutlinedIcon />, path: "/exams" },
+  { label: "Exam Timetable", icon: <EventNoteOutlinedIcon />, path: "/exams/section/timetable" },
+  { label: "Admit Cards", icon: <BadgeOutlinedIcon />, path: "/exams/section/admit-cards" },
+  { label: "Marks Monitoring", icon: <EditNoteOutlinedIcon />, path: "/exams/section/marks" },
+  { label: "Results", icon: <EmojiEventsOutlinedIcon />, path: "/exams/section/results" },
+  { label: "Report Cards", icon: <DescriptionOutlinedIcon />, path: "/exams/report-cards" },
+  { label: "Exam Reports", icon: <AnalyticsOutlinedIcon />, path: "/exams/reports" },
   { type: "section", label: "Admin" },
   { label: "Holidays", icon: <BeachAccessOutlinedIcon />, path: "/holidays" },
   { label: "Sessions", icon: <SchoolOutlinedIcon />, path: "/sessions" },
@@ -99,6 +112,9 @@ const teacherNav = [
   { label: "Mark", icon: <EventNoteOutlinedIcon />, path: "/attendance/mark" },
   { type: "section", label: "Students" },
   { label: "Students", icon: <PeopleOutlinedIcon />, path: "/students" },
+  { type: "section", label: "Examinations" },
+  { label: "My Examinations", icon: <QuizOutlinedIcon />, path: "/exams/mine" },
+  { label: "Report Cards", icon: <QuizOutlinedIcon />, path: "/exams/mine/report-cards" },
   { type: "section", label: "Reports" },
   { label: "Daily", icon: <TodayOutlinedIcon />, path: "/reports/daily" },
   {

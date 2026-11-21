@@ -7,7 +7,8 @@ const importController = require("../controllers/import.controller");
 const { authenticate } = require("../middlewares/auth.middleware");
 const { adminOnly } = require("../middlewares/rbac.middleware");
 const asyncHandler = require("../utils/asyncHandler");
-const { readExcel } = require("../utils/excelHelper");
+const { sendResponse } = require("../utils/apiResponse");
+const { readExcel, assertXlsxBuffer } = require("../utils/excelHelper");
 const Class = require("../models/Class.model");
 const Settings = require("../models/Settings.model");
 const Student = require("../models/Student.model");
@@ -19,27 +20,42 @@ const upload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024, // 10 MB
   },
+  // .xlsx ONLY. Legacy .xls is rejected explicitly (not silently accepted).
   fileFilter: (req, file, cb) => {
-    const allowedMimes = [
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
-      "application/vnd.ms-excel", // .xls
-    ];
+    const name = String(file.originalname || "").toLowerCase();
+    const ext = name.includes(".") ? name.substring(name.lastIndexOf(".")) : "";
 
-    const allowedExtensions = [".xlsx", ".xls"];
-    const ext = file.originalname
-      .toLowerCase()
-      .substring(file.originalname.lastIndexOf("."));
+    const reject = (message) => {
+      const err = new Error(message);
+      err.statusCode = 400;
+      cb(err, false);
+    };
 
-    if (
-      allowedMimes.includes(file.mimetype) ||
-      allowedExtensions.includes(ext)
-    ) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only Excel files (.xlsx, .xls) are allowed"), false);
+    if (ext === ".xls") {
+      return reject(
+        "Legacy .xls files are no longer supported. Open the file in Excel, save it as .xlsx (Excel Workbook), and upload again.",
+      );
     }
+    if (ext !== ".xlsx") {
+      return reject("Only Excel .xlsx files are allowed");
+    }
+    cb(null, true);
   },
 });
+
+// ─── Verify the upload really is an .xlsx ZIP package ─────────
+// Extension/MIME are client-controlled, so check the file's actual bytes.
+const verifyXlsxUpload = (req, res, next) => {
+  if (!req.file) return next(); // controllers return "Excel file is required"
+  try {
+    assertXlsxBuffer(req.file.buffer);
+    return next();
+  } catch (err) {
+    return sendResponse(res).badRequest({ message: err.message });
+  }
+};
+
+const xlsxUpload = [upload.single("file"), verifyXlsxUpload];
 
 // ─── Auth ─────────────────────────────────────────────────────
 router.use(authenticate);
@@ -51,14 +67,14 @@ router.get("/students/template", importController.downloadTemplate);
 // ─── Validate Excel (Preview) ─────────────────────────────────
 router.post(
   "/students/validate",
-  upload.single("file"),
+  ...xlsxUpload,
   importController.validateStudents,
 );
 
 // ─── Execute Import ───────────────────────────────────────────
 router.post(
   "/students/execute",
-  upload.single("file"),
+  ...xlsxUpload,
   importController.executeImport,
 );
 
@@ -72,7 +88,7 @@ router.post("/students/error-report", importController.downloadErrorReport);
 // ═══════════════════════════════════════════════════════════════
 router.post(
   "/students/debug",
-  upload.single("file"),
+  ...xlsxUpload,
   asyncHandler(async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
@@ -83,7 +99,7 @@ router.post(
 
     try {
       // Read Excel
-      const rows = readExcel(req.file.buffer);
+      const rows = await readExcel(req.file.buffer);
 
       // Get system state
       const settings = await Settings.getSettings();

@@ -13,6 +13,17 @@ const AcademicSession = require("../models/AcademicSession.model");
 const Settings = require("../models/Settings.model");
 const User = require("../models/User.model");
 const ActivityLog = require("../models/ActivityLog.model");
+const Exam = require("../models/exam/Exam.model");
+const ExamClassConfig = require("../models/exam/ExamClassConfig.model");
+const ExamAuditLog = require("../models/exam/ExamAuditLog.model");
+const ExamMarks = require("../models/exam/ExamMarks.model");
+const ExamMarksSubmission = require("../models/exam/ExamMarksSubmission.model");
+const ExamResult = require("../models/exam/ExamResult.model");
+const ExamReportCardMeta = require("../models/exam/ExamReportCardMeta.model");
+const ExamRankApproval = require("../models/exam/ExamRankApproval.model");
+const ExamRollNumber = require("../models/exam/ExamRollNumber.model");
+const ExamSubject = require("../models/exam/ExamSubject.model");
+const ExamTimetableEntry = require("../models/exam/ExamTimetableEntry.model");
 
 const { createAuditLog } = require("../middlewares/audit.middleware");
 
@@ -32,6 +43,18 @@ const BACKUP_MODELS = [
   { name: "students", model: Student, includeInRestore: true },
   { name: "attendance", model: Attendance, includeInRestore: true },
   { name: "holidays", model: Holiday, includeInRestore: true },
+  { name: "exams", model: Exam, includeInRestore: true },
+  { name: "examClassConfigs", model: ExamClassConfig, includeInRestore: true },
+  { name: "examTimetableEntries", model: ExamTimetableEntry, includeInRestore: true },
+  { name: "examRollNumbers", model: ExamRollNumber, includeInRestore: true },
+  { name: "examSubjects", model: ExamSubject, includeInRestore: true },
+  { name: "examMarks", model: ExamMarks, includeInRestore: true },
+  { name: "examMarksSubmissions", model: ExamMarksSubmission, includeInRestore: true },
+  { name: "examResults", model: ExamResult, includeInRestore: true },
+  { name: "examReportCardMeta", model: ExamReportCardMeta, includeInRestore: true },
+  { name: "examRankApprovals", model: ExamRankApproval, includeInRestore: true },
+  // Append-only audit trail (no TTL, unlike activityLogs): kept in backups.
+  { name: "examAuditLogs", model: ExamAuditLog, includeInRestore: true },
   { name: "activityLogs", model: ActivityLog, includeInRestore: false },
 ];
 

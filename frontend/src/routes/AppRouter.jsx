@@ -60,6 +60,17 @@ const UnmarkedAttendancePage = lazy(
   () => import("../pages/reports/UnmarkedAttendancePage"),
 );
 
+// ─── Examinations (Admin) ───
+const ExamListPage = lazy(() => import("../pages/exams/ExamListPage"));
+const ExamDetailPage = lazy(() => import("../pages/exams/ExamDetailPage"));
+const ExamMyClassPage = lazy(() => import("../pages/exams/ExamMyClassPage"));
+const ExamMarksEntryPage = lazy(() => import("../pages/exams/ExamMarksEntryPage"));
+const ExamMyResultsPage = lazy(() => import("../pages/exams/ExamMyResultsPage"));
+const ExamSectionPage = lazy(() => import("../pages/exams/ExamSectionPage"));
+const ExamReportCardsPage = lazy(() => import("../pages/exams/ExamReportCardsPage"));
+const ExamReportsPage = lazy(() => import("../pages/exams/ExamReportsPage"));
+const ExamMyReportCardsPage = lazy(() => import("../pages/exams/ExamMyReportCardsPage"));
+
 // ─── Analytics ───
 const AnalyticsDashboard = lazy(
   () => import("../pages/analytics/AnalyticsDashboard"),
@@ -219,6 +230,80 @@ const AppRouter = () => (
             element={
               <RoleRoute roles={["admin"]}>
                 <UnmarkedAttendancePage />
+              </RoleRoute>
+            }
+          />
+
+          {/* ─── Examinations (Admin only) ─── */}
+          <Route
+            path="exams"
+            element={
+              <RoleRoute roles={["admin"]}>
+                <ExamListPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="exams/mine"
+            element={
+              <RoleRoute roles={["class"]}>
+                <ExamMyClassPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="exams/mine/:id/marks"
+            element={
+              <RoleRoute roles={["class"]}>
+                <ExamMarksEntryPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="exams/section/:section"
+            element={
+              <RoleRoute roles={["admin"]}>
+                <ExamSectionPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="exams/report-cards"
+            element={
+              <RoleRoute roles={["admin"]}>
+                <ExamReportCardsPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="exams/reports"
+            element={
+              <RoleRoute roles={["admin"]}>
+                <ExamReportsPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="exams/mine/report-cards"
+            element={
+              <RoleRoute roles={["class"]}>
+                <ExamMyReportCardsPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="exams/mine/:id/results"
+            element={
+              <RoleRoute roles={["class"]}>
+                <ExamMyResultsPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="exams/:id"
+            element={
+              <RoleRoute roles={["admin"]}>
+                <ExamDetailPage />
               </RoleRoute>
             }
           />

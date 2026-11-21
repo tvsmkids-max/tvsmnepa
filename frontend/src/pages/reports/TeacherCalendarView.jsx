@@ -222,10 +222,10 @@ const TeacherCalendarView = ({
     return list;
   }, [detail, search, filter, sortBy]);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!detail) return;
     try {
-      exportMonthlyClassToExcel(
+      await exportMonthlyClassToExcel(
         detail,
         `${detail.class.name}-${detail.class.section}-${detail.monthName}-${year}`,
       );

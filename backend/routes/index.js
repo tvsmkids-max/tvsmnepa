@@ -21,6 +21,7 @@ const shiftRoutes = require("./shift.routes");
 const managementRoutes = require("./management.routes");
 const externalApiRoutes = require("./externalApi.routes");
 const userRoutes = require("./user.routes");
+const examRoutes = require("./exam.routes");
 
 router.use("/auth", authRoutes);
 router.use("/sessions", sessionRoutes);
@@ -40,6 +41,7 @@ router.use("/shift", shiftRoutes);
 router.use("/management", managementRoutes);
 router.use("/external", externalApiRoutes);
 router.use("/users", userRoutes);
+router.use("/exams", examRoutes);
 
 router.get("/health", (req, res) => {
   const { getConnectionStatus } = require("../config/db");

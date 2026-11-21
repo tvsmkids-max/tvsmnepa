@@ -660,7 +660,10 @@ class ExternalApiService {
       studentQuery.session = sessionId;
     }
 
+    // Scholar numbers repeat across sessions; without a sessionId the most
+    // recent session's record is used.
     const student = await Student.findOne(studentQuery)
+      .sort({ createdAt: -1 })
       .select(
         "_id scholarNumber name fatherName gender class section session status",
       )

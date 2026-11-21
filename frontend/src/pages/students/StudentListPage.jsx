@@ -324,13 +324,17 @@ const StudentListPage = () => {
   const handleExportExcel = async () => {
     if (selectionMode && selectedStudents.length > 0) {
       const dateLabel = new Date().toISOString().split("T")[0];
-      exportStudentsToExcel(
-        selectedStudents,
-        `students_selected_${selectedStudents.length}_${dateLabel}`,
-      );
-      enqueueSnackbar(`${selectedStudents.length} students exported`, {
-        variant: "success",
-      });
+      try {
+        await exportStudentsToExcel(
+          selectedStudents,
+          `students_selected_${selectedStudents.length}_${dateLabel}`,
+        );
+        enqueueSnackbar(`${selectedStudents.length} students exported`, {
+          variant: "success",
+        });
+      } catch {
+        enqueueSnackbar("Export failed", { variant: "error" });
+      }
       return;
     }
 
@@ -351,7 +355,7 @@ const StudentListPage = () => {
       const dateLabel = new Date().toISOString().split("T")[0];
       const filename = `students_${classLabel}${statusLabel}${dateLabel}`;
 
-      exportStudentsToExcel(sortedStudents, filename);
+      await exportStudentsToExcel(sortedStudents, filename);
       enqueueSnackbar(`✅ Exported ${sortedStudents.length} students`, {
         variant: "success",
       });

@@ -1,4 +1,97 @@
-import * as XLSX from "xlsx";
+// ═══════════════════════════════════════════════════════════════════
+//  EXCEL EXPORT (ExcelJS)
+//  ExcelJS is loaded on demand so it is not part of the main bundle.
+//  All exports are ASYNC — callers must `await` them.
+// ═══════════════════════════════════════════════════════════════════
+
+const XLSX_MIME =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+let excelJsPromise = null;
+const loadExcelJS = () => {
+  if (!excelJsPromise) {
+    excelJsPromise = import("exceljs")
+      .then((mod) => mod.default || mod)
+      .catch((err) => {
+        excelJsPromise = null; // allow retry after a failed chunk load
+        throw err;
+      });
+  }
+  return excelJsPromise;
+};
+
+const newWorkbook = async () => {
+  const ExcelJS = await loadExcelJS();
+  return new ExcelJS.Workbook();
+};
+
+// Excel sheet names: max 31 chars, none of  \ / ? * [ ] :
+const safeSheetName = (name) =>
+  String(name || "Sheet1")
+    .replace(/[\\/?*[\]:]/g, "-")
+    .slice(0, 31) || "Sheet1";
+
+// Cell values are written as plain values — text is NEVER treated as a formula
+const toCellValue = (v) => {
+  if (v === undefined || v === null) return null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  if (typeof v === "boolean" || v instanceof Date) return v;
+  return String(v).slice(0, 32767); // Excel's per-cell limit
+};
+
+// Equivalent of XLSX.utils.json_to_sheet: header = union of keys (first-seen order)
+const addJsonSheet = (wb, name, data) => {
+  const ws = wb.addWorksheet(safeSheetName(name));
+  const keys = [];
+  const seen = new Set();
+  (data || []).forEach((obj) => {
+    Object.keys(obj || {}).forEach((k) => {
+      if (!seen.has(k)) {
+        seen.add(k);
+        keys.push(k);
+      }
+    });
+  });
+  if (keys.length > 0) {
+    ws.addRow(keys);
+    data.forEach((obj) => ws.addRow(keys.map((k) => toCellValue(obj?.[k]))));
+  }
+  return ws;
+};
+
+// Equivalent of XLSX.utils.aoa_to_sheet
+const addArraySheet = (wb, name, rows) => {
+  const ws = wb.addWorksheet(safeSheetName(name));
+  rows.forEach((row) => ws.addRow(row.map(toCellValue)));
+  return ws;
+};
+
+// Column widths in characters (same units as SheetJS `wch`)
+const setColWidths = (ws, widths) => {
+  widths.forEach((w, i) => {
+    ws.getColumn(i + 1).width = w;
+  });
+};
+
+// merge({ r, c }) are 0-based like SheetJS; ExcelJS is 1-based
+const mergeRange = (ws, s, e) => ws.mergeCells(s.r + 1, s.c + 1, e.r + 1, e.c + 1);
+
+const freezePanes = (ws, xSplit, ySplit) => {
+  ws.views = [{ state: "frozen", xSplit, ySplit }];
+};
+
+const downloadWorkbook = async (wb, filename) => {
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: XLSX_MIME });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${filename}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+};
 
 // ═══════════════════════════════════════════════════════════════════
 //  SMART CLASS SORT RANK (Nursery → 12th)
@@ -26,27 +119,28 @@ const UP = (v) => (v ? String(v).toUpperCase() : "");
 //  GENERIC EXPORT HELPERS
 // ═══════════════════════════════════════════════════════════════════
 
-export const exportToExcel = (data, filename, sheetName = "Sheet1") => {
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  XLSX.writeFile(wb, `${filename}.xlsx`);
+export const exportToExcel = async (data, filename, sheetName = "Sheet1") => {
+  const wb = await newWorkbook();
+  addJsonSheet(wb, sheetName, data);
+  await downloadWorkbook(wb, filename);
 };
 
-export const exportMultiSheet = (sheets, filename) => {
-  const wb = XLSX.utils.book_new();
+export const exportMultiSheet = async (sheets, filename) => {
+  const wb = await newWorkbook();
   sheets.forEach(({ name, data }) => {
-    const ws = XLSX.utils.json_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, name);
+    addJsonSheet(wb, name, data);
   });
-  XLSX.writeFile(wb, `${filename}.xlsx`);
+  await downloadWorkbook(wb, filename);
 };
 
 // ═══════════════════════════════════════════════════════════════════
 //  STUDENT LIST EXPORT (Sorted + UPPERCASE)
 // ═══════════════════════════════════════════════════════════════════
 
-export const exportStudentsToExcel = (students, filename = "students") => {
+export const exportStudentsToExcel = async (
+  students,
+  filename = "students",
+) => {
   // ✅ FIX 5 & 10: Sort by Class Rank → Section → Name → UPPERCASE names
   const sorted = [...students].sort((a, b) => {
     const rA = getClassRankUtil(a.class);
@@ -85,41 +179,25 @@ export const exportStudentsToExcel = (students, filename = "students") => {
     Status: s.status || "",
   }));
 
-  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = await newWorkbook();
+  const ws = addJsonSheet(wb, "Students", data);
 
-  ws["!cols"] = [
-    { wch: 6 },
-    { wch: 14 },
-    { wch: 25 },
-    { wch: 25 },
-    { wch: 25 },
-    { wch: 10 },
-    { wch: 14 },
-    { wch: 14 },
-    { wch: 14 },
-    { wch: 12 },
-    { wch: 10 },
-    { wch: 40 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 16 },
-    { wch: 14 },
-    { wch: 12 },
-  ];
+  setColWidths(
+    ws,
+    [6, 14, 25, 25, 25, 10, 14, 14, 14, 12, 10, 40, 12, 12, 12, 16, 14, 12],
+  );
 
-  ws["!freeze"] = { xSplit: 0, ySplit: 1 };
+  // Freeze the header row
+  freezePanes(ws, 0, 1);
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Students");
-  XLSX.writeFile(wb, `${filename}.xlsx`);
+  await downloadWorkbook(wb, filename);
 };
 
 // ═══════════════════════════════════════════════════════════════════
 //  ATTENDANCE REGISTER EXPORT (Excel-style with merged headers)
 // ═══════════════════════════════════════════════════════════════════
 
-export const exportRegisterToExcel = (register, filename = "register") => {
+export const exportRegisterToExcel = async (register, filename = "register") => {
   if (!register || !register.students?.length) {
     throw new Error("No data to export");
   }
@@ -172,39 +250,30 @@ export const exportRegisterToExcel = (register, filename = "register") => {
     rows.push(row);
   });
 
-  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = await newWorkbook();
+  const ws = addArraySheet(wb, "Register", rows);
 
-  const colWidths = [{ wch: 5 }, { wch: 12 }, { wch: 20 }, { wch: 20 }];
-  dates.forEach(() => colWidths.push({ wch: 4 }));
-  colWidths.push({ wch: 5 }, { wch: 5 }, { wch: 7 });
-  ws["!cols"] = colWidths;
+  const colWidths = [5, 12, 20, 20];
+  dates.forEach(() => colWidths.push(4));
+  colWidths.push(5, 5, 7);
+  setColWidths(ws, colWidths);
 
   const totalCols = FIXED_COLS + dates.length + 3;
-  ws["!merges"] = ws["!merges"] || [];
 
-  ws["!merges"].push({ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } });
-  ws["!merges"].push({ s: { r: 1, c: 0 }, e: { r: 1, c: totalCols - 1 } });
+  mergeRange(ws, { r: 0, c: 0 }, { r: 0, c: totalCols - 1 });
+  mergeRange(ws, { r: 1, c: 0 }, { r: 1, c: totalCols - 1 });
 
   let monthCol = FIXED_COLS;
   monthGroups.forEach((g) => {
     if (g.count > 1) {
-      ws["!merges"].push({
-        s: { r: 3, c: monthCol },
-        e: { r: 3, c: monthCol + g.count - 1 },
-      });
+      mergeRange(ws, { r: 3, c: monthCol }, { r: 3, c: monthCol + g.count - 1 });
     }
     monthCol += g.count;
   });
 
-  ws["!merges"].push({
-    s: { r: 3, c: totalCols - 3 },
-    e: { r: 3, c: totalCols - 1 },
-  });
+  mergeRange(ws, { r: 3, c: totalCols - 3 }, { r: 3, c: totalCols - 1 });
 
-  ws["!freeze"] = { xSplit: FIXED_COLS, ySplit: 6 };
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Register");
+  freezePanes(ws, FIXED_COLS, 6);
 
   const summaryData = [
     { Metric: "Class", Value: UP(`${classInfo.name}-${classInfo.section}`) },
@@ -224,18 +293,17 @@ export const exportRegisterToExcel = (register, filename = "register") => {
     { Metric: "(blank)", Value: "Sunday / Non-working / Not marked" },
   ];
 
-  const summaryWs = XLSX.utils.json_to_sheet(summaryData);
-  summaryWs["!cols"] = [{ wch: 20 }, { wch: 40 }];
-  XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
+  const summaryWs = addJsonSheet(wb, "Summary", summaryData);
+  setColWidths(summaryWs, [20, 40]);
 
-  XLSX.writeFile(wb, `${filename}.xlsx`);
+  await downloadWorkbook(wb, filename);
 };
 
 // ═══════════════════════════════════════════════════════════════════
 //  MONTHLY CLASS ATTENDANCE EXPORT (Calendar-style)
 // ═══════════════════════════════════════════════════════════════════
 
-export const exportMonthlyClassToExcel = (
+export const exportMonthlyClassToExcel = async (
   detail,
   filename = "monthly-class",
 ) => {
@@ -289,23 +357,19 @@ export const exportMonthlyClassToExcel = (
     rows.push(row);
   });
 
-  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = await newWorkbook();
+  const ws = addArraySheet(wb, "Attendance", rows);
 
-  const colWidths = [{ wch: 5 }, { wch: 12 }, { wch: 25 }, { wch: 22 }];
-  dates.forEach(() => colWidths.push({ wch: 4 }));
-  colWidths.push({ wch: 5 }, { wch: 5 }, { wch: 7 });
-  ws["!cols"] = colWidths;
+  const colWidths = [5, 12, 25, 22];
+  dates.forEach(() => colWidths.push(4));
+  colWidths.push(5, 5, 7);
+  setColWidths(ws, colWidths);
 
   const totalCols = 4 + dates.length + 3;
-  ws["!merges"] = [
-    { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } },
-    { s: { r: 1, c: 0 }, e: { r: 1, c: totalCols - 1 } },
-  ];
+  mergeRange(ws, { r: 0, c: 0 }, { r: 0, c: totalCols - 1 });
+  mergeRange(ws, { r: 1, c: 0 }, { r: 1, c: totalCols - 1 });
 
-  ws["!freeze"] = { xSplit: 4, ySplit: 5 };
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+  freezePanes(ws, 4, 5);
 
   const summaryData = [
     { Metric: "Class", Value: UP(`${classInfo.name}-${classInfo.section}`) },
@@ -329,9 +393,8 @@ export const exportMonthlyClassToExcel = (
     { Metric: "(blank)", Value: "Sunday / Non-working / Not marked" },
   ];
 
-  const summaryWs = XLSX.utils.json_to_sheet(summaryData);
-  summaryWs["!cols"] = [{ wch: 22 }, { wch: 40 }];
-  XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
+  const summaryWs = addJsonSheet(wb, "Summary", summaryData);
+  setColWidths(summaryWs, [22, 40]);
 
-  XLSX.writeFile(wb, `${filename}.xlsx`);
+  await downloadWorkbook(wb, filename);
 };

@@ -15,7 +15,7 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: "auto",
-      includeAssets: ["favicon.svg", "logo.png", "loader.svg"],
+      includeAssets: ["favicon.svg", "logo.png", "loader.svg", "apple-touch-icon.png", "favicon-64.png"],
       manifest: {
         name: "TVSM School - Attendance System",
         short_name: "TVSM School",
@@ -30,30 +30,10 @@ export default defineConfig({
         lang: "en",
         categories: ["education", "productivity"],
         icons: [
-          {
-            src: "/logo.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "/logo.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "/logo.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "maskable",
-          },
-          {
-            src: "/logo.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
+          { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "/icon-maskable-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
+          { src: "/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
         shortcuts: [
           {
@@ -61,21 +41,21 @@ export default defineConfig({
             short_name: "Attendance",
             description: "Mark today's attendance",
             url: "/attendance/mark",
-            icons: [{ src: "/logo.png", sizes: "192x192" }],
+            icons: [{ src: "/icon-192.png", sizes: "192x192" }],
           },
           {
             name: "Students",
             short_name: "Students",
             description: "View students list",
             url: "/students",
-            icons: [{ src: "/logo.png", sizes: "192x192" }],
+            icons: [{ src: "/icon-192.png", sizes: "192x192" }],
           },
           {
             name: "Reports",
             short_name: "Reports",
             description: "View reports",
             url: "/reports",
-            icons: [{ src: "/logo.png", sizes: "192x192" }],
+            icons: [{ src: "/icon-192.png", sizes: "192x192" }],
           },
         ],
       },
@@ -218,7 +198,7 @@ export default defineConfig({
             ) {
               return "vendor-charts";
             }
-            if (id.includes("xlsx") || id.includes("file-saver")) {
+            if (id.includes("exceljs") || id.includes("file-saver")) {
               return "vendor-excel";
             }
             if (id.includes("jspdf")) {
