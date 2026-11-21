@@ -4,7 +4,6 @@ import {
   LinearProgress, Paper, Stack, Tab, Table, TableBody, TableCell, TableHead, TableRow, Tabs,
   TextField, Typography, useMediaQuery, useTheme,
 } from "@mui/material";
-import { useTheme, useMediaQuery } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import PageHeader from "../../components/common/PageHeader";
@@ -73,8 +72,6 @@ const cellError = (text, max) => {
 const ExamMarksEntryPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { enqueueSnackbar } = useSnackbar();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -318,26 +315,22 @@ const ExamMarksEntryPage = () => {
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Subject</TableCell>
-              <TableCell align="right">Max marks</TableCell>
-              <TableCell align="right" sx={{ display: { xs: "none", sm: "table-cell" } }}>Passing marks</TableCell>
-              <TableCell align="right" sx={{ display: { xs: "none", sm: "table-cell" } }}>Students</TableCell>
-              <TableCell align="right">Entered</TableCell>
-              <TableCell align="right" sx={{ display: { xs: "none", sm: "table-cell" } }}>Absent</TableCell>
-              <TableCell align="right">Pending</TableCell>
-              <TableCell>Entry status</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Subject</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 700 }}>Max marks</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 700, display: { xs: "none", sm: "table-cell" } }}>Passing</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 700 }}>Entered</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 700, display: { xs: "none", sm: "table-cell" } }}>Absent</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {overview.subjects.map((s) => (
               <TableRow key={s.key} hover selected={s.key === subjectKey} sx={{ cursor: "pointer" }} onClick={() => switchSubject(null, s.key)}>
                 <TableCell sx={{ fontWeight: 600 }}>{s.name}</TableCell>
-                <TableCell align="right">{s.gradeOnly ? "Grade" : s.internalMax > 0 ? `${s.maxMarks} (${s.maxMarks - s.internalMax} + ${s.internalMax})` : s.maxMarks}</TableCell>
+                <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>{maxText(s)}</TableCell>
                 <TableCell align="right" sx={{ display: { xs: "none", sm: "table-cell" } }}>{s.gradeOnly ? "—" : s.passingMarks}</TableCell>
-                <TableCell align="right" sx={{ display: { xs: "none", sm: "table-cell" } }}>{s.totalStudents}</TableCell>
-                <TableCell align="right">{s.entered}</TableCell>
+                <TableCell align="right">{s.entered} / {s.totalStudents}</TableCell>
                 <TableCell align="right" sx={{ display: { xs: "none", sm: "table-cell" } }}>{s.absent}</TableCell>
-                <TableCell align="right">{s.pending}</TableCell>
                 <TableCell>
                   <Chip size="small" color={s.pending === 0 ? "success" : s.entered > 0 ? "warning" : "default"} label={s.pending === 0 ? "Complete" : s.entered > 0 ? "In progress" : "Not started"} />
                 </TableCell>
@@ -394,14 +387,24 @@ const ExamMarksEntryPage = () => {
             </Alert>
           )}
 
-          {!isMobile ? (
-          <Box sx={{ overflowX: "auto" }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Roll</TableCell>
-                  <TableCell>Admission no.</TableCell>
-                  <TableCell>Student</TableCell>
+          {rows.length === 0 ? (
+            <Alert severity="info">No active students in this class.</Alert>
+          ) : isMobile ? (
+            <Stack spacing={1.25}>
+              {rows.map((r, i) => (
+                <Paper key={r.studentId} variant="outlined" sx={{ p: 1.5, bgcolor: r.attendance === "absent" ? "action.hover" : "background.paper" }}>
+                  <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "flex-start", mb: 1, gap: 1 }}>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 700, lineHeight: 1.25 }}>
+                        {r.rollCode}. {r.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Adm. {r.scholarNumber}
+                        {r.studentStatus !== "Active" ? ` · ${r.studentStatus}` : ""}
+                      </Typography>
+                    </Box>
+                    {r.attendance === "absent" ? absentChip : hasTotal && <Typography sx={{ fontWeight: 700 }}>{totalOf(r)}</Typography>}
+                  </Stack>
                   {gradeOnly ? (
                     gradeBox(r, i, true)
                   ) : (
@@ -438,110 +441,36 @@ const ExamMarksEntryPage = () => {
                     )}
                     <TableCell sx={{ fontWeight: 700 }}>Attendance</TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Box>
-          ) : (
-            <Stack spacing={1.25}>
-              {rows.length === 0 && (
-                <Alert severity="info">
-                  No numbered students in this class yet. Ask the Admin to generate roll numbers.
-                </Alert>
-              )}
-              {rows.map((r, i) => {
-                const absent = r.attendance === "absent";
-                return (
-                  <Paper key={r.studentId} variant="outlined" sx={{ p: 1.5, opacity: absent ? 0.85 : 1 }}>
-                    <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "flex-start", mb: 1 }}>
-                      <Box sx={{ minWidth: 0 }}>
-                        <Typography sx={{ fontWeight: 700, lineHeight: 1.25 }}>
-                          {r.rollNumber}. {r.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Adm. {r.scholarNumber}
-                          {r.studentStatus !== "Active" ? ` · ${r.studentStatus}` : ""}
-                        </Typography>
-                      </Box>
-                      <ToggleButtonGroup
-                        size="small"
-                        exclusive
-                        value={r.attendance}
-                        disabled={!editable}
-                        onChange={(_, v) => setAttendance(i, v)}
-                      >
-                        <ToggleButton value="present" color="success" sx={{ px: 1.25 }}>P</ToggleButton>
-                        <ToggleButton value="absent" color="error" sx={{ px: 1.25 }}>A</ToggleButton>
-                      </ToggleButtonGroup>
-                    </Stack>
-                    {gradeOnly ? (
-                      <TextField
-                        select
-                        fullWidth
-                        size="small"
-                        label="Grade"
-                        value={absent ? "" : r.grade}
-                        disabled={!editable || absent}
-                        onChange={(e) => setRow(i, { grade: e.target.value })}
-                        SelectProps={{ displayEmpty: true }}
-                        slotProps={{ inputLabel: { shrink: true } }}
-                      >
-                        <MenuItem value="">
-                          <em>—</em>
-                        </MenuItem>
-                        {GRADES.map((g) => (
-                          <MenuItem key={g} value={g}>
-                            {g}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    ) : (
-                      <Stack direction="row" spacing={1}>
-                        <TextField
-                          size="small"
-                          fullWidth
-                          label={hasParts ? `Written (max ${max})` : `Marks (max ${max})`}
-                          value={absent ? "" : r.marksText}
-                          placeholder={absent ? "Absent" : ""}
-                          disabled={!editable || absent}
-                          error={!!errors[i]}
-                          helperText={errors[i]}
-                          onChange={(e) => setRow(i, { marksText: e.target.value })}
-                          onKeyDown={focusNext(i)}
-                          inputRef={(el) => {
-                            inputRefs.current[i] = el;
-                          }}
-                          inputProps={{ inputMode: "decimal", enterKeyHint: "next" }}
-                          slotProps={{ inputLabel: { shrink: true } }}
-                        />
-                        {hasParts && (
-                          <>
-                            <TextField
-                              size="small"
-                              fullWidth
-                              label={`Internal (max ${subj.internalMax})`}
-                              value={absent ? "" : r.internalText}
-                              disabled={!editable || absent}
-                              error={!!internalErrors[i]}
-                              helperText={internalErrors[i]}
-                              onChange={(e) => setRow(i, { internalText: e.target.value })}
-                              inputProps={{ inputMode: "decimal" }}
-                              slotProps={{ inputLabel: { shrink: true } }}
-                            />
-                            <Box sx={{ minWidth: 52, textAlign: "center", alignSelf: "center" }}>
-                              <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                                Total
-                              </Typography>
-                              <Typography sx={{ fontWeight: 700 }}>{absent ? "—" : totalOf(r)}</Typography>
-                            </Box>
-                          </>
-                        )}
-                      </Stack>
-                    )}
-                  </Paper>
-                );
-              })}
-            </Stack>
+                </TableHead>
+                <TableBody>
+                  {rows.map((r, i) => (
+                    <TableRow key={r.studentId} hover sx={{ bgcolor: r.attendance === "absent" ? "action.hover" : undefined }}>
+                      <TableCell sx={{ fontWeight: 600 }}>{r.rollCode}</TableCell>
+                      <TableCell>{r.scholarNumber}</TableCell>
+                      <TableCell>
+                        {r.name}
+                        {r.studentStatus !== "Active" && <Chip size="small" label={r.studentStatus} sx={{ ml: 1 }} />}
+                      </TableCell>
+                      {gradeOnly ? (
+                        <TableCell>{gradeBox(r, i, false)}</TableCell>
+                      ) : (
+                        parts.map((p, c) => (
+                          <TableCell key={p.key} align="right" sx={{ verticalAlign: "top" }}>
+                            {box(r, i, p, c, false)}
+                          </TableCell>
+                        ))
+                      )}
+                      {hasTotal && (
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                          {totalOf(r)}
+                        </TableCell>
+                      )}
+                      <TableCell>{r.attendance === "absent" ? absentChip : <Typography variant="body2" color="text.secondary">Present</Typography>}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
           )}
 
           {editable && (
@@ -557,8 +486,8 @@ const ExamMarksEntryPage = () => {
                   bgcolor: "background.paper",
                   borderTop: "1px solid",
                   borderColor: "divider",
-                  mx: -2,
-                  px: 2,
+                  mx: -1.5,
+                  px: 1.5,
                   py: 1,
                   "& .MuiButton-root": { flex: 1, whiteSpace: "nowrap" },
                 }),
@@ -570,13 +499,10 @@ const ExamMarksEntryPage = () => {
               <Button variant="outlined" onClick={() => setSubmitOpen(true)} disabled={!canSubmit}>
                 {isMobile ? "Submit" : "Review & submit to Admin"}
               </Button>
-              {!canSubmit && (
-                <Typography variant="caption" color="text.secondary" sx={{ alignSelf: "center", display: { xs: "none", sm: "block" } }}>
-                  {dirty
-                    ? "Save your draft first."
-                    : totalPending > 0
-                      ? `${totalPending} entr${totalPending === 1 ? "y" : "ies"} still pending across all subjects.`
-                      : ""}
+              {!isMobile && !canSubmit && (
+                <Typography variant="caption" color="text.secondary" sx={{ alignSelf: "center" }}>
+                  {dirty ? "Save your draft first. " : ""}
+                  {totalPending > 0 ? `${totalPending} entr${totalPending === 1 ? "y" : "ies"} still pending across subjects.` : ""}
                 </Typography>
               )}
             </Stack>

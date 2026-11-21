@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Table,
   TableHead,
@@ -184,7 +184,7 @@ const TeacherTable = ({
     whiteSpace: "nowrap",
   };
 
-  const SortableHeader = ({ field, label, width, minWidth }) => (
+  const renderSortableHeader = ({ field, label, width, minWidth }) => (
     <TableCell sx={{ ...headerCellStyles, width, minWidth }}>
       <TableSortLabel
         active={sortBy === field}
@@ -223,17 +223,9 @@ const TeacherTable = ({
               <TableCell sx={{ ...headerCellStyles, width: 60 }}>
                 S.No
               </TableCell>
-              <SortableHeader
-                field="name"
-                label="Teacher Name"
-                minWidth={160}
-              />
-              <SortableHeader field="employeeId" label="Emp ID" width={100} />
-              <SortableHeader
-                field="class"
-                label="Assigned Classes"
-                minWidth={160}
-              />
+              {renderSortableHeader({ field: "name", label: "Teacher Name", minWidth: 160 })}
+              {renderSortableHeader({ field: "employeeId", label: "Emp ID", width: 100 })}
+              {renderSortableHeader({ field: "class", label: "Assigned Classes", minWidth: 160 })}
               <TableCell sx={headerCellStyles}>Contact Info</TableCell>
               <TableCell
                 sx={{ ...headerCellStyles, width: 80, textAlign: "center" }}

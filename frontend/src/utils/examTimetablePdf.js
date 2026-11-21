@@ -15,7 +15,7 @@ const fmtDate = (key) => {
 };
 
 /**
- * groups: [{ label: "10TH - A", entries: [{subjectName,date,startTime,endTime,remarks}] }]
+ * groups: [{ label: "10TH - A", entries: [{subjectName,date}] }]
  * One page section per class. `logo` ({dataUrl,w,h}) is optional.
  */
 export const buildTimetablePdf = ({ exam, groups, logo }) => {
