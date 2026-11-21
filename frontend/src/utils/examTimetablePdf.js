@@ -5,62 +5,104 @@ import { loadLogo } from "./examAdmitCardPdf";
 const imgType = (img) => (img.dataUrl.startsWith("data:image/jpeg") ? "JPEG" : "PNG");
 
 const SCHOOL_NAME =
-  import.meta.env.VITE_SCHOOL_NAME || "Thakur Virendra Singh Memorial School";
+  import.meta.env.VITE_SCHOOL_NAME ||
+  "Thakur Virendra Singh Memorial Higher Secondary School, Nepanagar";
 
-const fmtDate = (key) => {
-  const [y, m, d] = key.split("-");
-  const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const dow = names[new Date(Date.UTC(+y, +m - 1, +d)).getUTCDay()];
-  return `${d}-${m}-${y} (${dow})`;
+const longDate = (key) =>
+  new Date(`${key}T00:00:00Z`).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+const dayName = (key) =>
+  new Date(`${key}T00:00:00Z`).toLocaleDateString("en-GB", { weekday: "long", timeZone: "UTC" });
+
+const examHeading = (exam) => {
+  const base = String(exam.name || "").trim();
+  const title = /examination/i.test(base) ? `${base} Time Table` : `${base} Examination Time Table`;
+  return `${title}${exam.session?.name ? ` (${exam.session.name})` : ""}`.toUpperCase();
 };
 
+const instructionLines = (text) =>
+  String(text || "")
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^\s*(?:\d+[.)]|[-•*])\s*/, "").trim())
+    .filter(Boolean);
+
 /**
- * groups: [{ label: "10TH - A", entries: [{subjectName,date}] }]
- * One page section per class. `logo` ({dataUrl,w,h}) is optional.
+ * groups: [{ title, classRange, columns: [{id, label}], rows: [{date, cells: {id: "Subject"}}] }]
+ * One page per level (Pre-Primary / Primary / Higher), laid out like the school's printed timetable.
+ * `logo` ({dataUrl,w,h}) is optional.
  */
 export const buildTimetablePdf = ({ exam, groups, logo }) => {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
+  const lines = instructionLines(exam.instructions);
 
   groups.forEach((g, i) => {
     if (i > 0) doc.addPage();
     if (logo) {
       const lh = 20;
-      doc.addImage(logo.dataUrl, imgType(logo), 14, 8, lh * (logo.w / logo.h), lh, undefined, "FAST");
+      doc.addImage(logo.dataUrl, imgType(logo), 12, 8, lh * (logo.w / logo.h), lh, undefined, "FAST");
     }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(15);
-    doc.text(SCHOOL_NAME.toUpperCase(), W / 2, 16, { align: "center" });
+    doc.setFont("times", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(110);
+    const nameLines = doc.splitTextToSize(SCHOOL_NAME.toUpperCase(), W - 60);
+    doc.text(nameLines, W / 2, 16, { align: "center" });
+    doc.setTextColor(0);
+    let y = 16 + nameLines.length * 7 + 4;
     doc.setFontSize(12);
-    doc.text(`${exam.name} — Examination Timetable`, W / 2, 24, { align: "center" });
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text(
-      `Session: ${exam.session?.name || ""}     Class: ${g.label}`,
-      W / 2,
-      31,
-      { align: "center" },
-    );
+    doc.text(examHeading(exam), W / 2, y, { align: "center" });
+    y += 8;
+    doc.setFontSize(11);
+    const clsText = `Classes: ${g.classRange}`;
+    doc.text(clsText, W / 2, y, { align: "center" });
+    const tw = doc.getTextWidth(clsText);
+    doc.setLineWidth(0.3);
+    doc.line(W / 2 - tw / 2, y + 1, W / 2 + tw / 2, y + 1);
 
+    const many = g.columns.length > 5;
     doc.autoTable({
-      startY: 38,
-      head: [["Date", "Day", "Subject"]],
-      body: g.entries.map((e) => [
-        fmtDate(e.date),
-        new Date(`${e.date}T00:00:00Z`).toLocaleDateString("en-IN", { weekday: "long", timeZone: "UTC" }),
-        e.subjectName,
+      startY: y + 6,
+      margin: { left: 12, right: 12 },
+      head: [["Date", "Day", ...g.columns.map((c) => c.label)]],
+      body: g.rows.map((r) => [
+        longDate(r.date),
+        dayName(r.date),
+        ...g.columns.map((c) => r.cells[c.id] || "—"),
       ]),
-      styles: { fontSize: 11, cellPadding: 3.2, lineColor: [120, 120, 120], lineWidth: 0.1 },
-      headStyles: { fillColor: [225, 225, 225], textColor: 0, fontStyle: "bold" },
+      styles: {
+        font: "times",
+        fontSize: many ? 9.5 : 10.5,
+        cellPadding: 2.2,
+        lineColor: [0, 0, 0],
+        lineWidth: 0.2,
+        valign: "middle",
+        textColor: 0,
+      },
+      headStyles: { fillColor: [235, 235, 235], textColor: 0, fontStyle: "bold", halign: "center" },
+      columnStyles: { 0: { cellWidth: 38, halign: "left" } },
     });
 
-    const y = doc.lastAutoTable.finalY + 8;
-    if (exam.instructions) {
-      doc.setFont("helvetica", "bold");
-      doc.text("Instructions", 14, y);
-      doc.setFont("helvetica", "normal");
-      const lines = doc.splitTextToSize(exam.instructions, W - 28);
-      doc.text(lines, 14, y + 6);
+    if (lines.length) {
+      let iy = doc.lastAutoTable.finalY + 12;
+      if (iy > 255) {
+        doc.addPage();
+        iy = 20;
+      }
+      doc.setFont("times", "bold");
+      doc.setFontSize(12);
+      doc.text("Instructions for Students and Parents", 12, iy);
+      doc.setFont("times", "normal");
+      doc.setFontSize(11);
+      iy += 7;
+      lines.forEach((l, n) => {
+        const wrapped = doc.splitTextToSize(`${n + 1}.  ${l}`, W - 30);
+        doc.text(wrapped, 16, iy);
+        iy += wrapped.length * 5.4 + 1.5;
+      });
     }
   });
   return doc;
