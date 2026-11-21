@@ -38,6 +38,10 @@ router.get(
 // Everything below is Admin-only, enforced on the server.
 router.use(adminOnly);
 
+router.get("/subjects", examController.listSubjects);
+router.post("/subjects", examController.addSubject);
+router.put("/subjects/:subjectId", examController.renameSubject);
+router.delete("/subjects/:subjectId", examController.removeSubject);
 router.get("/reports/:type", examController.runReport);
 
 // Report cards (registered before "/:id" so "report-cards" is not read as an ID).
@@ -71,17 +75,10 @@ router.post("/:id/marks/:classId/unlock", examController.unlockMarks);
 
 router.post("/:id/admit-cards", examController.buildAdmitCards);
 
-router.get("/:id/roll-numbers", examController.getRollNumbers);
-router.post(
-  "/:id/roll-numbers/:classId/generate",
-  examController.generateRollNumbers,
-);
-router.put(
-  "/:id/roll-numbers/:classId/:studentId",
-  examController.updateRollNumber,
-);
+// Roll numbers are assigned automatically (alphabetical); no admin routes.
 
 router.get("/:id/timetable", examController.getTimetable);
+router.put("/:id/timetable-bulk", examController.saveBulkTimetable);
 router.put("/:id/timetable/:classId", examController.saveClassTimetable);
 
 router.get("/:id/classes", examController.listClassConfigs);

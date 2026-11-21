@@ -160,6 +160,43 @@ class ExamRollNumberService {
     return this._view(exam, classId);
   }
 
+  /**
+   * Automatic numbering (no admin step). Numbers every active student of the
+   * class that has none, alphabetically on the first run and appended after the
+   * current highest number for students who join later. Existing numbers never
+   * change. Safe to call often; a concurrent run is absorbed by the unique indexes.
+   */
+  async ensureForClass(exam, classId) {
+    if (exam.status === EXAM_STATUS.RESULTS_PUBLISHED) return;
+    const [existing, eligible] = await Promise.all([
+      ExamRollNumber.find({ session: exam.session, class: classId }).select("student rollNumber").lean(),
+      this._eligibleStudents(exam, classId),
+    ]);
+    const have = new Set(existing.map((r) => String(r.student)));
+    const todo = eligible.filter((s) => !have.has(String(s._id))).sort(byNameThenAdmission);
+    if (todo.length === 0) return;
+    const initial = existing.length === 0;
+    const start = existing.reduce((m, r) => Math.max(m, r.rollNumber), 0) + 1;
+    try {
+      await ExamRollNumber.insertMany(
+        todo.map((s, i) => ({
+          session: exam.session,
+          class: classId,
+          student: s._id,
+          scholarNumber: s.scholarNumber,
+          studentName: norm(s.name),
+          rollNumber: start + i,
+          source: initial ? "generated" : "late_joiner",
+          assignedForExam: exam._id,
+        })),
+        { ordered: true },
+      );
+    } catch (err) {
+      // Another request numbered the same students first: nothing more to do.
+      if (!(err.code === 11000 || err.writeErrors)) throw err;
+    }
+  }
+
   async updateManual(examId, classId, studentId, { rollNumber, reason }, user, req) {
     const exam = await this._examAndConfig(examId, classId);
     if (!mongoose.isValidObjectId(studentId)) throwError("Invalid student ID", 400);

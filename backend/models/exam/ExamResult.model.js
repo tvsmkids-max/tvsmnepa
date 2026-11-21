@@ -13,7 +13,9 @@ const subjectResultSchema = new mongoose.Schema(
     marks: { type: Number, default: null },
     writtenMarks: { type: Number, default: null },
     internalMarks: { type: Number, default: null },
+    oralMarks: { type: Number, default: null },
     internalMax: { type: Number, default: 0 },
+    oralMax: { type: Number, default: 0 },
     gradeOnly: { type: Boolean, default: false },
     grade: { type: String, default: null },
     // "graded" = grade-only subject (no pass/fail).

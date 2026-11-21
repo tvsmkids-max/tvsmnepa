@@ -21,8 +21,9 @@ const examTimetableEntrySchema = new mongoose.Schema(
     subjectKey: { type: String, required: true },
     subjectName: { type: String, required: true, trim: true },
     date: { type: String, required: true, match: DATE_RE },
-    startTime: { type: String, required: true, match: TIME_RE },
-    endTime: { type: String, required: true, match: TIME_RE },
+    // Times are no longer used (date only); kept optional so older entries still load.
+    startTime: { type: String, match: TIME_RE },
+    endTime: { type: String, match: TIME_RE },
     remarks: { type: String, trim: true, maxlength: 300, default: "" },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },

@@ -307,8 +307,12 @@ class ExamService {
       }
       seen.add(nameKey);
       const internalMax = s.gradeOnly ? 0 : s.internalMax || 0;
-      if (internalMax >= s.maxMarks && !s.gradeOnly) {
-        throwError(`Internal marks must be less than the maximum marks for ${s.name.trim()}`, 400);
+      const oralMax = s.gradeOnly ? 0 : s.oralMax || 0;
+      if (internalMax + oralMax >= s.maxMarks && !s.gradeOnly) {
+        throwError(
+          `Internal + Oral marks must be less than the maximum marks for ${s.name.trim()} (Written needs the rest)`,
+          400,
+        );
       }
       if (s.passingMarks > s.maxMarks) {
         throwError(
@@ -322,6 +326,7 @@ class ExamService {
         maxMarks: s.gradeOnly ? 0 : s.maxMarks,
         passingMarks: s.gradeOnly ? 0 : s.passingMarks,
         internalMax,
+        oralMax,
         gradeOnly: !!s.gradeOnly,
         displayOrder: i,
       };

@@ -37,8 +37,10 @@ const examMarksSchema = new mongoose.Schema(
     marks: { type: Number, default: null, min: 0 },
     writtenMarks: { type: Number, default: null, min: 0 },
     internalMarks: { type: Number, default: null, min: 0 },
+    oralMarks: { type: Number, default: null, min: 0 },
     grade: { type: String, enum: [null, "A+", "A", "B", "C", "D"], default: null },
     internalMax: { type: Number, default: 0 },
+    oralMax: { type: Number, default: 0 },
     gradeOnly: { type: Boolean, default: false },
     remarks: { type: String, trim: true, maxlength: 200, default: "" },
 

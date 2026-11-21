@@ -56,6 +56,7 @@ const subjectSchema = Joi.object({
     otherwise: Joi.number().min(0).max(1000).precision(2).required(),
   }),
   internalMax: Joi.number().min(0).max(1000).precision(2).default(0),
+  oralMax: Joi.number().min(0).max(1000).precision(2).default(0),
 });
 
 const classConfigSchema = Joi.object({
@@ -74,19 +75,32 @@ const timetableEntrySchema = Joi.object({
     .pattern(/^\d{4}-\d{2}-\d{2}$/)
     .required()
     .messages({ "string.pattern.base": "Date must be YYYY-MM-DD" }),
-  startTime: Joi.string()
-    .pattern(/^([01]\d|2[0-3]):[0-5]\d$/)
-    .required()
-    .messages({ "string.pattern.base": "Time must be HH:mm (24-hour)" }),
-  endTime: Joi.string()
-    .pattern(/^([01]\d|2[0-3]):[0-5]\d$/)
-    .required()
-    .messages({ "string.pattern.base": "Time must be HH:mm (24-hour)" }),
   remarks: Joi.string().trim().max(300).allow(""),
 });
 
 const saveTimetableSchema = Joi.object({
   entries: Joi.array().items(timetableEntrySchema).max(30).required(),
+});
+
+const bulkTimetableSchema = Joi.object({
+  classIds: Joi.array().items(Joi.string().hex().length(24)).min(1).max(60).required(),
+  subjects: Joi.array()
+    .items(
+      Joi.object({
+        subjectName: Joi.string().trim().min(1).max(60).required(),
+        date: Joi.string()
+          .pattern(/^\d{4}-\d{2}-\d{2}$/)
+          .required()
+          .messages({ "string.pattern.base": "Date must be YYYY-MM-DD" }),
+      }),
+    )
+    .min(1)
+    .max(60)
+    .required(),
+});
+
+const subjectNameSchema = Joi.object({
+  name: Joi.string().trim().min(1).max(60).required(),
 });
 
 const updateRollNumberSchema = Joi.object({
@@ -121,6 +135,7 @@ const saveMarksSchema = Joi.object({
         attendance: Joi.string().valid("present", "absent").required(),
         marks: Joi.number().min(0).max(1000).precision(2).allow(null),
         internalMarks: Joi.number().min(0).max(1000).precision(2).allow(null),
+        oralMarks: Joi.number().min(0).max(1000).precision(2).allow(null),
         grade: Joi.string().valid("A+", "A", "B", "C", "D").allow(null),
         remarks: Joi.string().trim().max(200).allow(""),
       }),
@@ -142,6 +157,7 @@ const correctMarksSchema = Joi.object({
         attendance: Joi.string().valid("present", "absent").required(),
         marks: Joi.number().min(0).max(1000).precision(2).allow(null),
         internalMarks: Joi.number().min(0).max(1000).precision(2).allow(null),
+        oralMarks: Joi.number().min(0).max(1000).precision(2).allow(null),
         grade: Joi.string().valid("A+", "A", "B", "C", "D").allow(null),
         remarks: Joi.string().trim().max(200).allow(""),
       }),
@@ -218,6 +234,8 @@ module.exports = {
   admitCardSchema,
   updateRollNumberSchema,
   saveTimetableSchema,
+  subjectNameSchema,
+  bulkTimetableSchema,
   createExamSchema,
   updateExamSchema,
   queryExamSchema,
