@@ -10,38 +10,15 @@ import AddIcon from "@mui/icons-material/Add";
 import { useSnackbar } from "notistack";
 import examApi from "../../api/examApi";
 import { downloadTimetablePdf, printTimetablePdf } from "../../utils/examTimetablePdf";
+import {
+  classIdOf, classLabel as label, makeGroups, matrixFor, printedClassName, sortConfigs,
+} from "../../utils/examTimetableGroups";
 
 const TIMETABLE_EDITABLE = ["draft", "configuration_pending", "scheduled", "ongoing"];
 
-const label = (c) => `${c.name}${c.section && c.section !== "-" ? ` - ${c.section}` : ""}`;
-const classIdOf = (e) => String(e.class?._id || e.class);
 const dayName = (d) =>
   d ? new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { weekday: "long", timeZone: "UTC" }) : "";
 const dayKey = (d) => (d ? new Date(d).toISOString().slice(0, 10) : "");
-
-// Pre-primary: no class number in the name (Nursery, LKG, UKG…). Primary: 1–5. Higher: 6 and above.
-const GROUPS = [
-  { key: "pre", title: "Pre-Primary" },
-  { key: "primary", title: "Primary (Classes 1 to 5)" },
-  { key: "higher", title: "Higher (Class 6 and above)" },
-];
-const groupOf = (cls) => {
-  const m = String(cls.name || "").match(/\d+/);
-  if (!m) return "pre";
-  return Number(m[0]) <= 5 ? "primary" : "higher";
-};
-
-const sortedRef = (list) =>
-  [...(list || [])].sort(
-    (a, b) =>
-      (a.class?.displayOrder ?? 0) - (b.class?.displayOrder ?? 0) ||
-      label(a.class).localeCompare(label(b.class)),
-  );
-
-const makeGroups = (configs) =>
-  GROUPS.map((g) => ({ ...g, cfgs: configs.filter((c) => groupOf(c.class) === g.key) })).filter(
-    (g) => g.cfgs.length > 0,
-  );
 
 let rowSeq = 0;
 const newRow = (date = "", cells = {}) => ({ id: ++rowSeq, date, cells });
@@ -275,15 +252,7 @@ const GroupTable = ({ title, cfgs, rows, setRows, saved, editable, exam, onSaved
 const ExamTimetableTab = ({ exam }) => {
   const { enqueueSnackbar } = useSnackbar();
   const editable = TIMETABLE_EDITABLE.includes(exam.status);
-  const configs = useMemo(
-    () =>
-      [...(exam.classConfigs || [])].sort(
-        (a, b) =>
-          (a.class?.displayOrder ?? 0) - (b.class?.displayOrder ?? 0) ||
-          label(a.class).localeCompare(label(b.class)),
-      ),
-    [exam.classConfigs],
-  );
+  const configs = useMemo(() => sortConfigs(exam.classConfigs), [exam.classConfigs]);
   const groups = useMemo(() => makeGroups(configs), [configs]);
 
   const [loading, setLoading] = useState(true);
@@ -302,7 +271,7 @@ const ExamTimetableTab = ({ exam }) => {
         if (cancelled) return;
         setSaved(data);
         const next = {};
-        makeGroups(sortedRef(exam.classConfigs)).forEach((g) => {
+        makeGroups(sortConfigs(exam.classConfigs)).forEach((g) => {
           next[g.key] = buildRows(g.cfgs, data);
         });
         setRowsBy(next);
@@ -322,14 +291,19 @@ const ExamTimetableTab = ({ exam }) => {
 
   const pdfArgs = {
     exam,
-    groups: configs
-      .map((cfg) => ({
-        label: label(cfg.class),
-        entries: saved
-          .filter((e) => classIdOf(e) === cfg.class._id)
-          .sort((a, b) => `${a.date} ${a.subjectName}`.localeCompare(`${b.date} ${b.subjectName}`)),
-      }))
-      .filter((g) => g.entries.length > 0),
+    groups: groups
+      .map((g) => {
+        const first = g.cfgs[0].class;
+        const last = g.cfgs[g.cfgs.length - 1].class;
+        const short = (c) => printedClassName(c).replace(/^Class /, "");
+        return {
+          title: g.title,
+          classRange: g.cfgs.length === 1 ? short(first) : `${short(first)} to ${short(last)}`,
+          columns: g.cfgs.map((c) => ({ id: c.class._id, label: printedClassName(c.class) })),
+          rows: matrixFor(g.cfgs, saved),
+        };
+      })
+      .filter((g) => g.rows.length > 0),
   };
   const fname = `timetable-${exam.name.replace(/\s+/g, "-").toLowerCase()}`;
   const missing = configs
