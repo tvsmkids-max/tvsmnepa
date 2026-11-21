@@ -40,6 +40,7 @@ const baseOf = (r, parts) => ({
   attendance: r.attendance,
   marks: parts ? r.writtenMarks : r.marks,
   internalMarks: r.internalMarks ?? null,
+  oralMarks: r.oralMarks ?? null,
   grade: r.grade ?? null,
 });
 
@@ -77,7 +78,9 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
   }, [examId, classId, subject.key, reloadKey, enqueueSnackbar, onClose]);
 
   const gradeOnly = !!sheet?.subject.gradeOnly;
-  const parts = (sheet?.subject.internalMax ?? 0) > 0;
+  const hasInternal = (sheet?.subject.internalMax ?? 0) > 0;
+  const hasOral = (sheet?.subject.oralMax ?? 0) > 0;
+  const parts = hasInternal || hasOral;
   const writtenMax = parts ? sheet.subject.writtenMax : subject.maxMarks;
   const view = (r) => ({ ...baseOf(r, parts), ...(edits[r.studentId] || {}) });
   const changed = Object.keys(edits).length;
@@ -89,9 +92,10 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
       if (next.attendance === "absent") {
         next.marks = null;
         next.internalMarks = null;
+        next.oralMarks = null;
         next.grade = null;
       }
-      const same = ["attendance", "marks", "internalMarks", "grade"].every(
+      const same = ["attendance", "marks", "internalMarks", "oralMarks", "grade"].every(
         (k) => (next[k] ?? null) === (base[k] ?? null),
       );
       const copy = { ...e };
@@ -109,7 +113,8 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
           studentId: r.studentId,
           attendance: edits[r.studentId].attendance,
           marks: gradeOnly || edits[r.studentId].attendance === "absent" ? null : edits[r.studentId].marks,
-          internalMarks: parts && edits[r.studentId].attendance !== "absent" ? edits[r.studentId].internalMarks : null,
+          internalMarks: hasInternal && edits[r.studentId].attendance !== "absent" ? edits[r.studentId].internalMarks : null,
+          oralMarks: hasOral && edits[r.studentId].attendance !== "absent" ? edits[r.studentId].oralMarks : null,
           grade: gradeOnly && edits[r.studentId].attendance !== "absent" ? edits[r.studentId].grade : null,
           remarks: r.remarks || "",
         }));
@@ -135,7 +140,7 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
     // Draft entry may be partial; a correction to submitted marks must be complete.
     if (gradeOnly) return !enterMode && !v.grade;
     const bad = (x, max) => (empty(x) ? !enterMode : Number(x) < 0 || Number(x) > max);
-    return bad(v.marks, writtenMax) || (parts && bad(v.internalMarks, sheet.subject.internalMax));
+    return bad(v.marks, writtenMax) || (hasInternal && bad(v.internalMarks, sheet.subject.internalMax)) || (hasOral && bad(v.oralMarks, sheet.subject.oralMax));
   });
 
   return (
@@ -169,7 +174,8 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
                     <TableCell>Student</TableCell>
                     <TableCell>Attendance</TableCell>
                     <TableCell>{gradeOnly ? "Grade" : parts ? `Written (max ${writtenMax})` : "Marks"}</TableCell>
-                    {parts && <TableCell>Internal (max {sheet.subject.internalMax})</TableCell>}
+                    {hasInternal && <TableCell>Internal (max {sheet.subject.internalMax})</TableCell>}
+                    {hasOral && <TableCell>Oral (max {sheet.subject.oralMax})</TableCell>}
                     {parts && <TableCell align="right">Total</TableCell>}
                     <TableCell>Status</TableCell>
                   </TableRow>
@@ -180,11 +186,11 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
                     const dirty = !!edits[r.studentId];
                     return (
                       <TableRow key={r.studentId} selected={dirty}>
-                        <TableCell>{r.rollNumber}</TableCell>
+                        <TableCell>{r.rollCode || r.rollNumber}</TableCell>
                         <TableCell>{r.scholarNumber}</TableCell>
                         <TableCell>{r.name}</TableCell>
                         <TableCell>
-                          {editable ? (
+                          {canCorrect ? (
                             <Stack direction="row" spacing={0.5}>
                               <Chip
                                 size="small"
@@ -249,7 +255,7 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
                             ((parts ? r.writtenMarks : r.marks) ?? "Not entered")
                           )}
                         </TableCell>
-                        {parts && (
+                        {hasInternal && (
                           <TableCell>
                             {editable && v.attendance === "present" ? (
                               <TextField
@@ -269,11 +275,31 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
                             )}
                           </TableCell>
                         )}
+                        {hasOral && (
+                          <TableCell>
+                            {editable && v.attendance === "present" ? (
+                              <TextField
+                                size="small"
+                                type="number"
+                                value={v.oralMarks ?? ""}
+                                onChange={(e) =>
+                                  setRow(r, { oralMarks: e.target.value === "" ? null : Number(e.target.value) })
+                                }
+                                slotProps={{ htmlInput: { min: 0, max: sheet.subject.oralMax, step: "any" } }}
+                                sx={{ width: 100 }}
+                              />
+                            ) : v.attendance === "absent" ? (
+                              "—"
+                            ) : (
+                              (r.oralMarks ?? "Not entered")
+                            )}
+                          </TableCell>
+                        )}
                         {parts && (
                           <TableCell align="right">
-                            {v.attendance === "absent" || v.marks == null || v.internalMarks == null
+                            {v.attendance === "absent" || v.marks == null || (hasInternal && v.internalMarks == null) || (hasOral && v.oralMarks == null)
                               ? "—"
-                              : Math.round((Number(v.marks) + Number(v.internalMarks)) * 100) / 100}
+                              : Math.round((Number(v.marks) + Number(v.internalMarks || 0) + Number(v.oralMarks || 0)) * 100) / 100}
                           </TableCell>
                         )}
                         <TableCell>

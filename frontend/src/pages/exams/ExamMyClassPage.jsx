@@ -139,7 +139,6 @@ const ExamMyClassPage = () => {
                   <TableRow>
                     <TableCell>Date</TableCell>
                     <TableCell>Subject</TableCell>
-                    <TableCell>Time</TableCell>
                     <TableCell>Remarks</TableCell>
                   </TableRow>
                 </TableHead>
@@ -148,9 +147,6 @@ const ExamMyClassPage = () => {
                     <TableRow key={t._id}>
                       <TableCell>{t.date}</TableCell>
                       <TableCell>{t.subjectName}</TableCell>
-                      <TableCell>
-                        {t.startTime} - {t.endTime}
-                      </TableCell>
                       <TableCell>{t.remarks || "—"}</TableCell>
                     </TableRow>
                   ))}
@@ -170,7 +166,7 @@ const ExamMyClassPage = () => {
               {e.subjects.map((s) => (
                 <TableRow key={s._id}>
                   <TableCell>{s.name}</TableCell>
-                  <TableCell align="right">{s.gradeOnly ? "Grade" : s.internalMax > 0 ? `${s.maxMarks} (${s.maxMarks - s.internalMax} + ${s.internalMax})` : s.maxMarks}</TableCell>
+                  <TableCell align="right">{s.gradeOnly ? "Grade" : s.internalMax > 0 || s.oralMax > 0 ? `${s.maxMarks} (${[s.maxMarks - (s.internalMax || 0) - (s.oralMax || 0), s.internalMax > 0 && s.internalMax, s.oralMax > 0 && s.oralMax].filter((x) => x !== false).join(" + ")})` : s.maxMarks}</TableCell>
                   <TableCell align="right">{s.gradeOnly ? "—" : s.passingMarks}</TableCell>
                 </TableRow>
               ))}

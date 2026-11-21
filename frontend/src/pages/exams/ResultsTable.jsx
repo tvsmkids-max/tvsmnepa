@@ -21,7 +21,7 @@ export default function ResultsTable({ students }) {
                 <Typography variant="caption" display="block" color="text.secondary">
                   {s.gradeOnly
                     ? "grade"
-                    : `max ${s.maxMarks}${s.internalMax > 0 ? ` (${s.maxMarks - s.internalMax}+${s.internalMax})` : ""} · pass ${s.passingMarks}`}
+                    : `max ${s.maxMarks}${s.internalMax > 0 || s.oralMax > 0 ? ` (${[s.maxMarks - (s.internalMax || 0) - (s.oralMax || 0), s.internalMax > 0 && s.internalMax, s.oralMax > 0 && s.oralMax].filter((x) => x !== false).join("+")})` : ""} · pass ${s.passingMarks}`}
                 </Typography>
               </TableCell>
             ))}
@@ -42,10 +42,10 @@ export default function ResultsTable({ students }) {
                   ) : (
                     <>
                       {s.result === "absent" ? "—" : s.marks}
-                      {s.result !== "absent" && s.internalMax > 0 && s.writtenMarks != null && (
+                      {s.result !== "absent" && (s.internalMax > 0 || s.oralMax > 0) && s.writtenMarks != null && (
                         <Typography component="span" variant="caption" color="text.secondary">
                           {" "}
-                          ({s.writtenMarks}+{s.internalMarks})
+                          ({[s.writtenMarks, s.internalMax > 0 && s.internalMarks, s.oralMax > 0 && s.oralMarks].filter((x) => x !== false).join("+")})
                         </Typography>
                       )}{" "}
                       <Chip size="small" label={RESULT_LABEL[s.result]} color={RESULT_COLOR[s.result]} />

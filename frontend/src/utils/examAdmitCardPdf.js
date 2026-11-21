@@ -194,7 +194,7 @@ const drawCard = (doc, x, y, card, ctx) => {
   if (card.rollNumber !== null && card.rollNumber !== undefined) {
     doc.setFont("times", "bold");
     doc.setFontSize(11);
-    doc.text(String(card.rollNumber), rollBoxX + (x + w - rollBoxX) / 2, yClass + 5.4, {
+    doc.text(String(card.rollCode || card.rollNumber), rollBoxX + (x + w - rollBoxX) / 2, yClass + 5.4, {
       align: "center",
     });
   }

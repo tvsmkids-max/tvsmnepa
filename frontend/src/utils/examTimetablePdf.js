@@ -12,7 +12,7 @@ const fmtDate = (key) => {
 };
 
 /**
- * groups: [{ label: "10TH - A", entries: [{subjectName,date,startTime,endTime,remarks}] }]
+ * groups: [{ label: "10TH - A", entries: [{subjectName,date}] }]
  * One page section per class. No logo yet (supplied later).
  */
 export const buildTimetablePdf = ({ exam, groups }) => {
@@ -37,15 +37,14 @@ export const buildTimetablePdf = ({ exam, groups }) => {
 
     doc.autoTable({
       startY: 38,
-      head: [["Date", "Subject", "Time", "Remarks"]],
+      head: [["Date", "Day", "Subject"]],
       body: g.entries.map((e) => [
         fmtDate(e.date),
+        new Date(`${e.date}T00:00:00Z`).toLocaleDateString("en-IN", { weekday: "long", timeZone: "UTC" }),
         e.subjectName,
-        `${e.startTime} - ${e.endTime}`,
-        e.remarks || "",
       ]),
-      styles: { fontSize: 10, cellPadding: 3 },
-      headStyles: { fillColor: [13, 27, 62] },
+      styles: { fontSize: 11, cellPadding: 3.2, lineColor: [120, 120, 120], lineWidth: 0.1 },
+      headStyles: { fillColor: [225, 225, 225], textColor: 0, fontStyle: "bold" },
     });
 
     const y = doc.lastAutoTable.finalY + 8;
