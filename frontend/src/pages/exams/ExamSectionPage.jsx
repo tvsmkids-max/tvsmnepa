@@ -1,3 +1,4 @@
+import { gridTableSx } from "../../components/common/tableStyles";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -73,7 +74,7 @@ export default function ExamSectionPage() {
         <EmptyState title="No examinations" subtitle="Create an examination first." />
       ) : (
         <Paper sx={{ overflowX: "auto" }}>
-          <Table size="small">
+          <Table size="small" sx={gridTableSx}>
             <TableHead>
               <TableRow>
                 <TableCell>Examination</TableCell>

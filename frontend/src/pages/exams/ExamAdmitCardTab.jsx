@@ -1,3 +1,4 @@
+import { gridTableSx } from "../../components/common/tableStyles";
 import { useState, useMemo } from "react";
 import {
   Alert,
@@ -155,7 +156,7 @@ const ExamAdmitCardTab = ({ exam }) => {
             </Alert>
           )}
           <Box sx={{ overflowX: "auto" }}>
-            <Table size="small">
+            <Table size="small" sx={gridTableSx}>
               <TableHead>
                 <TableRow>
                   <TableCell>Class</TableCell>

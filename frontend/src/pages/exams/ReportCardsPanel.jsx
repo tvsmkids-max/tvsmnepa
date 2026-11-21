@@ -1,3 +1,4 @@
+import { gridTableSx } from "../../components/common/tableStyles";
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -226,7 +227,7 @@ export default function ReportCardsPanel({ mode }) {
 
           {students.length > 0 && (
             <Paper sx={{ overflowX: "auto" }}>
-              <Table size="small">
+              <Table size="small" sx={gridTableSx}>
                 <TableHead>
                   <TableRow>
                     <TableCell>Roll</TableCell>

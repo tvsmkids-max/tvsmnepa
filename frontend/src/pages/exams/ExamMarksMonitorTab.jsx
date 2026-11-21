@@ -1,3 +1,4 @@
+import { gridTableSx } from "../../components/common/tableStyles";
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -166,7 +167,7 @@ function ReviewDialog({ examId, classId, subject, onClose, onChanged }) {
                     : "Read-only."}
             </Alert>
             <Box sx={{ overflowX: "auto" }}>
-              <Table size="small">
+              <Table size="small" sx={gridTableSx}>
                 <TableHead>
                   <TableRow>
                     <TableCell>Roll</TableCell>
@@ -507,7 +508,7 @@ export default function ExamMarksMonitorTab({ exam, onChanged }) {
               </Alert>
             )}
             <Box sx={{ overflowX: "auto" }}>
-              <Table size="small">
+              <Table size="small" sx={gridTableSx}>
                 <TableHead>
                   <TableRow>
                     <TableCell>Subject</TableCell>

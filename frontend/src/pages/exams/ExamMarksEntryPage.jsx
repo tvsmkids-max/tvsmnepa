@@ -1,3 +1,4 @@
+import { gridTableSx } from "../../components/common/tableStyles";
 import { useState, useEffect, useMemo, useRef } from "react";
 import {
   MenuItem, Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle,
@@ -312,7 +313,7 @@ const ExamMarksEntryPage = () => {
       )}
 
       <Paper variant="outlined" sx={{ mb: 2, overflowX: "auto" }}>
-        <Table size="small">
+        <Table size="small" sx={gridTableSx}>
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 700 }}>Subject</TableCell>
@@ -419,7 +420,7 @@ const ExamMarksEntryPage = () => {
             </Stack>
           ) : (
             <Box sx={{ overflowX: "auto" }}>
-              <Table size="small">
+              <Table size="small" sx={gridTableSx}>
                 <TableHead>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 700 }}>Roll</TableCell>
@@ -517,7 +518,7 @@ const ExamMarksEntryPage = () => {
             After submission you cannot change these marks. Only the Admin can reopen marks entry,
             and must give a reason.
           </Alert>
-          <Table size="small">
+          <Table size="small" sx={gridTableSx}>
             <TableHead>
               <TableRow>
                 <TableCell>Subject</TableCell>

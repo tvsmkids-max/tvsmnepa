@@ -1,3 +1,5 @@
+import { gridTableSx } from "../../components/common/tableStyles";
+import { SubjectMarksTable } from "./ExamTables";
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -383,36 +385,7 @@ const ExamDetailPage = () => {
                       </Stack>
                     )}
                   </Stack>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Subject</TableCell>
-                        <TableCell align="right">Max marks</TableCell>
-                        <TableCell align="right">Passing marks</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {cfg.subjects.map((s) => (
-                        <TableRow key={s._id}>
-                          <TableCell>{s.name}</TableCell>
-                          <TableCell align="right">
-                            {s.gradeOnly
-                              ? "Grade only"
-                              : s.internalMax > 0 || s.oralMax > 0
-                                ? `${s.maxMarks} (${[
-                                    `${s.maxMarks - (s.internalMax || 0) - (s.oralMax || 0)} written`,
-                                    s.internalMax > 0 && `${s.internalMax} internal`,
-                                    s.oralMax > 0 && `${s.oralMax} oral`,
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" + ")})`
-                                : s.maxMarks}
-                          </TableCell>
-                          <TableCell align="right">{s.gradeOnly ? "—" : s.passingMarks}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <SubjectMarksTable subjects={cfg.subjects} />
                 </Paper>
               ))
             )}
@@ -423,11 +396,11 @@ const ExamDetailPage = () => {
 
         {tab === 2 && <ExamAdmitCardTab exam={exam} />}
 
-        {tab === 2 && <ExamMarksMonitorTab exam={exam} onChanged={() => setReloadKey((k) => k + 1)} />}
+        {tab === 3 && <ExamMarksMonitorTab exam={exam} onChanged={() => setReloadKey((k) => k + 1)} />}
 
-        {tab === 2 && <ExamResultsTab exam={exam} onChanged={load} />}
+        {tab === 4 && <ExamResultsTab exam={exam} onChanged={load} />}
 
-        {tab === 2 && details && (
+        {tab === 5 && details && (
           <Stack spacing={2} sx={{ p: 2, maxWidth: 560 }}>
             <TextField label="Name" value={details.name} onChange={setField("name")} disabled={!editable} />
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -445,9 +418,9 @@ const ExamDetailPage = () => {
           </Stack>
         )}
 
-        {tab === 2 && (
+        {tab === 6 && (
           <Box sx={{ p: 2, overflowX: "auto" }}>
-            <Table size="small">
+            <Table size="small" sx={gridTableSx}>
               <TableHead>
                 <TableRow>
                   <TableCell>When</TableCell>

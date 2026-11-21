@@ -1,3 +1,4 @@
+import { TimetableTable, SubjectMarksTable } from "./ExamTables";
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -5,11 +6,6 @@ import {
   Chip,
   Typography,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
   LinearProgress,
   Alert,
   Button,
@@ -131,47 +127,16 @@ const ExamMyClassPage = () => {
           )}
           {e.timetable?.length > 0 && (
             <>
-              <Typography variant="subtitle2" sx={{ mt: 1 }}>
+              <Typography variant="subtitle2" sx={{ mt: 1, mb: 0.5 }}>
                 Timetable
               </Typography>
-              <Table size="small" sx={{ mb: 2 }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Subject</TableCell>
-                    <TableCell>Remarks</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {e.timetable.map((t) => (
-                    <TableRow key={t._id}>
-                      <TableCell>{t.date}</TableCell>
-                      <TableCell>{t.subjectName}</TableCell>
-                      <TableCell>{t.remarks || "—"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <TimetableTable entries={e.timetable} sx={{ mb: 2 }} />
             </>
           )}
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Subject</TableCell>
-                <TableCell align="right">Max marks</TableCell>
-                <TableCell align="right">Passing marks</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {e.subjects.map((s) => (
-                <TableRow key={s._id}>
-                  <TableCell>{s.name}</TableCell>
-                  <TableCell align="right">{s.gradeOnly ? "Grade" : s.internalMax > 0 || s.oralMax > 0 ? `${s.maxMarks} (${[s.maxMarks - (s.internalMax || 0) - (s.oralMax || 0), s.internalMax > 0 && s.internalMax, s.oralMax > 0 && s.oralMax].filter((x) => x !== false).join(" + ")})` : s.maxMarks}</TableCell>
-                  <TableCell align="right">{s.gradeOnly ? "—" : s.passingMarks}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+            Subjects and marks
+          </Typography>
+          <SubjectMarksTable subjects={e.subjects} />
         </Paper>
       ))}
     </Box>

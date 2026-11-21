@@ -1,3 +1,4 @@
+import { gridTableSx } from "../../components/common/tableStyles";
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert, Box, Button, Chip, LinearProgress, MenuItem, Paper, Stack, Table, TableBody,
@@ -211,7 +212,7 @@ export default function ExamReportsPage() {
             <Alert severity="info">No records for these filters.</Alert>
           ) : (
             <TableContainer sx={{ maxHeight: 560 }}>
-              <Table size="small" stickyHeader>
+              <Table size="small" stickyHeader sx={gridTableSx}>
                 <TableHead>
                   <TableRow>
                     {report.columns.map((c) => <TableCell key={c.key} align={c.align || "left"} sx={{ fontWeight: 700 }}>{c.label}</TableCell>)}

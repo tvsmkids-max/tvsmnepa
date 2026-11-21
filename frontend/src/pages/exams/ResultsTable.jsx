@@ -1,3 +1,4 @@
+import { gridTableSx } from "../../components/common/tableStyles";
 import { Box, Chip, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 
 const RESULT_COLOR = { pass: "success", fail: "error", absent: "warning", graded: "default" };
@@ -9,7 +10,7 @@ export default function ResultsTable({ students }) {
   const subjects = students[0].subjects;
   return (
     <Box sx={{ overflowX: "auto" }}>
-      <Table size="small">
+      <Table size="small" sx={gridTableSx}>
         <TableHead>
           <TableRow>
             <TableCell>Roll</TableCell>

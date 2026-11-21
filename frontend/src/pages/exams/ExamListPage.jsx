@@ -1,3 +1,4 @@
+import { gridTableSx } from "../../components/common/tableStyles";
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -148,7 +149,7 @@ const ExamListPage = () => {
           />
         ) : (
           <TableContainer>
-            <Table size="small">
+            <Table size="small" sx={gridTableSx}>
               <TableHead>
                 <TableRow>
                   <TableCell>Name</TableCell>
