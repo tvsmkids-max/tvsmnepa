@@ -3,65 +3,51 @@ import { createTheme } from "@mui/material/styles";
 // ─── SHARED TYPOGRAPHY & TOKENS ───
 const TYPOGRAPHY = {
   fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-  h4: { fontSize: "1.5rem", fontWeight: 800, letterSpacing: "-0.02em" },
-  h5: { fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-0.01em" },
-  h6: { fontSize: "1rem", fontWeight: 700 },
+  h4: { fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.01em" },
+  h5: { fontSize: "1.25rem", fontWeight: 600 },
+  h6: { fontSize: "1rem", fontWeight: 600 },
   body1: { fontSize: "0.95rem", lineHeight: 1.5, letterSpacing: "-0.01em" },
   body2: { fontSize: "0.85rem", lineHeight: 1.5 },
-  button: { fontWeight: 700, textTransform: "none", letterSpacing: "0.01em" },
+  button: { fontWeight: 600, textTransform: "none" },
   caption: { letterSpacing: "0.02em" },
 };
 
-const SHAPE = { borderRadius: 12 }; // Standardized modern radius
+// Small radius: sx `borderRadius: n` multiplies this (2 => 12px, 3 => 18px).
+const SHAPE = { borderRadius: 6 };
 
 const SHARED_COMPONENTS = {
+  MuiPaper: {
+    defaultProps: { elevation: 0 },
+    styleOverrides: {
+      root: ({ theme }) => ({
+        "&.MuiPaper-elevation0": { border: `1px solid ${theme.palette.divider}` },
+      }),
+    },
+  },
   MuiButton: {
     styleOverrides: {
-      root: {
-        borderRadius: 8,
-        padding: "8px 20px",
-        boxShadow: "none",
-        transition: "all 0.2s ease-in-out",
-        "&:hover": {
-          transform: "translateY(-1px)",
-        },
-      },
-      contained: {
-        "&:active": { transform: "translateY(0)" },
-      },
+      root: { borderRadius: 6, padding: "7px 16px", boxShadow: "none" },
+      contained: { boxShadow: "none", "&:hover": { boxShadow: "none" } },
     },
   },
   MuiTextField: {
-    styleOverrides: {
-      root: {
-        "& .MuiOutlinedInput-root": {
-          borderRadius: 8,
-          transition: "all 0.2s ease",
-        },
-      },
-    },
+    styleOverrides: { root: { "& .MuiOutlinedInput-root": { borderRadius: 6 } } },
   },
   MuiChip: {
-    styleOverrides: {
-      root: { fontWeight: 700, borderRadius: 8 }, // Square-ish chips are more modern
-    },
+    styleOverrides: { root: { fontWeight: 600, borderRadius: 6 } },
   },
   MuiCard: {
-    styleOverrides: {
-      root: {
-        borderRadius: 16, // Premium card radius
-        transition: "box-shadow 0.2s ease",
-      },
-    },
+    styleOverrides: { root: { borderRadius: 8 } },
+  },
+  MuiDialog: {
+    styleOverrides: { paper: { borderRadius: 10 } },
+  },
+  MuiTableCell: {
+    styleOverrides: { head: { fontWeight: 600 } },
   },
   MuiMenu: {
     defaultProps: { disableAutoFocusItem: false },
-    styleOverrides: {
-      paper: {
-        borderRadius: 12,
-        padding: "4px",
-      },
-    },
+    styleOverrides: { paper: { borderRadius: 8, padding: "4px" } },
   },
 };
 
@@ -133,17 +119,7 @@ export const lightTheme = createTheme({
         root: {
           ...SHARED_COMPONENTS.MuiCard.styleOverrides.root,
           border: "1px solid #E2E8F0",
-          boxShadow:
-            "0px 2px 4px rgba(15, 23, 42, 0.04), 0px 4px 6px rgba(15, 23, 42, 0.02)",
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        ...SHARED_COMPONENTS.MuiButton.styleOverrides,
-        contained: {
-          boxShadow: "0px 1px 2px rgba(15, 23, 42, 0.06)",
-          "&:hover": { boxShadow: "0px 4px 12px rgba(15, 23, 42, 0.12)" },
+          boxShadow: "none",
         },
       },
     },
@@ -151,8 +127,7 @@ export const lightTheme = createTheme({
       styleOverrides: {
         paper: {
           ...SHARED_COMPONENTS.MuiMenu.styleOverrides.paper,
-          boxShadow:
-            "0px 10px 38px rgba(15, 23, 42, 0.08), 0px 4px 12px rgba(15, 23, 42, 0.04)",
+          boxShadow: "0px 6px 20px rgba(15, 23, 42, 0.10)",
           border: "1px solid #E2E8F0",
         },
       },
@@ -228,7 +203,7 @@ export const darkTheme = createTheme({
         root: {
           ...SHARED_COMPONENTS.MuiCard.styleOverrides.root,
           border: "1px solid #1E293B",
-          boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.2)",
+          boxShadow: "none",
           backgroundImage: "none",
         },
       },
@@ -242,7 +217,7 @@ export const darkTheme = createTheme({
       styleOverrides: {
         root: {
           "& .MuiOutlinedInput-root": {
-            borderRadius: 8,
+            borderRadius: 6,
             "& fieldset": { borderColor: "#334155" },
             "&:hover fieldset": { borderColor: "#475569" },
             "&.Mui-focused fieldset": { borderColor: "#3B82F6" },

@@ -60,7 +60,7 @@ const ShiftPreviewDialog = ({
             <SwapHorizOutlinedIcon sx={{ color: "primary.dark" }} />
           </Avatar>
           <Box>
-            <Typography variant="h6" fontWeight={800}>
+            <Typography variant="h6" fontWeight={700}>
               Confirm Shift
             </Typography>
             <Typography variant="caption" color="text.secondary">
@@ -92,7 +92,7 @@ const ShiftPreviewDialog = ({
           >
             <Typography
               variant="caption"
-              fontWeight={800}
+              fontWeight={700}
               color="error.dark"
               sx={{
                 textTransform: "uppercase",
@@ -102,7 +102,7 @@ const ShiftPreviewDialog = ({
             >
               FROM
             </Typography>
-            <Typography variant="h6" fontWeight={900}>
+            <Typography variant="h6" fontWeight={700}>
               {source.label}
             </Typography>
             <Typography variant="caption" color="text.secondary">
@@ -129,7 +129,7 @@ const ShiftPreviewDialog = ({
           >
             <Typography
               variant="caption"
-              fontWeight={800}
+              fontWeight={700}
               color="success.dark"
               sx={{
                 textTransform: "uppercase",
@@ -139,7 +139,7 @@ const ShiftPreviewDialog = ({
             >
               TO
             </Typography>
-            <Typography variant="h6" fontWeight={900}>
+            <Typography variant="h6" fontWeight={700}>
               {target.label}
             </Typography>
             <Typography variant="caption" color="text.secondary">
@@ -171,7 +171,7 @@ const ShiftPreviewDialog = ({
           <>
             <Typography
               variant="caption"
-              fontWeight={800}
+              fontWeight={700}
               color="text.secondary"
               sx={{
                 textTransform: "uppercase",
@@ -312,7 +312,7 @@ const ShiftPreviewDialog = ({
               disabled={loading}
               sx={{
                 "& input": {
-                  fontWeight: 800,
+                  fontWeight: 700,
                   letterSpacing: 1,
                 },
               }}
@@ -339,7 +339,7 @@ const ShiftPreviewDialog = ({
           }
           sx={{
             background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
-            fontWeight: 800,
+            fontWeight: 700,
             px: 3,
           }}
         >

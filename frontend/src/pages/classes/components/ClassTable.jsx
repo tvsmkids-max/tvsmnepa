@@ -88,7 +88,7 @@ const ClassTable = ({
         }
       : {};
   const headSx = {
-    fontWeight: 800,
+    fontWeight: 700,
     fontSize: "0.65rem",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
@@ -233,7 +233,7 @@ const ClassTable = ({
                     }}
                   >
                     <Typography
-                      fontWeight={800}
+                      fontWeight={700}
                       fontSize="0.8rem"
                       sx={{
                         textTransform: "uppercase",
@@ -279,7 +279,7 @@ const ClassTable = ({
 
                   <TableCell sx={bodySx} align="center">
                     <Typography
-                      fontWeight={800}
+                      fontWeight={700}
                       fontFamily="monospace"
                       fontSize="0.85rem"
                     >

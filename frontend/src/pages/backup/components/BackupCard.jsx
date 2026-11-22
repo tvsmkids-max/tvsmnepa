@@ -57,7 +57,7 @@ const BackupCard = ({ onDownload, isDownloading, stats }) => {
             />
           </Avatar>
           <Box>
-            <Typography variant="h6" fontWeight={800}>
+            <Typography variant="h6" fontWeight={700}>
               Create Backup
             </Typography>
             <Typography variant="caption" color="text.secondary">
@@ -149,7 +149,7 @@ const BackupCard = ({ onDownload, isDownloading, stats }) => {
           disabled={isDownloading || totalRecords === 0}
           sx={{
             py: 1.3,
-            fontWeight: 800,
+            fontWeight: 700,
             textTransform: "none",
             background: "linear-gradient(135deg, #2E7D32 0%, #22C55E 100%)",
             fontSize: "0.95rem",

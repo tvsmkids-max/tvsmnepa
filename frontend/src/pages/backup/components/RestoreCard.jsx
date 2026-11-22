@@ -173,7 +173,7 @@ const RestoreCard = () => {
               />
             </Avatar>
             <Box>
-              <Typography variant="h6" fontWeight={800}>
+              <Typography variant="h6" fontWeight={700}>
                 Restore from Backup
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -190,7 +190,7 @@ const RestoreCard = () => {
             icon={<WarningAmberOutlinedIcon />}
             sx={{ mb: 2, borderRadius: 2 }}
           >
-            <AlertTitle sx={{ fontWeight: 800, fontSize: "0.9rem" }}>
+            <AlertTitle sx={{ fontWeight: 700, fontSize: "0.9rem" }}>
               Merge Mode
             </AlertTitle>
             <Typography variant="caption">
@@ -328,7 +328,7 @@ const RestoreCard = () => {
                       />
                       <Typography
                         variant="body2"
-                        fontWeight={800}
+                        fontWeight={700}
                         color="success.dark"
                       >
                         Backup Validated
@@ -369,7 +369,7 @@ const RestoreCard = () => {
                   {/* Preview */}
                   <Typography
                     variant="caption"
-                    fontWeight={800}
+                    fontWeight={700}
                     color="text.secondary"
                     sx={{
                       textTransform: "uppercase",
@@ -418,7 +418,7 @@ const RestoreCard = () => {
                     disabled={isRestoring || totalRecords === 0}
                     sx={{
                       py: 1.3,
-                      fontWeight: 800,
+                      fontWeight: 700,
                       textTransform: "none",
                       fontSize: "0.95rem",
                       boxShadow: "0 4px 12px rgba(245,158,11,0.3)",
@@ -453,7 +453,7 @@ const RestoreCard = () => {
               <WarningAmberOutlinedIcon sx={{ color: "warning.dark" }} />
             </Avatar>
             <Box>
-              <Typography variant="h6" fontWeight={800}>
+              <Typography variant="h6" fontWeight={700}>
                 Confirm Restore
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -465,7 +465,7 @@ const RestoreCard = () => {
 
         <DialogContent dividers>
           <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
-            <AlertTitle sx={{ fontWeight: 800 }}>
+            <AlertTitle sx={{ fontWeight: 700 }}>
               You're about to restore:
             </AlertTitle>
             <Typography variant="body2">
@@ -491,7 +491,7 @@ const RestoreCard = () => {
             disabled={isRestoring}
             sx={{
               "& input": {
-                fontWeight: 800,
+                fontWeight: 700,
                 letterSpacing: 1,
                 fontFamily: "monospace",
               },
@@ -515,7 +515,7 @@ const RestoreCard = () => {
                 <RestoreOutlinedIcon />
               )
             }
-            sx={{ fontWeight: 800 }}
+            sx={{ fontWeight: 700 }}
           >
             {isRestoring
               ? "Restoring..."

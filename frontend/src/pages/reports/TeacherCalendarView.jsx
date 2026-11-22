@@ -121,7 +121,7 @@ const StatusCell = ({ status, isDark, isSunday }) => {
         borderRadius: 0.75,
         bgcolor: cfg.bg,
         color: cfg.color,
-        fontWeight: 900,
+        fontWeight: 700,
         fontSize: "0.72rem",
         fontFamily: "monospace",
         mx: "auto",
@@ -319,7 +319,7 @@ const TeacherCalendarView = ({
               </Typography>
               <Typography
                 variant="h5"
-                fontWeight={900}
+                fontWeight={700}
                 sx={{ fontSize: "1.3rem" }}
               >
                 Class {classInfo.name}-{classInfo.section}
@@ -549,7 +549,7 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
   const stickyBg = isDark ? "#1E293B" : "#FFFFFF";
   const headerBg = isDark ? "#0F172A" : "#F1F5F9";
   const headStyle = {
-    fontWeight: 800,
+    fontWeight: 700,
     fontSize: "0.68rem",
     textTransform: "uppercase",
     bgcolor: headerBg,
@@ -650,7 +650,7 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
                   <Typography
                     sx={{
                       fontSize: "0.75rem",
-                      fontWeight: 900,
+                      fontWeight: 700,
                       fontFamily: "monospace",
                     }}
                   >
@@ -799,7 +799,7 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
                   }}
                 >
                   <Typography
-                    fontWeight={800}
+                    fontWeight={700}
                     sx={{
                       fontSize: "0.82rem",
                       color: "#16A34A",
@@ -811,7 +811,7 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
                 </TableCell>
                 <TableCell align="center" sx={{ py: 0.75 }}>
                   <Typography
-                    fontWeight={800}
+                    fontWeight={700}
                     sx={{
                       fontSize: "0.82rem",
                       color: "#DC2626",
@@ -826,7 +826,7 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
                     label={`${s.percentage}%`}
                     size="small"
                     sx={{
-                      fontWeight: 900,
+                      fontWeight: 700,
                       height: 22,
                       fontSize: "0.72rem",
                       bgcolor: alpha(pctColor, isDark ? 0.2 : 0.1),
@@ -850,7 +850,7 @@ const CalendarTable = ({ students, dates, isDark, isMobile }) => {
 const Stat = ({ value, label, color }) => (
   <Stack alignItems="center" sx={{ flexShrink: 0, px: 0.5 }}>
     <Typography
-      fontWeight={900}
+      fontWeight={700}
       sx={{ fontSize: "1rem", color, lineHeight: 1 }}
     >
       {value}
@@ -882,7 +882,7 @@ const Legend = ({ letter, bg, color, label }) => (
         borderRadius: 0.5,
         bgcolor: bg,
         color,
-        fontWeight: 900,
+        fontWeight: 700,
         fontSize: "0.65rem",
         fontFamily: "monospace",
       }}

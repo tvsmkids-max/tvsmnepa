@@ -123,7 +123,7 @@ const IdleWarningDialog = ({
             >
               <Typography
                 variant="h4"
-                fontWeight={900}
+                fontWeight={700}
                 color={`${color}.dark`}
                 sx={{ lineHeight: 1 }}
               >
@@ -141,7 +141,7 @@ const IdleWarningDialog = ({
 
           <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
             <TimerOutlinedIcon sx={{ color: `${color}.main` }} />
-            <Typography variant="h6" fontWeight={800} component="div">
+            <Typography variant="h6" fontWeight={700} component="div">
               Session Timing Out
             </Typography>
           </Stack>
@@ -181,7 +181,7 @@ const IdleWarningDialog = ({
           startIcon={<CheckCircleOutlineIcon />}
           autoFocus
           sx={{
-            fontWeight: 800,
+            fontWeight: 700,
             background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
             py: 1.2,
           }}

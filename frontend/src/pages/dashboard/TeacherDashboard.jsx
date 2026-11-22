@@ -251,7 +251,7 @@ const TeacherDashboard = () => {
   return (
     <Box sx={{ width: "100%", maxWidth: 900 }}>
       <Box sx={{ textAlign: { xs: "center", md: "left" }, mb: 3 }}>
-        <Typography component="h1" sx={{ fontWeight: 800, fontSize: { xs: "1.6rem", sm: "1.75rem" }, lineHeight: 1.2 }}>
+        <Typography component="h1" sx={{ fontWeight: 700, fontSize: { xs: "1.6rem", sm: "1.75rem" }, lineHeight: 1.2 }}>
           {classLabel}
         </Typography>
         <Typography sx={{ color: "text.secondary", mt: 0.5, fontSize: "0.95rem" }}>

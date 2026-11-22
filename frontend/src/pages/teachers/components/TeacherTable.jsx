@@ -171,7 +171,7 @@ const TeacherTable = ({
   };
 
   const headerCellStyles = {
-    fontWeight: 800,
+    fontWeight: 700,
     fontSize: "0.68rem",
     textTransform: "uppercase",
     letterSpacing: "0.03em",
@@ -197,7 +197,7 @@ const TeacherTable = ({
             marginLeft: "2px !important",
           },
           fontSize: "0.68rem",
-          fontWeight: 800,
+          fontWeight: 700,
           color: "inherit !important",
         }}
       >
@@ -257,7 +257,7 @@ const TeacherTable = ({
                   <TableCell sx={cellStyles}>
                     <Typography
                       component="span"
-                      fontWeight={800}
+                      fontWeight={700}
                       sx={{
                         fontFamily: "monospace",
                         fontSize: "0.8rem",
@@ -277,7 +277,7 @@ const TeacherTable = ({
                           height: 30,
                           bgcolor: getGenderColor(teacher.gender),
                           fontSize: "0.75rem",
-                          fontWeight: 800,
+                          fontWeight: 700,
                           boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
                         }}
                       >
@@ -286,7 +286,7 @@ const TeacherTable = ({
                       <Box>
                         <Typography
                           variant="body2"
-                          fontWeight={800}
+                          fontWeight={700}
                           sx={{
                             fontSize: "0.82rem",
                             textTransform: "uppercase",
@@ -402,7 +402,7 @@ const TeacherTable = ({
                       size="small"
                       color={teacher.isActive ? "success" : "warning"}
                       sx={{
-                        fontWeight: 800,
+                        fontWeight: 700,
                         height: 18,
                         fontSize: "0.62rem",
                         textTransform: "uppercase",

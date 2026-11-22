@@ -52,7 +52,7 @@ const TeacherHeader = ({ total, onAdd }) => {
           <Stack direction="row" alignItems="center" spacing={1.5}>
             <Typography
               variant="h4"
-              fontWeight={900}
+              fontWeight={700}
               sx={{
                 fontSize: { xs: "1.5rem", sm: "1.75rem", md: "2rem" },
                 lineHeight: 1.1,
@@ -68,7 +68,7 @@ const TeacherHeader = ({ total, onAdd }) => {
                 sx={{
                   bgcolor: "primary.50",
                   color: "primary.dark",
-                  fontWeight: 800,
+                  fontWeight: 700,
                   fontSize: "0.72rem",
                   height: 24,
                   px: 0.5,

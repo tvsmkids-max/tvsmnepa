@@ -99,7 +99,7 @@ const AppSplashScreen = ({ user, onComplete }) => {
 
         <Typography
           variant="h5"
-          fontWeight={900}
+          fontWeight={700}
           sx={{
             color: "text.primary",
             mb: 0.5,
@@ -169,7 +169,7 @@ const AppSplashScreen = ({ user, onComplete }) => {
               variant="caption"
               sx={{
                 color: "text.secondary",
-                fontWeight: 800,
+                fontWeight: 700,
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
               }}

@@ -78,7 +78,7 @@ const NotFoundPage = () => {
         {/* 404 Gradient Number */}
         <Typography
           variant="h1"
-          fontWeight={900}
+          fontWeight={700}
           sx={{
             fontSize: { xs: "3.5rem", sm: "4.25rem" },
             lineHeight: 1,
@@ -97,7 +97,7 @@ const NotFoundPage = () => {
         {/* Friendly Heading */}
         <Typography
           variant="h6"
-          fontWeight={800}
+          fontWeight={700}
           letterSpacing="-0.5px"
           sx={{ mb: 1.5, color: isDark ? "#F1F5F9" : "#0F172A" }}
         >
@@ -128,7 +128,7 @@ const NotFoundPage = () => {
           sx={{
             background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
             color: "#FFFFFF",
-            fontWeight: 800,
+            fontWeight: 700,
             textTransform: "none",
             py: 1.3,
             borderRadius: "10px",

@@ -218,7 +218,7 @@ const MonthlyPage = ({ secretKey }) => {
             >
               <Typography
                 variant="h6"
-                fontWeight={900}
+                fontWeight={700}
                 sx={{
                   fontSize: { xs: "1.1rem", sm: "1.3rem" },
                   color: "primary.main",
@@ -229,7 +229,7 @@ const MonthlyPage = ({ secretKey }) => {
               <Stack alignItems="flex-end">
                 <Typography
                   variant="h4"
-                  fontWeight={900}
+                  fontWeight={700}
                   sx={{
                     fontSize: { xs: "1.8rem", sm: "2rem" },
                     lineHeight: 1,
@@ -392,7 +392,7 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                     <Typography
                       sx={{
                         fontSize: "0.75rem",
-                        fontWeight: 900,
+                        fontWeight: 700,
                         fontFamily: "monospace",
                       }}
                     >
@@ -423,7 +423,7 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                       minWidth: classColWidth,
                       textAlign: "left",
                       pl: 1,
-                      fontWeight: 800,
+                      fontWeight: 700,
                       fontSize: "0.78rem",
                       borderBottom: "2px solid",
                       borderBottomColor: isDark ? "#334155" : "#CBD5E1",
@@ -443,7 +443,7 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                       width: labelColWidth,
                       minWidth: labelColWidth,
                       fontSize: "0.75rem",
-                      fontWeight: 900,
+                      fontWeight: 700,
                       color: "#16A34A",
                       borderRight: "2px solid",
                       borderRightColor: isDark ? "#334155" : "#CBD5E1",
@@ -493,7 +493,7 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                       width: labelColWidth,
                       minWidth: labelColWidth,
                       fontSize: "0.75rem",
-                      fontWeight: 900,
+                      fontWeight: 700,
                       color: "#DC2626",
                       borderRight: "2px solid",
                       borderRightColor: isDark ? "#334155" : "#CBD5E1",
@@ -551,7 +551,7 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                   minWidth: classColWidth,
                   textAlign: "left",
                   pl: 1,
-                  fontWeight: 900,
+                  fontWeight: 700,
                   fontSize: "0.78rem",
                   color: isDark ? "#FCD34D" : "#B45309",
                   borderTop: "3px double",
@@ -572,7 +572,7 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                   width: labelColWidth,
                   minWidth: labelColWidth,
                   fontSize: "0.75rem",
-                  fontWeight: 900,
+                  fontWeight: 700,
                   color: "#16A34A",
                   borderRight: "2px solid",
                   borderRightColor: isDark ? "#334155" : "#CBD5E1",
@@ -596,7 +596,7 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                       minWidth: dateColWidth,
                       bgcolor: d.isBlocked ? blockedBg : totalRowBg,
                       fontSize: "0.82rem",
-                      fontWeight: 900,
+                      fontWeight: 700,
                       fontFamily: "monospace",
                       color: d.isBlocked
                         ? "transparent"
@@ -625,7 +625,7 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                   width: labelColWidth,
                   minWidth: labelColWidth,
                   fontSize: "0.75rem",
-                  fontWeight: 900,
+                  fontWeight: 700,
                   color: "#DC2626",
                   borderRight: "2px solid",
                   borderRightColor: isDark ? "#334155" : "#CBD5E1",
@@ -647,7 +647,7 @@ const MatrixTable = ({ classes, dates, grandTotals, isDark }) => {
                       minWidth: dateColWidth,
                       bgcolor: d.isBlocked ? blockedBg : totalRowBg,
                       fontSize: "0.82rem",
-                      fontWeight: 900,
+                      fontWeight: 700,
                       fontFamily: "monospace",
                       color: d.isBlocked
                         ? "transparent"
@@ -711,7 +711,7 @@ const LegendItem = ({ letter, color, label, isBox, isDouble }) => (
           alignItems: "center",
           justifyContent: "center",
           color: color,
-          fontWeight: 900,
+          fontWeight: 700,
           fontSize: "0.75rem",
           fontFamily: "monospace",
         }}
@@ -771,7 +771,7 @@ const cellBase = {
 
 const stickyHeadStyle = (bg) => ({
   bgcolor: bg,
-  fontWeight: 800,
+  fontWeight: 700,
   fontSize: "0.65rem",
   textTransform: "uppercase",
   letterSpacing: "0.03em",

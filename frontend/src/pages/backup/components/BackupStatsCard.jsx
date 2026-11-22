@@ -134,7 +134,7 @@ const BackupStatsCard = ({ stats, isLoading }) => {
               <StorageOutlinedIcon sx={{ color: "primary.main" }} />
             </Avatar>
             <Box>
-              <Typography variant="h6" fontWeight={800}>
+              <Typography variant="h6" fontWeight={700}>
                 Database Statistics
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -146,7 +146,7 @@ const BackupStatsCard = ({ stats, isLoading }) => {
           <Chip
             label={`${stats.total.toLocaleString()} total`}
             color="primary"
-            sx={{ fontWeight: 800 }}
+            sx={{ fontWeight: 700 }}
           />
         </Stack>
 
@@ -189,7 +189,7 @@ const BackupStatsCard = ({ stats, isLoading }) => {
               </Typography>
               <Typography
                 variant="body2"
-                fontWeight={800}
+                fontWeight={700}
                 sx={{
                   color: isStale ? "warning.dark" : "success.dark",
                 }}
@@ -279,7 +279,7 @@ const BackupStatsCard = ({ stats, isLoading }) => {
                   </Stack>
                   <Typography
                     variant="h5"
-                    fontWeight={900}
+                    fontWeight={700}
                     sx={{
                       fontSize: { xs: "1.2rem", sm: "1.4rem" },
                       color: "text.primary",

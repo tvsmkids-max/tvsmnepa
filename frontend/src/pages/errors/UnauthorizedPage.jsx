@@ -87,7 +87,7 @@ const UnauthorizedPage = () => {
         {/* Brand Heading */}
         <Typography
           variant="h5"
-          fontWeight={900}
+          fontWeight={700}
           letterSpacing="-0.5px"
           sx={{ mb: 1.5, color: isDark ? "#F1F5F9" : "#0F172A" }}
         >
@@ -164,7 +164,7 @@ const UnauthorizedPage = () => {
                 </Typography>
                 <Typography
                   variant="caption"
-                  fontWeight={800}
+                  fontWeight={700}
                   sx={{
                     color: isDark ? "#FBBF24" : "#D97706",
                     textTransform: "uppercase",
@@ -190,7 +190,7 @@ const UnauthorizedPage = () => {
             sx={{
               background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
               color: "#FFFFFF",
-              fontWeight: 800,
+              fontWeight: 700,
               textTransform: "none",
               py: 1.3,
               borderRadius: "10px",

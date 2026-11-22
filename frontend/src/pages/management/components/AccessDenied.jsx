@@ -79,7 +79,7 @@ const AccessDenied = ({ reason = "invalid", onRetry }) => {
           />
         </Box>
 
-        <Typography variant="h5" fontWeight={800} gutterBottom>
+        <Typography variant="h5" fontWeight={700} gutterBottom>
           {message.title}
         </Typography>
 
@@ -99,7 +99,7 @@ const AccessDenied = ({ reason = "invalid", onRetry }) => {
               onClick={onRetry}
               sx={{
                 background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
-                fontWeight: 800,
+                fontWeight: 700,
                 textTransform: "none",
                 py: 1.1,
               }}

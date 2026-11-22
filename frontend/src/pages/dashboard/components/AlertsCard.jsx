@@ -105,7 +105,7 @@ const AlertsCard = ({ data, isLoading }) => {
             />
           </Avatar>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="h6" fontWeight={800} sx={{ fontSize: "1rem" }}>
+            <Typography variant="h6" fontWeight={700} sx={{ fontSize: "1rem" }}>
               Today's Alerts
             </Typography>
             <Typography variant="caption" color="text.secondary">
@@ -119,7 +119,7 @@ const AlertsCard = ({ data, isLoading }) => {
               label={total}
               size="small"
               color="error"
-              sx={{ fontWeight: 800, height: 24 }}
+              sx={{ fontWeight: 700, height: 24 }}
             />
           )}
         </Stack>
@@ -205,7 +205,7 @@ const AlertsCard = ({ data, isLoading }) => {
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography
                         variant="body2"
-                        fontWeight={800}
+                        fontWeight={700}
                         sx={{
                           color: palette.text,
                           fontSize: "0.85rem",
@@ -240,7 +240,7 @@ const AlertsCard = ({ data, isLoading }) => {
                           onClick={() => navigate(alert.actionLink)}
                           sx={{
                             color: palette.text,
-                            fontWeight: 800,
+                            fontWeight: 700,
                             fontSize: "0.7rem",
                             textTransform: "none",
                             minWidth: "auto",

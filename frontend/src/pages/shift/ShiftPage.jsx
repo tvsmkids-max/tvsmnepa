@@ -237,7 +237,7 @@ const ShiftPage = () => {
         </Breadcrumbs>
         <Typography
           variant="h4"
-          fontWeight={800}
+          fontWeight={700}
           sx={{
             fontSize: { xs: "1.35rem", sm: "1.75rem" },
             lineHeight: 1.2,

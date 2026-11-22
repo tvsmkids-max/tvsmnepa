@@ -228,7 +228,7 @@ const HolidayManagePage = () => {
           }}
           onClick={() => handleFilterChange({ ...filters, timeframe: "today" })}
         >
-          <Typography variant="body2" fontWeight={800}>
+          <Typography variant="body2" fontWeight={700}>
             🎉 {stats.today} holiday{stats.today !== 1 ? "s" : ""} today!
           </Typography>
           <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>

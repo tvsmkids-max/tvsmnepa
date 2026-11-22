@@ -30,7 +30,7 @@ const TeacherStudentList = ({
   <Box sx={{ pb: 10 }}>
     <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
       <Box>
-        <Typography component="h1" sx={{ fontWeight: 800, fontSize: "1.4rem", lineHeight: 1.2 }}>
+        <Typography component="h1" sx={{ fontWeight: 700, fontSize: "1.4rem", lineHeight: 1.2 }}>
           Students
         </Typography>
         <Typography variant="body2" sx={{ color: "text.secondary" }}>

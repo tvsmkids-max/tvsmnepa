@@ -97,7 +97,7 @@ const KpiCard = ({
         <TrendIcon sx={{ fontSize: 14, color: trendColor }} />
         <Typography
           variant="caption"
-          fontWeight={800}
+          fontWeight={700}
           sx={{ color: trendColor, fontSize: "0.7rem" }}
         >
           {prefix}
@@ -159,7 +159,7 @@ const KpiCard = ({
             </Typography>
             <Typography
               variant="h4"
-              fontWeight={900}
+              fontWeight={700}
               sx={{
                 color: "text.primary",
                 fontSize: { xs: "1.6rem", sm: "1.8rem" },

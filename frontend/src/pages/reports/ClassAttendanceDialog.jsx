@@ -153,7 +153,7 @@ const ClassAttendanceDialog = ({
 
           <Typography
             variant="h5"
-            fontWeight={900}
+            fontWeight={700}
             sx={{
               fontSize: { xs: "1.2rem", sm: "1.4rem" },
               mt: 0.5,
@@ -250,7 +250,7 @@ const ClassAttendanceDialog = ({
                     <Typography
                       sx={{
                         minWidth: 26,
-                        fontWeight: 800,
+                        fontWeight: 700,
                         fontSize: "0.78rem",
                         color: isDark ? "#93C5FD" : "#1E4D98",
                         fontFamily: "monospace",
@@ -289,7 +289,7 @@ const ClassAttendanceDialog = ({
                       label={chip.label}
                       size="small"
                       sx={{
-                        fontWeight: 900,
+                        fontWeight: 700,
                         fontSize: "0.75rem",
                         height: 26,
                         minWidth: 32,
@@ -313,7 +313,7 @@ const ClassAttendanceDialog = ({
                   {/* Replaced "Roll" header with "S.NO." */}
                   <TableCell
                     sx={{
-                      fontWeight: 800,
+                      fontWeight: 700,
                       fontSize: "0.68rem",
                       textTransform: "uppercase",
                       width: 65,
@@ -325,7 +325,7 @@ const ClassAttendanceDialog = ({
                   </TableCell>
                   <TableCell
                     sx={{
-                      fontWeight: 800,
+                      fontWeight: 700,
                       fontSize: "0.68rem",
                       textTransform: "uppercase",
                       width: 100,
@@ -337,7 +337,7 @@ const ClassAttendanceDialog = ({
                   </TableCell>
                   <TableCell
                     sx={{
-                      fontWeight: 800,
+                      fontWeight: 700,
                       fontSize: "0.68rem",
                       textTransform: "uppercase",
                       py: 1,
@@ -348,7 +348,7 @@ const ClassAttendanceDialog = ({
                   </TableCell>
                   <TableCell
                     sx={{
-                      fontWeight: 800,
+                      fontWeight: 700,
                       fontSize: "0.68rem",
                       textTransform: "uppercase",
                       py: 1,
@@ -360,7 +360,7 @@ const ClassAttendanceDialog = ({
                   {mode !== "management" && (
                     <TableCell
                       sx={{
-                        fontWeight: 800,
+                        fontWeight: 700,
                         fontSize: "0.68rem",
                         textTransform: "uppercase",
                         width: 110,
@@ -374,7 +374,7 @@ const ClassAttendanceDialog = ({
                   <TableCell
                     align="center"
                     sx={{
-                      fontWeight: 800,
+                      fontWeight: 700,
                       fontSize: "0.68rem",
                       textTransform: "uppercase",
                       width: 70,
@@ -399,7 +399,7 @@ const ClassAttendanceDialog = ({
                       <TableCell sx={{ py: 0.9 }}>
                         <Typography
                           variant="body2"
-                          fontWeight={800}
+                          fontWeight={700}
                           sx={{
                             fontFamily: "monospace",
                             fontSize: "0.8rem",
@@ -467,7 +467,7 @@ const ClassAttendanceDialog = ({
                           label={chip.label}
                           size="small"
                           sx={{
-                            fontWeight: 900,
+                            fontWeight: 700,
                             fontSize: "0.78rem",
                             height: 26,
                             minWidth: 36,
@@ -532,7 +532,7 @@ const StatItem = ({ value, label, color }) => (
   <Stack alignItems="center">
     <Typography
       variant="body2"
-      fontWeight={900}
+      fontWeight={700}
       sx={{ fontSize: "1rem", color, lineHeight: 1 }}
     >
       {value}

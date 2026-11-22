@@ -353,7 +353,7 @@ const DefaultersReportPage = () => {
                 }}
               />
               <Box>
-                <Typography variant="body1" fontWeight={800}>
+                <Typography variant="body1" fontWeight={700}>
                   {defaulterReport.total} student
                   {defaulterReport.total !== 1 ? "s" : ""} below {threshold}%
                 </Typography>
@@ -435,7 +435,7 @@ const DefaultersReportPage = () => {
                               width: 44,
                               height: 44,
                               fontSize: "1.1rem",
-                              fontWeight: 800,
+                              fontWeight: 700,
                             }}
                           >
                             {s.name?.[0]?.toUpperCase()}
@@ -443,7 +443,7 @@ const DefaultersReportPage = () => {
                           <Box sx={{ flex: 1, minWidth: 0 }}>
                             <Typography
                               variant="body1"
-                              fontWeight={800}
+                              fontWeight={700}
                               noWrap
                               sx={{
                                 fontSize: "0.95rem",
@@ -465,7 +465,7 @@ const DefaultersReportPage = () => {
                           <Box sx={{ textAlign: "right" }}>
                             <Typography
                               variant="h4"
-                              fontWeight={900}
+                              fontWeight={700}
                               sx={{
                                 fontSize: "1.8rem",
                                 lineHeight: 1,

@@ -113,7 +113,7 @@ const StudentBulkDeleteDialog = ({
             )}
           </Box>
           <Box>
-            <Typography variant="h6" fontWeight={800} component="div">
+            <Typography variant="h6" fontWeight={700} component="div">
               Bulk Delete Students
             </Typography>
             <Typography variant="caption" color="text.secondary">
@@ -168,7 +168,7 @@ const StudentBulkDeleteDialog = ({
         <Divider sx={{ my: 2 }} />
 
         {/* Mode Selection */}
-        <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 1.5 }}>
+        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
           Choose deletion mode:
         </Typography>
 
@@ -203,7 +203,7 @@ const StudentBulkDeleteDialog = ({
                     sx={{ color: "warning.dark" }}
                   />
                   <Box>
-                    <Typography variant="body2" fontWeight={800}>
+                    <Typography variant="body2" fontWeight={700}>
                       Soft Delete (Recommended)
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
@@ -241,7 +241,7 @@ const StudentBulkDeleteDialog = ({
                   <Box>
                     <Typography
                       variant="body2"
-                      fontWeight={800}
+                      fontWeight={700}
                       color="error.dark"
                     >
                       Hard Delete (Permanent)
@@ -264,7 +264,7 @@ const StudentBulkDeleteDialog = ({
             sx={{ mt: 2, borderRadius: 2 }}
             icon={<DeleteForeverIcon />}
           >
-            <AlertTitle sx={{ fontWeight: 800 }}>
+            <AlertTitle sx={{ fontWeight: 700 }}>
               ⚠️ This action cannot be undone!
             </AlertTitle>
             <Typography variant="body2" sx={{ mb: 1.5 }}>
@@ -283,7 +283,7 @@ const StudentBulkDeleteDialog = ({
                   padding: "2px 6px",
                   borderRadius: 3,
                   color: "#dc2626",
-                  fontWeight: 800,
+                  fontWeight: 700,
                 }}
               >
                 DELETE
@@ -301,7 +301,7 @@ const StudentBulkDeleteDialog = ({
                 mt: 1,
                 bgcolor: "#fff",
                 borderRadius: 1,
-                "& input": { fontWeight: 800, letterSpacing: 1 },
+                "& input": { fontWeight: 700, letterSpacing: 1 },
               }}
               disabled={loading}
             />
@@ -334,7 +334,7 @@ const StudentBulkDeleteDialog = ({
           color={isHard ? "error" : "warning"}
           disabled={loading || !canConfirm || count === 0}
           startIcon={isHard ? <DeleteForeverIcon /> : <VisibilityOffIcon />}
-          sx={{ fontWeight: 800 }}
+          sx={{ fontWeight: 700 }}
         >
           {loading
             ? "Processing..."

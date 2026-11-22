@@ -262,7 +262,7 @@ const LoginPage = () => {
         <Typography
           sx={{
             fontSize: { xs: "1.15rem", sm: "1.55rem", md: "2rem" },
-            fontWeight: 800,
+            fontWeight: 700,
             lineHeight: 1.15,
           }}
         >
@@ -285,7 +285,7 @@ const LoginPage = () => {
     textTransform: "uppercase",
     letterSpacing: "0.12em",
     fontSize: "0.68rem",
-    fontWeight: 800,
+    fontWeight: 700,
   };
 
   return (
@@ -365,7 +365,7 @@ const LoginPage = () => {
                     sm: "1.55rem",
                     md: "2rem",
                   },
-                  fontWeight: 800,
+                  fontWeight: 700,
                   lineHeight: 1.15,
                   letterSpacing: {
                     xs: "0.01em",
@@ -448,7 +448,7 @@ const LoginPage = () => {
                 <Typography
                   sx={{
                     fontSize: "1rem",
-                    fontWeight: 800,
+                    fontWeight: 700,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
                     opacity: 0.78,
@@ -462,7 +462,7 @@ const LoginPage = () => {
                     mt: 1.4,
                     maxWidth: 390,
                     fontSize: "2.55rem",
-                    fontWeight: 850,
+                    fontWeight: 700,
                     lineHeight: 1.08,
                     letterSpacing: "-0.035em",
                   }}
@@ -554,7 +554,7 @@ const LoginPage = () => {
                                 right: 5,
                                 top: -2,
                                 color: "#fff",
-                                fontWeight: 900,
+                                fontWeight: 700,
                               }
                             : {},
                       }}
@@ -583,7 +583,7 @@ const LoginPage = () => {
                   display: { xs: "none", md: "block" },
                   color: "#2563EB",
                   fontSize: "0.68rem",
-                  fontWeight: 850,
+                  fontWeight: 700,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
                   mb: 0.8,
@@ -595,7 +595,7 @@ const LoginPage = () => {
                 component="h2"
                 sx={{
                   color: "#101B38",
-                  fontWeight: 850,
+                  fontWeight: 700,
                   fontSize: { xs: "1.7rem", sm: "2rem" },
                   lineHeight: 1.12,
                   letterSpacing: "-0.045em",
@@ -645,7 +645,7 @@ const LoginPage = () => {
                       },
                       "& .MuiSelect-select": {
                         py: 1.4,
-                        fontWeight: 800,
+                        fontWeight: 700,
                         fontSize: "0.95rem",
                         display: "flex",
                         alignItems: "center",
@@ -699,7 +699,7 @@ const LoginPage = () => {
                               sx={{
                                 height: 20,
                                 fontSize: "0.62rem",
-                                fontWeight: 800,
+                                fontWeight: 700,
                               }}
                             />
                           )}
@@ -801,7 +801,7 @@ const LoginPage = () => {
                             style: {
                               textAlign: "center",
                               fontSize: "1.2rem",
-                              fontWeight: 800,
+                              fontWeight: 700,
                               padding: "11px 0",
                             },
                           }}
@@ -859,7 +859,7 @@ const LoginPage = () => {
                   sx={{
                     py: 1.45,
                     fontSize: "0.95rem",
-                    fontWeight: 800,
+                    fontWeight: 700,
                     borderRadius: 2.5,
                     background:
                       "linear-gradient(110deg, #1D4ED8 0%, #2563EB 58%, #3478E8 100%)",

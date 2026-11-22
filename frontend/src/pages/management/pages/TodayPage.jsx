@@ -148,7 +148,7 @@ const KpiCard = ({
             sx={{
               height: 22,
               fontSize: "0.7rem",
-              fontWeight: 800,
+              fontWeight: 700,
               color: deltaColor,
               bgcolor: deltaBg,
               border: "none",
@@ -160,7 +160,7 @@ const KpiCard = ({
       </Stack>
       <Typography
         variant="h3"
-        fontWeight={900}
+        fontWeight={700}
         color="text.primary"
         sx={{
           letterSpacing: "-0.02em",
@@ -222,7 +222,7 @@ const STATUS_CONFIG = {
 
 const headSx = (isDark) => ({
   bgcolor: isDark ? "#111827" : "#F8FAFC",
-  fontWeight: 800,
+  fontWeight: 700,
   fontSize: "0.72rem",
   textTransform: "uppercase",
   letterSpacing: "0.03em",
@@ -309,7 +309,7 @@ const TodayPage = ({ secretKey }) => {
         <Box sx={{ mb: 2 }}>
           <Typography
             variant="h5"
-            fontWeight={900}
+            fontWeight={700}
             sx={{ letterSpacing: "-0.02em", color: "text.primary" }}
           >
             Today's Attendance
@@ -427,7 +427,7 @@ const TodayPage = ({ secretKey }) => {
                         >
                           <Typography
                             variant="body2"
-                            fontWeight={800}
+                            fontWeight={700}
                             sx={{
                               fontSize: "0.85rem",
                               lineHeight: 1.1,
@@ -465,7 +465,7 @@ const TodayPage = ({ secretKey }) => {
                         >
                           <Typography
                             variant="body2"
-                            fontWeight={800}
+                            fontWeight={700}
                             sx={{ fontSize: "0.85rem", color: "text.primary" }}
                           >
                             {cls.totalStudents}
@@ -482,7 +482,7 @@ const TodayPage = ({ secretKey }) => {
                         >
                           <Typography
                             variant="body2"
-                            fontWeight={800}
+                            fontWeight={700}
                             sx={{
                               fontSize: "0.85rem",
                               color: cls.isMarked ? "#16A34A" : "text.disabled",
@@ -502,7 +502,7 @@ const TodayPage = ({ secretKey }) => {
                         >
                           <Typography
                             variant="body2"
-                            fontWeight={800}
+                            fontWeight={700}
                             sx={{
                               fontSize: "0.85rem",
                               color: cls.isMarked ? "#DC2626" : "text.disabled",
@@ -523,7 +523,7 @@ const TodayPage = ({ secretKey }) => {
                           {cls.isMarked ? (
                             <Typography
                               variant="body2"
-                              fontWeight={900}
+                              fontWeight={700}
                               sx={{ fontSize: "0.85rem", color: config.dot }}
                             >
                               {cls.percentage}%
@@ -576,7 +576,7 @@ const TodayPage = ({ secretKey }) => {
       <Box sx={{ mb: 3 }}>
         <Typography
           variant="h4"
-          fontWeight={900}
+          fontWeight={700}
           sx={{ letterSpacing: "-0.02em", fontSize: "1.8rem" }}
         >
           Attendance Overview
@@ -690,7 +690,7 @@ const TodayPage = ({ secretKey }) => {
             <Box>
               <Typography
                 variant="body2"
-                fontWeight={800}
+                fontWeight={700}
                 sx={{ color: isDark ? "#FCD34D" : "#B45309" }}
               >
                 Attention Required Today
@@ -732,7 +732,7 @@ const TodayPage = ({ secretKey }) => {
             justifyContent="space-between"
             alignItems="center"
           >
-            <Typography variant="h6" fontWeight={800} sx={{ fontSize: "1rem" }}>
+            <Typography variant="h6" fontWeight={700} sx={{ fontSize: "1rem" }}>
               Today's Class-wise Attendance
             </Typography>
             <Chip
@@ -818,7 +818,7 @@ const TodayPage = ({ secretKey }) => {
                       >
                         <Typography
                           variant="body2"
-                          fontWeight={800}
+                          fontWeight={700}
                           sx={{ fontSize: "0.86rem" }}
                         >
                           {cls.label}
@@ -853,7 +853,7 @@ const TodayPage = ({ secretKey }) => {
                             borderRadius: 1.5,
                             bgcolor: isDark ? alpha("#fff", 0.05) : "#F1F5F9",
                             color: "text.primary",
-                            fontWeight: 800,
+                            fontWeight: 700,
                             fontSize: "0.9rem",
                           }}
                         >
@@ -876,7 +876,7 @@ const TodayPage = ({ secretKey }) => {
                                 : "#DCFCE7"
                               : "transparent",
                             color: cls.isMarked ? "#16A34A" : "text.disabled",
-                            fontWeight: 800,
+                            fontWeight: 700,
                             fontSize: "0.9rem",
                           }}
                         >
@@ -899,7 +899,7 @@ const TodayPage = ({ secretKey }) => {
                                 : "#FEE2E2"
                               : "transparent",
                             color: cls.isMarked ? "#DC2626" : "text.disabled",
-                            fontWeight: 800,
+                            fontWeight: 700,
                             fontSize: "0.9rem",
                           }}
                         >
@@ -917,7 +917,7 @@ const TodayPage = ({ secretKey }) => {
                           >
                             <Typography
                               variant="body2"
-                              fontWeight={900}
+                              fontWeight={700}
                               sx={{
                                 fontSize: "0.95rem",
                                 color: config.dot,
@@ -951,7 +951,7 @@ const TodayPage = ({ secretKey }) => {
                             sx={{
                               height: 24,
                               fontSize: "0.68rem",
-                              fontWeight: 800,
+                              fontWeight: 700,
                               bgcolor: isDark
                                 ? alpha("#F59E0B", 0.15)
                                 : "#FEF3C7",
@@ -1000,7 +1000,7 @@ const TodayPage = ({ secretKey }) => {
             <Box>
               <Typography
                 variant="h6"
-                fontWeight={800}
+                fontWeight={700}
                 sx={{ fontSize: "1rem" }}
               >
                 Attendance Trend

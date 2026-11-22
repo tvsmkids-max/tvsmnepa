@@ -52,7 +52,7 @@ const BackupPage = () => {
           <Box>
             <Typography
               variant="h4"
-              fontWeight={900}
+              fontWeight={700}
               sx={{
                 fontSize: { xs: "1.5rem", sm: "1.75rem", md: "2rem" },
                 lineHeight: 1.1,
@@ -120,7 +120,7 @@ const BackupPage = () => {
       >
         <Typography
           variant="caption"
-          fontWeight={800}
+          fontWeight={700}
           color="text.secondary"
           sx={{
             textTransform: "uppercase",

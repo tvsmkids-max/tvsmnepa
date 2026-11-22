@@ -138,7 +138,7 @@ const StatBox = ({ icon, label, value, color, sub, isDark }) => {
       >
         {label}
       </Typography>
-      <Typography variant="h5" fontWeight={800} sx={{ color: styles.text }}>
+      <Typography variant="h5" fontWeight={700} sx={{ color: styles.text }}>
         {value}
       </Typography>
       {sub && (
@@ -161,7 +161,7 @@ const StatBox = ({ icon, label, value, color, sub, isDark }) => {
 const SectionHeader = ({ children }) => (
   <Typography
     variant="caption"
-    fontWeight={800}
+    fontWeight={700}
     sx={{
       textTransform: "uppercase",
       letterSpacing: "0.06em",
@@ -362,7 +362,7 @@ const StudentDetailPage = () => {
 
             <Typography
               variant="h6"
-              fontWeight={800}
+              fontWeight={700}
               gutterBottom
               sx={{
                 color: "text.primary",
@@ -446,7 +446,7 @@ const StudentDetailPage = () => {
               <HistoryIcon color="primary" fontSize="small" />
               <Typography
                 variant="subtitle2"
-                fontWeight={800}
+                fontWeight={700}
                 sx={{ color: "text.primary" }}
               >
                 Last 30 Days Attendance
@@ -503,7 +503,7 @@ const StudentDetailPage = () => {
                     </Typography>
                     <Typography
                       variant="caption"
-                      fontWeight={800}
+                      fontWeight={700}
                       sx={{
                         color:
                           stats.percentage >= 75

@@ -133,7 +133,7 @@ const StudentCard = ({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontWeight: 800,
+              fontWeight: 700,
               fontSize: "0.75rem",
               fontFamily: "monospace",
               flexShrink: 0,
@@ -146,7 +146,7 @@ const StudentCard = ({
             {/* Bold Upper Case Student Name Focus */}
             <Typography
               variant="body2"
-              fontWeight={800}
+              fontWeight={700}
               noWrap
               sx={{
                 fontSize: "0.9rem",

@@ -123,7 +123,7 @@ const HolidayFormDialog = ({
             <BeachAccessOutlinedIcon sx={{ color: "warning.dark" }} />
           </Box>
           <Box>
-            <Typography variant="h6" fontWeight={800} component="div">
+            <Typography variant="h6" fontWeight={700} component="div">
               {editing ? "Edit Holiday" : "Add New Holiday"}
             </Typography>
             <Typography

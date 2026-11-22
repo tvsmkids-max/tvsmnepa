@@ -451,7 +451,7 @@ const MonthlyReportPage = () => {
               <Box>
                 <Typography
                   variant="h6"
-                  fontWeight={900}
+                  fontWeight={700}
                   sx={{
                     fontSize: { xs: "1.05rem", sm: "1.2rem" },
                     color: "primary.main",
@@ -482,7 +482,7 @@ const MonthlyReportPage = () => {
               <Stack alignItems={{ xs: "flex-start", sm: "flex-end" }}>
                 <Typography
                   variant="h4"
-                  fontWeight={900}
+                  fontWeight={700}
                   sx={{
                     fontSize: { xs: "1.8rem", sm: "2rem" },
                     lineHeight: 1,
@@ -606,7 +606,7 @@ const MonthlyClassCard = memo(({ cls, isDark, onClick }) => {
         <Box sx={{ mb: 1.5 }}>
           <Typography
             variant="h6"
-            fontWeight={900}
+            fontWeight={700}
             sx={{ fontSize: "1.1rem", lineHeight: 1.2 }}
             noWrap
           >
@@ -636,7 +636,7 @@ const MonthlyClassCard = memo(({ cls, isDark, onClick }) => {
             <>
               <Typography
                 variant="h3"
-                fontWeight={900}
+                fontWeight={700}
                 sx={{
                   fontSize: { xs: "2.4rem", sm: "2.6rem" },
                   color: pctColor,
@@ -697,12 +697,12 @@ const MonthlyClassCard = memo(({ cls, isDark, onClick }) => {
             >
               <Box
                 component="span"
-                sx={{ color: "text.primary", fontWeight: 800 }}
+                sx={{ color: "text.primary", fontWeight: 700 }}
               >
                 {cls.totalStudents}
               </Box>{" "}
               Students ·{" "}
-              <Box component="span" sx={{ fontWeight: 800 }}>
+              <Box component="span" sx={{ fontWeight: 700 }}>
                 {cls.workingDays}
               </Box>{" "}
               Working Days

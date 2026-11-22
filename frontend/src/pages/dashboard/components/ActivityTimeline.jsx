@@ -105,7 +105,7 @@ const ActivityTimeline = ({ data, isLoading }) => {
             <Box>
               <Typography
                 variant="h6"
-                fontWeight={800}
+                fontWeight={700}
                 sx={{ fontSize: "1rem" }}
               >
                 Recent Activity

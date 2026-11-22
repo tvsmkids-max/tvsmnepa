@@ -110,7 +110,7 @@ const WeeklyBackupBanner = () => {
               onClick={handleBackup}
               color={neverBackedUp ? "info" : "warning"}
               sx={{
-                fontWeight: 800,
+                fontWeight: 700,
                 textTransform: "none",
                 fontSize: "0.78rem",
                 whiteSpace: "nowrap",
@@ -129,7 +129,7 @@ const WeeklyBackupBanner = () => {
         }
       >
         <Box>
-          <AlertTitle sx={{ fontWeight: 800, mb: 0, fontSize: "0.92rem" }}>
+          <AlertTitle sx={{ fontWeight: 700, mb: 0, fontSize: "0.92rem" }}>
             {title}
           </AlertTitle>
           <Typography variant="caption" sx={{ fontSize: "0.78rem" }}>

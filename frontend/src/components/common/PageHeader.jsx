@@ -54,7 +54,7 @@ const PageHeader = ({
         }}
       >
         <Box>
-          <Typography variant="h4" fontWeight={800}>
+          <Typography variant="h4" fontWeight={700}>
             {title}
           </Typography>
           {subtitle && (

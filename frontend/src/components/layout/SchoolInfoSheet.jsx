@@ -175,7 +175,7 @@ const SchoolInfoSheet = ({ open, onClose, settings }) => {
             <Typography
               variant="h6"
               sx={{
-                fontWeight: 800,
+                fontWeight: 700,
                 lineHeight: 1.2,
                 fontSize: "1rem",
                 color: "white",

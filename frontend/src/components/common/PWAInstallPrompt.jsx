@@ -131,7 +131,7 @@ const PWAInstallPrompt = () => {
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               variant="body1"
-              fontWeight={800}
+              fontWeight={700}
               sx={{ fontSize: "0.95rem", lineHeight: 1.2, mb: 0.5 }}
             >
               Install TVSM School App
@@ -158,7 +158,7 @@ const PWAInstallPrompt = () => {
                 sx={{
                   bgcolor: "#F5A623",
                   color: "#0D1B3E",
-                  fontWeight: 800,
+                  fontWeight: 700,
                   fontSize: "0.78rem",
                   textTransform: "none",
                   px: 1.8,
