@@ -112,7 +112,7 @@ const drawCard = (doc, card, ctx) => {
     head: [[{ content: "STUDENT PROFILE", colSpan: 4, styles: { halign: "center", fontStyle: "bold", fontSize: 10, fillColor: [225, 225, 225] } }]],
     body: [
       ["STUDENT NAME:", card.name.toUpperCase(), "SCHOLAR NO.:", card.scholarNumber || ""],
-      ["CLASS:", `${data.class.name}${data.class.section ? ` - ${data.class.section}` : ""}`, "ROLL NO:", String(card.rollNumber)],
+      ["CLASS:", { content: `${data.class.name}${data.class.section ? ` - ${data.class.section}` : ""}`, colSpan: 3 }],
       ["FATHER’S / GUARDIAN NAME:", (card.fatherName || "").toUpperCase(), "MOTHER’S NAME:", (card.motherName || "").toUpperCase()],
       ["DATE OF BIRTH:", fmtDate(card.dob), "RESULT:", card.result || dash],
     ],

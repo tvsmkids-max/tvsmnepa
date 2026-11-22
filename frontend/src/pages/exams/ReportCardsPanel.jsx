@@ -230,7 +230,7 @@ export default function ReportCardsPanel({ mode }) {
               <Table size="small" sx={gridTableSx}>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Roll</TableCell>
+                    <TableCell>Scholar No.</TableCell>
                     <TableCell>Student</TableCell>
                     <TableCell>Result</TableCell>
                     {admin && <TableCell>Rank (preview)</TableCell>}
@@ -243,7 +243,7 @@ export default function ReportCardsPanel({ mode }) {
                 <TableBody>
                   {students.map((st) => (
                     <TableRow key={st.studentId} selected={!!edits[st.studentId]}>
-                      <TableCell>{st.rollNumber}</TableCell>
+                      <TableCell>{st.scholarNumber || "—"}</TableCell>
                       <TableCell>{st.name}</TableCell>
                       <TableCell>{st.result || "—"}</TableCell>
                       {admin && <TableCell>{st.rank ?? "-"}</TableCell>}
