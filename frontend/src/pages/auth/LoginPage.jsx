@@ -27,6 +27,7 @@ import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined
 import { useSnackbar } from "notistack";
 import useAuth from "../../hooks/useAuth";
 import authApi from "../../api/authApi";
+import { canOpenPath } from "../../utils/routeAccess";
 
 const SCHOOL_NAME =
   import.meta.env.VITE_SCHOOL_NAME || "Thakur Virendra Singh Memorial School";
@@ -124,13 +125,9 @@ const LoginPage = () => {
 
       let targetRoute = defaultRoute;
 
-      if (
-        from &&
-        from !== "/login" &&
-        from !== "/unauthorized" &&
-        !(user.role === "class" && from === "/dashboard") &&
-        !(user.role === "admin" && from === "/teacher/dashboard")
-      ) {
+      // Only go back to the saved page if this account may open it (e.g. an admin
+      // page left open before logging out must not greet a teacher).
+      if (from && canOpenPath(user.role, from)) {
         targetRoute = from;
       }
 
