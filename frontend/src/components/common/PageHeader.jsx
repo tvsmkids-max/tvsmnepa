@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography, Button, Breadcrumbs, Link } from "@mui/material";
+import { Box, Typography, Button, Breadcrumbs, Link, Chip, Stack } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import AddIcon from "@mui/icons-material/Add";
@@ -7,6 +7,7 @@ import AddIcon from "@mui/icons-material/Add";
 const PageHeader = ({
   title,
   subtitle,
+  count,
   breadcrumbs = [],
   action,
   actionLabel = "Add New",
@@ -48,15 +49,21 @@ const PageHeader = ({
         sx={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: { xs: "flex-start", sm: "center" },
+          alignItems: { xs: "stretch", sm: "center" },
           flexDirection: { xs: "column", sm: "row" },
+          flexWrap: "wrap",
           gap: 2,
         }}
       >
         <Box>
-          <Typography variant="h4" fontWeight={700}>
-            {title}
-          </Typography>
+          <Stack direction="row" alignItems="center" spacing={1.5}>
+            <Typography variant="h4" fontWeight={700}>
+              {title}
+            </Typography>
+            {count !== undefined && count !== null && (
+              <Chip label={`${count} total`} size="small" variant="outlined" />
+            )}
+          </Stack>
           {subtitle && (
             <Typography variant="body2" color="text.secondary" mt={0.5}>
               {subtitle}
@@ -70,10 +77,6 @@ const PageHeader = ({
                 variant="contained"
                 startIcon={actionIcon}
                 onClick={onAction}
-                sx={{
-                  background:
-                    "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
-                }}
               >
                 {actionLabel}
               </Button>
