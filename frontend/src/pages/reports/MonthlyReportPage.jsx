@@ -414,7 +414,7 @@ const MonthlyReportPage = () => {
                 fontWeight: 700,
                 fontSize: "0.78rem",
                 textTransform: "none",
-                background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                background: "#0D1B3E",
                 minWidth: { xs: 36, sm: "auto" },
                 px: { xs: 1, sm: 2 },
               }}
@@ -590,7 +590,7 @@ const MonthlyClassCard = memo(({ cls, isDark, onClick }) => {
         opacity: cls.isEmpty ? 0.5 : 1,
         "&:hover": {
           borderColor: "primary.main",
-          transform: "translateY(-2px)",
+          transform: "none",
           boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
         },
       }}

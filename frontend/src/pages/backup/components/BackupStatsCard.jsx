@@ -239,7 +239,7 @@ const BackupStatsCard = ({ stats, isLoading }) => {
                     transition: "all 0.2s",
                     "&:hover": {
                       borderColor: config.color,
-                      transform: "translateY(-2px)",
+                      transform: "none",
                     },
                   }}
                 >

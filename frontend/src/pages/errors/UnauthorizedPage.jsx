@@ -188,7 +188,7 @@ const UnauthorizedPage = () => {
             startIcon={<HomeOutlinedIcon />}
             onClick={() => navigate(dashboardPath)}
             sx={{
-              background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+              background: "#0D1B3E",
               color: "#FFFFFF",
               fontWeight: 700,
               textTransform: "none",
@@ -196,7 +196,7 @@ const UnauthorizedPage = () => {
               borderRadius: "10px",
               boxShadow: "none",
               "&:hover": {
-                background: "linear-gradient(135deg, #0A1430 0%, #173E7A 100%)",
+                background: "#0A1430",
                 boxShadow: "none",
               },
             }}

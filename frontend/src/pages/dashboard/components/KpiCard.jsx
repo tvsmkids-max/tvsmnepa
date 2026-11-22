@@ -126,7 +126,7 @@ const KpiCard = ({
         bgcolor: "background.paper",
         "&:hover": onClick
           ? {
-              transform: "translateY(-2px)",
+              transform: "none",
               boxShadow: isDark
                 ? "0 8px 16px rgba(0,0,0,0.4)"
                 : "0 8px 16px rgba(0,0,0,0.1)",

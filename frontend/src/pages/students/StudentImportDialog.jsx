@@ -304,7 +304,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                 disabled={downloading}
                 sx={{
                   background:
-                    "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                    "#0D1B3E",
                   px: 4,
                   py: 1.5,
                   fontWeight: 700,
@@ -916,7 +916,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                 onClick={() => setActiveStep(1)}
                 sx={{
                   background:
-                    "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                    "#0D1B3E",
                 }}
               >
                 Next: Upload File
@@ -937,7 +937,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                 disabled={!file || validating}
                 sx={{
                   background:
-                    "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                    "#0D1B3E",
                 }}
               >
                 {validating ? "Validating..." : "Validate File"}

@@ -38,7 +38,7 @@ const BulkActionToolbar = ({
           p: { xs: 1, sm: 1.5 },
           mb: 2,
           borderRadius: 3,
-          background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+          background: "#0D1B3E",
           color: "#fff",
           position: "sticky",
           top: 8,

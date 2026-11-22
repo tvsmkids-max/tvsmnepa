@@ -188,7 +188,7 @@ const ManagementAccessSection = () => {
               startIcon={<AddOutlinedIcon />}
               onClick={() => setCreateOpen(true)}
               sx={{
-                background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                background: "#0D1B3E",
                 fontWeight: 700,
                 textTransform: "none",
               }}
@@ -356,7 +356,7 @@ const ManagementAccessSection = () => {
               )
             }
             sx={{
-              background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+              background: "#0D1B3E",
               fontWeight: 700,
               textTransform: "none",
             }}

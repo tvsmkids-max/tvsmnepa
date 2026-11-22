@@ -85,7 +85,7 @@ const PWAInstallPrompt = () => {
     >
       <Box
         sx={{
-          background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+          background: "#0D1B3E",
           color: "white",
           borderRadius: 3,
           p: 2,

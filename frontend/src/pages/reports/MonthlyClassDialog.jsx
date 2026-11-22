@@ -286,7 +286,7 @@ const MonthlyClassDialog = ({
         component="div"
         sx={{
           p: 0,
-          background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+          background: "#0D1B3E",
           color: "white",
           position: "sticky",
           top: 0,
@@ -519,10 +519,10 @@ const MonthlyClassDialog = ({
                       fontSize: "0.78rem",
                       textTransform: "none",
                       background:
-                        "linear-gradient(135deg, #16A34A 0%, #15803D 100%)",
+                        "#16A34A",
                       "&:hover": {
                         background:
-                          "linear-gradient(135deg, #15803D 0%, #166534 100%)",
+                          "#15803D",
                       },
                     }}
                   >

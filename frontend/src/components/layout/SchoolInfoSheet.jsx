@@ -123,7 +123,7 @@ const SchoolInfoSheet = ({ open, onClose, settings }) => {
 
       <Box
         sx={{
-          background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+          background: "#0D1B3E",
           px: 3,
           pt: 3,
           pb: 3,

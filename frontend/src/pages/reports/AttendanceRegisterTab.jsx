@@ -701,7 +701,7 @@ const StatBox = ({ label, value, icon, colorKey, isDark }) => {
         justifyContent: "center",
         "&:hover": {
           borderColor: color.main,
-          transform: "translateY(-2px)",
+          transform: "none",
           boxShadow: isDark
             ? `0 8px 16px ${alpha(color.main, 0.15)}`
             : `0 8px 16px ${alpha(color.main, 0.1)}`,

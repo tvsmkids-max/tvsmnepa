@@ -338,7 +338,7 @@ const ShiftPreviewDialog = ({
             )
           }
           sx={{
-            background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+            background: "#0D1B3E",
             fontWeight: 700,
             px: 3,
           }}

@@ -1015,7 +1015,7 @@ const ClassCard = memo(({ cls, isDark, onClick }) => {
         opacity: cls.isEmpty ? 0.6 : 1,
         "&:hover": {
           borderColor: cls.isLowAttendance ? "#DC2626" : "primary.main",
-          transform: "translateY(-4px)",
+          transform: "none",
           boxShadow: isDark
             ? "0 12px 24px rgba(0,0,0,0.4)"
             : "0 12px 24px rgba(15,23,42,0.06)",

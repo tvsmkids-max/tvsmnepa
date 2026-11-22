@@ -182,7 +182,7 @@ const IdleWarningDialog = ({
           autoFocus
           sx={{
             fontWeight: 700,
-            background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+            background: "#0D1B3E",
             py: 1.2,
           }}
         >

@@ -275,7 +275,7 @@ const DefaultersReportPage = () => {
                 fontWeight: 700,
                 fontSize: { xs: "0.78rem", sm: "0.85rem" },
                 background: (t) =>
-                  `linear-gradient(135deg, ${t.palette.primary.dark} 0%, ${t.palette.primary.main} 100%)`,
+                  t.palette.primary.main,
                 textTransform: "none",
                 minWidth: { xs: 40, sm: "auto" },
                 px: { xs: 1, sm: 2 },
@@ -409,7 +409,7 @@ const DefaultersReportPage = () => {
                         flexDirection: "column",
                         transition: "all 0.2s",
                         "&:hover": {
-                          transform: "translateY(-2px)",
+                          transform: "none",
                           boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
                         },
                       }}

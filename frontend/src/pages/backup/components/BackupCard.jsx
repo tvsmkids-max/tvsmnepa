@@ -151,7 +151,7 @@ const BackupCard = ({ onDownload, isDownloading, stats }) => {
             py: 1.3,
             fontWeight: 700,
             textTransform: "none",
-            background: "linear-gradient(135deg, #2E7D32 0%, #22C55E 100%)",
+            background: "#2E7D32",
             fontSize: "0.95rem",
             boxShadow: "0 4px 12px rgba(34,197,94,0.3)",
             "&:hover": {

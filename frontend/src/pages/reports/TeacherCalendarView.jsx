@@ -295,7 +295,7 @@ const TeacherCalendarView = ({
             p: 2,
             mb: 2,
             borderRadius: 3,
-            background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+            background: "#0D1B3E",
             color: "white",
           }}
         >
@@ -478,7 +478,7 @@ const TeacherCalendarView = ({
                   fontSize: "0.78rem",
                   textTransform: "none",
                   background:
-                    "linear-gradient(135deg, #16A34A 0%, #15803D 100%)",
+                    "#16A34A",
                 }}
               >
                 Export

@@ -339,8 +339,8 @@ const StudentDetailPage = () => {
               borderColor: "divider",
               // Theme-aware gradient
               background: isDark
-                ? "linear-gradient(135deg, #1E293B 0%, #0F172A 100%)"
-                : "linear-gradient(135deg, #F8F9FC 0%, #FFFFFF 100%)",
+                ? "#1E293B"
+                : "#F8F9FC",
             }}
           >
             <Avatar

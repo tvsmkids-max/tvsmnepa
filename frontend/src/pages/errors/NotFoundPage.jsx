@@ -85,8 +85,8 @@ const NotFoundPage = () => {
             mb: 1.5,
             letterSpacing: "-2px",
             background: isDark
-              ? "linear-gradient(135deg, #60A5FA 0%, #A78BFA 100%)"
-              : "linear-gradient(135deg, #0D1B3E 20%, #2563EB 100%)",
+              ? "#60A5FA"
+              : "#0D1B3E",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
           }}
@@ -126,7 +126,7 @@ const NotFoundPage = () => {
           startIcon={<HomeOutlinedIcon />}
           onClick={() => navigate(dashboardPath)}
           sx={{
-            background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+            background: "#0D1B3E",
             color: "#FFFFFF",
             fontWeight: 700,
             textTransform: "none",
@@ -134,7 +134,7 @@ const NotFoundPage = () => {
             borderRadius: "10px",
             boxShadow: "none",
             "&:hover": {
-              background: "linear-gradient(135deg, #0A1430 0%, #173E7A 100%)",
+              background: "#0A1430",
               boxShadow: "none",
             },
           }}

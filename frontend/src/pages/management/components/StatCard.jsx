@@ -58,7 +58,7 @@ const StatCard = ({
         textAlign: "center",
         height: "100%",
         transition: "transform 0.15s",
-        "&:hover": { transform: "translateY(-2px)" },
+        "&:hover": { transform: "none" },
       }}
     >
       {Icon && (

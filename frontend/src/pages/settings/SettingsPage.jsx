@@ -631,7 +631,7 @@ const SettingsPage = () => {
               sx={{
                 py: 1.4,
                 background: (t) =>
-                  `linear-gradient(135deg, ${t.palette.primary.dark} 0%, ${t.palette.primary.main} 100%)`,
+                  t.palette.primary.main,
               }}
             >
               {saving ? "Saving..." : "Save Settings"}

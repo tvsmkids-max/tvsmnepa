@@ -65,7 +65,7 @@ const TeacherCard = ({ teacher, onEdit, onResetPassword, onDelete }) => {
         opacity: teacher.isActive ? 1 : 0.7,
         "&:hover": {
           borderColor: "primary.main",
-          transform: "translateY(-2px)",
+          transform: "none",
           boxShadow: "0 8px 16px rgba(13,27,62,0.12)",
         },
       }}

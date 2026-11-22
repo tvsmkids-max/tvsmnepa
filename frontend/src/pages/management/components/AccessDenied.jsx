@@ -98,7 +98,7 @@ const AccessDenied = ({ reason = "invalid", onRetry }) => {
               fullWidth
               onClick={onRetry}
               sx={{
-                background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                background: "#0D1B3E",
                 fontWeight: 700,
                 textTransform: "none",
                 py: 1.1,

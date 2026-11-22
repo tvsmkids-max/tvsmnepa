@@ -122,7 +122,7 @@ const HolidayBanner = ({
         borderRadius: 2.5,
         border: "1px solid",
         borderColor: config.border,
-        background: `linear-gradient(135deg, ${config.bg} 0%, ${isDark ? alpha(config.color, 0.03) : "#FFFFFF"} 100%)`,
+        background: config.bg,
         position: "relative",
         overflow: "hidden",
       }}

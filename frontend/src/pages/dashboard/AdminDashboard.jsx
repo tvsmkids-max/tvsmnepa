@@ -119,7 +119,7 @@ const KpiCard = ({
           boxShadow: isDark
             ? "0 8px 24px rgba(0,0,0,0.35)"
             : "0 8px 24px rgba(15,23,42,0.08)",
-          transform: "translateY(-2px)",
+          transform: "none",
         },
       }}
     >
@@ -850,7 +850,7 @@ const AdminDashboard = () => {
                       transition: "all 0.15s",
                       "&:hover": {
                         bgcolor: "action.hover",
-                        transform: "translateY(-1px)",
+                        transform: "none",
                       },
                     }}
                   >
