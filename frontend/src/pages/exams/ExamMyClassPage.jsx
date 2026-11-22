@@ -77,7 +77,23 @@ const ExamMyClassPage = () => {
           />
         </Paper>
       )}
-      {exams.map((e) => (
+      {exams.map((e) => e.comingSoon ? (
+        <Paper key={e._id} variant="outlined" sx={{ p: 2, mb: 2 }}>
+          <Stack direction="row" spacing={1} sx={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+            <Box>
+              <Typography variant="h6">{e.name}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {examTypeLabel(e.examType)} · {e.session?.name}
+                {e.startDate ? ` · ${fmt(e.startDate)} → ${fmt(e.endDate)}` : ""}
+              </Typography>
+            </Box>
+            <Chip size="small" label="Coming soon" />
+          </Stack>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            The admin is still preparing this examination. Subjects, timetable and marks entry will open once it is scheduled.
+          </Typography>
+        </Paper>
+      ) : (
         <Paper key={e._id} sx={{ p: 2, mb: 2 }}>
           <Stack
             direction={{ xs: "column", sm: "row" }}

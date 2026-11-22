@@ -29,6 +29,7 @@ import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import AnalyticsOutlinedIcon from "@mui/icons-material/AnalyticsOutlined";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
+import VpnKeyOutlinedIcon from "@mui/icons-material/VpnKeyOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
@@ -144,6 +145,7 @@ const MobileBottomNav = () => {
       path: "/backup",
     },
     { label: "Settings", icon: <SettingsOutlinedIcon />, path: "/settings" },
+    { label: "API Keys", icon: <VpnKeyOutlinedIcon />, path: "/settings#api-keys" },
   ];
 
   // ─── CLASS USER MORE ITEMS ───
