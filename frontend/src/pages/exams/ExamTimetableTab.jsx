@@ -8,6 +8,7 @@ import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AddIcon from "@mui/icons-material/Add";
 import { useSnackbar } from "notistack";
+import { gridTableSx } from "../../components/common/tableStyles";
 import examApi from "../../api/examApi";
 import { downloadTimetablePdf, printTimetablePdf } from "../../utils/examTimetablePdf";
 import {
@@ -124,16 +125,16 @@ const GroupTable = ({ title, cfgs, rows, setRows, saved, editable, exam, onSaved
   };
 
   const subjectName = (c, key) => c.subjects.find((s) => s.nameKey === key)?.name || "";
-  const hdr = { fontWeight: 700, bgcolor: "action.hover", whiteSpace: "nowrap", borderRight: "1px solid", borderColor: "divider" };
+  const hdr = { whiteSpace: "nowrap" };
 
   return (
     <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
       <Typography sx={{ fontWeight: 700, mb: 1.5 }}>{title}</Typography>
       <Box sx={{ overflowX: "auto" }}>
-        <Table size="small" sx={{ "& td, & th": { border: "1px solid", borderColor: "divider" }, minWidth: 560 }}>
+        <Table size="small" sx={{ ...gridTableSx, minWidth: 560 }}>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ ...hdr, minWidth: 150 }}>Date</TableCell>
+              <TableCell sx={{ ...hdr, minWidth: { xs: 120, md: 150 } }}>Date</TableCell>
               <TableCell sx={hdr}>Day</TableCell>
               {cfgs.map((c) => (
                 <TableCell key={c.class._id} sx={{ ...hdr, minWidth: 130 }} align="center">
@@ -153,11 +154,12 @@ const GroupTable = ({ title, cfgs, rows, setRows, saved, editable, exam, onSaved
             )}
             {rows.map((r) => (
               <TableRow key={r.id}>
-                <TableCell>
+                <TableCell sx={{ p: { xs: 0.5, md: 1 } }}>
                   {editable ? (
                     <TextField
                       size="small"
                       type="date"
+                      sx={{ "& input": { fontSize: { xs: "0.8rem", md: "1rem" }, px: { xs: 0.75, md: 1.75 } } }}
                       value={r.date}
                       onChange={(e) => setDate(r.id, e.target.value)}
                       slotProps={{ htmlInput: { "aria-label": "Exam date" } }}
@@ -226,7 +228,7 @@ const GroupTable = ({ title, cfgs, rows, setRows, saved, editable, exam, onSaved
             </Button>
             {exam.startDate && exam.endDate && (
               <Button size="small" onClick={fillPeriod}>
-                Add all dates of the exam period (skip Sundays)
+                Fill exam period (no Sundays)
               </Button>
             )}
             <Box sx={{ flex: 1 }} />
