@@ -33,6 +33,7 @@ export const useShiftExecute = () => {
       // Invalidate student queries so list refreshes
       queryClient.invalidateQueries({ queryKey: studentKeys.all });
       queryClient.invalidateQueries({ queryKey: ["classes"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
 
       enqueueSnackbar(res.data?.message || "Students shifted successfully", {
         variant: "success",

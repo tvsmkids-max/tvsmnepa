@@ -47,6 +47,7 @@ export const useCreateTeacher = () => {
     mutationFn: (data) => teacherApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: teacherKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
       enqueueSnackbar("Teacher created", { variant: "success" });
     },
     onError: (err) => {
@@ -65,6 +66,7 @@ export const useUpdateTeacher = () => {
     mutationFn: ({ id, data }) => teacherApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: teacherKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
       enqueueSnackbar("Teacher updated", { variant: "success" });
     },
     onError: (err) => {
@@ -83,6 +85,7 @@ export const useDeleteTeacher = () => {
     mutationFn: (id) => teacherApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: teacherKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
       enqueueSnackbar("Teacher profile deleted; account deactivated and attendance preserved", { variant: "success" });
     },
     onError: (err) => {
@@ -101,6 +104,7 @@ export const useAssignClasses = () => {
     mutationFn: ({ id, classIds }) => teacherApi.assignClasses(id, classIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: teacherKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
       enqueueSnackbar("Classes assigned", { variant: "success" });
     },
     onError: (err) => {

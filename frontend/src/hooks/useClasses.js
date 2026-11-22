@@ -83,6 +83,8 @@ export const useCreateClass = () => {
     mutationFn: (data) => classApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: classKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       enqueueSnackbar("Class created", { variant: "success" });
     },
     onError: (err) => {
@@ -101,6 +103,8 @@ export const useUpdateClass = () => {
     mutationFn: ({ id, data }) => classApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: classKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       enqueueSnackbar("Class updated", { variant: "success" });
     },
     onError: (err) => {
@@ -119,6 +123,8 @@ export const useDeleteClass = () => {
     mutationFn: (id) => classApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: classKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       enqueueSnackbar("Class deleted", { variant: "success" });
     },
     onError: (err) => {
@@ -137,6 +143,8 @@ export const useArchiveClass = () => {
     mutationFn: ({ id, isArchived }) => classApi.archive(id, isArchived),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: classKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       enqueueSnackbar(
         variables.isArchived ? "Class archived" : "Class unarchived",
         { variant: "success" },

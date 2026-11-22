@@ -31,6 +31,7 @@ export const useCreateHoliday = () => {
     mutationFn: (data) => holidayApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: holidayKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       enqueueSnackbar("Holiday created", { variant: "success" });
     },
     onError: (err) => {
@@ -49,6 +50,7 @@ export const useUpdateHoliday = () => {
     mutationFn: ({ id, data }) => holidayApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: holidayKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       enqueueSnackbar("Holiday updated", { variant: "success" });
     },
     onError: (err) => {
@@ -67,6 +69,7 @@ export const useDeleteHoliday = () => {
     mutationFn: (id) => holidayApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: holidayKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       enqueueSnackbar("Holiday deleted", { variant: "success" });
     },
     onError: (err) => {
