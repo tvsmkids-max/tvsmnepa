@@ -40,11 +40,11 @@ const StudentFilterBar = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const { user } = useAuth();
-  const isTeacher = user?.role === "teacher";
+  const isTeacher = user?.role !== "admin";
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   // ✅ AUTO-HIDE: Class/Section filters when teacher has only 1 class
-  const hideClassSection = isTeacher && classes.length === 1;
+  const hideClassSection = isTeacher;
 
   const handleChange = (field, value) => {
     onChange({ ...filters, [field]: value, page: 0 });

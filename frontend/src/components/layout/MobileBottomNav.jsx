@@ -166,6 +166,11 @@ const MobileBottomNav = () => {
     },
     { divider: true, label: "Examinations" },
     {
+      label: "My Examinations",
+      icon: <EditNoteOutlinedIcon />,
+      path: "/exams/mine",
+    },
+    {
       label: "Report Cards",
       icon: <QuizOutlinedIcon />,
       path: "/exams/mine/report-cards",

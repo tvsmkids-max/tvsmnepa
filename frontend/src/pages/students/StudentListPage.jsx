@@ -38,6 +38,8 @@ import {
 } from "../../hooks/useStudents";
 import studentApi from "../../api/studentApi";
 import { exportStudentsToExcel } from "../../utils/exportUtils";
+import { downloadStudentListPdf } from "../../utils/studentListPdf";
+import TeacherStudentList from "./components/TeacherStudentList";
 
 const MAX_BULK_SELECT = 100;
 
@@ -322,6 +324,29 @@ const StudentListPage = () => {
   );
 
   const handleExportExcel = async () => {
+    // Class teachers always get a PDF (never an Excel file).
+    if (!isAdmin) {
+      if (sortedStudents.length === 0) {
+        enqueueSnackbar("No students to export", { variant: "info" });
+        return;
+      }
+      setExporting(true);
+      try {
+        const c = sortedStudents[0]?.class;
+        const label = c ? `${c.name}${c.section ? ` - ${c.section}` : ""}` : "";
+        await downloadStudentListPdf(
+          { students: sortedStudents, title: label },
+          `students_${label.replace(/\s+/g, "") || "class"}_${new Date().toISOString().split("T")[0]}`,
+        );
+        enqueueSnackbar(`Exported ${sortedStudents.length} students`, { variant: "success" });
+      } catch {
+        enqueueSnackbar("Export failed", { variant: "error" });
+      } finally {
+        setExporting(false);
+      }
+      return;
+    }
+
     if (selectionMode && selectedStudents.length > 0) {
       const dateLabel = new Date().toISOString().split("T")[0];
       try {
@@ -415,6 +440,25 @@ const StudentListPage = () => {
     },
     [selectionMode, isAdmin, toggleSelect, navigate],
   );
+
+  if (!isAdmin && isMobile) {
+    const c = sortedStudents[0]?.class;
+    return (
+      <TeacherStudentList
+        students={sortedStudents}
+        classLabel={c ? `${c.name}${c.section ? ` - ${c.section}` : ""}` : ""}
+        search={filters.search}
+        status={filters.status}
+        onSearch={(v) => handleFilterChange({ ...filters, search: v })}
+        onStatus={(v) => handleFilterChange({ ...filters, status: v })}
+        loading={isLoading}
+        fetching={isFetching}
+        exporting={exporting}
+        onExportPdf={handleExportExcel}
+        onOpen={(st) => navigate(`/students/${st._id}`)}
+      />
+    );
+  }
 
   return (
     <Box sx={{ pb: { xs: 10, md: 4 } }}>

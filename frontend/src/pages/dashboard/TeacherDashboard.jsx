@@ -4,18 +4,16 @@ import {
   Box,
   Button,
   Divider,
-  IconButton,
   Paper,
   Skeleton,
   Stack,
   ToggleButton,
   ToggleButtonGroup,
-  Tooltip,
   Typography,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
+import { getDailyQuoteForUser } from "../../utils/quoteUtils";
 
 import useAuth from "../../hooks/useAuth";
 import {
@@ -178,13 +176,13 @@ const TeacherDashboard = () => {
   const queryClient = useQueryClient();
 
   const [period, setPeriod] = useState("today");
-  const [refreshing, setRefreshing] = useState(false);
 
   const { data: summary, isLoading: loading } = useTeacherSummary(period);
   const { data: defaulters = [], isLoading: defaultersLoading } = useTeacherDefaulters(5, 75);
   const { data: holidays = [], isLoading: holidaysLoading } = useUpcomingHolidays(3, 60);
 
   const classLabel = useMemo(() => getClassAccountLabel(user), [user]);
+  const quote = useMemo(() => getDailyQuoteForUser(user)?.quote || "", [user]);
   const todayLabel = useMemo(
     () =>
       new Date().toLocaleDateString("en-IN", {
@@ -197,9 +195,7 @@ const TeacherDashboard = () => {
   );
 
   const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
     await queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
-    setTimeout(() => setRefreshing(false), 600);
   }, [queryClient]);
 
   const hasLinkedClass = Boolean(user?.linkedClass?._id || user?.linkedClass);
@@ -254,23 +250,22 @@ const TeacherDashboard = () => {
 
   return (
     <Box sx={{ width: "100%", maxWidth: 900 }}>
-      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "flex-start", mb: 3 }}>
-        <Box>
-          <Typography component="h1" sx={{ fontWeight: 700, fontSize: { xs: "1.3rem", sm: "1.5rem" }, lineHeight: 1.25 }}>
-            {greetingText()}, {classLabel}
+      <Box sx={{ textAlign: { xs: "center", md: "left" }, mb: 3 }}>
+        <Typography component="h1" sx={{ fontWeight: 800, fontSize: { xs: "1.6rem", sm: "1.75rem" }, lineHeight: 1.2 }}>
+          {classLabel}
+        </Typography>
+        <Typography sx={{ color: "text.secondary", mt: 0.5, fontSize: "0.95rem" }}>
+          {greetingText()} · {todayLabel}
+        </Typography>
+        {quote && (
+          <Typography
+            variant="caption"
+            sx={{ display: "block", color: "text.secondary", fontStyle: "italic", mt: 0.75, maxWidth: 520, mx: { xs: "auto", md: 0 }, lineHeight: 1.45 }}
+          >
+            “{quote}”
           </Typography>
-          <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.25 }}>
-            {todayLabel}
-          </Typography>
-        </Box>
-        <Tooltip title="Refresh">
-          <span>
-            <IconButton onClick={handleRefresh} disabled={refreshing} aria-label="Refresh dashboard">
-              <RefreshOutlinedIcon />
-            </IconButton>
-          </span>
-        </Tooltip>
-      </Stack>
+        )}
+      </Box>
 
       {attendanceArea}
 

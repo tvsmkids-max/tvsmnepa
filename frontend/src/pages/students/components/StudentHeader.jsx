@@ -149,7 +149,7 @@ const StudentHeader = ({
 
           {/* Export */}
           <Tooltip
-            title={exportDisabled ? "No data to export" : "Export to Excel"}
+            title={exportDisabled ? "No data to export" : isAdmin ? "Export to Excel" : "Download PDF"}
           >
             <span>
               <Button
@@ -186,8 +186,10 @@ const StudentHeader = ({
                   )
                 ) : exporting ? (
                   "Exporting..."
-                ) : (
+                ) : isAdmin ? (
                   "Export"
+                ) : (
+                  "PDF"
                 )}
               </Button>
             </span>
