@@ -24,7 +24,7 @@ const UserManagementPage = () => {
   const [editClass, setEditClass] = useState("");
   const [deleteUser, setDeleteUser] = useState(null);
   const [classes, setClasses] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = async () => {
     try {
@@ -39,7 +39,13 @@ const UserManagementPage = () => {
   };
 
   useEffect(() => {
-    load();
+    userApi
+      .list()
+      .then((response) => setUsers(response.data?.data || []))
+      .catch((error) =>
+        enqueueSnackbar(error.response?.data?.message || "Unable to load users", { variant: "error" }),
+      )
+      .finally(() => setLoading(false));
     classApi.list({ limit: 100 }).then((response) => {
       setClasses(response.data?.data?.classes || response.data?.data || []);
     }).catch(() => {});

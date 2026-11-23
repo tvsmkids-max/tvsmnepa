@@ -30,9 +30,11 @@ const ShiftPreviewDialog = ({
 }) => {
   const [confirmText, setConfirmText] = useState("");
 
-  React.useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (!open) setConfirmText("");
-  }, [open]);
+  }
 
   if (!previewData) return null;
 

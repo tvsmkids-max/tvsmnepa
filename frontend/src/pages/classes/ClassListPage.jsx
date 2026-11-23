@@ -51,12 +51,14 @@ const PasswordResetDialog = ({ open, cls, onClose }) => {
   const [showPin, setShowPin] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (open) {
       setPin("");
       setShowPin(false);
     }
-  }, [open]);
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();

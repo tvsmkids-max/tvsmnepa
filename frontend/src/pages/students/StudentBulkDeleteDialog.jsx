@@ -37,13 +37,15 @@ const StudentBulkDeleteDialog = ({
   const [loading, setLoading] = useState(false);
 
   // Reset state when dialog opens/closes
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (open) {
       setMode("soft");
       setConfirmText("");
       setLoading(false);
     }
-  }, [open]);
+  }
 
   const count = selectedStudents.length;
   const isHard = mode === "hard";

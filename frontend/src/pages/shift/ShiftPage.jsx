@@ -83,18 +83,14 @@ const ShiftPage = () => {
     [classes],
   );
 
-  React.useEffect(() => {
-    if (uniqueGrades.length > 0 && !filterGrade) {
-      setFilterGrade(uniqueGrades[0]);
-    }
-  }, [uniqueGrades, filterGrade]);
+  const activeGrade = filterGrade || uniqueGrades[0] || "";
 
   // ─── Filter Logic ───
   const displayStudents = useMemo(() => {
     let list = allStudents;
 
-    if (filterGrade) {
-      list = list.filter((s) => s.class?.name === filterGrade);
+    if (activeGrade) {
+      list = list.filter((s) => s.class?.name === activeGrade);
     }
     if (filterSection !== "All") {
       list = list.filter((s) => s.class?.section === filterSection);
@@ -109,7 +105,7 @@ const ShiftPage = () => {
     }
 
     return list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  }, [allStudents, filterGrade, filterSection, search]);
+  }, [allStudents, activeGrade, filterSection, search]);
 
   // ─── Handlers ───
   const handleTargetGradeChange = (studentId, newGrade) => {
@@ -269,7 +265,7 @@ const ShiftPage = () => {
               </InputLabel>
               <Select
                 label="Class"
-                value={filterGrade}
+                value={activeGrade}
                 onChange={(e) => {
                   setFilterGrade(e.target.value);
                   setFilterSection("All");
@@ -305,7 +301,7 @@ const ShiftPage = () => {
                 <MenuItem value="All" sx={{ fontSize: "0.85rem" }}>
                   All Sections
                 </MenuItem>
-                {getSectionsForGrade(filterGrade).map((sec) => (
+                {getSectionsForGrade(activeGrade).map((sec) => (
                   <MenuItem key={sec} value={sec} sx={{ fontSize: "0.85rem" }}>
                     {sec}
                   </MenuItem>

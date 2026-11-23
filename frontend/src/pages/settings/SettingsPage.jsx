@@ -94,8 +94,9 @@ const SettingsPage = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (!settings) return;
+  const [prevSettings, setPrevSettings] = useState(null);
+  if (settings && settings !== prevSettings) {
+    setPrevSettings(settings);
     setForm({
       schoolName:
         settings.schoolName && settings.schoolName !== "Setup Required"
@@ -118,7 +119,7 @@ const SettingsPage = () => {
       sessionIdleTimeout: settings.sessionIdleTimeout ?? 15,
       sessionIdleWarning: settings.sessionIdleWarning ?? 60,
     });
-  }, [settings]);
+  }
 
   const handleChange = (field, value) =>
     setForm((p) => ({ ...p, [field]: value }));
