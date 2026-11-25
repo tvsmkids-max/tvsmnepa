@@ -65,7 +65,7 @@ const TeacherCard = ({ teacher, onEdit, onResetPassword, onDelete }) => {
         opacity: teacher.isActive ? 1 : 0.7,
         "&:hover": {
           borderColor: "primary.main",
-          transform: "translateY(-2px)",
+          transform: "none",
           boxShadow: "0 8px 16px rgba(13,27,62,0.12)",
         },
       }}
@@ -108,7 +108,7 @@ const TeacherCard = ({ teacher, onEdit, onResetPassword, onDelete }) => {
               height: 48,
               bgcolor: getGenderColor(teacher.gender),
               fontSize: "1rem",
-              fontWeight: 800,
+              fontWeight: 700,
               flexShrink: 0,
               boxShadow: "0 3px 10px rgba(0,0,0,0.12)",
             }}
@@ -119,7 +119,7 @@ const TeacherCard = ({ teacher, onEdit, onResetPassword, onDelete }) => {
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               variant="body1"
-              fontWeight={800}
+              fontWeight={700}
               sx={{
                 fontSize: "0.95rem",
                 lineHeight: 1.2,
@@ -262,7 +262,7 @@ const TeacherCard = ({ teacher, onEdit, onResetPassword, onDelete }) => {
               variant="caption"
               sx={{
                 fontSize: "0.65rem",
-                fontWeight: 800,
+                fontWeight: 700,
                 color: "text.secondary",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",

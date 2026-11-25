@@ -212,7 +212,7 @@ const PromotionPage = () => {
               sx={{ fontSize: 36, color: "success.main" }}
             />
           </Avatar>
-          <Typography variant="h5" fontWeight={800} gutterBottom>
+          <Typography variant="h5" fontWeight={700} gutterBottom>
             Promotion Complete
           </Typography>
           <Stack
@@ -610,7 +610,7 @@ const PromotionPage = () => {
                           component="strong"
                           sx={{
                             fontSize: "0.68rem",
-                            fontWeight: 800,
+                            fontWeight: 700,
                             color: "primary.main",
                           }}
                         >

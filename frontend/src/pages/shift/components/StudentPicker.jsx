@@ -85,7 +85,7 @@ const StudentPicker = ({
           flexWrap="wrap"
         >
           <Box>
-            <Typography variant="body2" fontWeight={800}>
+            <Typography variant="body2" fontWeight={700}>
               {sourceLabel ? `Students in ${sourceLabel}` : "Students"}
             </Typography>
             <Typography

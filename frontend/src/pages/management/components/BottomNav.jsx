@@ -58,9 +58,9 @@ const BottomNav = ({ activePage, onChange, alertCount = 0 }) => {
             transition: "all 0.2s",
             "&.Mui-selected": {
               color: isDark ? "#93C5FD" : "#1E4D98",
-              fontWeight: 800,
+              fontWeight: 700,
               "& .MuiBottomNavigationAction-label": {
-                fontWeight: 800,
+                fontWeight: 700,
                 fontSize: "0.7rem",
               },
               "& .MuiSvgIcon-root": {
@@ -117,7 +117,7 @@ const BadgeIcon = ({ children, count }) => {
           background: isDark ? "#DC2626" : "#DC2626",
           color: "#fff",
           fontSize: "0.6rem",
-          fontWeight: 800,
+          fontWeight: 700,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",

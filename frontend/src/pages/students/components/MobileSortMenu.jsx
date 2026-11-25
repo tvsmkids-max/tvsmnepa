@@ -146,7 +146,7 @@ const MobileSortMenu = ({ sortBy, sortOrder, onSort, totalCount }) => {
         >
           <Typography
             variant="caption"
-            fontWeight={800}
+            fontWeight={700}
             sx={{
               fontSize: "0.68rem",
               textTransform: "uppercase",

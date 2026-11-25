@@ -132,7 +132,7 @@ const HolidayTable = ({ holidays, isAdmin, onEdit, onDelete }) => {
   const { isDark } = useThemeMode();
 
   const headerStyles = {
-    fontWeight: 800,
+    fontWeight: 700,
     fontSize: "0.68rem",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
@@ -227,7 +227,7 @@ const HolidayTable = ({ holidays, isAdmin, onEdit, onDelete }) => {
                   <TableCell sx={cellStyles}>
                     <Typography
                       variant="body2"
-                      fontWeight={800}
+                      fontWeight={700}
                       sx={{ color: "text.primary" }}
                     >
                       {h.name}
@@ -295,7 +295,7 @@ const HolidayTable = ({ holidays, isAdmin, onEdit, onDelete }) => {
                       label={state.label}
                       size="small"
                       color={state.color}
-                      sx={{ fontWeight: 800, fontSize: "0.65rem", height: 22 }}
+                      sx={{ fontWeight: 700, fontSize: "0.65rem", height: 22 }}
                     />
                   </TableCell>
 

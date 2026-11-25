@@ -123,7 +123,7 @@ const HolidayFormDialog = ({
             <BeachAccessOutlinedIcon sx={{ color: "warning.dark" }} />
           </Box>
           <Box>
-            <Typography variant="h6" fontWeight={800} component="div">
+            <Typography variant="h6" fontWeight={700} component="div">
               {editing ? "Edit Holiday" : "Add New Holiday"}
             </Typography>
             <Typography
@@ -261,7 +261,7 @@ const HolidayFormDialog = ({
             loading && <CircularProgress size={16} sx={{ color: "white" }} />
           }
           sx={{
-            background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+            background: "#0D1B3E",
             fontWeight: 700,
             textTransform: "none",
             px: 3,

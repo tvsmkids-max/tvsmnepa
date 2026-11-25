@@ -223,7 +223,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
             <CloudUploadIcon sx={{ color: "primary.dark" }} />
           </Avatar>
           <Box>
-            <Typography variant="h6" fontWeight={800} component="div">
+            <Typography variant="h6" fontWeight={700} component="div">
               Import Students from Excel
             </Typography>
             <Typography
@@ -304,7 +304,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                 disabled={downloading}
                 sx={{
                   background:
-                    "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                    "#0D1B3E",
                   px: 4,
                   py: 1.5,
                   fontWeight: 700,
@@ -465,7 +465,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                     sx={{ fontSize: 48, color: "success.dark" }}
                   />
                 </Avatar>
-                <Typography variant="h5" fontWeight={800} gutterBottom>
+                <Typography variant="h5" fontWeight={700} gutterBottom>
                   Import Successful!
                 </Typography>
                 <Typography
@@ -501,7 +501,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                     </Typography>
                     <Typography
                       variant="h4"
-                      fontWeight={900}
+                      fontWeight={700}
                       color="success.dark"
                     >
                       {importResult.imported}
@@ -526,7 +526,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                       </Typography>
                       <Typography
                         variant="h4"
-                        fontWeight={900}
+                        fontWeight={700}
                         color="warning.dark"
                       >
                         {importResult.duplicatesSkipped}
@@ -552,7 +552,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                       </Typography>
                       <Typography
                         variant="h4"
-                        fontWeight={900}
+                        fontWeight={700}
                         color="error.dark"
                       >
                         {importResult.errorsSkipped}
@@ -584,7 +584,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                     <CheckCircleIcon sx={{ color: "success.dark", mb: 0.5 }} />
                     <Typography
                       variant="h5"
-                      fontWeight={900}
+                      fontWeight={700}
                       color="success.dark"
                     >
                       {validationResult.valid}
@@ -611,7 +611,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                     <WarningIcon sx={{ color: "warning.dark", mb: 0.5 }} />
                     <Typography
                       variant="h5"
-                      fontWeight={900}
+                      fontWeight={700}
                       color="warning.dark"
                     >
                       {validationResult.duplicates}
@@ -638,7 +638,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                     <ErrorIcon sx={{ color: "error.dark", mb: 0.5 }} />
                     <Typography
                       variant="h5"
-                      fontWeight={900}
+                      fontWeight={700}
                       color="error.dark"
                     >
                       {validationResult.errors}
@@ -664,7 +664,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                   >
                     <Typography
                       variant="h5"
-                      fontWeight={900}
+                      fontWeight={700}
                       color="primary.main"
                     >
                       {validationResult.total}
@@ -690,7 +690,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                     >
                       <Typography
                         variant="subtitle2"
-                        fontWeight={800}
+                        fontWeight={700}
                         color="error.dark"
                       >
                         ❌ Errors ({validationResult.errorRows.length})
@@ -766,7 +766,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                   <Box sx={{ mb: 3 }}>
                     <Typography
                       variant="subtitle2"
-                      fontWeight={800}
+                      fontWeight={700}
                       color="warning.dark"
                       sx={{ mb: 1.5 }}
                     >
@@ -916,7 +916,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                 onClick={() => setActiveStep(1)}
                 sx={{
                   background:
-                    "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                    "#0D1B3E",
                 }}
               >
                 Next: Upload File
@@ -937,7 +937,7 @@ const StudentImportDialog = ({ open, onClose, onImported }) => {
                 disabled={!file || validating}
                 sx={{
                   background:
-                    "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                    "#0D1B3E",
                 }}
               >
                 {validating ? "Validating..." : "Validate File"}

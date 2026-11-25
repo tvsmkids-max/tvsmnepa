@@ -153,7 +153,7 @@ const ManagementDashboard = () => {
             © {new Date().getFullYear()} · Developed by{" "}
             <Box
               component="span"
-              sx={{ fontWeight: 800, color: isDark ? "#93C5FD" : "#1E4D98" }}
+              sx={{ fontWeight: 700, color: isDark ? "#93C5FD" : "#1E4D98" }}
             >
               Abhishek
             </Box>

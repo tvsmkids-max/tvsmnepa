@@ -211,7 +211,7 @@ const StudentFilterBar = ({
             <Divider sx={{ my: 1 }} />
             <Typography
               variant="caption"
-              fontWeight={800}
+              fontWeight={700}
               color="text.secondary"
               sx={{
                 textTransform: "uppercase",

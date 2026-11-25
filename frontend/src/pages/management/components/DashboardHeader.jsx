@@ -61,7 +61,7 @@ const DashboardHeader = ({ label, isRefetching, onRefresh, onPrint }) => {
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               variant="body1"
-              fontWeight={900}
+              fontWeight={700}
               noWrap
               sx={{
                 fontSize: { xs: "0.95rem", sm: "1.05rem" },

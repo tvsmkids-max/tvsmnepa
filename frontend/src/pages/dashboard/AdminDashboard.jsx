@@ -119,7 +119,7 @@ const KpiCard = ({
           boxShadow: isDark
             ? "0 8px 24px rgba(0,0,0,0.35)"
             : "0 8px 24px rgba(15,23,42,0.08)",
-          transform: "translateY(-2px)",
+          transform: "none",
         },
       }}
     >
@@ -160,7 +160,7 @@ const KpiCard = ({
       <Typography
         sx={{
           fontSize: { xs: "1.75rem", sm: "2rem" },
-          fontWeight: 800,
+          fontWeight: 700,
           letterSpacing: "-0.03em",
           lineHeight: 1.1,
           color: "text.primary",
@@ -227,7 +227,7 @@ const ClassMobileCard = ({ cls }) => {
       >
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography
-            fontWeight={800}
+            fontWeight={700}
             sx={{ fontSize: "0.95rem", letterSpacing: "-0.02em" }}
           >
             {cls.name}-{cls.section}
@@ -274,19 +274,19 @@ const ClassMobileCard = ({ cls }) => {
         </Typography>
         <Typography
           variant="caption"
-          sx={{ fontWeight: 800, color: "success.main" }}
+          sx={{ fontWeight: 700, color: "success.main" }}
         >
           P {cls.present}
         </Typography>
         <Typography
           variant="caption"
-          sx={{ fontWeight: 800, color: "error.main" }}
+          sx={{ fontWeight: 700, color: "error.main" }}
         >
           A {cls.absent}
         </Typography>
         <Box sx={{ flex: 1 }} />
         <Typography
-          fontWeight={800}
+          fontWeight={700}
           sx={{ fontSize: "0.95rem", color: pctColor }}
         >
           {cls.isMarked ? `${pct}%` : "—"}
@@ -409,7 +409,7 @@ const AdminDashboard = () => {
         <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
           <Typography
             sx={{
-              fontWeight: 800,
+              fontWeight: 700,
               fontSize: { xs: "1.05rem", sm: "1.15rem" },
               letterSpacing: "-0.02em",
             }}
@@ -592,7 +592,7 @@ const AdminDashboard = () => {
               }}
             >
               <Typography
-                fontWeight={800}
+                fontWeight={700}
                 sx={{ fontSize: "0.95rem", letterSpacing: "-0.02em" }}
               >
                 Class-wise Attendance
@@ -722,7 +722,7 @@ const AdminDashboard = () => {
                         >
                           {cls.isMarked ? (
                             <Stack alignItems="center" spacing={0.5}>
-                              <Typography fontWeight={800} fontSize="0.85rem">
+                              <Typography fontWeight={700} fontSize="0.85rem">
                                 {cls.percentage}%
                               </Typography>
                               <LinearProgress
@@ -781,7 +781,7 @@ const AdminDashboard = () => {
                     <TableRow
                       sx={{
                         bgcolor: isDark ? alpha("#3B82F6", 0.08) : "#F0F4FF",
-                        "& td": { borderBottom: "none", fontWeight: 800 },
+                        "& td": { borderBottom: "none", fontWeight: 700 },
                       }}
                     >
                       <TableCell>TOTAL</TableCell>
@@ -805,7 +805,7 @@ const AdminDashboard = () => {
                           color="primary"
                           sx={{
                             height: 22,
-                            fontWeight: 800,
+                            fontWeight: 700,
                             fontSize: "0.65rem",
                           }}
                         />
@@ -850,7 +850,7 @@ const AdminDashboard = () => {
                       transition: "all 0.15s",
                       "&:hover": {
                         bgcolor: "action.hover",
-                        transform: "translateY(-1px)",
+                        transform: "none",
                       },
                     }}
                   >

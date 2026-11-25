@@ -90,7 +90,7 @@ const StatusToggle = React.memo(function StatusToggle({
               ? alpha("#16A34A", 0.1)
               : "#F0FDF4",
           color: presentActive ? "#FFFFFF" : isDark ? "#86EFAC" : "#15803D",
-          fontWeight: 800,
+          fontWeight: 700,
           fontSize: "0.85rem",
           display: "flex",
           alignItems: "center",
@@ -126,7 +126,7 @@ const StatusToggle = React.memo(function StatusToggle({
               ? alpha("#DC2626", 0.1)
               : "#FEF2F2",
           color: absentActive ? "#FFFFFF" : isDark ? "#FCA5A5" : "#B91C1C",
-          fontWeight: 800,
+          fontWeight: 700,
           fontSize: "0.85rem",
           display: "flex",
           alignItems: "center",
@@ -765,7 +765,7 @@ const MarkAttendancePage = () => {
           <BeachAccessIcon
             sx={{ fontSize: 56, color: "warning.main", mb: 1 }}
           />
-          <Typography variant="h6" fontWeight={800}>
+          <Typography variant="h6" fontWeight={700}>
             🏖️ {sheet.holiday?.name}
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -786,7 +786,7 @@ const MarkAttendancePage = () => {
           }}
         >
           <EventNoteIcon sx={{ fontSize: 56, color: "info.main", mb: 1 }} />
-          <Typography variant="h6" fontWeight={800}>
+          <Typography variant="h6" fontWeight={700}>
             📅 {sheet.nonWorkingDayName || "Non-Working Day"}
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -854,7 +854,7 @@ const MarkAttendancePage = () => {
                     <Typography
                       sx={{
                         minWidth: 26,
-                        fontWeight: 800,
+                        fontWeight: 700,
                         fontSize: "0.78rem",
                         color: isDark ? "#93C5FD" : "#1E4D98",
                         fontFamily: "monospace",
@@ -925,7 +925,7 @@ const MarkAttendancePage = () => {
                     <TableRow>
                       <TableCell
                         sx={{
-                          fontWeight: 800,
+                          fontWeight: 700,
                           fontSize: "0.7rem",
                           bgcolor: isDark ? alpha("#fff", 0.04) : "#F8FAFC",
                           width: 65,
@@ -938,7 +938,7 @@ const MarkAttendancePage = () => {
 
                       <TableCell
                         sx={{
-                          fontWeight: 800,
+                          fontWeight: 700,
                           fontSize: "0.7rem",
                           bgcolor: isDark ? alpha("#fff", 0.04) : "#F8FAFC",
                           textTransform: "uppercase",
@@ -955,7 +955,7 @@ const MarkAttendancePage = () => {
 
                       <TableCell
                         sx={{
-                          fontWeight: 800,
+                          fontWeight: 700,
                           fontSize: "0.7rem",
                           bgcolor: isDark ? alpha("#fff", 0.04) : "#F8FAFC",
                           width: 120,
@@ -978,7 +978,7 @@ const MarkAttendancePage = () => {
                       <TableCell
                         align="center"
                         sx={{
-                          fontWeight: 800,
+                          fontWeight: 700,
                           fontSize: "0.7rem",
                           bgcolor: isDark ? alpha("#fff", 0.04) : "#F8FAFC",
                           width: 110,
@@ -1017,7 +1017,7 @@ const MarkAttendancePage = () => {
                           <TableCell>
                             <Typography
                               variant="body2"
-                              fontWeight={800}
+                              fontWeight={700}
                               sx={{
                                 fontFamily: "monospace",
                                 color: isDark ? "#93C5FD" : "#1E4D98",
@@ -1117,7 +1117,7 @@ const MarkAttendancePage = () => {
                     }
                     sx={{
                       px: { xs: 2, sm: 3 },
-                      fontWeight: 800,
+                      fontWeight: 700,
                       textTransform: "none",
                       borderRadius: 2,
                     }}
@@ -1141,7 +1141,7 @@ const MarkAttendancePage = () => {
                   sx={{
                     py: 1.25,
                     fontSize: { xs: "0.9rem", sm: "0.95rem" },
-                    fontWeight: 800,
+                    fontWeight: 700,
                     borderRadius: 2,
                     textTransform: "none",
                     background:

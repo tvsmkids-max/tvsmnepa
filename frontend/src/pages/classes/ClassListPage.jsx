@@ -89,7 +89,7 @@ const PasswordResetDialog = ({ open, cls, onClose }) => {
       maxWidth="xs"
       fullWidth
     >
-      <DialogTitle fontWeight={800}>Reset Class PIN</DialogTitle>
+      <DialogTitle fontWeight={700}>Reset Class PIN</DialogTitle>
       <form onSubmit={handleSubmit}>
         <DialogContent dividers>
           <Typography variant="body2" color="text.secondary" mb={2}>

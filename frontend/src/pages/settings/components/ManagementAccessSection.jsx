@@ -173,7 +173,7 @@ const ManagementAccessSection = () => {
                 <DashboardOutlinedIcon />
               </Box>
               <Box>
-                <Typography variant="subtitle1" fontWeight={800}>
+                <Typography variant="subtitle1" fontWeight={700}>
                   Management Dashboard Access
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
@@ -188,7 +188,7 @@ const ManagementAccessSection = () => {
               startIcon={<AddOutlinedIcon />}
               onClick={() => setCreateOpen(true)}
               sx={{
-                background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                background: "#0D1B3E",
                 fontWeight: 700,
                 textTransform: "none",
               }}
@@ -356,7 +356,7 @@ const ManagementAccessSection = () => {
               )
             }
             sx={{
-              background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+              background: "#0D1B3E",
               fontWeight: 700,
               textTransform: "none",
             }}
@@ -438,7 +438,7 @@ const AccessUrlRow = ({
         sx={{ mb: 1 }}
       >
         <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
-          <Typography variant="body2" fontWeight={800}>
+          <Typography variant="body2" fontWeight={700}>
             {access.label}
           </Typography>
           {access.isActive ? (

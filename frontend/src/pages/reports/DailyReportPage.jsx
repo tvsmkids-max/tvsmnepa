@@ -360,7 +360,7 @@ const DailyReportPage = () => {
                 startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 16 }} />}
                 sx={{
                   height: 36,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   fontSize: "0.78rem",
                   px: 2,
                 }}
@@ -553,7 +553,7 @@ const DailyReportPage = () => {
                             <Typography
                               sx={{
                                 minWidth: 26,
-                                fontWeight: 800,
+                                fontWeight: 700,
                                 fontSize: "0.8rem",
                                 color: isDark ? "#93C5FD" : "#1E4D98",
                                 fontFamily: "monospace",
@@ -566,7 +566,7 @@ const DailyReportPage = () => {
                             <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Typography
                                 variant="body2"
-                                fontWeight={800}
+                                fontWeight={700}
                                 noWrap
                                 sx={{
                                   fontSize: "0.9rem",
@@ -588,7 +588,7 @@ const DailyReportPage = () => {
                               label={statusConfig.label}
                               size="small"
                               sx={{
-                                fontWeight: 800,
+                                fontWeight: 700,
                                 height: 24,
                                 fontSize: "0.7rem",
                                 bgcolor: isDark
@@ -620,7 +620,7 @@ const DailyReportPage = () => {
                         <TableRow>
                           <TableCell
                             sx={{
-                              fontWeight: 800,
+                              fontWeight: 700,
                               fontSize: "0.7rem",
                               textTransform: "uppercase",
                               bgcolor: isDark ? "#1E293B" : "#F8FAFC",
@@ -632,7 +632,7 @@ const DailyReportPage = () => {
                           </TableCell>
                           <TableCell
                             sx={{
-                              fontWeight: 800,
+                              fontWeight: 700,
                               fontSize: "0.7rem",
                               textTransform: "uppercase",
                               bgcolor: isDark ? "#1E293B" : "#F8FAFC",
@@ -643,7 +643,7 @@ const DailyReportPage = () => {
                           </TableCell>
                           <TableCell
                             sx={{
-                              fontWeight: 800,
+                              fontWeight: 700,
                               fontSize: "0.7rem",
                               textTransform: "uppercase",
                               bgcolor: isDark ? "#1E293B" : "#F8FAFC",
@@ -655,7 +655,7 @@ const DailyReportPage = () => {
                           <TableCell
                             align="center"
                             sx={{
-                              fontWeight: 800,
+                              fontWeight: 700,
                               fontSize: "0.7rem",
                               textTransform: "uppercase",
                               bgcolor: isDark ? "#1E293B" : "#F8FAFC",
@@ -685,7 +685,7 @@ const DailyReportPage = () => {
                               <TableCell sx={{ py: 1 }}>
                                 <Typography
                                   variant="body2"
-                                  fontWeight={800}
+                                  fontWeight={700}
                                   sx={{
                                     fontFamily: "monospace",
                                     fontSize: "0.85rem",
@@ -698,7 +698,7 @@ const DailyReportPage = () => {
                               <TableCell sx={{ py: 1 }}>
                                 <Typography
                                   variant="body2"
-                                  fontWeight={800}
+                                  fontWeight={700}
                                   sx={{
                                     fontSize: "0.88rem",
                                     textTransform: "uppercase",
@@ -723,7 +723,7 @@ const DailyReportPage = () => {
                                   label={statusConfig.label}
                                   size="small"
                                   sx={{
-                                    fontWeight: 800,
+                                    fontWeight: 700,
                                     height: 26,
                                     fontSize: "0.75rem",
                                     bgcolor: isDark
@@ -853,7 +853,7 @@ const DailyReportPage = () => {
                   onClick={(e) => setExportAnchor(e.currentTarget)}
                   disabled={loading || !dailyReport}
                   startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
-                  sx={{ height: 38, fontWeight: 800, px: { xs: 1, sm: 2 } }}
+                  sx={{ height: 38, fontWeight: 700, px: { xs: 1, sm: 2 } }}
                 >
                   {!isXs && "Export"}
                 </Button>
@@ -1015,7 +1015,7 @@ const ClassCard = memo(({ cls, isDark, onClick }) => {
         opacity: cls.isEmpty ? 0.6 : 1,
         "&:hover": {
           borderColor: cls.isLowAttendance ? "#DC2626" : "primary.main",
-          transform: "translateY(-4px)",
+          transform: "none",
           boxShadow: isDark
             ? "0 12px 24px rgba(0,0,0,0.4)"
             : "0 12px 24px rgba(15,23,42,0.06)",
@@ -1042,7 +1042,7 @@ const ClassCard = memo(({ cls, isDark, onClick }) => {
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               variant="h6"
-              fontWeight={900}
+              fontWeight={700}
               sx={{
                 fontSize: "1.1rem",
                 lineHeight: 1.2,
@@ -1069,7 +1069,7 @@ const ClassCard = memo(({ cls, isDark, onClick }) => {
             label={statusConfig.label}
             size="small"
             sx={{
-              fontWeight: 800,
+              fontWeight: 700,
               height: 24,
               fontSize: "0.68rem",
               bgcolor: isDark ? statusConfig.darkBg : statusConfig.bg,
@@ -1084,7 +1084,7 @@ const ClassCard = memo(({ cls, isDark, onClick }) => {
             <>
               <Typography
                 variant="h3"
-                fontWeight={900}
+                fontWeight={700}
                 sx={{
                   fontSize: "2.5rem",
                   color: pctColor,
@@ -1116,7 +1116,7 @@ const ClassCard = memo(({ cls, isDark, onClick }) => {
               />
               <Typography
                 variant="body2"
-                fontWeight={800}
+                fontWeight={700}
                 sx={{ color: statusConfig.color, fontSize: "0.85rem" }}
               >
                 Not Marked Yet
@@ -1145,7 +1145,7 @@ const ClassCard = memo(({ cls, isDark, onClick }) => {
           >
             <Box
               component="span"
-              sx={{ color: "text.primary", fontWeight: 900 }}
+              sx={{ color: "text.primary", fontWeight: 700 }}
             >
               {cls.total}
             </Box>{" "}
@@ -1156,14 +1156,14 @@ const ClassCard = memo(({ cls, isDark, onClick }) => {
                 ·{" "}
                 <Box
                   component="span"
-                  sx={{ color: "#16A34A", fontWeight: 900 }}
+                  sx={{ color: "#16A34A", fontWeight: 700 }}
                 >
                   {cls.present}
                 </Box>{" "}
                 P ·{" "}
                 <Box
                   component="span"
-                  sx={{ color: "#DC2626", fontWeight: 900 }}
+                  sx={{ color: "#DC2626", fontWeight: 700 }}
                 >
                   {cls.absent}
                 </Box>{" "}
@@ -1183,7 +1183,7 @@ const SummaryPill = ({ icon: Icon, value, label, color }) => (
     <Icon sx={{ fontSize: 18, color, mb: 0.5 }} />
     <Typography
       variant="body2"
-      fontWeight={900}
+      fontWeight={700}
       sx={{ fontSize: "1.2rem", color, lineHeight: 1 }}
     >
       {value}
@@ -1192,7 +1192,7 @@ const SummaryPill = ({ icon: Icon, value, label, color }) => (
       variant="caption"
       sx={{
         fontSize: "0.65rem",
-        fontWeight: 800,
+        fontWeight: 700,
         color: "text.secondary",
         textTransform: "uppercase",
         letterSpacing: "0.05em",

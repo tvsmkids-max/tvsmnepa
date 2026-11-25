@@ -38,7 +38,7 @@ const BulkActionToolbar = ({
           p: { xs: 1, sm: 1.5 },
           mb: 2,
           borderRadius: 3,
-          background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+          background: "#0D1B3E",
           color: "#fff",
           position: "sticky",
           top: 8,
@@ -71,7 +71,7 @@ const BulkActionToolbar = ({
             max={999}
             sx={{
               "& .MuiBadge-badge": {
-                fontWeight: 800,
+                fontWeight: 700,
                 right: -4,
                 top: 0,
               },
@@ -79,7 +79,7 @@ const BulkActionToolbar = ({
           >
             <Typography
               variant="body2"
-              fontWeight={800}
+              fontWeight={700}
               sx={{
                 fontSize: { xs: "0.78rem", sm: "0.9rem" },
                 pr: 1.2,
@@ -175,7 +175,7 @@ const BulkActionToolbar = ({
             onClick={onDelete}
             disabled={selectedCount === 0}
             sx={{
-              fontWeight: 800,
+              fontWeight: 700,
               fontSize: { xs: "0.7rem", sm: "0.82rem" },
               px: { xs: 1, sm: 2 },
               textTransform: "none",

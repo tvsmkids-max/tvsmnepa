@@ -527,7 +527,7 @@ const RegisterSummaryCard = ({ register, dateFrom, dateTo, isDark }) => {
             </Typography>
             <Typography
               variant="h4"
-              fontWeight={900}
+              fontWeight={700}
               sx={{ mt: 0.5, letterSpacing: "-0.02em" }}
             >
               {register.class.name} - {register.class.section}
@@ -553,7 +553,7 @@ const RegisterSummaryCard = ({ register, dateFrom, dateTo, isDark }) => {
             </Typography>
             <Typography
               variant="h6"
-              fontWeight={800}
+              fontWeight={700}
               sx={{ mt: 0.5, color: "primary.main" }}
             >
               {fromStr} → {toStr}
@@ -648,7 +648,7 @@ const RegisterSummaryCard = ({ register, dateFrom, dateTo, isDark }) => {
         />
         <Typography
           variant="h6"
-          fontWeight={800}
+          fontWeight={700}
           sx={{ mb: 0.5, letterSpacing: "-0.01em" }}
         >
           Report Ready to Export
@@ -701,7 +701,7 @@ const StatBox = ({ label, value, icon, colorKey, isDark }) => {
         justifyContent: "center",
         "&:hover": {
           borderColor: color.main,
-          transform: "translateY(-2px)",
+          transform: "none",
           boxShadow: isDark
             ? `0 8px 16px ${alpha(color.main, 0.15)}`
             : `0 8px 16px ${alpha(color.main, 0.1)}`,
@@ -726,7 +726,7 @@ const StatBox = ({ label, value, icon, colorKey, isDark }) => {
       </Box>
       <Typography
         variant="h5"
-        fontWeight={900}
+        fontWeight={700}
         sx={{
           color: "text.primary",
           lineHeight: 1,

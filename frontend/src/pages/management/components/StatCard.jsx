@@ -58,7 +58,7 @@ const StatCard = ({
         textAlign: "center",
         height: "100%",
         transition: "transform 0.15s",
-        "&:hover": { transform: "translateY(-2px)" },
+        "&:hover": { transform: "none" },
       }}
     >
       {Icon && (
@@ -68,7 +68,7 @@ const StatCard = ({
       )}
       <Typography
         variant="h5"
-        fontWeight={900}
+        fontWeight={700}
         sx={{
           fontSize: { xs: "1.1rem", sm: "1.4rem" },
           lineHeight: 1,
@@ -81,7 +81,7 @@ const StatCard = ({
         variant="caption"
         sx={{
           fontSize: "0.6rem",
-          fontWeight: 800,
+          fontWeight: 700,
           textTransform: "uppercase",
           letterSpacing: "0.05em",
           color: c.main,

@@ -96,7 +96,7 @@ const HolidayBanner = ({
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
             variant="body2"
-            fontWeight={800}
+            fontWeight={700}
             sx={{ color: primaryColor, fontSize: "0.85rem" }}
           >
             {config.emoji} {config.title}
@@ -122,7 +122,7 @@ const HolidayBanner = ({
         borderRadius: 2.5,
         border: "1px solid",
         borderColor: config.border,
-        background: `linear-gradient(135deg, ${config.bg} 0%, ${isDark ? alpha(config.color, 0.03) : "#FFFFFF"} 100%)`,
+        background: config.bg,
         position: "relative",
         overflow: "hidden",
       }}
@@ -177,7 +177,7 @@ const HolidayBanner = ({
             >
               <Typography
                 variant="h5"
-                fontWeight={900}
+                fontWeight={700}
                 sx={{
                   color: primaryColor,
                   fontSize: { xs: "1.15rem", sm: "1.5rem" },
@@ -190,7 +190,7 @@ const HolidayBanner = ({
                 label={config.subtitle}
                 size="small"
                 sx={{
-                  fontWeight: 800,
+                  fontWeight: 700,
                   height: 22,
                   fontSize: "0.65rem",
                   bgcolor: isDark ? alpha(config.color, 0.25) : "white",
@@ -261,7 +261,7 @@ const HolidayBanner = ({
                 Next working day:{" "}
                 <Box
                   component="span"
-                  sx={{ fontWeight: 800, color: primaryColor }}
+                  sx={{ fontWeight: 700, color: primaryColor }}
                 >
                   {nextWorkingDay.label || nextWorkingDay.dayName}
                 </Box>

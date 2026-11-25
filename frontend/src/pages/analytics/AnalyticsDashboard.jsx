@@ -101,7 +101,7 @@ const QuickStatCard = memo(({ icon: Icon, label, value, period, colorKey }) => {
             </Typography>
             <Typography
               variant="h5"
-              fontWeight={900}
+              fontWeight={700}
               sx={{ color: color.main, lineHeight: 1, mt: 0.3 }}
             >
               {value !== null ? `${value}%` : "—"}
@@ -335,7 +335,7 @@ const AnalyticsDashboard = () => {
                         <Box>
                           <Typography
                             variant="h5"
-                            fontWeight={900}
+                            fontWeight={700}
                             sx={{ color: trendIndicator.color, lineHeight: 1 }}
                           >
                             {insights.comparedToLastMonth.difference > 0
@@ -390,7 +390,7 @@ const AnalyticsDashboard = () => {
                   </Stack>
                   <Typography
                     variant="h6"
-                    fontWeight={900}
+                    fontWeight={700}
                     color="success.main"
                   >
                     {insights.bestClass.name}
@@ -439,7 +439,7 @@ const AnalyticsDashboard = () => {
                     </Stack>
                     <Typography
                       variant="h6"
-                      fontWeight={900}
+                      fontWeight={700}
                       color="error.main"
                     >
                       {insights.worstClass.name}
@@ -465,7 +465,7 @@ const AnalyticsDashboard = () => {
               sx={{ mb: 2 }}
             >
               <TrendingUpOutlinedIcon sx={{ color: "primary.main" }} />
-              <Typography variant="subtitle1" fontWeight={800}>
+              <Typography variant="subtitle1" fontWeight={700}>
                 Attendance Trend (Last 30 Days)
               </Typography>
             </Stack>
@@ -555,7 +555,7 @@ const AnalyticsDashboard = () => {
               sx={{ mb: 2 }}
             >
               <PieChartOutlinedIcon sx={{ color: "primary.main" }} />
-              <Typography variant="subtitle1" fontWeight={800}>
+              <Typography variant="subtitle1" fontWeight={700}>
                 This Month
               </Typography>
             </Stack>
@@ -637,7 +637,7 @@ const AnalyticsDashboard = () => {
       <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }}>
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
           <BarChartOutlinedIcon sx={{ color: "primary.main" }} />
-          <Typography variant="subtitle1" fontWeight={800}>
+          <Typography variant="subtitle1" fontWeight={700}>
             Class-Wise Comparison (This Month)
           </Typography>
         </Stack>
@@ -702,7 +702,7 @@ const AnalyticsDashboard = () => {
                         borderLeftColor: `${perfColor}.main`,
                       }}
                     >
-                      <Typography variant="body2" fontWeight={800} noWrap>
+                      <Typography variant="body2" fontWeight={700} noWrap>
                         {cls.name}
                       </Typography>
                       <Stack
@@ -715,7 +715,7 @@ const AnalyticsDashboard = () => {
                         </Typography>
                         <Typography
                           variant="body2"
-                          fontWeight={900}
+                          fontWeight={700}
                           color={`${perfColor}.main`}
                         >
                           {cls.percentage}%
@@ -755,7 +755,7 @@ const AnalyticsDashboard = () => {
         >
           <Stack direction="row" alignItems="center" spacing={1}>
             <WarningAmberOutlinedIcon sx={{ color: "warning.main" }} />
-            <Typography variant="subtitle1" fontWeight={800}>
+            <Typography variant="subtitle1" fontWeight={700}>
               Top Defaulters (This Month)
             </Typography>
           </Stack>
@@ -801,7 +801,7 @@ const AnalyticsDashboard = () => {
                           : alpha(theme.palette.error.main, 0.4),
                       color: "white",
                       fontSize: "0.85rem",
-                      fontWeight: 800,
+                      fontWeight: 700,
                       flexShrink: 0,
                     }}
                   >
@@ -841,7 +841,7 @@ const AnalyticsDashboard = () => {
                   <Stack alignItems="flex-end">
                     <Typography
                       variant="h6"
-                      fontWeight={900}
+                      fontWeight={700}
                       color="error.main"
                       sx={{ lineHeight: 1 }}
                     >

@@ -271,7 +271,7 @@ const StudentTable = ({
   };
 
   const headerCellStyles = {
-    fontWeight: 800,
+    fontWeight: 700,
     fontSize: "0.68rem",
     textTransform: "uppercase",
     letterSpacing: "0.03em",
@@ -311,7 +311,7 @@ const StudentTable = ({
             marginLeft: "2px !important",
           },
           fontSize: "0.68rem",
-          fontWeight: 800,
+          fontWeight: 700,
           color: "inherit !important",
         }}
       >
@@ -417,7 +417,7 @@ const StudentTable = ({
                   <TableCell sx={cellStyles}>
                     <Typography
                       component="span"
-                      fontWeight={800}
+                      fontWeight={700}
                       sx={{
                         fontFamily: "monospace",
                         fontSize: "0.8rem",
@@ -453,7 +453,7 @@ const StudentTable = ({
                   >
                     <Typography
                       variant="body2"
-                      fontWeight={800}
+                      fontWeight={700}
                       sx={{
                         fontSize: "0.82rem",
                         textTransform: "uppercase",
@@ -547,7 +547,7 @@ const StudentTable = ({
                       sx={{
                         bgcolor: isDark ? alpha("#3B82F6", 0.15) : "#E0EBFF",
                         color: isDark ? "#93C5FD" : "#1E4D98",
-                        fontWeight: 800,
+                        fontWeight: 700,
                         height: 20,
                         fontSize: "0.65rem",
                         "& .MuiChip-label": { px: 0.75 },

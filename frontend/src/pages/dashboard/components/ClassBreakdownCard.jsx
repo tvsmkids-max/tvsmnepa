@@ -41,7 +41,7 @@ const ClassBreakdownCard = ({ data, isLoading, onRefresh }) => {
           <BeachAccessOutlinedIcon
             sx={{ fontSize: 56, color: "warning.main", mb: 1 }}
           />
-          <Typography variant="h6" fontWeight={800}>
+          <Typography variant="h6" fontWeight={700}>
             🏖️ {data.holiday?.name}
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -90,7 +90,7 @@ const ClassBreakdownCard = ({ data, isLoading, onRefresh }) => {
             <Box>
               <Typography
                 variant="h6"
-                fontWeight={800}
+                fontWeight={700}
                 sx={{ fontSize: "1rem" }}
               >
                 Class-wise Breakdown
@@ -121,7 +121,7 @@ const ClassBreakdownCard = ({ data, isLoading, onRefresh }) => {
               startIcon={<EventNoteOutlinedIcon />}
               onClick={() => navigate("/attendance/mark")}
               sx={{
-                background: "linear-gradient(135deg, #0D1B3E 0%, #1E4D98 100%)",
+                background: "#0D1B3E",
                 fontWeight: 700,
                 textTransform: "none",
                 fontSize: "0.78rem",
@@ -195,7 +195,7 @@ const ClassBreakdownCard = ({ data, isLoading, onRefresh }) => {
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography
                         variant="body2"
-                        fontWeight={800}
+                        fontWeight={700}
                         sx={{ fontSize: "0.85rem" }}
                       >
                         Class {cls.name} - {cls.section}
@@ -227,7 +227,7 @@ const ClassBreakdownCard = ({ data, isLoading, onRefresh }) => {
                         />
                         <Typography
                           variant="body2"
-                          fontWeight={900}
+                          fontWeight={700}
                           sx={{
                             fontSize: "1rem",
                             color:
