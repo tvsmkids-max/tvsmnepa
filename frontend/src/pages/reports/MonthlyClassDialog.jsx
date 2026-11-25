@@ -154,14 +154,20 @@ const MonthlyClassDialog = ({
 
   const isManagementMode = mode === "management";
 
-  // ─── Fetch data ───
-  useEffect(() => {
-    if (!open || !classData?._id) {
+  const isActive = Boolean(open && classData?._id);
+  const [prevActive, setPrevActive] = useState(isActive);
+  if (isActive !== prevActive) {
+    setPrevActive(isActive);
+    if (!isActive) {
       setDetail(null);
       setSearch("");
       setFilter("all");
-      return;
     }
+  }
+
+  // ─── Fetch data ───
+  useEffect(() => {
+    if (!open || !classData?._id) return;
 
     let cancelled = false;
     const load = async () => {

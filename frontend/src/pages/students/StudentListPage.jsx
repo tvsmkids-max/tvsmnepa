@@ -245,10 +245,13 @@ const StudentListPage = () => {
     setPage(0);
   }, []);
 
-  useEffect(() => {
+  const filterKey = `${debouncedSearch}|${filters.class}|${filters.section}|${filters.status}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
     setSelectedIds(new Set());
     setPage(0);
-  }, [debouncedSearch, filters.class, filters.section, filters.status]);
+  }
 
   const toggleSelect = useCallback(
     (id) => {

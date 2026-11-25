@@ -108,13 +108,17 @@ const AttendanceRegisterTab = () => {
     };
   }, [enqueueSnackbar]);
 
+  const hasRegisterInputs = Boolean(selectedClass && dateFrom && dateTo);
+  const [prevHasInputs, setPrevHasInputs] = useState(hasRegisterInputs);
+  if (hasRegisterInputs !== prevHasInputs) {
+    setPrevHasInputs(hasRegisterInputs);
+    if (!hasRegisterInputs) setRegister(null);
+  }
+
   // ─── Load register data ───
   useEffect(() => {
     if (classesLoading) return;
-    if (!selectedClass || !dateFrom || !dateTo) {
-      setRegister(null);
-      return;
-    }
+    if (!selectedClass || !dateFrom || !dateTo) return;
 
     let cancelled = false;
     const load = async () => {

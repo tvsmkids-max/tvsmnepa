@@ -53,14 +53,16 @@ const TeacherResetPasswordDialog = ({ open, onClose, teacher, onSuccess }) => {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (open) {
       setNewPassword("");
       setConfirmPassword("");
       setShowPassword(false);
       setSuccess(false);
     }
-  }, [open]);
+  }
 
   const validatePassword = () => {
     if (!newPassword) return "Password is required";
