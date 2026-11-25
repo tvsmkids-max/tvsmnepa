@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Box,
   Paper,
@@ -54,6 +55,16 @@ const formatDate = (d) => {
 };
 
 const ExternalApiSection = () => {
+  // Opened from the mobile menu as /settings#api-keys: scroll to this section.
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash !== "#api-keys") return undefined;
+    const t = setTimeout(() => {
+      document.getElementById("api-keys")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [hash]);
+
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const { enqueueSnackbar } = useSnackbar();
@@ -121,7 +132,7 @@ const ExternalApiSection = () => {
   };
 
   return (
-    <Paper sx={{ p: 3, borderRadius: 3, mt: 3 }}>
+    <Paper id="api-keys" sx={{ p: 3, borderRadius: 3, mt: 3, scrollMarginTop: 80 }}>
       {/* Header */}
       <Stack
         direction={{ xs: "column", sm: "row" }}

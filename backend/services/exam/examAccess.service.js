@@ -3,6 +3,7 @@
 const mongoose = require("mongoose");
 const Class = require("../../models/Class.model");
 const Exam = require("../../models/exam/Exam.model");
+const Settings = require("../../models/Settings.model");
 const ExamClassConfig = require("../../models/exam/ExamClassConfig.model");
 const ExamTimetableEntry = require("../../models/exam/ExamTimetableEntry.model");
 const { ROLES } = require("../../constants/roles");
@@ -80,7 +81,35 @@ class ExamAccessService {
   async listMine(user) {
     const classId = await getTeacherClassId(user);
     const configs = await ExamClassConfig.find({ class: classId }).lean();
-    if (configs.length === 0) return [];
+
+    // Exams the admin is still preparing in the active session are listed as
+    // "coming soon" (name and dates only; no subjects, marks or timetable).
+    const settings = await Settings.findOne().select("activeSession").lean();
+    const comingSoon = settings?.activeSession
+      ? await Exam.find({
+          session: settings.activeSession,
+          status: {
+            $in: [EXAM_STATUS.DRAFT, EXAM_STATUS.CONFIGURATION_PENDING],
+          },
+        })
+          .populate("session", "name")
+          .sort({ startDate: -1, createdAt: -1 })
+          .lean()
+      : [];
+    const comingSoonRows = comingSoon.map((e) => ({
+      _id: e._id,
+      name: e.name,
+      examType: e.examType,
+      status: e.status,
+      session: e.session,
+      startDate: e.startDate,
+      endDate: e.endDate,
+      class: classId,
+      comingSoon: true,
+      subjects: [],
+      timetable: [],
+    }));
+    if (configs.length === 0) return comingSoonRows;
 
     const exams = await Exam.find({
       _id: { $in: configs.map((c) => c.exam) },
@@ -105,7 +134,7 @@ class ExamAccessService {
       l.sort((a, b) =>
         `${a.date} ${a.subjectName}`.localeCompare(`${b.date} ${b.subjectName}`),
       );
-    return exams.map((e) => ({
+    const visible = exams.map((e) => ({
       _id: e._id,
       name: e.name,
       examType: e.examType,
@@ -118,6 +147,7 @@ class ExamAccessService {
       subjects: byExam.get(String(e._id)).subjects,
       timetable: sortTt(ttByExam.get(String(e._id))),
     }));
+    return [...visible, ...comingSoonRows];
   }
 
   async getMine(user, examId) {
