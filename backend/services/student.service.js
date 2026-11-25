@@ -16,6 +16,31 @@ const MAX_BULK_DELETE = 100;
 // Class users can only toggle between these two statuses
 const CLASS_ALLOWED_STATUSES = ["Active", "Inactive"];
 
+// Removes every record that belongs to the given students (used for hard delete only).
+async function purgeStudentData(ids) {
+  const Attendance = require("../models/Attendance.model");
+  const ExamMarks = require("../models/exam/ExamMarks.model");
+  const ExamResult = require("../models/exam/ExamResult.model");
+  const ExamRollNumber = require("../models/exam/ExamRollNumber.model");
+  const ExamReportCardMeta = require("../models/exam/ExamReportCardMeta.model");
+  const filter = { student: { $in: ids } };
+  const [att, marks, results, rolls, meta] = await Promise.all([
+    Attendance.deleteMany(filter),
+    ExamMarks.deleteMany(filter),
+    ExamResult.deleteMany(filter),
+    ExamRollNumber.deleteMany(filter),
+    ExamReportCardMeta.deleteMany(filter),
+  ]);
+  return {
+    attendance: att.deletedCount || 0,
+    examRecords:
+      (marks.deletedCount || 0) +
+      (results.deletedCount || 0) +
+      (rolls.deletedCount || 0) +
+      (meta.deletedCount || 0),
+  };
+}
+
 class StudentService {
   /**
    * Restrict filters for role=class to their linkedClass only
@@ -282,13 +307,14 @@ class StudentService {
     const student = await studentRepository.findById(id);
     if (!student) throwError("Student not found", 404);
 
+    const purged = await purgeStudentData([student._id]);
     await studentRepository.deleteById(id);
 
     await createAuditLog({
       user,
       action: "DELETE",
       module: "Student",
-      description: `Deleted student ${student.name} (${student.scholarNumber})`,
+      description: `Deleted student ${student.name} (${student.scholarNumber}). Attendance removed: ${purged.attendance}, exam records removed: ${purged.examRecords}`,
       resourceId: id,
       resourceType: "Student",
       before: student,
@@ -343,11 +369,8 @@ class StudentService {
     let attendanceDeleted = 0;
 
     if (mode === "hard") {
-      const Attendance = require("../models/Attendance.model");
-      const attResult = await Attendance.deleteMany({
-        student: { $in: foundIds },
-      });
-      attendanceDeleted = attResult.deletedCount || 0;
+      const purged = await purgeStudentData(foundIds);
+      attendanceDeleted = purged.attendance;
 
       await studentRepository.bulkHardDelete(foundIds);
     } else {

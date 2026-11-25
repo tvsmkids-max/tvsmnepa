@@ -21,7 +21,6 @@ jobs:
       - run: npm ci
       - name: Lint
         run: npx eslint src --quiet
-        continue-on-error: true   # remove once the remaining lint errors are fixed
       - name: Build
         run: npm run build
 

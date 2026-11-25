@@ -224,10 +224,7 @@ const MarkAttendancePage = () => {
   ]);
 
   useEffect(() => {
-    if (!selectedClass || !date) {
-      setSheet(null);
-      return;
-    }
+    if (!selectedClass || !date) return;
     let cancelled = false;
     const load = async () => {
       setLoading(true);
@@ -264,6 +261,13 @@ const MarkAttendancePage = () => {
       cancelled = true;
     };
   }, [selectedClass, date, refreshKey, enqueueSnackbar]);
+
+  const [prevHasSelection, setPrevHasSelection] = useState(false);
+  const hasSelection = Boolean(selectedClass && date);
+  if (hasSelection !== prevHasSelection) {
+    setPrevHasSelection(hasSelection);
+    if (!hasSelection) setSheet(null);
+  }
 
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
