@@ -219,10 +219,8 @@ class PromotionService {
       const result = await Student.insertMany(newStudents, { ordered: false });
       promoted = result.length;
     } catch (err) {
-      if (err.insertedDocs) {
-        promoted = err.insertedDocs.length;
-        failed = newStudents.length - promoted;
-      }
+      promoted = err.insertedDocs ? err.insertedDocs.length : 0;
+      failed = newStudents.length - promoted;
       logger.error(`[Promotion] Some inserts failed: ${err.message}`);
     }
 

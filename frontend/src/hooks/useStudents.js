@@ -95,6 +95,8 @@ export const useCreateStudent = () => {
     mutationFn: (data) => studentApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: studentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: studentKeys.sections() });
       enqueueSnackbar("Student added successfully", { variant: "success" });
     },
@@ -117,6 +119,8 @@ export const useUpdateStudent = () => {
     mutationFn: ({ id, data }) => studentApi.update(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: studentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({
         queryKey: studentKeys.detail(variables.id),
       });
@@ -141,6 +145,8 @@ export const useUpdateStudentStatus = () => {
     mutationFn: ({ id, data }) => studentApi.updateStatus(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: studentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({
         queryKey: studentKeys.detail(variables.id),
       });
@@ -165,6 +171,8 @@ export const useDeleteStudent = () => {
     mutationFn: (id) => studentApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: studentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       enqueueSnackbar("Student deleted", { variant: "success" });
     },
     onError: (err) => {
@@ -186,6 +194,8 @@ export const useBulkDeleteStudents = () => {
     mutationFn: ({ ids, mode }) => studentApi.bulkDelete(ids, mode),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: studentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       enqueueSnackbar(res.data?.message || "Bulk action completed", {
         variant: "success",
       });
