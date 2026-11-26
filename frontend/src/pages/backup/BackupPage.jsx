@@ -1,16 +1,12 @@
+import PageHeader from "../../components/common/PageHeader";
 import React from "react";
 import {
   Box,
   Typography,
-  Breadcrumbs,
-  Link,
   Stack,
   Grid,
   Alert,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 
 import BackupStatsCard from "./components/BackupStatsCard";
 import BackupCard from "./components/BackupCard";
@@ -19,61 +15,17 @@ import RestoreCard from "./components/RestoreCard";
 import { useBackupStats, useDownloadBackup } from "../../hooks/useBackup";
 
 const BackupPage = () => {
-  const navigate = useNavigate();
   const { data: stats, isLoading } = useBackupStats();
   const downloadMutation = useDownloadBackup();
 
   return (
     <Box sx={{ pb: { xs: 10, md: 4 } }}>
       {/* Header */}
-      <Box sx={{ mb: 2.5 }}>
-        <Breadcrumbs
-          separator={<NavigateNextIcon fontSize="small" />}
-          sx={{ mb: 1 }}
-        >
-          <Link
-            underline="hover"
-            color="inherit"
-            onClick={() => navigate("/dashboard")}
-            sx={{ cursor: "pointer", fontSize: "0.82rem" }}
-          >
-            Dashboard
-          </Link>
-          <Typography
-            color="text.primary"
-            sx={{ fontSize: "0.82rem", fontWeight: 700 }}
-          >
-            Backup & Restore
-          </Typography>
-        </Breadcrumbs>
-
-        <Stack direction="row" alignItems="center" spacing={1.5}>
-          <StorageOutlinedIcon sx={{ fontSize: 32, color: "primary.main" }} />
-          <Box>
-            <Typography
-              variant="h4"
-              fontWeight={700}
-              sx={{
-                fontSize: { xs: "1.5rem", sm: "1.75rem", md: "2rem" },
-                lineHeight: 1.1,
-                color: "text.primary",
-              }}
-            >
-              Backup & Restore
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{
-                mt: 0.3,
-                fontSize: { xs: "0.78rem", sm: "0.85rem" },
-              }}
-            >
-              Protect your school data with regular backups
-            </Typography>
-          </Box>
-        </Stack>
-      </Box>
+      <PageHeader
+        title="Backup & Restore"
+        subtitle="Protect your school data with regular backups"
+        breadcrumbs={[{ label: "Dashboard", path: "/dashboard" }, { label: "Backup & Restore" }]}
+      />
 
       {/* Info banner for first-time users */}
       {stats && !stats.lastBackupAt && (

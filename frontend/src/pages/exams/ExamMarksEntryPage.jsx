@@ -22,18 +22,6 @@ const niceDate = (d) =>
   d
     ? new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" })
     : "";
-const maxText = (s) =>
-  s.gradeOnly
-    ? "Grade"
-    : s.internalMax > 0 || s.oralMax > 0
-      ? `${s.maxMarks} (${[
-          `${s.maxMarks - (s.internalMax || 0) - (s.oralMax || 0)}W`,
-          s.internalMax > 0 && `${s.internalMax}I`,
-          s.oralMax > 0 && `${s.oralMax}O`,
-        ]
-          .filter(Boolean)
-          .join(" + ")})`
-      : s.maxMarks;
 
 // The marks columns of a subject: Written (or plain Marks), then Internal / Oral when it has them.
 const partsOf = (subj) => {
@@ -294,7 +282,7 @@ const ExamMarksEntryPage = () => {
         {overview.submission.reopenCount > 0 && (
           <Chip size="small" variant="outlined" label={`Reopened ${overview.submission.reopenCount}×`} />
         )}
-        <Button size="small" onClick={() => confirmDiscard() && navigate("/exams/mine")}>
+        <Button size="small" variant="outlined" onClick={() => confirmDiscard() && navigate("/exams/mine")}>
           Back to examinations
         </Button>
       </Stack>
@@ -312,12 +300,11 @@ const ExamMarksEntryPage = () => {
         </Alert>
       )}
 
-      <Paper variant="outlined" sx={{ mb: 2, overflowX: "auto" }}>
-        <Table size="small" sx={gridTableSx}>
+      <Paper variant="outlined" sx={{ mb: 2 }}>
+        <Table size="small" sx={{ ...gridTableSx, "& td, & th": { px: 1, py: 0.75 } }}>
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 700 }}>Subject</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700 }}>Max marks</TableCell>
               <TableCell align="right" sx={{ fontWeight: 700, display: { xs: "none", sm: "table-cell" } }}>Passing</TableCell>
               <TableCell align="right" sx={{ fontWeight: 700 }}>Entered</TableCell>
               <TableCell align="right" sx={{ fontWeight: 700, display: { xs: "none", sm: "table-cell" } }}>Absent</TableCell>
@@ -328,7 +315,6 @@ const ExamMarksEntryPage = () => {
             {overview.subjects.map((s) => (
               <TableRow key={s.key} hover selected={s.key === subjectKey} sx={{ cursor: "pointer" }} onClick={() => switchSubject(null, s.key)}>
                 <TableCell sx={{ fontWeight: 600 }}>{s.name}</TableCell>
-                <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>{maxText(s)}</TableCell>
                 <TableCell align="right" sx={{ display: { xs: "none", sm: "table-cell" } }}>{s.gradeOnly ? "—" : s.passingMarks}</TableCell>
                 <TableCell align="right">{s.entered} / {s.totalStudents}</TableCell>
                 <TableCell align="right" sx={{ display: { xs: "none", sm: "table-cell" } }}>{s.absent}</TableCell>

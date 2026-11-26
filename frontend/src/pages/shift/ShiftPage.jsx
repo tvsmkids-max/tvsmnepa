@@ -1,3 +1,4 @@
+import PageHeader from "../../components/common/PageHeader";
 import React, { useState, useMemo, useCallback } from "react";
 import {
   Box,
@@ -6,8 +7,6 @@ import {
   Stack,
   Button,
   CircularProgress,
-  Breadcrumbs,
-  Link,
   Table,
   TableBody,
   TableCell,
@@ -21,7 +20,6 @@ import {
   InputAdornment,
   InputLabel,
   useTheme,
-  useMediaQuery,
   alpha,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
@@ -211,39 +209,11 @@ const ShiftPage = () => {
   return (
     <Box sx={{ pb: { xs: 10, md: 4 } }}>
       {/* ─── BREADCRUMBS & HEADER ─── */}
-      <Box sx={{ mb: 2 }}>
-        <Breadcrumbs
-          separator={<NavigateNextIcon fontSize="small" />}
-          sx={{ mb: 0.5 }}
-        >
-          <Link
-            underline="hover"
-            color="inherit"
-            onClick={() => navigate("/dashboard")}
-            sx={{ cursor: "pointer", fontSize: "0.75rem", fontWeight: 500 }}
-          >
-            Dashboard
-          </Link>
-          <Typography
-            color="text.primary"
-            sx={{ fontSize: "0.75rem", fontWeight: 600 }}
-          >
-            Class / Section Shift
-          </Typography>
-        </Breadcrumbs>
-        <Typography
-          variant="h4"
-          fontWeight={700}
-          sx={{
-            fontSize: { xs: "1.35rem", sm: "1.75rem" },
-            lineHeight: 1.2,
-            color: "text.primary",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          Class / Section Shift
-        </Typography>
-      </Box>
+      <PageHeader
+        title="Class / Section Shift"
+        subtitle="Move students between classes and sections"
+        breadcrumbs={[{ label: "Dashboard", path: "/dashboard" }, { label: "Class / Section Shift" }]}
+      />
 
       {/* ─── COMPACT FILTER BAR ─── */}
       <Paper
