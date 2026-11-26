@@ -39,7 +39,6 @@ import {
 import studentApi from "../../api/studentApi";
 import { exportStudentsToExcel } from "../../utils/exportUtils";
 import { downloadStudentListPdf } from "../../utils/studentListPdf";
-import TeacherStudentList from "./components/TeacherStudentList";
 
 const MAX_BULK_SELECT = 100;
 
@@ -443,25 +442,6 @@ const StudentListPage = () => {
     },
     [selectionMode, isAdmin, toggleSelect, navigate],
   );
-
-  if (!isAdmin && isMobile) {
-    const c = sortedStudents[0]?.class;
-    return (
-      <TeacherStudentList
-        students={sortedStudents}
-        classLabel={c ? `${c.name}${c.section ? ` - ${c.section}` : ""}` : ""}
-        search={filters.search}
-        status={filters.status}
-        onSearch={(v) => handleFilterChange({ ...filters, search: v })}
-        onStatus={(v) => handleFilterChange({ ...filters, status: v })}
-        loading={isLoading}
-        fetching={isFetching}
-        exporting={exporting}
-        onExportPdf={handleExportExcel}
-        onOpen={(st) => navigate(`/students/${st._id}`)}
-      />
-    );
-  }
 
   return (
     <Box sx={{ pb: { xs: 10, md: 4 } }}>

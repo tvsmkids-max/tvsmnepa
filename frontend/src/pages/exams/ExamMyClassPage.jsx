@@ -95,31 +95,26 @@ const ExamMyClassPage = () => {
         </Paper>
       ) : (
         <Paper key={e._id} sx={{ p: 2, mb: 2 }}>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            justifyContent="space-between"
-            spacing={1}
-            sx={{ mb: 1 }}
-          >
-            <Box>
-              <Typography variant="h6">{e.name}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {examTypeLabel(e.examType)} · {e.session?.name} · {fmt(e.startDate)} →{" "}
-                {fmt(e.endDate)}
-              </Typography>
-            </Box>
-            <Stack direction="row" spacing={1} alignItems="flex-start">
-              {e.status === "results_published" && (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => navigate(`/exams/mine/${e._id}/results`)}
-                >
-                  View results
-                </Button>
-              )}
+          <Stack direction="row" spacing={1} sx={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+            <Typography variant="h6" sx={{ lineHeight: 1.3 }}>{e.name}</Typography>
+            <Chip
+              size="small"
+              label={EXAM_STATUS_LABELS[e.status]}
+              color={EXAM_STATUS_COLORS[e.status]}
+              sx={{ flexShrink: 0 }}
+            />
+          </Stack>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+            {examTypeLabel(e.examType)} · {e.session?.name}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {fmt(e.startDate)} → {fmt(e.endDate)}
+          </Typography>
+          {(e.status === "results_published" || MARKS_STATUSES.includes(e.status)) && (
+            <Stack direction="row" spacing={1} sx={{ mt: 1.5, mb: 1.5 }}>
               {MARKS_STATUSES.includes(e.status) && (
                 <Button
+                  fullWidth
                   size="small"
                   variant="contained"
                   onClick={() => navigate(`/exams/mine/${e._id}/marks`)}
@@ -129,13 +124,18 @@ const ExamMyClassPage = () => {
                     : "View marks"}
                 </Button>
               )}
-              <Chip
-                size="small"
-                label={EXAM_STATUS_LABELS[e.status]}
-                color={EXAM_STATUS_COLORS[e.status]}
-              />
+              {e.status === "results_published" && (
+                <Button
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  onClick={() => navigate(`/exams/mine/${e._id}/results`)}
+                >
+                  View results
+                </Button>
+              )}
             </Stack>
-          </Stack>
+          )}
           {e.instructions && (
             <Alert severity="info" sx={{ mb: 1.5, whiteSpace: "pre-line" }}>
               {e.instructions}
@@ -143,16 +143,16 @@ const ExamMyClassPage = () => {
           )}
           {e.timetable?.length > 0 && (
             <>
-              <Typography variant="subtitle2" sx={{ mt: 1, mb: 0.5 }}>
+              <Typography variant="subtitle2" sx={{ mt: 1.5, mb: 0.75, fontWeight: 700 }}>
                 Timetable
               </Typography>
               <TimetableTable entries={e.timetable} sx={{ mb: 2 }} />
             </>
           )}
-          <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+          <Typography variant="subtitle2" sx={{ mb: 0.75, fontWeight: 700 }}>
             Subjects and marks
           </Typography>
-          <SubjectMarksTable subjects={e.subjects} />
+          <SubjectMarksTable subjects={e.subjects} showPassing={false} />
         </Paper>
       ))}
     </Box>

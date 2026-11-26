@@ -34,6 +34,9 @@ import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
+import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
+import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
@@ -104,6 +107,15 @@ const MobileBottomNav = () => {
       icon: <SwapHorizOutlinedIcon />,
       path: "/students/shift",
     },
+
+    { divider: true, label: "Examinations" },
+    { label: "All Examinations", icon: <QuizOutlinedIcon />, path: "/exams" },
+    { label: "Exam Timetable", icon: <EventNoteOutlinedIcon />, path: "/exams/section/timetable" },
+    { label: "Admit Cards", icon: <BadgeOutlinedIcon />, path: "/exams/section/admit-cards" },
+    { label: "Marks Monitoring", icon: <EditNoteOutlinedIcon />, path: "/exams/section/marks" },
+    { label: "Results", icon: <EmojiEventsOutlinedIcon />, path: "/exams/section/results" },
+    { label: "Report Cards", icon: <DescriptionOutlinedIcon />, path: "/exams/report-cards" },
+    { label: "Exam Reports", icon: <AnalyticsOutlinedIcon />, path: "/exams/reports" },
 
     { divider: true, label: "Reports" },
     {
@@ -184,7 +196,8 @@ const MobileBottomNav = () => {
   const moreItems = isAdmin ? adminMoreItems : classMoreItems;
 
   const isActivePath = (path) =>
-    location.pathname === path || location.pathname.startsWith(`${path}/`);
+    location.pathname === path ||
+    (path !== "/exams" && location.pathname.startsWith(`${path}/`));
 
   const roleLabel =
     user?.role === "admin"

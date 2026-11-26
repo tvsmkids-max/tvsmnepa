@@ -2,25 +2,25 @@ import { Box, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/mate
 import { gridTableSx } from "../../components/common/tableStyles";
 
 const niceDate = (d) =>
-  new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" });
+  new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit", timeZone: "UTC" });
 const dayName = (d) =>
-  new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { weekday: "long", timeZone: "UTC" });
+  new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { weekday: "short", timeZone: "UTC" });
 
 /** Date | Day | Subject for one class. entries: [{date, subjectName}] */
 export const TimetableTable = ({ entries, sx }) => (
-  <Box sx={{ overflowX: "auto", ...sx }}>
-    <Table size="small" sx={gridTableSx}>
+  <Box sx={sx}>
+    <Table size="small" sx={{ ...gridTableSx, tableLayout: "fixed", width: "100%", "& td, & th": { px: 1, py: 0.75, fontSize: { xs: "0.8rem", sm: "0.875rem" } } }}>
       <TableHead>
         <TableRow>
-          <TableCell>Date</TableCell>
-          <TableCell>Day</TableCell>
+          <TableCell sx={{ width: "34%" }}>Date</TableCell>
+          <TableCell sx={{ width: "22%" }}>Day</TableCell>
           <TableCell>Subject</TableCell>
         </TableRow>
       </TableHead>
       <TableBody>
         {entries.map((t) => (
           <TableRow key={t._id || `${t.date}|${t.subjectName}`}>
-            <TableCell sx={{ whiteSpace: "nowrap" }}>{niceDate(t.date)}</TableCell>
+            <TableCell>{niceDate(t.date)}</TableCell>
             <TableCell>{dayName(t.date)}</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>{t.subjectName}</TableCell>
           </TableRow>
@@ -32,13 +32,13 @@ export const TimetableTable = ({ entries, sx }) => (
 
 const dash = "—";
 
-/** Subject | Written | Internal | Oral | Total | Passing. Grade-only subjects show "Grade". */
-export const SubjectMarksTable = ({ subjects, sx }) => {
+/** Subject | Written | Internal | Oral | Total (| Passing when showPassing). Grade-only subjects show "Grade". */
+export const SubjectMarksTable = ({ subjects, sx, showPassing = true }) => {
   const hasInternal = subjects.some((s) => (s.internalMax || 0) > 0);
   const hasOral = subjects.some((s) => (s.oralMax || 0) > 0);
   return (
     <Box sx={{ overflowX: "auto", ...sx }}>
-      <Table size="small" sx={gridTableSx}>
+      <Table size="small" sx={{ ...gridTableSx, "& td, & th": { px: 1, py: 0.75, fontSize: { xs: "0.8rem", sm: "0.875rem" } } }}>
         <TableHead>
           <TableRow>
             <TableCell>Subject</TableCell>
@@ -46,7 +46,7 @@ export const SubjectMarksTable = ({ subjects, sx }) => {
             {hasInternal && <TableCell align="right">Internal</TableCell>}
             {hasOral && <TableCell align="right">Oral</TableCell>}
             <TableCell align="right">Total</TableCell>
-            <TableCell align="right">Passing</TableCell>
+            {showPassing && <TableCell align="right">Passing</TableCell>}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -67,7 +67,7 @@ export const SubjectMarksTable = ({ subjects, sx }) => {
                     <TableCell align="right" sx={{ fontWeight: 700 }}>{s.maxMarks}</TableCell>
                   </>
                 )}
-                <TableCell align="right">{s.gradeOnly ? dash : s.passingMarks}</TableCell>
+                {showPassing && <TableCell align="right">{s.gradeOnly ? dash : s.passingMarks}</TableCell>}
               </TableRow>
             );
           })}
