@@ -1,5 +1,6 @@
 "use strict";
 
+const escapeRegex = require("../utils/escapeRegex");
 const express = require("express");
 const router = express.Router();
 const ActivityLog = require("../models/ActivityLog.model");
@@ -37,9 +38,9 @@ router.get(
 
     if (search) {
       filter.$or = [
-        { description: new RegExp(search, "i") },
-        { userName: new RegExp(search, "i") },
-        { module: new RegExp(search, "i") },
+        { description: new RegExp(escapeRegex(search), "i") },
+        { userName: new RegExp(escapeRegex(search), "i") },
+        { module: new RegExp(escapeRegex(search), "i") },
       ];
     }
 

@@ -1,5 +1,6 @@
 "use strict";
 
+const escapeRegex = require("../utils/escapeRegex");
 const teacherRepository = require("../repositories/teacher.repository");
 const userRepository = require("../repositories/user.repository");
 const { hashPassword } = require("../utils/passwordHelper");
@@ -16,10 +17,10 @@ class TeacherService {
 
     if (search) {
       filter.$or = [
-        { name: new RegExp(search, "i") },
-        { employeeId: new RegExp(search, "i") },
-        { email: new RegExp(search, "i") },
-        { mobile: new RegExp(search, "i") },
+        { name: new RegExp(escapeRegex(search), "i") },
+        { employeeId: new RegExp(escapeRegex(search), "i") },
+        { email: new RegExp(escapeRegex(search), "i") },
+        { mobile: new RegExp(escapeRegex(search), "i") },
       ];
     }
 

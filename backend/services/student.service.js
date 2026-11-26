@@ -1,5 +1,6 @@
 "use strict";
 
+const escapeRegex = require("../utils/escapeRegex");
 const studentRepository = require("../repositories/student.repository");
 const classRepository = require("../repositories/class.repository");
 const Settings = require("../models/Settings.model");
@@ -103,12 +104,12 @@ class StudentService {
     if (search && search.trim()) {
       const trimmed = search.trim();
       filter.$or = [
-        { name: new RegExp(trimmed, "i") },
-        { fatherName: new RegExp(trimmed, "i") },
-        { motherName: new RegExp(trimmed, "i") },
-        { scholarNumber: new RegExp(trimmed, "i") },
-        { mobile: new RegExp(trimmed, "i") },
-        { alternateMobile: new RegExp(trimmed, "i") },
+        { name: new RegExp(escapeRegex(trimmed), "i") },
+        { fatherName: new RegExp(escapeRegex(trimmed), "i") },
+        { motherName: new RegExp(escapeRegex(trimmed), "i") },
+        { scholarNumber: new RegExp(escapeRegex(trimmed), "i") },
+        { mobile: new RegExp(escapeRegex(trimmed), "i") },
+        { alternateMobile: new RegExp(escapeRegex(trimmed), "i") },
       ];
     }
 
@@ -157,6 +158,17 @@ class StudentService {
     );
     if (existing) {
       throwError(`Scholar number "${data.scholarNumber}" already exists in this session`, 409);
+    }
+
+    // Class accounts can only add students to their own class.
+    if (user && user.role === ROLES.CLASS) {
+      if (!user.linkedClass) {
+        throwError("No class is linked to this account", 403);
+      }
+      if (data.class && data.class.toString() !== user.linkedClass.toString()) {
+        throwError("You can only add students to your own class", 403);
+      }
+      data.class = user.linkedClass;
     }
 
     const cls = await classRepository.findById(data.class);
