@@ -5,7 +5,10 @@ const { stub, fresh } = require("./helpers");
 
 const calls = [];
 const model = (name) => ({
-  deleteMany: async (filter) => { calls.push({ name, filter }); return { deletedCount: 2 }; },
+  deleteMany: async (filter) => {
+    calls.push({ name, filter });
+    return { deletedCount: 2 };
+  },
 });
 stub("models/Attendance.model.js", model("Attendance"));
 stub("models/exam/ExamMarks.model.js", model("ExamMarks"));
@@ -15,7 +18,9 @@ stub("models/exam/ExamReportCardMeta.model.js", model("ExamReportCardMeta"));
 const deleted = [];
 stub("repositories/student.repository.js", {
   findById: async (id) => ({ _id: id, name: "N", scholarNumber: "1" }),
-  deleteById: async (id) => { deleted.push(id); },
+  deleteById: async (id) => {
+    deleted.push(id);
+  },
   findByIds: async () => [],
 });
 stub("repositories/class.repository.js", {});

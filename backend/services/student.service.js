@@ -157,7 +157,21 @@ class StudentService {
       data.session,
     );
     if (existing) {
-      throwError(`Scholar number "${data.scholarNumber}" already exists in this session`, 409);
+      throwError(
+        `Scholar number "${data.scholarNumber}" already exists in this session`,
+        409,
+      );
+    }
+
+    // Class accounts can only add students to their own class.
+    if (user && user.role === ROLES.CLASS) {
+      if (!user.linkedClass) {
+        throwError("No class is linked to this account", 403);
+      }
+      if (data.class && data.class.toString() !== user.linkedClass.toString()) {
+        throwError("You can only add students to your own class", 403);
+      }
+      data.class = user.linkedClass;
     }
 
     // Class accounts can only add students to their own class.
@@ -204,8 +218,10 @@ class StudentService {
       data.scholarNumber.trim().toUpperCase() !== existing.scholarNumber
     ) {
       const formattedScholar = data.scholarNumber.trim().toUpperCase();
-      const duplicate =
-        await studentRepository.findByScholarNumber(formattedScholar, data.session || existing.session);
+      const duplicate = await studentRepository.findByScholarNumber(
+        formattedScholar,
+        data.session || existing.session,
+      );
       if (duplicate && duplicate._id.toString() !== id) {
         throwError(
           `Scholar number "${formattedScholar}" is already assigned to another student`,

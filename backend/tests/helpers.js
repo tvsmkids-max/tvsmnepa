@@ -13,7 +13,12 @@ const path = require("path");
 // Replace a module with a stub before the code under test loads it.
 const stub = (relFromBackend, exportsObj) => {
   const abs = require.resolve(path.join(__dirname, "..", relFromBackend));
-  require.cache[abs] = { id: abs, filename: abs, loaded: true, exports: exportsObj };
+  require.cache[abs] = {
+    id: abs,
+    filename: abs,
+    loaded: true,
+    exports: exportsObj,
+  };
   return abs;
 };
 
