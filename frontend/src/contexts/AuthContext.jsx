@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import authApi from "../api/authApi";
 import { storage } from "../utils/storageUtils";
 
@@ -62,6 +63,20 @@ export const AuthProvider = ({ children }) => {
   const isSelfLogoutRef = useRef(false);
   const isSelfLoginRef = useRef(false);
   const [showSplash, setShowSplash] = useState(false);
+  const queryClient = useQueryClient();
+
+  // SECURITY: cached server data belongs to one login. Whenever the signed-in
+  // account changes (logout, or a different user logs in) drop every cached
+  // query so the next account can never see the previous account's data.
+  const currentUserId = state.user?._id || state.user?.id || null;
+  const lastUserIdRef = useRef(undefined);
+  useEffect(() => {
+    if (lastUserIdRef.current !== undefined && lastUserIdRef.current !== currentUserId) {
+      queryClient.cancelQueries();
+      queryClient.clear();
+    }
+    lastUserIdRef.current = currentUserId;
+  }, [currentUserId, queryClient]);
 
   useEffect(() => {
     let cancelled = false;
