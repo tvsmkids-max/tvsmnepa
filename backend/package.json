@@ -17,7 +17,8 @@
     "diagnose": "node scripts/diagnose.js",
     "check-teacher": "node scripts/checkTeacher.js",
     "deactivate-legacy-teachers": "node scripts/deactivateLegacyTeachers.js",
-    "recover-admin-password": "node scripts/recoverAdminPassword.js"
+    "recover-admin-password": "node scripts/recoverAdminPassword.js",
+    "test": "node --test tests/*.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

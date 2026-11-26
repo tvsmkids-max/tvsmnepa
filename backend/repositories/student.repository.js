@@ -1,5 +1,6 @@
 "use strict";
 
+const escapeRegex = require("../utils/escapeRegex");
 const Student = require("../models/Student.model");
 
 class StudentRepository {
@@ -64,11 +65,11 @@ class StudentRepository {
     return Student.find({
       ...filter,
       $or: [
-        { scholarNumber: new RegExp(query, "i") },
-        { rollNumber: new RegExp(query, "i") },
-        { name: new RegExp(query, "i") },
-        { fatherName: new RegExp(query, "i") },
-        { mobile: new RegExp(query, "i") },
+        { scholarNumber: new RegExp(escapeRegex(query), "i") },
+        { rollNumber: new RegExp(escapeRegex(query), "i") },
+        { name: new RegExp(escapeRegex(query), "i") },
+        { fatherName: new RegExp(escapeRegex(query), "i") },
+        { mobile: new RegExp(escapeRegex(query), "i") },
       ],
     })
       .limit(20)
