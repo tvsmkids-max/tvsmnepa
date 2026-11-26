@@ -174,6 +174,17 @@ class StudentService {
       data.class = user.linkedClass;
     }
 
+    // Class accounts can only add students to their own class.
+    if (user && user.role === ROLES.CLASS) {
+      if (!user.linkedClass) {
+        throwError("No class is linked to this account", 403);
+      }
+      if (data.class && data.class.toString() !== user.linkedClass.toString()) {
+        throwError("You can only add students to your own class", 403);
+      }
+      data.class = user.linkedClass;
+    }
+
     const cls = await classRepository.findById(data.class);
     if (!cls) throwError("Class not found", 400);
 
