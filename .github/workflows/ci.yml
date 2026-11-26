@@ -41,3 +41,5 @@ jobs:
         run: find . -name "*.js" -not -path "./node_modules/*" -print0 | xargs -0 -n1 node --check
       - name: Tests (no database, stubs only)
         run: npm test
+name: Tests (no database, stubs only)
+        run: npm test
