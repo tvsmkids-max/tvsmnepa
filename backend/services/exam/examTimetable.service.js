@@ -14,12 +14,14 @@ const throwError = (message, statusCode = 400) => {
   throw Object.assign(new Error(message), { statusCode });
 };
 
-// Corrections stay possible while the exam is running; locked after Completed.
+// Corrections stay possible until marks are submitted.
 const TIMETABLE_EDITABLE = Object.freeze([
   EXAM_STATUS.DRAFT,
   EXAM_STATUS.CONFIGURATION_PENDING,
   EXAM_STATUS.SCHEDULED,
   EXAM_STATUS.ONGOING,
+  EXAM_STATUS.COMPLETED,
+  EXAM_STATUS.MARKS_ENTRY_IN_PROGRESS,
 ]);
 
 const isRealDate = (s) => {

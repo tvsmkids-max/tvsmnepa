@@ -22,7 +22,10 @@ import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
+import { examMenuPathFor } from "../../utils/routeAccess";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
+import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import AnalyticsOutlinedIcon from "@mui/icons-material/AnalyticsOutlined";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
@@ -79,10 +82,13 @@ const adminNav = [
   { label: "Analytics", icon: <AnalyticsOutlinedIcon />, path: "/analytics" },
   { type: "section", label: "Examinations" },
   { label: "All Examinations", icon: <QuizOutlinedIcon />, path: "/exams" },
+  { label: "Classes & Subjects", icon: <SchoolOutlinedIcon />, path: "/exams/section/classes" },
   { label: "Exam Timetable", icon: <EventNoteOutlinedIcon />, path: "/exams/section/timetable" },
   { label: "Admit Cards", icon: <BadgeOutlinedIcon />, path: "/exams/section/admit-cards" },
   { label: "Marks Monitoring", icon: <EditNoteOutlinedIcon />, path: "/exams/section/marks" },
   { label: "Results", icon: <EmojiEventsOutlinedIcon />, path: "/exams/section/results" },
+  { label: "Exam Details", icon: <TuneOutlinedIcon />, path: "/exams/section/details" },
+  { label: "Audit History", icon: <HistoryOutlinedIcon />, path: "/exams/section/audit" },
   { label: "Report Cards", icon: <DescriptionOutlinedIcon />, path: "/exams/report-cards" },
   { label: "Exam Reports", icon: <AnalyticsOutlinedIcon />, path: "/exams/reports" },
   { type: "section", label: "Admin" },
@@ -153,6 +159,8 @@ const SidebarContent = ({ collapsed }) => {
       return location.pathname === path;
     }
     const current = location.pathname;
+    const examMenu = examMenuPathFor(current);
+    if (examMenu) return path === examMenu;
     if (current === path) return true;
     if (current.startsWith(path + "/")) {
       const moreSpecificExists = allPaths.some(

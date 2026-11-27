@@ -16,6 +16,8 @@ const {
   CONFIG_EDITABLE_STATUSES,
 } = require("../../constants/examStatus");
 const { logExamAudit } = require("./examAudit.service");
+const ExamMarks = require("../../models/exam/ExamMarks.model");
+const { findConfigConflicts } = require("./examConfigGuard");
 
 const throwError = (message, statusCode = 400) => {
   throw Object.assign(new Error(message), { statusCode });
@@ -365,6 +367,45 @@ class ExamService {
       );
     }
 
+    // Marks may already be entered (exam ongoing / marks entry in progress).
+    // Check every class first so nothing is half-saved, and refuse any change
+    // that would lose or invalidate entered marks.
+    for (const c of classes) {
+      const current = await ExamClassConfig.findOne({ exam: exam._id, class: c._id }).lean();
+      if (!current) continue;
+      const rows = await ExamMarks.aggregate([
+        { $match: { exam: exam._id, class: c._id } },
+        {
+          $match: {
+            $or: [
+              { marks: { $ne: null } },
+              { internalMarks: { $ne: null } },
+              { oralMarks: { $ne: null } },
+              { grade: { $ne: null } },
+            ],
+          },
+        },
+        {
+          $group: {
+            _id: "$subjectKey",
+            count: { $sum: 1 },
+            maxMarks: { $max: "$marks" },
+            maxInternal: { $max: "$internalMarks" },
+            maxOral: { $max: "$oralMarks" },
+          },
+        },
+      ]);
+      const stats = new Map(rows.map((r) => [r._id, r]));
+      const problems = findConfigConflicts({
+        existingSubjects: current.subjects || [],
+        newSubjects: cleanSubjects,
+        stats,
+      });
+      if (problems.length) {
+        throwError(`${c.name} - ${c.section}: ${problems.join(" ")}`, 409);
+      }
+    }
+
     const results = [];
     for (const c of classes) {
       const existing = await ExamClassConfig.findOne({
@@ -412,6 +453,13 @@ class ExamService {
     if (hasTimetable) {
       throwError(
         "This class has timetable entries. Clear its timetable before removing it from the examination.",
+        409,
+      );
+    }
+    const hasMarks = await ExamMarks.exists({ exam: exam._id, class: classId });
+    if (hasMarks) {
+      throwError(
+        "This class already has marks entered for this examination, so it cannot be removed from it.",
         409,
       );
     }

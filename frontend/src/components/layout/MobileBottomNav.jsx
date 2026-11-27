@@ -30,7 +30,10 @@ import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import AnalyticsOutlinedIcon from "@mui/icons-material/AnalyticsOutlined";
 import BeachAccessOutlinedIcon from "@mui/icons-material/BeachAccessOutlined";
 import VpnKeyOutlinedIcon from "@mui/icons-material/VpnKeyOutlined";
+import { examMenuPathFor } from "../../utils/routeAccess";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
+import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ClassOutlinedIcon from "@mui/icons-material/ClassOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
@@ -110,10 +113,13 @@ const MobileBottomNav = () => {
 
     { divider: true, label: "Examinations" },
     { label: "All Examinations", icon: <QuizOutlinedIcon />, path: "/exams" },
+    { label: "Classes & Subjects", icon: <SchoolOutlinedIcon />, path: "/exams/section/classes" },
     { label: "Exam Timetable", icon: <EventNoteOutlinedIcon />, path: "/exams/section/timetable" },
     { label: "Admit Cards", icon: <BadgeOutlinedIcon />, path: "/exams/section/admit-cards" },
     { label: "Marks Monitoring", icon: <EditNoteOutlinedIcon />, path: "/exams/section/marks" },
     { label: "Results", icon: <EmojiEventsOutlinedIcon />, path: "/exams/section/results" },
+    { label: "Exam Details", icon: <TuneOutlinedIcon />, path: "/exams/section/details" },
+    { label: "Audit History", icon: <HistoryOutlinedIcon />, path: "/exams/section/audit" },
     { label: "Report Cards", icon: <DescriptionOutlinedIcon />, path: "/exams/report-cards" },
     { label: "Exam Reports", icon: <AnalyticsOutlinedIcon />, path: "/exams/reports" },
 
@@ -196,7 +202,7 @@ const MobileBottomNav = () => {
   const moreItems = isAdmin ? adminMoreItems : classMoreItems;
 
   const isActivePath = (path) =>
-    location.pathname === path ||
+    (examMenuPathFor(location.pathname) ?? location.pathname) === path ||
     (path !== "/exams" && location.pathname.startsWith(`${path}/`));
 
   const roleLabel =

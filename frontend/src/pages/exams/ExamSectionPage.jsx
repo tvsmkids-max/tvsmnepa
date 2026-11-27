@@ -21,12 +21,15 @@ import examApi from "../../api/examApi";
 import useSessionSelection from "../../hooks/useSessionSelection";
 import { EXAM_STATUS_COLORS, EXAM_STATUS_LABELS } from "./examConstants";
 
-// Sidebar shortcut pages: pick an examination, jump straight to one of its tabs.
+// Menu pages: pick an examination, open that one section of it (its own page).
 export const SECTIONS = {
-  timetable: { title: "Exam Timetable", tab: "timetable", button: "Open timetable" },
-  "admit-cards": { title: "Admit Cards", tab: "admit", button: "Open admit cards" },
-  marks: { title: "Marks Monitoring", tab: "marks", button: "Open marks" },
-  results: { title: "Results & Publication", tab: "results", button: "Open results" },
+  classes: { title: "Classes & Subjects", path: "classes", button: "Open classes & subjects" },
+  timetable: { title: "Exam Timetable", path: "timetable", button: "Open timetable" },
+  "admit-cards": { title: "Admit Cards", path: "admit-cards", button: "Open admit cards" },
+  marks: { title: "Marks Monitoring", path: "marks", button: "Open marks" },
+  results: { title: "Results & Publication", path: "results", button: "Open results" },
+  details: { title: "Exam Details", path: "details", button: "Open details" },
+  audit: { title: "Audit History", path: "audit", button: "Open audit history" },
 };
 
 export default function ExamSectionPage() {
@@ -90,7 +93,7 @@ export default function ExamSectionPage() {
                     <Chip size="small" label={EXAM_STATUS_LABELS[e.status] || e.status} color={EXAM_STATUS_COLORS[e.status] || "default"} />
                   </TableCell>
                   <TableCell align="right">
-                    <Button size="small" variant="contained" onClick={() => navigate(`/exams/${e._id}?tab=${cfg.tab}`)}>
+                    <Button size="small" variant="contained" onClick={() => navigate(`/exams/${e._id}/${cfg.path}`)}>
                       {cfg.button}
                     </Button>
                   </TableCell>
