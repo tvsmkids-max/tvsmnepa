@@ -926,19 +926,25 @@ class ManagementService {
   // ═══════════════════════════════════════════════════════════════
   async createAccessUrl({ label, expiresAt, createdBy }) {
     const secretKey = ManagementAccess.generateSecretKey();
-    return await ManagementAccess.create({
-      secretKey,
+    const doc = await ManagementAccess.create({
+      secretKey: ManagementAccess.hashKey(secretKey),
+      keyHashed: true,
+      keyHint: secretKey.slice(0, 4),
       label: label || "Dashboard",
       expiresAt: expiresAt || null,
       createdBy,
     });
+    // The real key is returned ONCE, here, and never stored.
+    return { ...doc.toObject(), secretKey };
   }
 
   async listAccessUrls() {
-    return ManagementAccess.find()
+    const rows = await ManagementAccess.find()
       .sort("-createdAt")
       .populate("createdBy", "name")
       .lean();
+    // Never expose a stored hash. Legacy plaintext rows keep their key until migrated.
+    return rows.map((r) => (r.keyHashed ? { ...r, secretKey: undefined } : r));
   }
 
   async revokeAccessUrl(id) {

@@ -131,6 +131,13 @@ app.use(
 app.use("/api/v1/dashboard", dashboardRoutes);
 
 // ─── HTTP Logging ─────────────────────────────────────────────────────────────
+// Never write management access keys into the logs.
+morgan.token("url", (req) =>
+  String(req.originalUrl || req.url).replace(
+    /(\/management\/)(?!admin\/)[^/?]+/,
+    "$1[redacted]",
+  ),
+);
 if (env.NODE_ENV !== "test") {
   app.use(
     morgan("combined", {

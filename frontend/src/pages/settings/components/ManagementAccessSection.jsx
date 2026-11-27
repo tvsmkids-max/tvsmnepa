@@ -57,6 +57,7 @@ const ManagementAccessSection = () => {
   const [confirmRevoke, setConfirmRevoke] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [newLabel, setNewLabel] = useState("");
+  const [createdUrl, setCreatedUrl] = useState("");
 
   // ═══════════════════════════════════════════════════════════════
   //  HELPERS
@@ -86,9 +87,11 @@ const ManagementAccessSection = () => {
 
   const handleCreate = async () => {
     try {
-      await createMutation.mutateAsync({
+      const res = await createMutation.mutateAsync({
         label: newLabel.trim() || "Management Dashboard",
       });
+      const key = res?.data?.data?.secretKey;
+      if (key) setCreatedUrl(buildFullUrl(key));
       setCreateOpen(false);
       setNewLabel("");
     } catch {
@@ -282,6 +285,56 @@ const ManagementAccessSection = () => {
         )}
       </Paper>
 
+      <Dialog
+        open={Boolean(createdUrl)}
+        onClose={() => setCreatedUrl("")}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Copy this link now</DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" sx={{ mb: 1.5 }}>
+            For security the link is shown only once. It cannot be viewed again
+            later. If you lose it, create a new link.
+          </Typography>
+          <Box
+            sx={{
+              p: 1.25,
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 1,
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{ fontFamily: "monospace", wordBreak: "break-all" }}
+            >
+              {createdUrl}
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(createdUrl);
+                enqueueSnackbar("URL copied to clipboard!", {
+                  variant: "success",
+                  autoHideDuration: 2000,
+                });
+              } catch {
+                enqueueSnackbar("Failed to copy URL", { variant: "error" });
+              }
+            }}
+          >
+            Copy
+          </Button>
+          <Button variant="contained" onClick={() => setCreatedUrl("")}>
+            Done
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* ═══════════════════════════════════════════════════════════
           CREATE URL DIALOG
       ═══════════════════════════════════════════════════════════ */}
@@ -419,7 +472,10 @@ const AccessUrlRow = ({
   formatDate,
   isDark,
 }) => {
-  const fullUrl = buildFullUrl(access.secretKey);
+  const hasKey = Boolean(access.secretKey);
+  const fullUrl = hasKey
+    ? buildFullUrl(access.secretKey)
+    : `Link hidden for security (starts with ${access.keyHint || "…"}). Create a new link to get a copy.`;
 
   return (
     <Box
@@ -478,7 +534,7 @@ const AccessUrlRow = ({
             <IconButton
               size="small"
               onClick={() => onCopy(access.secretKey)}
-              disabled={!access.isActive}
+              disabled={!access.isActive || !hasKey}
               sx={{
                 color: "primary.main",
                 "&:hover": {
@@ -493,7 +549,7 @@ const AccessUrlRow = ({
             <IconButton
               size="small"
               onClick={() => onOpen(access.secretKey)}
-              disabled={!access.isActive}
+              disabled={!access.isActive || !hasKey}
               sx={{
                 color: "info.main",
                 "&:hover": {
