@@ -44,9 +44,9 @@ export const BACKWARD = {
 
 // Details (name, dates, instructions) lock once the exam starts.
 export const DETAILS_EDITABLE = ["draft", "configuration_pending", "scheduled"];
-// Classes, subjects and marks scheme (written/internal/oral/passing) and the
-// timetable stay editable until marks are submitted; the server refuses any
-// change that would invalidate marks already entered.
+// Classes, subjects and the marks scheme (written/internal/oral/passing) can be
+// edited at any status. The server refuses any change that would invalidate
+// marks already entered; calculated results keep their snapshot until recalculated.
 export const CONFIG_EDITABLE = [
   "draft",
   "configuration_pending",
@@ -54,6 +54,9 @@ export const CONFIG_EDITABLE = [
   "ongoing",
   "completed",
   "marks_entry_in_progress",
+  "marks_submitted",
+  "results_prepared",
+  "results_published",
 ];
 
 export const EXAM_SECTIONS = {

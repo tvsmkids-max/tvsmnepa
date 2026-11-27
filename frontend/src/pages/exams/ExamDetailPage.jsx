@@ -338,9 +338,11 @@ const ExamDetailPage = () => {
           </Stack>
         </Paper>
       )}
-      {section === "classes" && !editable && (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Classes and subjects are locked because marks are submitted. Reopen marks entry to change them.
+      {section === "classes" && ["marks_submitted", "results_prepared", "results_published"].includes(exam.status) && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {exam.status === "marks_submitted"
+            ? "Marks are submitted. Changes here are allowed, but marks already entered must still fit the new maximums."
+            : "Results are already calculated. Changes here do not rewrite them: recalculate results to apply the new marks scheme."}
         </Alert>
       )}
       {section === "details" && !detailsEditable && (

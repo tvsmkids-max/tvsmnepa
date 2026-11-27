@@ -17,7 +17,6 @@ const {
 } = require("../../constants/examStatus");
 const { logExamAudit } = require("./examAudit.service");
 const ExamMarks = require("../../models/exam/ExamMarks.model");
-const ExamMarksSubmission = require("../../models/exam/ExamMarksSubmission.model");
 const { findConfigConflicts } = require("./examConfigGuard");
 
 const throwError = (message, statusCode = 400) => {
@@ -374,15 +373,6 @@ class ExamService {
     for (const c of classes) {
       const current = await ExamClassConfig.findOne({ exam: exam._id, class: c._id }).lean();
       if (!current) continue;
-      const submission = await ExamMarksSubmission.findOne({ exam: exam._id, class: c._id })
-        .select("status")
-        .lean();
-      if (submission && ["submitted", "locked"].includes(submission.status)) {
-        throwError(
-          `Marks for ${c.name} - ${c.section} are submitted. Reopen marks entry for that class before changing its subjects or marks.`,
-          409,
-        );
-      }
       const rows = await ExamMarks.aggregate([
         { $match: { exam: exam._id, class: c._id } },
         {

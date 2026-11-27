@@ -59,16 +59,10 @@ const MANUAL_STATUSES_PHASE1 = Object.freeze([
 ]);
 
 // Class/subject configuration (subjects, written/internal/oral/passing marks)
-// may change until marks are submitted. After marks entry has started the
-// service refuses any change that would invalidate marks already entered.
-const CONFIG_EDITABLE_STATUSES = Object.freeze([
-  S.DRAFT,
-  S.CONFIGURATION_PENDING,
-  S.SCHEDULED,
-  S.ONGOING,
-  S.COMPLETED,
-  S.MARKS_ENTRY_IN_PROGRESS,
-]);
+// may be changed at ANY status. Safety lives in examConfigGuard: a change that
+// would lose or invalidate marks already entered is refused. Calculated results
+// are versioned snapshots, so they are not rewritten; admin recalculates to apply.
+const CONFIG_EDITABLE_STATUSES = Object.freeze(Object.values(S));
 
 module.exports = {
   EXAM_TYPES,
