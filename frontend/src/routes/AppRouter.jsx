@@ -307,6 +307,14 @@ const AppRouter = () => (
               </RoleRoute>
             }
           />
+          <Route
+            path="exams/:id/:section"
+            element={
+              <RoleRoute roles={["admin"]}>
+                <ExamDetailPage />
+              </RoleRoute>
+            }
+          />
 
           {/* ─── Analytics ─── */}
           <Route path="analytics" element={<AnalyticsDashboard />} />

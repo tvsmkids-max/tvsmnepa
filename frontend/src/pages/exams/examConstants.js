@@ -42,7 +42,29 @@ export const BACKWARD = {
   scheduled: ["configuration_pending"],
 };
 
-export const CONFIG_EDITABLE = ["draft", "configuration_pending", "scheduled"];
+// Details (name, dates, instructions) lock once the exam starts.
+export const DETAILS_EDITABLE = ["draft", "configuration_pending", "scheduled"];
+// Classes, subjects and marks scheme (written/internal/oral/passing) and the
+// timetable stay editable until marks are submitted; the server refuses any
+// change that would invalidate marks already entered.
+export const CONFIG_EDITABLE = [
+  "draft",
+  "configuration_pending",
+  "scheduled",
+  "ongoing",
+  "completed",
+  "marks_entry_in_progress",
+];
+
+export const EXAM_SECTIONS = {
+  classes: "Classes & Subjects",
+  timetable: "Timetable",
+  "admit-cards": "Admit Cards",
+  marks: "Marks Monitoring",
+  results: "Results",
+  details: "Details & Status",
+  audit: "Audit History",
+};
 
 export const examTypeLabel = (v) =>
   EXAM_TYPES.find((t) => t.value === v)?.label || v;

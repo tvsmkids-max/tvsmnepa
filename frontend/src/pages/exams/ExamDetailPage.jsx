@@ -29,7 +29,7 @@ import {
 } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AddIcon from "@mui/icons-material/Add";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import PageHeader from "../../components/common/PageHeader";
 import examApi from "../../api/examApi";
@@ -45,6 +45,8 @@ import {
   NEXT_STATUSES,
   BACKWARD,
   CONFIG_EDITABLE,
+  DETAILS_EDITABLE,
+  EXAM_SECTIONS,
   examTypeLabel,
   toDateInput,
 } from "./examConstants";
@@ -59,16 +61,13 @@ const num = (v) => (v === "" || v === null || v === undefined ? 0 : Number(v));
 const totalOf = (s) => num(s.writtenMax) + num(s.internalMax) + num(s.oralMax);
 
 const ExamDetailPage = () => {
-  const { id } = useParams();
+  const { id, section: sectionParam } = useParams();
+  const section = sectionParam || "classes";
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
 
   const [exam, setExam] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
-  // Sidebar shortcuts open a specific tab: /exams/:id?tab=marks
-  const TAB_KEYS = ["classes", "timetable", "admit", "marks", "results", "details", "audit"];
-  const [tab, setTab] = useState(() => Math.max(0, TAB_KEYS.indexOf(searchParams.get("tab") || "")));
   const [audit, setAudit] = useState([]);
 
   const [details, setDetails] = useState(null);
@@ -135,7 +134,7 @@ const ExamDetailPage = () => {
   }, [id, reloadKey, navigate, enqueueSnackbar]);
 
   useEffect(() => {
-    if (tab !== 7) return;
+    if (section !== "audit") return;
     let cancelled = false;
     const run = async () => {
       try {
@@ -149,11 +148,13 @@ const ExamDetailPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [tab, id, reloadKey]);
+  }, [section, id, reloadKey]);
 
+  if (!EXAM_SECTIONS[section]) return <Navigate to={`/exams/${id}/classes`} replace />;
   if (loading || !exam) return <LinearProgress />;
 
   const editable = CONFIG_EDITABLE.includes(exam.status);
+  const detailsEditable = DETAILS_EDITABLE.includes(exam.status);
 
   const saveDetails = async () => {
     setSavingDetails(true);
@@ -305,53 +306,51 @@ const ExamDetailPage = () => {
   return (
     <Box>
       <PageHeader
-        title={exam.name}
-        subtitle={`${examTypeLabel(exam.examType)} · Session ${exam.session?.name}`}
-        breadcrumbs={[{ label: "Examinations", path: "/exams" }, { label: exam.name }]}
+        title={EXAM_SECTIONS[section]}
+        subtitle={`${exam.name} · ${examTypeLabel(exam.examType)} · Session ${exam.session?.name}`}
+        breadcrumbs={[{ label: "Examinations", path: "/exams" }, { label: exam.name }, { label: EXAM_SECTIONS[section] }]}
+        count={undefined}
       />
 
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ sm: "center" }} flexWrap="wrap">
-          <Chip
-            label={EXAM_STATUS_LABELS[exam.status]}
-            color={EXAM_STATUS_COLORS[exam.status]}
-          />
-          {nextStatuses.map((s) => (
-            <Button
-              key={s}
-              size="small"
-              variant={(BACKWARD[exam.status] || []).includes(s) ? "outlined" : "contained"}
-              onClick={() => setStatusTarget(s)}
-            >
-              {(BACKWARD[exam.status] || []).includes(s) ? "Move back to " : "Move to "}
-              {EXAM_STATUS_LABELS[s]}
-            </Button>
-          ))}
-          {exam.status === "draft" && (
-            <Button size="small" color="error" onClick={deleteExam}>
-              Delete draft
-            </Button>
-          )}
-        </Stack>
-        {!editable && (
-          <Alert severity="info" sx={{ mt: 2 }}>
-            Details and class configuration are locked once the examination has started.
-          </Alert>
-        )}
-      </Paper>
+      {section === "details" && (
+        <Paper sx={{ p: 2, mb: 2 }}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ sm: "center" }} flexWrap="wrap">
+            <Chip
+              label={EXAM_STATUS_LABELS[exam.status]}
+              color={EXAM_STATUS_COLORS[exam.status]}
+            />
+            {nextStatuses.map((s) => (
+              <Button
+                key={s}
+                size="small"
+                variant={(BACKWARD[exam.status] || []).includes(s) ? "outlined" : "contained"}
+                onClick={() => setStatusTarget(s)}
+              >
+                {(BACKWARD[exam.status] || []).includes(s) ? "Move back to " : "Move to "}
+                {EXAM_STATUS_LABELS[s]}
+              </Button>
+            ))}
+            {exam.status === "draft" && (
+              <Button size="small" color="error" onClick={deleteExam}>
+                Delete draft
+              </Button>
+            )}
+          </Stack>
+        </Paper>
+      )}
+      {section === "classes" && !editable && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Classes and subjects are locked because marks are submitted. Reopen marks entry to change them.
+        </Alert>
+      )}
+      {section === "details" && !detailsEditable && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Name, dates and instructions are locked once the examination has started.
+        </Alert>
+      )}
 
       <Paper>
-        <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable">
-          <Tab label="Classes & Subjects" />
-          <Tab label="Timetable" />
-          <Tab label="Admit Cards" />
-          <Tab label="Marks" />
-          <Tab label="Results" />
-          <Tab label="Details" />
-          <Tab label="Audit History" />
-        </Tabs>
-
-        {tab === 0 && (
+        {section === "classes" && (
           <Box sx={{ p: 2 }}>
             <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
               <Typography variant="subtitle1" fontWeight={600}>
@@ -392,23 +391,23 @@ const ExamDetailPage = () => {
           </Box>
         )}
 
-        {tab === 1 && <ExamTimetableTab exam={exam} />}
+        {section === "timetable" && <ExamTimetableTab exam={exam} />}
 
-        {tab === 2 && <ExamAdmitCardTab exam={exam} />}
+        {section === "admit-cards" && <ExamAdmitCardTab exam={exam} />}
 
-        {tab === 3 && <ExamMarksMonitorTab exam={exam} onChanged={() => setReloadKey((k) => k + 1)} />}
+        {section === "marks" && <ExamMarksMonitorTab exam={exam} onChanged={() => setReloadKey((k) => k + 1)} />}
 
-        {tab === 4 && <ExamResultsTab exam={exam} onChanged={load} />}
+        {section === "results" && <ExamResultsTab exam={exam} onChanged={load} />}
 
-        {tab === 5 && details && (
+        {section === "details" && details && (
           <Stack spacing={2} sx={{ p: 2, maxWidth: 560 }}>
-            <TextField label="Name" value={details.name} onChange={setField("name")} disabled={!editable} />
+            <TextField label="Name" value={details.name} onChange={setField("name")} disabled={!detailsEditable} />
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField label="Start date" type="date" value={details.startDate} onChange={setField("startDate")} InputLabelProps={{ shrink: true }} disabled={!editable} fullWidth />
-              <TextField label="End date" type="date" value={details.endDate} onChange={setField("endDate")} InputLabelProps={{ shrink: true }} disabled={!editable} fullWidth />
+              <TextField label="Start date" type="date" value={details.startDate} onChange={setField("startDate")} InputLabelProps={{ shrink: true }} disabled={!detailsEditable} fullWidth />
+              <TextField label="End date" type="date" value={details.endDate} onChange={setField("endDate")} InputLabelProps={{ shrink: true }} disabled={!detailsEditable} fullWidth />
             </Stack>
-            <TextField label="Instructions" value={details.instructions} onChange={setField("instructions")} multiline minRows={4} disabled={!editable} />
-            {editable && (
+            <TextField label="Instructions" value={details.instructions} onChange={setField("instructions")} multiline minRows={4} disabled={!detailsEditable} />
+            {detailsEditable && (
               <Box>
                 <Button variant="contained" onClick={saveDetails} disabled={savingDetails}>
                   Save details
@@ -418,7 +417,7 @@ const ExamDetailPage = () => {
           </Stack>
         )}
 
-        {tab === 6 && (
+        {section === "audit" && (
           <Box sx={{ p: 2, overflowX: "auto" }}>
             <Table size="small" sx={gridTableSx}>
               <TableHead>

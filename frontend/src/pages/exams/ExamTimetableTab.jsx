@@ -15,7 +15,7 @@ import {
   classIdOf, classLabel as label, makeGroups, matrixFor, printedClassName, sortConfigs,
 } from "../../utils/examTimetableGroups";
 
-const TIMETABLE_EDITABLE = ["draft", "configuration_pending", "scheduled", "ongoing"];
+const TIMETABLE_EDITABLE = ["draft", "configuration_pending", "scheduled", "ongoing", "completed", "marks_entry_in_progress"];
 
 const dayName = (d) =>
   d ? new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { weekday: "long", timeZone: "UTC" }) : "";
@@ -327,7 +327,7 @@ const ExamTimetableTab = ({ exam }) => {
     <Box sx={{ p: 2 }}>
       {!editable && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          The timetable is locked once the examination is completed.
+          The timetable is locked once marks are submitted.
         </Alert>
       )}
       <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 1.5, flexWrap: "wrap", gap: 1 }}>

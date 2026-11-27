@@ -58,11 +58,16 @@ const MANUAL_STATUSES_PHASE1 = Object.freeze([
   S.COMPLETED,
 ]);
 
-// Class/subject configuration may only change before the exam starts.
+// Class/subject configuration (subjects, written/internal/oral/passing marks)
+// may change until marks are submitted. After marks entry has started the
+// service refuses any change that would invalidate marks already entered.
 const CONFIG_EDITABLE_STATUSES = Object.freeze([
   S.DRAFT,
   S.CONFIGURATION_PENDING,
   S.SCHEDULED,
+  S.ONGOING,
+  S.COMPLETED,
+  S.MARKS_ENTRY_IN_PROGRESS,
 ]);
 
 module.exports = {
