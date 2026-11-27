@@ -13,6 +13,19 @@ const managementAccessSchema = new mongoose.Schema(
       index: true,
     },
 
+    // true  -> secretKey holds sha256(key); the real key is never stored.
+    // false -> legacy plaintext key (kept working until migrated).
+    keyHashed: {
+      type: Boolean,
+      default: false,
+    },
+
+    // First characters of the real key, so an admin can tell links apart.
+    keyHint: {
+      type: String,
+      default: "",
+    },
+
     // Human-readable label (for admin to identify)
     label: {
       type: String,
@@ -78,12 +91,22 @@ managementAccessSchema.statics.generateSecretKey = function () {
 // ═══════════════════════════════════════════════════════════════════
 //  STATIC METHOD: Validate access key
 // ═══════════════════════════════════════════════════════════════════
+managementAccessSchema.statics.hashKey = function (key) {
+  return crypto.createHash("sha256").update(String(key)).digest("hex");
+};
+
 managementAccessSchema.statics.validateAccess = async function (secretKey) {
   if (!secretKey || typeof secretKey !== "string") return null;
 
+  // A hashed record only matches the hash of the presented key. A legacy
+  // plaintext record only matches when it is NOT hashed, so a leaked hash can
+  // never be replayed as a key.
   const access = await this.findOne({
-    secretKey,
     isActive: true,
+    $or: [
+      { secretKey: this.hashKey(secretKey), keyHashed: true },
+      { secretKey, keyHashed: { $ne: true } },
+    ],
   }).lean();
 
   if (!access) return null;
