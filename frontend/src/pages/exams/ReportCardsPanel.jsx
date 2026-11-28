@@ -22,6 +22,7 @@ import examApi from "../../api/examApi";
 import useSessionSelection from "../../hooks/useSessionSelection";
 import classApi from "../../api/classApi";
 import { downloadReportCardPdf, loadLogo, loadWatermark, printReportCardPdf } from "../../utils/examReportCardPdf";
+import { downloadResultCardPdf, printResultCardPdf, resultCardStudents } from "../../utils/examResultCardPdf";
 
 const errMsg = (err, fb) =>
   err.response?.data?.errors?.[0]?.message || err.response?.data?.message || fb;
@@ -156,6 +157,19 @@ export default function ReportCardsPanel({ mode }) {
       setBusy(false);
     }
   };
+  const runResultCards = async (type, print) => {
+    const cards = resultCardStudents(data, type);
+    setBusy(true);
+    try {
+      const args = { data, type, cards, sessionName };
+      if (print) printResultCardPdf(args);
+      else downloadResultCardPdf(args, `Result-Cards-${EXAM_LABEL[type]}-${data?.class?.name || "class"}${data?.class?.section || ""}-${sessionName}.pdf`);
+    } catch {
+      enqueueSnackbar("Could not create the PDF", { variant: "error" });
+    } finally {
+      setBusy(false);
+    }
+  };
   const fileBase = `Report-Cards-${data?.class?.name || "class"}${data?.class?.section || ""}-${sessionName}`;
 
   return (
@@ -200,6 +214,30 @@ export default function ReportCardsPanel({ mode }) {
               Print all
             </Button>
           </Stack>
+
+          <Paper variant="outlined" sx={{ p: 1.5, mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+              Result cards (3 per page)
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+              Single-exam slips for Quarterly and Half Yearly. Annual uses the progress report card above.
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {["quarterly", "half_yearly"].map((t) => {
+                const n = resultCardStudents(data, t).length;
+                return (
+                  <Stack key={t} direction="row" spacing={0.5} alignItems="center">
+                    <Button size="small" variant="outlined" disabled={busy || n === 0} onClick={() => runResultCards(t, false)}>
+                      {EXAM_LABEL[t]} (PDF)
+                    </Button>
+                    <Button size="small" disabled={busy || n === 0} onClick={() => runResultCards(t, true)}>
+                      Print
+                    </Button>
+                  </Stack>
+                );
+              })}
+            </Stack>
+          </Paper>
 
           {students.length === 0 && (
             <Alert severity="info">No published results for this class yet. Report cards appear once an exam&apos;s results are published.</Alert>
