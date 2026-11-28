@@ -69,6 +69,7 @@ export default function ReportCardsPanel({ mode }) {
     let cancelled = false;
     const run = async () => {
       setLoading(true);
+      setData(null); // never show the previous class/session while loading
       try {
         const res = admin
           ? await examApi.reportCards(sessionId, classId)
@@ -217,7 +218,7 @@ export default function ReportCardsPanel({ mode }) {
 
           <Paper variant="outlined" sx={{ p: 1.5, mb: 2 }}>
             <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-              Result cards (3 per page)
+              Result cards (6 per page)
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
               Single-exam slips for Quarterly and Half Yearly. Annual uses the progress report card above.

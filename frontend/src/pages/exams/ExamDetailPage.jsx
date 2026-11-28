@@ -26,11 +26,13 @@ import {
   Tabs,
   Tab,
   Autocomplete,
+  MenuItem,
 } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AddIcon from "@mui/icons-material/Add";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useSnackbar } from "notistack";
+import { setLastExam } from "../../utils/lastExam";
 import PageHeader from "../../components/common/PageHeader";
 import examApi from "../../api/examApi";
 import ExamTimetableTab from "./ExamTimetableTab";
@@ -67,6 +69,7 @@ const ExamDetailPage = () => {
   const { enqueueSnackbar } = useSnackbar();
 
   const [exam, setExam] = useState(null);
+  const [siblings, setSiblings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [audit, setAudit] = useState([]);
 
@@ -103,6 +106,19 @@ const ExamDetailPage = () => {
     };
   }, [catalogKey]);
 
+  const sessionOfExam = exam?.session?._id;
+  useEffect(() => {
+    if (!sessionOfExam) return undefined;
+    let cancelled = false;
+    examApi
+      .list({ session: sessionOfExam, limit: 200 })
+      .then((res) => !cancelled && setSiblings(res.data?.data || []))
+      .catch(() => !cancelled && setSiblings([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionOfExam]);
+
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
@@ -111,6 +127,7 @@ const ExamDetailPage = () => {
         if (cancelled) return;
         const e = res.data?.data;
         setExam(e);
+        setLastExam(e._id);
         setDetails({
           name: e.name,
           examType: e.examType,
@@ -311,6 +328,22 @@ const ExamDetailPage = () => {
         breadcrumbs={[{ label: "Examinations", path: "/exams" }, { label: exam.name }, { label: EXAM_SECTIONS[section] }]}
         count={undefined}
       />
+      {siblings.length > 1 && (
+        <TextField
+          select
+          size="small"
+          label="Examination"
+          value={exam._id}
+          onChange={(e) => navigate(`/exams/${e.target.value}/${section}`)}
+          sx={{ mb: 2, minWidth: 260 }}
+        >
+          {siblings.map((x) => (
+            <MenuItem key={x._id} value={x._id}>
+              {x.name}
+            </MenuItem>
+          ))}
+        </TextField>
+      )}
 
       {section === "details" && (
         <Paper sx={{ p: 2, mb: 2 }}>
@@ -602,4 +635,8 @@ const ExamDetailPage = () => {
   );
 };
 
-export default ExamDetailPage;
+// Keyed by exam id so switching exams never shows the previous exam's data.
+export default function ExamDetailRoute() {
+  const { id } = useParams();
+  return <ExamDetailPage key={id} />;
+}

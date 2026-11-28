@@ -113,15 +113,17 @@ const MobileBottomNav = () => {
 
     { divider: true, label: "Examinations" },
     { label: "All Examinations", icon: <QuizOutlinedIcon />, path: "/exams" },
+    { divider: true, label: "Exam Setup" },
     { label: "Classes & Subjects", icon: <SchoolOutlinedIcon />, path: "/exams/section/classes" },
     { label: "Exam Timetable", icon: <EventNoteOutlinedIcon />, path: "/exams/section/timetable" },
     { label: "Admit Cards", icon: <BadgeOutlinedIcon />, path: "/exams/section/admit-cards" },
+    { label: "Exam Details", icon: <TuneOutlinedIcon />, path: "/exams/section/details" },
+    { divider: true, label: "Marks & Results" },
     { label: "Marks Monitoring", icon: <EditNoteOutlinedIcon />, path: "/exams/section/marks" },
     { label: "Results", icon: <EmojiEventsOutlinedIcon />, path: "/exams/section/results" },
-    { label: "Exam Details", icon: <TuneOutlinedIcon />, path: "/exams/section/details" },
-    { label: "Audit History", icon: <HistoryOutlinedIcon />, path: "/exams/section/audit" },
-    { label: "Report Cards", icon: <DescriptionOutlinedIcon />, path: "/exams/report-cards" },
+    { label: "Report & Result Cards", icon: <DescriptionOutlinedIcon />, path: "/exams/report-cards" },
     { label: "Exam Reports", icon: <AnalyticsOutlinedIcon />, path: "/exams/reports" },
+    { label: "Audit History", icon: <HistoryOutlinedIcon />, path: "/exams/section/audit" },
 
     { divider: true, label: "Reports" },
     {

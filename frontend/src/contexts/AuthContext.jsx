@@ -213,6 +213,7 @@ export const AuthProvider = ({ children }) => {
       storage.clearAuth();
       try {
         sessionStorage.removeItem("sams_picked_session");
+        sessionStorage.removeItem("sams_last_exam");
       } catch {
         /* ignore */
       }
