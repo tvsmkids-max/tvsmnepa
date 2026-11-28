@@ -1,6 +1,6 @@
 import { gridTableSx } from "../../components/common/tableStyles";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import {
   Button,
   Chip,
@@ -19,6 +19,7 @@ import PageHeader from "../../components/common/PageHeader";
 import EmptyState from "../../components/common/EmptyState";
 import examApi from "../../api/examApi";
 import useSessionSelection from "../../hooks/useSessionSelection";
+import { getLastExam } from "../../utils/lastExam";
 import { EXAM_STATUS_COLORS, EXAM_STATUS_LABELS } from "./examConstants";
 
 // Menu pages: pick an examination, open that one section of it (its own page).
@@ -39,6 +40,7 @@ export default function ExamSectionPage() {
   const { enqueueSnackbar } = useSnackbar();
   const { sessions, sessionId, setSessionId } = useSessionSelection((m) => enqueueSnackbar(m, { variant: "error" }));
   const [exams, setExams] = useState([]);
+  const [loadedFor, setLoadedFor] = useState("");
 
   useEffect(() => {
     if (!sessionId) return undefined;
@@ -46,7 +48,10 @@ export default function ExamSectionPage() {
     (async () => {
       try {
         const res = await examApi.list({ session: sessionId, limit: 200 });
-        if (!cancelled) setExams(res.data?.data || []);
+        if (!cancelled) {
+          setExams(res.data?.data || []);
+          setLoadedFor(sessionId);
+        }
       } catch {
         if (!cancelled) {
           setExams([]);
@@ -60,6 +65,12 @@ export default function ExamSectionPage() {
   }, [sessionId, enqueueSnackbar]);
 
   if (!cfg) return <EmptyState title="Page not found" />;
+
+  // Keep the same exam while moving between menu pages.
+  const last = getLastExam();
+  if (loadedFor === sessionId && last && exams.some((e) => e._id === last)) {
+    return <Navigate to={`/exams/${last}/${cfg.path}`} replace />;
+  }
 
   return (
     <>
