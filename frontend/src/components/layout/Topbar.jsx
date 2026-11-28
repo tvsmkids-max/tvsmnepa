@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 import useSettings from "../../hooks/useSettings";
 import useThemeMode from "../../hooks/useThemeMode";
+import usePlatformBrand from "../../hooks/usePlatformBrand";
 import SchoolInfoSheet from "./SchoolInfoSheet";
 
 // ✅ Correct quote import
@@ -44,6 +45,7 @@ const Topbar = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const { user, logout, isAdmin } = useAuth();
   const { settings } = useSettings();
+  const { brand } = usePlatformBrand();
   const { isDark, toggleTheme } = useThemeMode();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -173,6 +175,16 @@ const Topbar = ({ onMenuClick }) => {
               >
                 {displayName}
               </Typography>
+              {brand.productName && !(classLabel && isMobile) && (
+                <Typography
+                  component="div"
+                  color="text.secondary"
+                  sx={{ display: "flex", alignItems: "center", gap: 0.5, fontSize: "0.62rem", fontWeight: 600, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                >
+                  {brand.logo && <Box component="img" src={brand.logo} alt="" sx={{ height: 11, width: "auto", maxWidth: 40, objectFit: "contain" }} />}
+                  Powered by {brand.productName}
+                </Typography>
+              )}
               {classLabel && isMobile && (
                 <Typography
                   variant="caption"
