@@ -27,6 +27,7 @@ const shouldSkipAuthRedirect = () => {
   const currentPath = window.location.pathname;
   return (
     currentPath === "/login" ||
+    currentPath.startsWith("/owner") ||
     currentPath === "/unauthorized" ||
     currentPath.startsWith("/management/")
   );

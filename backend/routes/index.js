@@ -22,6 +22,8 @@ const managementRoutes = require("./management.routes");
 const externalApiRoutes = require("./externalApi.routes");
 const userRoutes = require("./user.routes");
 const examRoutes = require("./exam.routes");
+const ownerRoutes = require("./owner.routes");
+const platformRoutes = require("./platform.routes");
 
 router.use("/auth", authRoutes);
 router.use("/sessions", sessionRoutes);
@@ -42,6 +44,8 @@ router.use("/management", managementRoutes);
 router.use("/external", externalApiRoutes);
 router.use("/users", userRoutes);
 router.use("/exams", examRoutes);
+router.use("/owner", ownerRoutes);
+router.use("/platform", platformRoutes);
 
 router.get("/health", (req, res) => {
   const { getConnectionStatus } = require("../config/db");

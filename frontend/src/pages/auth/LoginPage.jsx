@@ -28,6 +28,8 @@ import { useSnackbar } from "notistack";
 import useAuth from "../../hooks/useAuth";
 import authApi from "../../api/authApi";
 import { canOpenPath } from "../../utils/routeAccess";
+import usePlatformBrand from "../../hooks/usePlatformBrand";
+import PoweredBy from "../../components/common/PoweredBy";
 
 const SCHOOL_NAME =
   import.meta.env.VITE_SCHOOL_NAME || "Thakur Virendra Singh Memorial School";
@@ -35,6 +37,7 @@ const SCHOOL_LOGO = import.meta.env.VITE_SCHOOL_LOGO || "/logo.png";
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
 
 const LoginPage = () => {
+  const { brand } = usePlatformBrand();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -391,7 +394,7 @@ const LoginPage = () => {
                   whiteSpace: "nowrap",
                 }}
               >
-                SCHOOL MANAGEMENT PORTAL
+                {brand.productName ? brand.productName.toUpperCase() : "SCHOOL MANAGEMENT PORTAL"}
               </Typography>
             </Box>
           </Box>
@@ -487,16 +490,7 @@ const LoginPage = () => {
                     lineHeight: 1.65,
                   }}
                 >
-                  Developed by{" "}
-                  <a
-                    href="https://www.linkedin.com/in/abhishekwani18/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: "#E0E7FF", textDecoration: "underline" }}
-                  >
-                    Abhishek Wani
-                  </a>{" "}
-                  | Version {APP_VERSION}
+                  <PoweredBy brand={brand} version={APP_VERSION} linkColor="#E0E7FF" />
                 </Typography>
               </Box>
 
@@ -914,16 +908,7 @@ const LoginPage = () => {
                   lineHeight: 1.5,
                 }}
               >
-                Developed by{" "}
-                <a
-                  href="https://www.linkedin.com/in/abhishekwani18/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: "#2563EB", textDecoration: "underline" }}
-                >
-                  Abhishek Wani
-                </a>{" "}
-                | Version {APP_VERSION}
+                <PoweredBy brand={brand} version={APP_VERSION} linkColor="#2563EB" />
               </Typography>
             </Box>
           </Box>

@@ -67,6 +67,11 @@ const ExamMyClassPage = lazy(() => import("../pages/exams/ExamMyClassPage"));
 const ExamMarksEntryPage = lazy(() => import("../pages/exams/ExamMarksEntryPage"));
 const ExamMyResultsPage = lazy(() => import("../pages/exams/ExamMyResultsPage"));
 const ExamSectionPage = lazy(() => import("../pages/exams/ExamSectionPage"));
+const OwnerLoginPage = lazy(() => import("../pages/owner/OwnerLoginPage"));
+const OwnerShell = lazy(() => import("../pages/owner/OwnerShell"));
+const OwnerSchoolsPage = lazy(() => import("../pages/owner/OwnerSchoolsPage"));
+const OwnerPlatformPage = lazy(() => import("../pages/owner/OwnerPlatformPage"));
+const OwnerAccountPage = lazy(() => import("../pages/owner/OwnerAccountPage"));
 const ExamReportCardsPage = lazy(() => import("../pages/exams/ExamReportCardsPage"));
 const ExamReportsPage = lazy(() => import("../pages/exams/ExamReportsPage"));
 const ExamMyReportCardsPage = lazy(() => import("../pages/exams/ExamMyReportCardsPage"));
@@ -126,6 +131,15 @@ const AppRouter = () => (
         {/* ═══ PUBLIC ROUTES ═══ */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
+        {/* ═══ PLATFORM OWNER (separate login, not a school user) ═══ */}
+        <Route path="/owner/login" element={<OwnerLoginPage />} />
+        <Route path="/owner" element={<OwnerShell />}>
+          <Route index element={<Navigate to="schools" replace />} />
+          <Route path="schools" element={<OwnerSchoolsPage />} />
+          <Route path="platform" element={<OwnerPlatformPage />} />
+          <Route path="account" element={<OwnerAccountPage />} />
+        </Route>
         <Route
           path="/management/attendance/:secretKey"
           element={<ManagementDashboard />}

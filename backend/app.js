@@ -98,6 +98,7 @@ const attendanceLimiter = rateLimit({
 // Apply limiters
 app.use("/api/", globalLimiter);
 app.use("/api/v1/auth/login", loginLimiter);
+app.use("/api/v1/owner/login", loginLimiter);
 app.use("/api/v1/auth/refresh", refreshLimiter);
 app.use("/api/v1/attendance/mark", attendanceLimiter);
 
